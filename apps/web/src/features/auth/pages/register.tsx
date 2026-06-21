@@ -1,84 +1,140 @@
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { toast } from 'sonner';
 import { useAuth } from '../store';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+
+const registerSchema = z
+  .object({
+    name: z.string().min(1, 'Name is required.').max(80, 'Name is too long.'),
+    email: z.string().min(1, 'Email is required.').email('Enter a valid email address.'),
+    password: z
+      .string()
+      .min(8, 'Password must be at least 8 characters.')
+      .max(128, 'Password is too long.'),
+    confirm: z.string(),
+  })
+  .refine((d) => d.password === d.confirm, {
+    message: 'Passwords do not match.',
+    path: ['confirm'],
+  });
+type RegisterInput = z.infer<typeof registerSchema>;
 
 export function RegisterPage() {
   const navigate = useNavigate();
-  const { register } = useAuth();
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
+  const { register: registerUser } = useAuth();
+  const [serverError, setServerError] = useState<string | null>(null);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<RegisterInput>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: { name: '', email: '', password: '', confirm: '' },
+  });
 
-  const onSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setBusy(true);
+  const onSubmit = handleSubmit(async (values) => {
+    setServerError(null);
     try {
-      await register(email, password, name);
+      await registerUser(values.name, values.email, values.password);
+      toast.success('Account created', { description: 'Welcome to FlowDesk.' });
       navigate('/');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Registration failed');
-    } finally {
-      setBusy(false);
+      const message = err instanceof Error ? err.message : 'Sign up failed';
+      setServerError(message);
+      toast.error(message);
     }
-  };
+  });
 
   return (
     <div className="flex h-full items-center justify-center bg-[var(--bg)] p-4">
-      <form onSubmit={onSubmit} className="card w-full max-w-sm space-y-4" aria-label="Sign up form">
-        <div>
-          <h1>Create account</h1>
-          <p className="caption mt-1">Start managing tasks with FlowDesk</p>
+      <form
+        onSubmit={onSubmit}
+        noValidate
+        className="w-full max-w-sm space-y-4 rounded-xl border border-[var(--border)] bg-[var(--bg-2)]/80 p-6 shadow-sm backdrop-blur-sm"
+        aria-label="Sign up form"
+      >
+        <div className="space-y-1">
+          <h1 className="text-[20px] font-semibold tracking-tight">Create account</h1>
+          <p className="caption">Spin up your FlowDesk workspace</p>
         </div>
 
-        <label className="block">
-          <span className="label-xs">Name</span>
-          <input
-            type="text"
-            required
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="mt-1 w-full rounded-md border border-[var(--border)] bg-[var(--bg-2)] px-3 py-2 outline-none focus:border-emerald-500"
+        <div className="space-y-1.5">
+          <Label htmlFor="name">Name</Label>
+          <Input
+            id="name"
+            autoComplete="name"
+            placeholder="Jane Doe"
+            aria-invalid={Boolean(errors.name)}
+            {...register('name')}
           />
-        </label>
+          {errors.name && <p className="text-[11px] text-red-500">{errors.name.message}</p>}
+        </div>
 
-        <label className="block">
-          <span className="label-xs">Email</span>
-          <input
+        <div className="space-y-1.5">
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
             type="email"
             autoComplete="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="mt-1 w-full rounded-md border border-[var(--border)] bg-[var(--bg-2)] px-3 py-2 outline-none focus:border-emerald-500"
+            placeholder="you@example.com"
+            aria-invalid={Boolean(errors.email)}
+            {...register('email')}
           />
-        </label>
+          {errors.email && <p className="text-[11px] text-red-500">{errors.email.message}</p>}
+        </div>
 
-        <label className="block">
-          <span className="label-xs">Password</span>
-          <input
+        <div className="space-y-1.5">
+          <Label htmlFor="password">Password</Label>
+          <Input
+            id="password"
             type="password"
             autoComplete="new-password"
-            required
-            minLength={8}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="mt-1 w-full rounded-md border border-[var(--border)] bg-[var(--bg-2)] px-3 py-2 outline-none focus:border-emerald-500"
+            placeholder="Min 8 characters"
+            aria-invalid={Boolean(errors.password)}
+            {...register('password')}
           />
-          <span className="caption mt-1 block">Min 8 chars, with upper, lower, and a digit.</span>
-        </label>
+          {errors.password && (
+            <p className="text-[11px] text-red-500">{errors.password.message}</p>
+          )}
+        </div>
 
-        {error && (
-          <div role="alert" className="rounded-md bg-red-500/10 px-3 py-2 text-sm text-red-500">
-            {error}
+        <div className="space-y-1.5">
+          <Label htmlFor="confirm">Confirm password</Label>
+          <Input
+            id="confirm"
+            type="password"
+            autoComplete="new-password"
+            aria-invalid={Boolean(errors.confirm)}
+            {...register('confirm')}
+          />
+          {errors.confirm && (
+            <p className="text-[11px] text-red-500">{errors.confirm.message}</p>
+          )}
+        </div>
+
+        {serverError && (
+          <div
+            role="alert"
+            className="rounded-md border border-red-500/40 bg-red-500/10 px-3 py-2 text-[12px] text-red-500"
+          >
+            {serverError}
           </div>
         )}
 
-        <button type="submit" disabled={busy} className="btn-primary w-full disabled:opacity-50">
-          {busy ? 'Creating…' : 'Create account'}
-        </button>
+        <Button
+          type="submit"
+          disabled={isSubmitting}
+          variant="default"
+          className="h-9 w-full bg-emerald-500 text-white hover:bg-emerald-600"
+        >
+          {isSubmitting ? 'Creating account…' : 'Create account'}
+        </Button>
 
         <p className="caption text-center">
           Already have an account?{' '}

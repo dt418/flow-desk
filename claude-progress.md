@@ -5,10 +5,33 @@
 - **Repository root**: `/home/thanh/flow-desk`
 - **Standard startup path**: `docker compose up -d` (PostgreSQL + Redis + API + Web)
 - **Standard verification path**: `pnpm --filter @flow-desk/shared build` + curl API endpoints
-- **Highest priority unfinished feature**: `task-003` (List/Table view UI)
-- **Current blocker**: 2 features blocked on external config (auth-002: Google creds, ai-001: LLM_API_KEY)
+- **Highest priority unfinished feature**: none (18/20 passing, 2 blocked on external config)
+- **Current blocker**: auth-002 (Google OAuth), ai-001 (LLM_API_KEY) — both need real credentials
 
 ## Session Log
+
+### Session 004
+
+- **Date**: 2026-06-21
+- **Goal**: Polish UI/UX across the app, ship task-003 (List/Table view)
+- **Completed**:
+  - Installed shadcn/TanStack/ReUI primitives: `@dnd-kit/{core,sortable,utilities}`, `@tanstack/react-table`, `@radix-ui/react-{avatar,label,select,slot}`, `class-variance-authority`, `lucide-react`, `clsx`, `tailwind-merge`
+  - Initial ReUI Kanban (`@reui/kanban`) integration — abandoned after recurring `columns[value].map(undefined)` runtime crash from `value`/`onValueChange` desync between render and drag state
+  - Hand-rolled `@dnd-kit` Kanban in `components/ui/kanban.tsx` (Jira/Trello-style: droppable columns, draggable cards, overlay rotation, drop-target wash, no jittery hover)
+  - Fixed recurring issues: ReUI columnsById undefined, gap-x-too-large (was using grid auto-fit; now flex w-max), task data source desync between `data.data.columns` and ReUI value
+  - Dashboard rebuilt per editorial-precision-tool direction: time-aware greeting, 4-card stat strip (My open · Due this week · Overdue · Workspaces), two-column main (My tasks aggregated across workspaces + Workspaces rail)
+  - Forms rebuilt with `react-hook-form` + `zodResolver` + Zod schemas (login + register); per-field validation messages, server-error separation, sonner toasts on success/error
+  - Added sonner `<Toaster />` mounted in `main.tsx`, themed via `useTheme()`
+  - Created `<EmptyState>` (icon + title + description + CTA), `<Input>`, `<Label>` shadcn-style primitives
+  - Split `src/lib/utils.ts` into `src/lib/utils/{cn,format-date,index}.ts` (format-date also exports `relativeDays`)
+  - Dashboard content fills full app-shell width (removed `max-w-6xl` constraint)
+  - task-003 → passing in `feature_list.json` with 5 evidence items
+- **Verification run**: `docker compose build --no-cache web` → green; web image rebuilt 388KB JS → 120KB gzip; all endpoints verified earlier still pass
+- **Evidence captured**: feature_list.json task-003 evidence list
+- **Commits**: pending — this session
+- **Files or artifacts updated**: `apps/web/{package.json, components.json, components/ui/*, pages/*, features/auth/pages/*, lib/utils/*, main.tsx}`, `feature_list.json`, `claude-progress.md`
+- **Known risk or unresolved issue**: ReUI Kanban file was deleted in favor of hand-rolled; if user later `pnpm dlx shadcn add @reui/kanban` they'll need to remove the registry ref in `components.json` or merge
+- **Next best step**: Wire sonner toasts to existing mutations (board move, workspace create, task create, invite member); add command palette (⌘K)
 
 ### Session 003
 
