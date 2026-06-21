@@ -1,0 +1,16 @@
+node_modules
+dist
+build
+.turbo
+.next
+.vite
+coverage
+.env
+.env.local
+.env.*.local
+*.log
+.DS_Store
+.vscode
+.idea
+data
+prisma/migrations/dev.db*

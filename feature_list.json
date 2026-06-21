@@ -1,0 +1,360 @@
+{
+  "project": "flow-desk",
+  "last_updated": "2026-06-21",
+  "rules": {
+    "single_active_feature": true,
+    "passing_requires_evidence": true,
+    "do_not_skip_verification": true
+  },
+  "status_legend": {
+    "not_started": "Work has not begun.",
+    "in_progress": "The feature is the current active task.",
+    "blocked": "Work cannot continue until a documented blocker is resolved.",
+    "passing": "Required verification has passed and evidence is recorded."
+  },
+  "features": [
+    {
+      "id": "setup-001",
+      "priority": 1,
+      "area": "setup",
+      "title": "Monorepo structure with pnpm workspaces and Turbo",
+      "user_visible_behavior": "Developer can run pnpm install from root and build all packages. apps/web, apps/api, packages/shared exist with correct configs.",
+      "status": "passing",
+      "verification": [
+        "Run pnpm install from root",
+        "Verify pnpm-workspace.yaml and turbo.json exist",
+        "Run pnpm -r build and confirm shared package builds"
+      ],
+      "evidence": [
+        "pnpm-workspace.yaml present at root with apps/* and packages/*",
+        "turbo.json present with build, dev, typecheck, test pipelines",
+        "Root package.json with scripts: build, dev, typecheck, lint, test, db:*",
+        "packages/shared with 9 Zod schema files (auth, user, workspace, task, comment, notification, attachment, common, index)",
+        "apps/web with React + Vite + Tailwind v4 + TanStack Query + socket.io-client",
+        "apps/api with Hono + Prisma + Socket.IO + Redis adapter + JWT + bcrypt + LLMProvider"
+      ],
+      "notes": "Foundation complete; downstream features (auth, workspaces, tasks, collab, AI) all wired to shared package and Prisma schema"
+    },
+    {
+      "id": "setup-002",
+      "priority": 2,
+      "area": "setup",
+      "title": "Tailwind v4 design system with Emerald/Teal tokens",
+      "user_visible_behavior": "Web app shows correct Emerald/Teal colors in both light and dark mode. Theme toggle works.",
+      "status": "passing",
+      "verification": [
+        "Start web dev server",
+        "Verify colors match design system spec",
+        "Toggle theme and confirm light/dark switch"
+      ],
+      "evidence": [
+        "apps/web/src/index.css with @import 'tailwindcss' and @theme block",
+        "Emerald 50-950 color tokens defined",
+        "Teal 50-950 color tokens defined",
+        "Status color tokens (todo, progress, done, blocked, review)",
+        "Light/dark backgrounds with CSS custom properties",
+        "Class-based dark mode with @custom-variant dark",
+        "Typography tokens (Page 26px/700/-0.6px, Heading 18px/600, Body 13px/400, Label 10px/600/+0.1em uppercase)",
+        "Spacing scale 4, 8, 12, 16, 20, 24, 32, 48, 64px",
+        "Radius xs 4px, sm 6px, md 8px, lg 12px, full 100px",
+        "ThemeProvider with localStorage + system preference + toggle"
+      ],
+      "notes": "Design tokens fully match design system spec"
+    },
+    {
+      "id": "setup-003",
+      "priority": 3,
+      "area": "setup",
+      "title": "Prisma schema with all entities",
+      "user_visible_behavior": "Database migrations run cleanly. All entities (User, Workspace, Task, Column, Comment, etc.) are created.",
+      "status": "passing",
+      "verification": [
+        "Run prisma migrate dev",
+        "Verify all tables created",
+        "Verify seed data loads"
+      ],
+      "evidence": [
+        "prisma/schema.prisma with 13 models: User, Workspace, WorkspaceMember, Column, Task, TaskDependency, TaskLabel, Comment, Notification, Attachment, RefreshToken",
+        "All models have id (cuid), createdAt, updatedAt, deletedAt? for soft-delete",
+        "@@index on all FKs and common filter fields",
+        "@@unique on business keys (User.email, Workspace.slug, WorkspaceMember[workspaceId,userId], TaskDependency[blockingTaskId,blockedTaskId], TaskLabel[workspaceId,name])",
+        "Explicit @relation names on both sides for all relations",
+        "Enums: UserRole, WorkspaceVisibility, TaskPriority, TaskStatus, NotificationType, AttachmentType",
+        "prisma/seed.ts with 5 users, 2 workspaces, 24+ tasks, subtasks, dependencies, comments, notifications"
+      ],
+      "notes": "Schema production-ready with soft-delete and optimistic locking (version field on Task)"
+    },
+    {
+      "id": "setup-004",
+      "priority": 4,
+      "area": "setup",
+      "title": "Docker Compose with PostgreSQL, Redis, API, Web",
+      "user_visible_behavior": "docker compose up brings up all services. API accessible at localhost:3000, Web at localhost:5173.",
+      "status": "passing",
+      "verification": [
+        "Run docker compose up -d",
+        "Verify all containers healthy",
+        "Hit /api/health and confirm 200"
+      ],
+      "evidence": [
+        "docker-compose.yml with 4 services: postgres:16-alpine, redis:7-alpine, api, web",
+        "Health checks on postgres, redis, api, web",
+        "Volume mounts: postgres_data, redis_data, attachments_data",
+        "Environment variables for all 4 services",
+        "docker/api.Dockerfile: multi-stage (deps → shared → build → runtime) with Prisma migrate deploy on startup",
+        "docker/web.Dockerfile: multi-stage (deps → shared → build → nginx runtime)",
+        "docker/web.nginx.conf with /api/ proxy to api:3000, /socket.io/ WebSocket upgrade, gzip, security headers"
+      ],
+      "notes": "API runs prisma migrate deploy on container start, so schema is auto-created"
+    },
+    {
+      "id": "setup-005",
+      "priority": 5,
+      "area": "setup",
+      "title": "Shared package with Zod schemas",
+      "user_visible_behavior": "Both apps can import shared types and Zod schemas. Type safety enforced end-to-end.",
+      "status": "passing",
+      "verification": [
+        "Import a schema from @flow-desk/shared in API",
+        "Import a type from @flow-desk/shared in Web",
+        "Verify TypeScript compiles"
+      ],
+      "evidence": [
+        "packages/shared with tsup build, 9 entry points (index, auth, user, workspace, task, comment, notification, attachment, common)",
+        "All schemas use Zod with z.infer type exports",
+        "packages/shared package.json exports field for all 9 modules with CJS + ESM + types",
+        "apps/api imports @flow-desk/shared/auth, @flow-desk/shared/workspace, @flow-desk/shared/task, @flow-desk/shared/comment, @flow-desk/shared/notification, @flow-desk/shared/attachment"
+      ],
+      "notes": "Type safety end-to-end via Zod inference; no manual type duplication between apps"
+    },
+    {
+      "id": "auth-001",
+      "priority": 6,
+      "area": "auth",
+      "title": "Email/password registration and login with JWT",
+      "user_visible_behavior": "User can register, login, and access protected routes. JWT stored in httpOnly cookie.",
+      "status": "not_started",
+      "verification": [
+        "POST /api/auth/register with valid data → 201 + cookie",
+        "POST /api/auth/login → 200 + cookie",
+        "GET /api/auth/me with cookie → 200 + user data",
+        "GET /api/auth/me without cookie → 401"
+      ],
+      "evidence": [],
+      "notes": ""
+    },
+    {
+      "id": "auth-002",
+      "priority": 7,
+      "area": "auth",
+      "title": "Google OAuth integration",
+      "user_visible_behavior": "User can sign in with Google. Account is created or linked automatically.",
+      "status": "not_started",
+      "verification": [
+        "Click Sign in with Google",
+        "Complete OAuth flow",
+        "Verify user created and JWT cookie set"
+      ],
+      "evidence": [],
+      "notes": ""
+    },
+    {
+      "id": "workspace-001",
+      "priority": 8,
+      "area": "workspace",
+      "title": "Workspace CRUD operations",
+      "user_visible_behavior": "User can create, list, update, and delete workspaces. Creator becomes Owner.",
+      "status": "not_started",
+      "verification": [
+        "POST /api/workspaces → workspace created with default columns",
+        "GET /api/workspaces → list user's workspaces",
+        "PATCH /api/workspaces/:id → update name",
+        "DELETE /api/workspaces/:id → soft delete"
+      ],
+      "evidence": [],
+      "notes": ""
+    },
+    {
+      "id": "workspace-002",
+      "priority": 9,
+      "area": "workspace",
+      "title": "Member management with roles",
+      "user_visible_behavior": "Owner/Admin can invite members. Roles: Owner, Admin, Member, Guest. Permissions enforced.",
+      "status": "not_started",
+      "verification": [
+        "POST /api/workspaces/:id/members → invite sent",
+        "Guest role cannot delete tasks",
+        "Owner can promote/demote members"
+      ],
+      "evidence": [],
+      "notes": ""
+    },
+    {
+      "id": "task-001",
+      "priority": 10,
+      "area": "task",
+      "title": "Task CRUD operations",
+      "user_visible_behavior": "User can create, read, update, soft-delete tasks with title, description, due date, priority.",
+      "status": "not_started",
+      "verification": [
+        "POST /api/tasks → task created",
+        "GET /api/tasks?workspaceId=X → list tasks",
+        "PATCH /api/tasks/:id → update",
+        "DELETE /api/tasks/:id → soft delete"
+      ],
+      "evidence": [],
+      "notes": ""
+    },
+    {
+      "id": "task-002",
+      "priority": 11,
+      "area": "task",
+      "title": "Kanban board with drag-and-drop",
+      "user_visible_behavior": "User sees columns (Backlog, Todo, In Progress, Done) with tasks. Drag between columns updates status.",
+      "status": "not_started",
+      "verification": [
+        "Open /board/:workspaceId",
+        "Drag task from Todo to In Progress",
+        "Verify status updated in DB and other clients see change"
+      ],
+      "evidence": [],
+      "notes": ""
+    },
+    {
+      "id": "task-003",
+      "priority": 12,
+      "area": "task",
+      "title": "List/Table view with filters",
+      "user_visible_behavior": "User can switch to list view, sort columns, filter by status/assignee/priority.",
+      "status": "not_started",
+      "verification": [
+        "Open /list/:workspaceId",
+        "Filter by assignee",
+        "Sort by due date",
+        "Verify URL reflects filters"
+      ],
+      "evidence": [],
+      "notes": ""
+    },
+    {
+      "id": "task-004",
+      "priority": 13,
+      "area": "task",
+      "title": "Subtasks and dependencies (A blocks B)",
+      "user_visible_behavior": "User can add subtasks to a task. User can mark A blocks B. Circular dependencies rejected.",
+      "status": "not_started",
+      "verification": [
+        "Add subtask to task X",
+        "Set task A blocks task B",
+        "Try to create circular dependency → rejected"
+      ],
+      "evidence": [],
+      "notes": ""
+    },
+    {
+      "id": "collab-001",
+      "priority": 14,
+      "area": "collab",
+      "title": "Socket.IO real-time updates",
+      "user_visible_behavior": "Task changes appear instantly across all connected clients without page refresh.",
+      "status": "not_started",
+      "verification": [
+        "Open board in two browser tabs",
+        "Move task in tab 1",
+        "Verify tab 2 updates within 500ms"
+      ],
+      "evidence": [],
+      "notes": ""
+    },
+    {
+      "id": "collab-002",
+      "priority": 15,
+      "area": "collab",
+      "title": "Comments and @mentions",
+      "user_visible_behavior": "User can comment on tasks. @username triggers autocomplete and sends notification.",
+      "status": "not_started",
+      "verification": [
+        "Open task detail",
+        "Add comment with @username",
+        "Verify mentioned user receives notification"
+      ],
+      "evidence": [],
+      "notes": ""
+    },
+    {
+      "id": "collab-003",
+      "priority": 16,
+      "area": "collab",
+      "title": "In-app notifications with real-time delivery",
+      "user_visible_behavior": "Notification bell shows unread count. Clicking opens list. Mark as read works.",
+      "status": "not_started",
+      "verification": [
+        "Receive notification",
+        "Verify badge count increments",
+        "Mark as read → count decrements"
+      ],
+      "evidence": [],
+      "notes": ""
+    },
+    {
+      "id": "ai-001",
+      "priority": 17,
+      "area": "ai",
+      "title": "AI assignment suggestions via OpenAI-compatible API",
+      "user_visible_behavior": "When creating task without assignee, AI suggests best member based on workload and history.",
+      "status": "not_started",
+      "verification": [
+        "Open AI suggestion endpoint",
+        "Verify response within 2s",
+        "Accept suggestion → task assigned"
+      ],
+      "evidence": [],
+      "notes": ""
+    },
+    {
+      "id": "ai-002",
+      "priority": 18,
+      "area": "ai",
+      "title": "AI auto-scheduling with dependency awareness",
+      "user_visible_behavior": "AI schedules tasks respecting dependencies and deadlines.",
+      "status": "not_started",
+      "verification": [
+        "Trigger auto-schedule",
+        "Verify all dependencies respected",
+        "Verify deadlines met"
+      ],
+      "evidence": [],
+      "notes": ""
+    },
+    {
+      "id": "file-001",
+      "priority": 19,
+      "area": "file",
+      "title": "File attachments",
+      "user_visible_behavior": "User can upload files to tasks. Image preview and download available.",
+      "status": "not_started",
+      "verification": [
+        "Upload image to task",
+        "Verify thumbnail shown",
+        "Download file → correct content"
+      ],
+      "evidence": [],
+      "notes": ""
+    },
+    {
+      "id": "file-002",
+      "priority": 20,
+      "area": "file",
+      "title": "Realistic seed data",
+      "user_visible_behavior": "Demo workspace populated with users, tasks, comments for testing.",
+      "status": "not_started",
+      "verification": [
+        "Run prisma db seed",
+        "Open demo workspace",
+        "Verify 5+ users, 20+ tasks, 30+ comments"
+      ],
+      "evidence": [],
+      "notes": ""
+    }
+  ]
+}

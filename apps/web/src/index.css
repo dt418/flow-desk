@@ -1,0 +1,171 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-emerald-50: #ecfdf5;
+  --color-emerald-100: #d1fae5;
+  --color-emerald-200: #a7f3d0;
+  --color-emerald-300: #6ee7b7;
+  --color-emerald-400: #34d399;
+  --color-emerald-500: #10b981;
+  --color-emerald-600: #059669;
+  --color-emerald-700: #047857;
+  --color-emerald-800: #065f46;
+  --color-emerald-900: #064e3b;
+  --color-emerald-950: #022c22;
+
+  --color-teal-50: #f0fdfa;
+  --color-teal-100: #ccfbf1;
+  --color-teal-200: #99f6e4;
+  --color-teal-300: #5eead4;
+  --color-teal-400: #2dd4bf;
+  --color-teal-500: #14b8a6;
+  --color-teal-600: #0d9488;
+  --color-teal-700: #0f766e;
+  --color-teal-800: #115e59;
+  --color-teal-900: #134e4a;
+  --color-teal-950: #042f2e;
+
+  --color-status-todo: #64748b;
+  --color-status-progress: #fbbf24;
+  --color-status-done: #34d399;
+  --color-status-blocked: #f87171;
+  --color-status-review: #60a5fa;
+
+  --color-bg-light: #f2f9f5;
+  --color-bg-light-2: #ffffff;
+  --color-bg-light-3: #eaf4ee;
+  --color-bg-light-4: #d8eee2;
+
+  --color-bg-dark: #0d1a14;
+  --color-bg-dark-2: #132018;
+  --color-bg-dark-3: #1a2b20;
+  --color-bg-dark-4: #213628;
+
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-full: 100px;
+}
+
+@layer base {
+  :root {
+    color-scheme: light;
+    --bg: var(--color-bg-light);
+    --bg-2: var(--color-bg-light-2);
+    --bg-3: var(--color-bg-light-3);
+    --bg-4: var(--color-bg-light-4);
+    --fg: #0a1810;
+    --fg-2: #354a3d;
+    --fg-3: #6b7d72;
+    --border: #d8eee2;
+  }
+
+  .dark {
+    color-scheme: dark;
+    --bg: var(--color-bg-dark);
+    --bg-2: var(--color-bg-dark-2);
+    --bg-3: var(--color-bg-dark-3);
+    --bg-4: var(--color-bg-dark-4);
+    --fg: #e8f5ec;
+    --fg-2: #b8cdbf;
+    --fg-3: #7a8e80;
+    --border: #213628;
+  }
+
+  html,
+  body {
+    background-color: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-sans);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    color: var(--fg);
+    font-weight: 600;
+  }
+
+  h1 {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.6px;
+  }
+
+  h2 {
+    font-size: 20px;
+    letter-spacing: -0.3px;
+  }
+
+  h3 {
+    font-size: 18px;
+    letter-spacing: -0.3px;
+  }
+
+  ::selection {
+    background-color: var(--color-emerald-500);
+    color: white;
+  }
+
+  *:focus-visible {
+    outline: 2px solid var(--color-emerald-500);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  .label-xs {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  .caption {
+    font-size: 11px;
+    color: var(--fg-3);
+  }
+
+  .card {
+    background-color: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 16px;
+  }
+
+  .btn-primary {
+    background-color: var(--color-emerald-500);
+    color: white;
+    padding: 8px 16px;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    transition: background-color 150ms ease;
+  }
+
+  .btn-primary:hover {
+    background-color: var(--color-emerald-600);
+  }
+
+  .btn-ghost {
+    background-color: transparent;
+    color: var(--fg-2);
+    padding: 8px 16px;
+    border-radius: var(--radius-sm);
+    transition: background-color 150ms ease;
+  }
+
+  .btn-ghost:hover {
+    background-color: var(--bg-3);
+  }
+}

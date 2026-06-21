@@ -1,0 +1,21 @@
+import { defineConfig } from 'tsup';
+
+export default defineConfig({
+  entry: [
+    'src/index.ts',
+    'src/auth.ts',
+    'src/user.ts',
+    'src/workspace.ts',
+    'src/task.ts',
+    'src/comment.ts',
+    'src/notification.ts',
+    'src/attachment.ts',
+    'src/common.ts',
+  ],
+  format: ['cjs', 'esm'],
+  dts: true,
+  sourcemap: true,
+  clean: true,
+  splitting: false,
+  treeshake: true,
+});
