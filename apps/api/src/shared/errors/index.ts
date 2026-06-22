@@ -45,3 +45,9 @@ export class RateLimitError extends AppError {
     super(429, message, 'RATE_LIMIT', { retryAfter });
   }
 }
+
+export class LLMError extends AppError {
+  constructor(message: string, details?: Record<string, unknown>) {
+    super(502, message, 'LLM_UPSTREAM', details);
+  }
+}
