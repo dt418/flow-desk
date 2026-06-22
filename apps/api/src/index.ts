@@ -15,6 +15,7 @@ import { notificationRouter } from './modules/notification/notification.routes';
 import { attachmentRouter } from './modules/attachment/attachment.routes';
 import { aiRouter } from './modules/ai/ai.routes';
 import { createSocketServer } from './shared/lib/socket';
+import { setIo } from './shared/lib/socket-events';
 
 const app = new Hono();
 
@@ -52,4 +53,5 @@ const server = serve({ fetch: app.fetch, port }, (info) => {
   logger.info({ port: info.port }, 'FlowDesk API started');
 });
 
-createSocketServer(server);
+const io = createSocketServer(server);
+setIo(io);
