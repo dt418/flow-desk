@@ -54,10 +54,10 @@ export const workspaceApi = {
     ).then((r) => r.workspace.columns ?? []);
   },
   createColumn(workspaceId: string, body: CreateColumnInput) {
-    return api<{ column: Column }>(
-      `/api/workspaces/${encodeURIComponent(workspaceId)}/columns`,
-      { method: 'POST', json: body },
-    );
+    return api<{ column: Column }>(`/api/workspaces/${encodeURIComponent(workspaceId)}/columns`, {
+      method: 'POST',
+      json: body,
+    });
   },
   updateColumn(workspaceId: string, columnId: string, body: UpdateColumnInput) {
     return api<{ column: Column }>(
@@ -72,8 +72,8 @@ export const workspaceApi = {
     );
   },
   board(workspaceId: string) {
-    return api<{ columns: Array<{ id: string; name: string; position: number; isDoneColumn: boolean }> }>(
-      `/api/workspaces/${encodeURIComponent(workspaceId)}/board`,
-    );
+    return api<{
+      columns: Array<{ id: string; name: string; position: number; isDoneColumn: boolean }>;
+    }>(`/api/workspaces/${encodeURIComponent(workspaceId)}/board`);
   },
 };

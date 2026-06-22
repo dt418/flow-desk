@@ -37,13 +37,13 @@ Each tab uses `react-hook-form` + `zod` for forms (matching login/register), `so
 
 ## Alternatives Rejected
 
-| Alternative                                          | Why Rejected                                                       |
-| ---------------------------------------------------- | ------------------------------------------------------------------ |
-| **Single long form, no tabs**                        | Settings grows over time; tabs scale better, match GitHub/Linear   |
-| **Separate pages per setting (`/settings/members`)** | More routes, harder to navigate, no cross-section context          |
-| **Reuse dashboard cards inline**                     | Loses permission gating; duplicates layout; couples unrelated UX  |
-| **New shared schemas just for UI**                   | Drift risk; server already validates — UI uses same Zod schemas   |
-| **Optimistic everywhere, no rollback**                | Role-change conflicts (last owner) need accurate server errors    |
+| Alternative                                          | Why Rejected                                                     |
+| ---------------------------------------------------- | ---------------------------------------------------------------- |
+| **Single long form, no tabs**                        | Settings grows over time; tabs scale better, match GitHub/Linear |
+| **Separate pages per setting (`/settings/members`)** | More routes, harder to navigate, no cross-section context        |
+| **Reuse dashboard cards inline**                     | Loses permission gating; duplicates layout; couples unrelated UX |
+| **New shared schemas just for UI**                   | Drift risk; server already validates — UI uses same Zod schemas  |
+| **Optimistic everywhere, no rollback**               | Role-change conflicts (last owner) need accurate server errors   |
 
 ## Consequences
 

@@ -2,7 +2,13 @@ import { useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useWorkspace } from '@/features/workspace';
-import { SettingsTabs, GeneralTab, MembersTab, ColumnsTab, DangerZoneTab } from '@/features/workspace';
+import {
+  SettingsTabs,
+  GeneralTab,
+  MembersTab,
+  ColumnsTab,
+  DangerZoneTab,
+} from '@/features/workspace';
 import { Skeleton } from '@/components/ui/skeleton';
 import { initials } from '@/features/workspace/components/role';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';

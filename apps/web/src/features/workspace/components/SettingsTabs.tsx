@@ -15,9 +15,24 @@ interface TabDef {
 
 const TABS: TabDef[] = [
   { id: 'general', label: 'General', icon: Settings, visible: () => true },
-  { id: 'members', label: 'Members', icon: Users, visible: (r) => canManageMembers(r) || r !== null },
-  { id: 'columns', label: 'Columns', icon: Columns3, visible: (r) => canManageColumns(r) || r !== null },
-  { id: 'danger', label: 'Danger zone', icon: AlertTriangle, visible: (r) => canDeleteWorkspace(r) },
+  {
+    id: 'members',
+    label: 'Members',
+    icon: Users,
+    visible: (r) => canManageMembers(r) || r !== null,
+  },
+  {
+    id: 'columns',
+    label: 'Columns',
+    icon: Columns3,
+    visible: (r) => canManageColumns(r) || r !== null,
+  },
+  {
+    id: 'danger',
+    label: 'Danger zone',
+    icon: AlertTriangle,
+    visible: (r) => canDeleteWorkspace(r),
+  },
 ];
 
 interface Props {

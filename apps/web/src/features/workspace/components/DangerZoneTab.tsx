@@ -47,8 +47,8 @@ export function DangerZoneTab({ workspaceId }: Props) {
           Delete this workspace
         </h3>
         <p className="mt-2 text-[12px] text-[var(--fg-2)]">
-          This soft-deletes the workspace and all its tasks. Members lose access immediately.
-          Data is recoverable for 30 days via an admin tool.
+          This soft-deletes the workspace and all its tasks. Members lose access immediately. Data
+          is recoverable for 30 days via an admin tool.
         </p>
       </div>
 

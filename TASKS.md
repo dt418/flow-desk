@@ -25,10 +25,10 @@
 
 ### Epic: Multi-tenant Workspaces
 
-| Story                      | Tasks                                                                           | Estimate | Status      |
-| -------------------------- | ------------------------------------------------------------------------------- | -------- | ----------- |
-| **workspace-001**: CRUD    | POST/GET/PATCH/DELETE /workspaces, create default columns on creation           | 1.5d     | passing     |
-| **workspace-002**: Members | POST/GET/PATCH/DELETE /workspaces/:id/members, role-based permission middleware | 1.5d     | passing     |
+| Story                          | Tasks                                                                           | Estimate | Status      |
+| ------------------------------ | ------------------------------------------------------------------------------- | -------- | ----------- |
+| **workspace-001**: CRUD        | POST/GET/PATCH/DELETE /workspaces, create default columns on creation           | 1.5d     | passing     |
+| **workspace-002**: Members     | POST/GET/PATCH/DELETE /workspaces/:id/members, role-based permission middleware | 1.5d     | passing     |
 | **workspace-003**: Settings UI | Tabbed page (General / Members / Columns / Danger zone) with role-gated actions | 1.5d     | in_progress |
 
 ## Sprint 4: Task Management (Days 12-18)

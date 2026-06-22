@@ -180,10 +180,7 @@ export function ColumnsTab({ workspaceId }: Props) {
                             setEditingId(col.id);
                             setEditingName(col.name);
                           }}
-                          className={cn(
-                            'text-left',
-                            canEdit && 'hover:text-emerald-500',
-                          )}
+                          className={cn('text-left', canEdit && 'hover:text-emerald-500')}
                           title={canEdit ? 'Click to rename' : undefined}
                         >
                           {col.name}

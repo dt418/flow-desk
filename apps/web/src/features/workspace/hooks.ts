@@ -111,8 +111,13 @@ export function useCreateColumn(workspaceId: string) {
 export function useUpdateColumn(workspaceId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ columnId, body }: { columnId: string; body: Parameters<typeof workspaceApi.updateColumn>[2] }) =>
-      workspaceApi.updateColumn(workspaceId, columnId, body),
+    mutationFn: ({
+      columnId,
+      body,
+    }: {
+      columnId: string;
+      body: Parameters<typeof workspaceApi.updateColumn>[2];
+    }) => workspaceApi.updateColumn(workspaceId, columnId, body),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: workspaceKeys.columns(workspaceId) });
       qc.invalidateQueries({ queryKey: workspaceKeys.board(workspaceId) });
