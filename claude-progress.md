@@ -6,11 +6,29 @@
 - **Standard startup path**: `./init.sh` (pnpm install + shared build + git hook install) then `docker compose up -d`
 - **Standard verification path**: `pnpm --filter @flow-desk/shared build` + curl API endpoints
 - **Highest priority unfinished feature**: none (21/21 features passing)
-- **Current blocker**: none — repo is feature-complete
+- **Current blocker**: none — repo is feature-complete, working tree clean, branch in sync with origin/main
 - **Key risk**: ai-001 latency (R-24) — local LLM proxy 18-27s/call; UX impact to monitor
-- **Security note**: `LLM_API_KEY` was pasted in chat once during this session (sk-80c6f26e1...). Recommend rotating the key at the provider. Key is in `.env`/`.env.local` (gitignored). Pre-commit hook now blocks future leaks.
+- **Security note**: `LLM_API_KEY` was pasted in chat once during session 006 (sk-80c6f26e1...). Recommend rotating the key at the provider. Key is in `.env`/`.env.local` (gitignored). Pre-commit hook now blocks future leaks.
 
 ## Session Log
+
+### Session 007
+
+- **Date**: 2026-06-22
+- **Goal**: Clean up dirty working tree left over from sessions 005/006
+- **Completed**:
+  - Audited `git status` → 8 modified files (pure prettier auto-format, no logic change) + 2 untracked session handoff files (14K lines, agent memory dumps not repo content)
+  - User decision: commit formatting + delete handoffs + push local unpushed commits
+  - Deleted `session-ses_110d.md` (4984 lines) and `session-ses_1159.md` (9025 lines)
+  - Committed formatting as `47bcf22 style(web,docs): prettier formatting polish` (53+/30-)
+  - Pushed: origin went from `76aefc6..47bcf22` → 2 commits shipped (the formatting commit + the older `8ce25df chore: ignore .worktrees/` that was never pushed)
+  - Pre-commit hook fired during commit — no secrets found, exit 0, allowed commit
+  - Working tree clean, branch in sync with origin/main
+- **Verification run**:
+  - `git status` → `clean — nothing to commit`
+  - `git log --oneline -10` → linear history, all commits on origin/main
+  - `git push` → `To https://github.com/dt418/flow-desk.git` success
+- **Next best step**: Repo is feature-complete and clean. New feature work (NL task creation, meeting summarization, command palette, Google OAuth creds) requires product decision + scope before implementation.
 
 ### Session 006
 
