@@ -7,7 +7,7 @@ import {
 import { prisma } from '../../shared/lib/prisma';
 import { requireAuth } from '../../shared/middleware/auth';
 import { NotFoundError, BadRequestError } from '../../shared/errors';
-import { emitToTask } from '../../shared/lib/socket-events';
+import { emitToTask, emitToUser } from '../../shared/lib/socket-events';
 import { logger } from '../../shared/lib/logger';
 
 async function assertMembership(workspaceId: string, userId: string) {
@@ -85,17 +85,31 @@ commentRouter.post('/', async (c) => {
     },
   });
 
+  const recipientIds = mentionedUserIds.filter((id) => id !== auth.user.id);
   await prisma.notification.createMany({
-    data: mentionedUserIds
-      .filter((id) => id !== auth.user.id)
-      .map((userId) => ({
-        userId,
-        type: 'COMMENT_REPLY' as const,
-        title: 'You were mentioned',
-        body: body.content.slice(0, 200),
-        data: { taskId: body.taskId, commentId: comment.id },
-      })),
+    data: recipientIds.map((userId) => ({
+      userId,
+      type: 'COMMENT_REPLY' as const,
+      title: 'You were mentioned',
+      body: body.content.slice(0, 200),
+      data: { taskId: body.taskId, commentId: comment.id },
+    })),
   });
+
+  const notifications = await prisma.notification.findMany({
+    where: {
+      userId: { in: recipientIds },
+      type: 'COMMENT_REPLY',
+      createdAt: { gte: comment.createdAt },
+    },
+    orderBy: { createdAt: 'asc' },
+  });
+  for (const notif of notifications) {
+    safeEmit(
+      () => emitToUser(notif.userId, 'notification:new', { notification: notif }),
+      { event: 'notification:new', notificationId: notif.id, userId: notif.userId },
+    );
+  }
 
   safeEmit(
     () => emitToTask(body.taskId, 'comment:created', { comment }),
