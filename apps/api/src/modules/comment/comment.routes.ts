@@ -7,6 +7,24 @@ import {
 import { prisma } from '../../shared/lib/prisma';
 import { requireAuth } from '../../shared/middleware/auth';
 import { NotFoundError, BadRequestError } from '../../shared/errors';
+import { emitToTask } from '../../shared/lib/socket-events';
+import { logger } from '../../shared/lib/logger';
+
+async function assertMembership(workspaceId: string, userId: string) {
+  const member = await prisma.workspaceMember.findUnique({
+    where: { workspaceId_userId: { workspaceId, userId } },
+  });
+  if (!member) throw new BadRequestError('Not a member of this workspace');
+  return member;
+}
+
+function safeEmit(fn: () => void, ctx: Record<string, unknown>): void {
+  try {
+    fn();
+  } catch (err) {
+    logger.warn({ err, ...ctx }, 'socket emit failed');
+  }
+}
 
 export const commentRouter = new Hono();
 commentRouter.use('*', requireAuth());
@@ -48,6 +66,7 @@ commentRouter.post('/', async (c) => {
   const body = createCommentSchema.parse(await c.req.json());
   const task = await prisma.task.findUnique({ where: { id: body.taskId } });
   if (!task) throw new NotFoundError('Task not found');
+  await assertMembership(task.workspaceId, auth.user.id);
 
   const members = await prisma.workspaceMember.findMany({
     where: { workspaceId: task.workspaceId },
@@ -78,6 +97,10 @@ commentRouter.post('/', async (c) => {
       })),
   });
 
+  safeEmit(
+    () => emitToTask(body.taskId, 'comment:created', { comment }),
+    { event: 'comment:created', commentId: comment.id, taskId: body.taskId },
+  );
   return c.json({ comment }, 201);
 });
 
@@ -90,10 +113,17 @@ commentRouter.patch('/:id', async (c) => {
   if (existing.authorId !== auth.user.id) {
     throw new BadRequestError('Cannot edit others’ comments');
   }
+  const task = await prisma.task.findUnique({ where: { id: existing.taskId } });
+  if (!task) throw new NotFoundError('Task not found');
+  await assertMembership(task.workspaceId, auth.user.id);
   const comment = await prisma.comment.update({
     where: { id },
     data: { content: body.content, editedAt: new Date() },
   });
+  safeEmit(
+    () => emitToTask(existing.taskId, 'comment:updated', { comment }),
+    { event: 'comment:updated', commentId: id, taskId: existing.taskId },
+  );
   return c.json({ comment });
 });
 
@@ -105,6 +135,13 @@ commentRouter.delete('/:id', async (c) => {
   if (existing.authorId !== auth.user.id) {
     throw new BadRequestError('Cannot delete others’ comments');
   }
+  const task = await prisma.task.findUnique({ where: { id: existing.taskId } });
+  if (!task) throw new NotFoundError('Task not found');
+  await assertMembership(task.workspaceId, auth.user.id);
   await prisma.comment.update({ where: { id }, data: { deletedAt: new Date() } });
+  safeEmit(
+    () => emitToTask(existing.taskId, 'comment:deleted', { commentId: id }),
+    { event: 'comment:deleted', commentId: id, taskId: existing.taskId },
+  );
   return c.json({ ok: true });
 });
