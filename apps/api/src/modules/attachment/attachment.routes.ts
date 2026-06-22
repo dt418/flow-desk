@@ -7,6 +7,7 @@ import { prisma } from '../../shared/lib/prisma';
 import { requireAuth } from '../../shared/middleware/auth';
 import { env } from '../../shared/lib/env';
 import { BadRequestError, NotFoundError } from '../../shared/errors';
+import { assertMembership } from '../../shared/lib/access';
 
 export const attachmentRouter = new Hono();
 attachmentRouter.use('*', requireAuth());
@@ -27,8 +28,15 @@ function classifyMime(mime: string): 'IMAGE' | 'VIDEO' | 'AUDIO' | 'DOCUMENT' | 
 }
 
 attachmentRouter.get('/', async (c) => {
+  const auth = c.get('auth');
   const taskId = c.req.query('taskId');
   if (!taskId) throw new BadRequestError('taskId required');
+  const task = await prisma.task.findUnique({
+    where: { id: taskId },
+    select: { workspaceId: true },
+  });
+  if (!task) throw new NotFoundError('Task not found');
+  await assertMembership(task.workspaceId, auth.user.id);
   const attachments = await prisma.attachment.findMany({
     where: { taskId },
     orderBy: { createdAt: 'desc' },
@@ -49,6 +57,7 @@ attachmentRouter.post('/', async (c) => {
 
   const task = await prisma.task.findUnique({ where: { id: taskId } });
   if (!task) throw new NotFoundError('Task not found');
+  await assertMembership(task.workspaceId, auth.user.id);
 
   await mkdir(env.UPLOAD_DIR, { recursive: true });
   const ext = extname(file.name) || '';
@@ -73,9 +82,19 @@ attachmentRouter.post('/', async (c) => {
 });
 
 attachmentRouter.get('/:id/download', async (c) => {
+  const auth = c.get('auth');
   const id = c.req.param('id')!;
-  const attachment = await prisma.attachment.findUnique({ where: { id } });
+  const attachment = await prisma.attachment.findUnique({
+    where: { id },
+    select: { taskId: true, mimeType: true, filename: true, storagePath: true },
+  });
   if (!attachment) throw new NotFoundError('Attachment not found');
+  const task = await prisma.task.findUnique({
+    where: { id: attachment.taskId },
+    select: { workspaceId: true },
+  });
+  if (!task) throw new NotFoundError('Task not found');
+  await assertMembership(task.workspaceId, auth.user.id);
 
   let fileStat;
   try {
