@@ -18,9 +18,15 @@ export async function errorHandler(err: Error, c: Context) {
   const requestId = c.get('requestId');
 
   if (err instanceof AppError) {
+    if (err.status === 429) {
+      const details = err.details as { retryAfter?: number } | undefined;
+      if (details?.retryAfter) {
+        c.header('Retry-After', String(details.retryAfter));
+      }
+    }
     return c.json(
       { message: err.message, code: err.code, details: err.details, requestId },
-      err.status as 400 | 401 | 403 | 404 | 409 | 429,
+      err.status as 400 | 401 | 403 | 404 | 409 | 429 | 502 | 503,
     );
   }
 
