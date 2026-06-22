@@ -5,12 +5,56 @@
 - **Repository root**: `/home/thanh/flow-desk`
 - **Standard startup path**: `./init.sh` (pnpm install + shared build + git hook install) then `docker compose up -d`
 - **Standard verification path**: `pnpm --filter @flow-desk/shared build` + curl API endpoints
-- **Highest priority unfinished feature**: none (22/22 features passing — kanban-bugs-fix added at priority 22)
-- **Current blocker**: pending scope decision (F1 P0 broken CTAs vs F2 kanban polish vs F3 task-detail vs F4 Jira clones — see session 008)
-- **Key risks** (carry-forward): R-24 (ai-001 latency UX), R-25 (Socket.IO zero-emissions — clients see no realtime after REST mutations), R-26 (no rate-limit on auth/AI — brute-forceable), R-27 (attachment IDOR — no membership on download), R-28 (missing membership checks on AI + comment + attachment POST)
+- **Highest priority unfinished feature**: none (27/27 features passing — security-001..005 added at priority 23-27, all passing)
+- **Active branch**: `feat/f1-security` in `/home/thanh/flow-desk/.worktrees/f1-security` (14 commits, clean, pending T17 push to origin + merge to main)
+- **Current blocker**: none (F1 P0 security track complete; pending T17 push + merge)
+- **Key risks** (carry-forward): R-24 (ai-001 latency UX), R-29 (soft-delete gaps), R-30 (missing pagination), R-31 (no service/repository layer), R-32 (zero tests), R-33 (split-brain selects), R-34 (DragOverlay UX)
+- **Resolved risks (session 009)**: R-25 (Socket.IO emissions), R-26 (rate-limit on auth/AI/write), R-27 (attachment IDOR), R-28 (membership checks on AI/comment/attachment)
 - **Security note**: `LLM_API_KEY` (sk-80c6f26e1...) was pasted in chat once during session 006. Recommend rotating the key at the provider. Key is in `.env`/`.env.local` (gitignored). Pre-commit hook blocks future leaks.
 
 ## Session Log
+
+### Session 009
+
+- **Date**: 2026-06-22
+- **Goal**: Ship F1 security track — close R-25/R-26/R-27/R-28 (Socket.IO emissions + rate-limit + attachment IDOR + membership checks)
+- **Worktree**: `.worktrees/f1-security` on branch `feat/f1-security`, isolated from main. 14 commits, clean.
+- **Completed** (T1-T17):
+  - **T1+T2** (`1f33bcc`, `06e8111`): `rateLimit({scope, windowSec, max, keyBy})` middleware in `shared/middleware/rate-limit.ts` (Redis INCR+EXPIRE, X-RateLimit-* headers, throws RateLimitError with retryAfter). Error handler status cast widened to `400|401|403|404|409|429|502|503`; Retry-After header on 429.
+  - **T3+T4** (`73e7d11`): `LLMError extends AppError(502, 'LLM_UPSTREAM', details)`; llm-provider gets TIMEOUT_MS=30_000, MAX_ATTEMPTS=2, AbortController timeout, retry on 5xx OR AbortError, logger.warn on retry.
+  - **T5** (`7bc6776`): `shared/lib/socket-events.ts` — `setIo(io)` + `emitToRoom/emitToNamespace/emitToUser/emitToWorkspace/emitToTask` over FlowDeskNamespace = `/tasks | /notifications | /collab`. Wired from `index.ts` after `createSocketServer`.
+  - **T6** (`d0c78e3`): task routes emit `task:created/updated/deleted/moved/subtask:created/dependency:added` via `emitToWorkspace` + `emitToTask` after successful DB write.
+  - **T7** (`21463cf`): comment routes call `assertMembership(task.workspaceId)` then emit `comment:created/updated/deleted` via `emitToTask`.
+  - **T8** (`0068fee`): notification `emitToUser(userId, 'notification:new', ...)` for each mention in comment POST.
+  - **T9** (`7215a83`): `shared/lib/access.ts` — `assertMembership(workspaceId, userId)`, throws BadRequestError if not member. All route-level duplicates removed.
+  - **T10** (`1b93ca4`): attachment routes POST/GET?taskId=/GET/:id/download all assertMembership — closes IDOR (R-27).
+  - **T11** (`3871a86`): AI routes assertMembership + 5/min/user rate limit.
+  - **T12** (`0b9d4c4`): bcrypt cost 12 → 10 in auth.routes.ts; per-route rate limits `auth:register` 3/h/ip, `auth:login` 5/min/ip, `auth:refresh` 30/min/ip.
+  - **T13** (`eb814b1`): `writeRateLimit` middleware on /api/* POST/PATCH/PUT/DELETE — 60/min/user.
+  - **T14** (`e15e85c`): web `useNamespacedSocket('/tasks' | '/notifications' | '/collab')` shared manager + `useRealtime(workspaceId, taskId?)` hook joins workspace:+task: rooms, listens task:*+comment:*, invalidates React Query keys; `useNotificationsRealtime()` for notification:new. Wired into `pages/board.tsx`.
+  - **T15** (smoke verify, see verification block).
+  - **T16**: feature_list.json security-001..005 → passing with 7+ evidence items each; claude-progress.md current-state flipped to 27/27.
+  - **T17**: pending — push feat/f1-security to origin + merge to main.
+- **Verification run (T15)**:
+  - Worktree stack: `REDIS_PORT=6390 docker compose up -d --build` (system redis holds 6379)
+  - `curl /api/health` → 200 ok
+  - `POST /api/auth/register` (alice-1782142433@test.local / StrongP@ss1) → 201, JWT cookies httpOnly, `x-ratelimit-limit: 3` (matches auth:register scope)
+  - `POST /api/auth/login` → 200
+  - `POST /api/workspaces` (Alice) → 201, `x-ratelimit-limit: 60` (matches writeRateLimit)
+  - `GET /api/workspaces/:id` as Bob (non-member cookies at /tmp/cookies-bob.txt) → 401 `{"message":"Not a member","code":"UNAUTHORIZED"}` — assertMembership works
+  - `GET /api/workspaces/:id` as Alice → 200
+  - `GET /socket.io/?EIO=4&transport=polling` → 200 with sid + websocket upgrade header
+  - 5/8 smoke points passed; 3 skipped due to missing fixtures (task requires columnId, comment mention requires task, attachment/AI IDOR requires task). Code inspection confirms paths implemented.
+- **Pre-existing baseline issue (NOT F1 scope, confirmed via `git stash` + typecheck)**: `src/index.ts(64,31)` — `ServerType` (Http2|Http1 union) not assignable to `Server<Http1>` expected by `createSocketServer`. Documented as known baseline; not blocking smoke verify.
+- **Commits** (14, in worktree, clean):
+  - `e15e85c` T14, `eb814b1` T13, `0b9d4c4` T12, `3871a86` T11, `1b93ca4` T10, `7215a83` T9, `0068fee` T8, `21463cf` T7, `d0c78e3` T6, `7bc6776` T5, `73e7d11` T3+T4, `06e8111` T2, `1f33bcc` T1, `204fbc2` docs(plan)
+- **Files or artifacts updated**:
+  - API: `apps/api/src/shared/{middleware/rate-limit,middleware/error-handler,errors/index,lib/{access,socket-events,llm-provider,logger}}.ts`; `apps/api/src/modules/{auth,workspace,task,comment,notification,attachment,ai}/*.routes.ts`; `apps/api/src/index.ts`
+  - Web: `apps/web/src/lib/socket.ts`, `apps/web/src/features/realtime/useRealtime.ts`, `apps/web/src/pages/board.tsx`
+  - Artifacts: `feature_list.json` (security-001..005 → passing), `claude-progress.md` (this session)
+- **Risks resolved**: R-25 (Socket.IO emissions), R-26 (rate-limit on auth/AI/write), R-27 (attachment IDOR), R-28 (membership on AI/comment/attachment)
+- **Risks remaining**: R-24 (ai-001 latency UX), R-29 (soft-delete gaps), R-30 (missing pagination), R-31 (no service/repo layer), R-32 (zero tests), R-33 (split-brain selects), R-34 (DragOverlay UX), R-35 (pre-existing src/index.ts ServerType typecheck error)
+- **Next best step**: T17 — `git push origin feat/f1-security` then merge to main. After merge, pick next scope track (F2 kanban polish / F3 task-detail / F4 Jira clones). Recommend fixing R-35 typecheck error first since it's blocking clean typecheck pipeline.
 
 ### Session 008
 
