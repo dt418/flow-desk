@@ -9,14 +9,7 @@ import { requireAuth } from '../../shared/middleware/auth';
 import { NotFoundError, BadRequestError } from '../../shared/errors';
 import { emitToTask, emitToUser } from '../../shared/lib/socket-events';
 import { logger } from '../../shared/lib/logger';
-
-async function assertMembership(workspaceId: string, userId: string) {
-  const member = await prisma.workspaceMember.findUnique({
-    where: { workspaceId_userId: { workspaceId, userId } },
-  });
-  if (!member) throw new BadRequestError('Not a member of this workspace');
-  return member;
-}
+import { assertMembership } from '../../shared/lib/access';
 
 function safeEmit(fn: () => void, ctx: Record<string, unknown>): void {
   try {

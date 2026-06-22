@@ -12,6 +12,7 @@ import { requireAuth } from '../../shared/middleware/auth';
 import { NotFoundError, BadRequestError, ConflictError } from '../../shared/errors';
 import { emitToTask, emitToWorkspace } from '../../shared/lib/socket-events';
 import { logger } from '../../shared/lib/logger';
+import { assertMembership } from '../../shared/lib/access';
 
 function safeEmit(fn: () => void, ctx: Record<string, unknown>): void {
   try {
@@ -23,14 +24,6 @@ function safeEmit(fn: () => void, ctx: Record<string, unknown>): void {
 
 export const taskRouter = new Hono();
 taskRouter.use('*', requireAuth());
-
-async function assertMembership(workspaceId: string, userId: string) {
-  const member = await prisma.workspaceMember.findUnique({
-    where: { workspaceId_userId: { workspaceId, userId } },
-  });
-  if (!member) throw new BadRequestError('Not a member of this workspace');
-  return member;
-}
 
 taskRouter.get('/', async (c) => {
   const auth = c.get('auth');
