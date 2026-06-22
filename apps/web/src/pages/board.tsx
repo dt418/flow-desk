@@ -1,12 +1,15 @@
 import { useParams, Link } from 'react-router-dom';
 import * as React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { api, ApiError } from '@/lib/api';
 import { Kanban, KanbanCard, KanbanColumn } from '@/components/ui/kanban';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
+import { NewTaskModal } from '@/features/task';
+import { useMembers } from '@/features/workspace';
 
 interface Task {
   id: string;
@@ -15,6 +18,7 @@ interface Task {
   priority: string;
   columnId: string;
   position: number;
+  version: number;
   assignee: { id: string; name: string; avatarUrl: string | null } | null;
   dueDate: string | null;
   labels: string[];
@@ -158,6 +162,8 @@ function TaskCard({ task }: { task: Task }) {
 export function BoardPage() {
   const { workspaceId = '' } = useParams();
   const qc = useQueryClient();
+  const [modalOpen, setModalOpen] = React.useState(false);
+  const membersQuery = useMembers(workspaceId);
 
   const data = useQuery({
     queryKey: ['board', workspaceId],
@@ -190,16 +196,47 @@ export function BoardPage() {
     }));
   }, [data.data, columnsById]);
 
+  // Pre-move snapshot for rollback if the server rejects the move.
+  const moveSnapshotRef = React.useRef<Record<string, Task[]> | null>(null);
+  const moveIdRef = React.useRef<{
+    taskId: string;
+    fromColumnId: string;
+    toColumnId: string;
+  } | null>(null);
+
   const moveMutation = useMutation({
-    mutationFn: ({ taskId, toColumnId }: { taskId: string; toColumnId: string }) =>
+    mutationFn: ({
+      taskId,
+      toColumnId,
+      position,
+      version,
+    }: {
+      taskId: string;
+      toColumnId: string;
+      position: number;
+      version: number;
+    }) =>
       api<{ task: Task }>(`/api/tasks/${taskId}/move`, {
         method: 'POST',
-        json: { columnId: toColumnId },
+        json: { columnId: toColumnId, position, version },
       }),
     onError: (err) => {
-      if (err instanceof ApiError) console.error('move failed:', err.message);
+      const snap = moveSnapshotRef.current;
+      const meta = moveIdRef.current;
+      if (snap && meta) {
+        setLocal(snap);
+      }
+      moveSnapshotRef.current = null;
+      moveIdRef.current = null;
+      const message =
+        err instanceof ApiError ? err.message : 'Move failed. Reverted board state.';
+      toast.error(message);
     },
-    onSettled: () => qc.invalidateQueries({ queryKey: ['board', workspaceId] }),
+    onSettled: () => {
+      moveSnapshotRef.current = null;
+      moveIdRef.current = null;
+      qc.invalidateQueries({ queryKey: ['board', workspaceId] });
+    },
   });
 
   const handleMove: React.ComponentProps<typeof Kanban>['onMove'] = (
@@ -216,14 +253,24 @@ export function BoardPage() {
       if (fromIndex < 0 || fromIndex >= fromList.length) return base;
       const [moved] = fromList.splice(fromIndex, 1);
       if (!moved) return base;
-      const updated = { ...moved, columnId: toColumnId };
       const insertAt = Math.min(Math.max(toIndex, 0), toList.length);
+      const updated = { ...moved, columnId: toColumnId };
       toList.splice(insertAt, 0, updated);
+      // Snapshot for rollback BEFORE we mutate the server.
+      moveSnapshotRef.current = { ...base };
+      moveIdRef.current = { taskId, fromColumnId, toColumnId };
       return fromColumnId === toColumnId
         ? { ...base, [toColumnId]: toList }
         : { ...base, [fromColumnId]: fromList, [toColumnId]: toList };
     });
-    moveMutation.mutate({ taskId, toColumnId });
+    // Compute clamped position from the post-splice target length (server also clamps).
+    const baseLen =
+      (columnsById[fromColumnId]?.length ?? 0) - 1; // removed one
+    const targetLen = fromColumnId === toColumnId ? baseLen : columnsById[toColumnId]?.length ?? 0;
+    const clampedPosition = Math.min(Math.max(toIndex, 0), targetLen);
+    const taskVersion =
+      columnsById[fromColumnId]?.find((t) => t.id === taskId)?.version ?? 0;
+    moveMutation.mutate({ taskId, toColumnId, position: clampedPosition, version: taskVersion });
   };
 
   return (
@@ -247,7 +294,11 @@ export function BoardPage() {
               List
             </Link>
           </div>
-          <button type="button" className="btn-primary text-[12px]">
+          <button
+            type="button"
+            className="btn-primary text-[12px]"
+            onClick={() => setModalOpen(true)}
+          >
             New task
           </button>
         </div>
@@ -283,6 +334,18 @@ export function BoardPage() {
           ))}
         </Kanban>
       )}
+
+      <NewTaskModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        workspaceId={workspaceId}
+        columns={orderedColumns.map(({ meta }) => ({ id: meta.id, name: meta.name }))}
+        defaultColumnId={orderedColumns[0]?.meta.id ?? ''}
+        members={(membersQuery.data ?? []).map((m) => ({
+          id: m.user.id,
+          name: m.user.name,
+        }))}
+      />
     </div>
   );
 }

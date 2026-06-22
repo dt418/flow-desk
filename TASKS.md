@@ -41,6 +41,7 @@
 | **task-002**: Kanban board    | Board page, column components, drag-drop with dnd-kit, status update on drop      | 2d       | not_started |
 | **task-003**: List/Table view | Table component, column sort, filter UI, URL state sync                           | 1.5d     | not_started |
 | **task-004**: Subtasks + deps | Subtask CRUD, dependency create/delete, circular detection                        | 1.5d     | not_started |
+| **kanban-bugs-fix**: B1 New task no-op + B2 drag-drop position not saved | Wire "New task" button → modal → POST /api/tasks with optimistic create; send {columnId, position, version} on move; server splice + renumber in prisma.$transaction | 0.5d | passing |
 
 ## Sprint 5: Collaboration (Days 19-25)
 
