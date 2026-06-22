@@ -80,6 +80,27 @@
 - [ ] Cannot demote last Owner → 400
 - [ ] Cannot assign role higher than caller's role
 
+## workspace-003: Settings UI
+
+- [ ] `/workspaces/:id/settings` route renders page with back-to-board link and workspace header
+- [ ] General tab: name (1–80), description (≤500), visibility (PRIVATE/PUBLIC), submit shows toast on success/failure
+- [ ] General tab: Save disabled until form is dirty
+- [ ] Members tab: list of members with avatar, email, role badge, joined
+- [ ] Members tab: invite by email + role (Admin/Member/Guest) form visible to Admin+ only
+- [ ] Members tab: role dropdown to change role visible to Owner only and disabled for self
+- [ ] Members tab: remove button visible to Admin+ only and hidden for self / Owner rows
+- [ ] Members tab: removing/demoting last Owner surfaces server error via toast
+- [ ] Columns tab: list of columns with position, name, isDoneColumn flag
+- [ ] Columns tab: add column form visible to Admin+ only
+- [ ] Columns tab: inline rename by clicking name (Admin+); save on Enter/blur, cancel on Escape
+- [ ] Columns tab: delete column with confirm dialog (Admin+); server errors via toast
+- [ ] Danger zone tab: visible only to Owner
+- [ ] Danger zone tab: name-confirmation input; Delete button disabled until input matches workspace name exactly
+- [ ] On successful delete, user is redirected to `/` and the workspace disappears from sidebar
+- [ ] All tabs use TanStack Query; mutations invalidate relevant keys on success
+- [ ] All forms use react-hook-form + zod + `@flow-desk/shared/workspace` schemas
+- [ ] All mutations emit sonner toast on success/failure
+
 ## task-001: Task CRUD
 
 - [ ] POST `/api/tasks` requires workspace membership

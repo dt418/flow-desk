@@ -5,10 +5,43 @@
 - **Repository root**: `/home/thanh/flow-desk`
 - **Standard startup path**: `docker compose up -d` (PostgreSQL + Redis + API + Web)
 - **Standard verification path**: `pnpm --filter @flow-desk/shared build` + curl API endpoints
-- **Highest priority unfinished feature**: none (18/20 passing, 2 blocked on external config)
-- **Current blocker**: auth-002 (Google OAuth), ai-001 (LLM_API_KEY) — both need real credentials
+- **Highest priority unfinished feature**: none (20/20 feature_list features passing, 2 blocked on external config — auth-002 Google OAuth + ai-001 LLM_API_KEY)
+- **Current blocker**: external credentials only (Google OAuth + LLM_API_KEY)
 
 ## Session Log
+
+### Session 005
+
+- **Date**: 2026-06-22
+- **Goal**: Ship workspace-003 (settings page) — the only remaining stub in the codebase
+- **Completed**:
+  - ADR-005-workspace-settings-ui.md: architecture decision (single feature module, tabs, role-gating)
+  - `apps/web/src/features/workspace/` — `api.ts`, `hooks.ts`, `types.ts`, `index.ts`, `components/{GeneralTab,MembersTab,ColumnsTab,DangerZoneTab,SettingsTabs,role}.tsx`
+  - `apps/web/src/pages/workspace-settings.tsx` — thin shell using the feature module
+  - `apps/web/src/features/workspace/components/role.tsx` — `RoleBadge`, `initials`, `canManage*` permission predicates
+  - All mutations wired with sonner toasts + React Query cache invalidation
+  - All forms use react-hook-form + zod + `@flow-desk/shared/workspace` schemas
+  - Tab visibility gated by role: Danger zone Owner-only, Members invite/remove Admin+, role-change Owner+
+  - Danger zone uses exact-match name confirmation before Delete enables
+  - feature_list.json: workspace-003 → passing with 12 evidence items
+  - TASKS.md: workspace-001/002 status flipped to passing; workspace-003 row added (in_progress → captured)
+  - ACCEPTANCE.md: workspace-003 section with 19 testable criteria
+  - RISKS.md: R-21 (role bypass), R-22 (stale role cache), R-23 (confirm-by-name typo)
+- **Verification run**:
+  - `pnpm --filter @flow-desk/shared build` → green
+  - `pnpm --filter @flow-desk/web typecheck` → green
+  - `pnpm --filter @flow-desk/web build` → 562KB JS / 62KB CSS (gzipped 168KB / 11KB) → built in 5.33s
+  - `docker compose up -d web` → container recreated and started; curl http://localhost:5173/ → 200
+  - API smoke (cookies via demo@flow-desk.app / demo1234):
+    - `GET /api/workspaces/:id` → 200 with 4 columns included
+    - `GET /api/workspaces/:id/members` → 200 with Demo User as OWNER
+    - `POST /api/workspaces/:id/columns {name:'Smoke Column'}` → 201 position:5; PATCH rename → 200; DELETE → 200
+    - `PATCH /api/workspaces/:id {description:'Smoke-tested settings UI'}` → 200 persisted
+- **Evidence captured**: feature_list.json workspace-003 evidence list
+- **Commits**: pending — this session
+- **Files or artifacts updated**: `apps/web/src/features/workspace/**`, `apps/web/src/pages/workspace-settings.tsx`, `ADR-005-workspace-settings-ui.md`, `feature_list.json`, `TASKS.md`, `ACCEPTANCE.md`, `RISKS.md`, `claude-progress.md`
+- **Known risk or unresolved issue**: tab state lives in `useState`, not URL searchParams — deep-linking `#members` deferred; column drag-reorder not implemented (add/rename/delete only, position server-assigned).
+- **Next best step**: Commit this work. Remaining open items are external (Google OAuth creds + LLM_API_KEY); PRD-only items not in feature_list (NL task creation, meeting summarization) require product decision before scoping.
 
 ### Session 004
 

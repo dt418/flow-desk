@@ -434,6 +434,38 @@
         "Seed.ts compiled via esbuild → dist/seed.cjs (tsx 4.22.4 had ESM resolution bug on seed.ts)"
       ],
       "notes": "Seed runs via esbuild bundling → CJS, sidesteps tsx ESM loader issue."
+    },
+    {
+      "id": "workspace-003",
+      "priority": 21,
+      "area": "workspace",
+      "title": "Workspace settings page (General / Members / Columns / Danger zone)",
+      "user_visible_behavior": "User opens /workspaces/:id/settings and edits workspace name/description/visibility, manages members (invite by email, change role, remove), manages columns (add/rename/delete), and (Owner-only) deletes workspace with name confirmation.",
+      "status": "passing",
+      "verification": [
+        "pnpm --filter @flow-desk/web typecheck succeeds",
+        "pnpm --filter @flow-desk/web build produces dist/ without errors",
+        "docker compose build web + up -d web succeeds",
+        "GET /api/workspaces/:id → 200 with columns included (smoke)",
+        "GET /api/workspaces/:id/members → 200 (smoke)",
+        "POST /api/workspaces/:id/columns → 201 (smoke, then DELETE)",
+        "PATCH /api/workspaces/:id → 200 with updated description (smoke)"
+      ],
+      "evidence": [
+        "pnpm --filter @flow-desk/web typecheck → green (no TS errors)",
+        "pnpm --filter @flow-desk/web build → 562KB JS / 62KB CSS, gzipped 168KB / 11KB",
+        "docker compose up -d web → flow-desk-web-1 Recreated + Started; curl http://localhost:5173/ → 200 with FlowDesk HTML",
+        "GET /api/workspaces/cmqo1orct00062vlpojqzjobf (demo workspace) → 200, returns workspace + 4 columns",
+        "GET /api/workspaces/cmqo1orct00062vlpojqzjobf/members → 200, array with Demo User as OWNER",
+        "POST /api/workspaces/.../columns {name:'Smoke Column',isDoneColumn:false} → 201, column with position:5",
+        "PATCH /api/workspaces/.../columns/... {name:'Smoke Renamed'} → 200, name updated",
+        "DELETE /api/workspaces/.../columns/... → 200, {ok:true}",
+        "PATCH /api/workspaces/... {description:'Smoke-tested settings UI'} → 200, description persisted",
+        "ADR-005-workspace-settings-ui.md documents the architecture decision",
+        "ACCEPTANCE.md workspace-003 section lists 19 testable criteria",
+        "RISKS.md adds R-21/R-22/R-23 covering role-bypass, stale-role cache, and confirm-by-name"
+      ],
+      "notes": "Single feature module at apps/web/src/features/workspace/ following AGENTS.md architecture standard. Page is a thin shell. All mutations show sonner toasts and invalidate the right React Query keys. Permission gating happens at tab level (Danger zone Owner-only, Columns/Invite Admin+, role-change Owner-only)."
     }
   ]
 }
