@@ -5,11 +5,12 @@
 - **Repository root**: `/home/thanh/flow-desk`
 - **Standard startup path**: `./init.sh` (pnpm install + shared build + git hook install) then `docker compose up -d`
 - **Standard verification path**: `pnpm --filter @flow-desk/shared build` + curl API endpoints + `bash scripts/prisma-exec.sh <args>` for prisma
-- **Highest priority unfinished feature**: none (28/28 features passing)
-- **Active branch**: `main` in `/home/thanh/flow-desk` (scripts-001 follow-up in working tree, uncommitted; prior security-001..005 in `.worktrees/f1-security/feat/f1-security` pending T17 push+merge)
+- **Highest priority unfinished feature**: none (29/29 features passing)
+- **Active branch**: `main` in `/home/thanh/flow-desk` (post-scripts-001 + post-qa-001 verification gate; F1 security-001..005 in `.worktrees/f1-security/feat/f1-security` pending T17 push+merge)
 - **Current blocker**: none
-- **Key risks** (carry-forward): R-24 (ai-001 latency UX), R-29 (soft-delete gaps), R-30 (missing pagination), R-31 (no service/repository layer), R-32 (zero tests), R-33 (split-brain selects), R-34 (DragOverlay UX), R-35 (pre-existing src/index.ts ServerType typecheck error)
+- **Key risks** (carry-forward): R-24 (ai-001 latency UX), R-29 (soft-delete gaps), R-30 (missing pagination), R-31 (no service/repository layer), R-32 (zero tests — green-by-vacuum, not green-by-coverage), R-33 (split-brain selects), R-34 (DragOverlay UX)
 - **Resolved risks (session 010)**: R-36 (prisma-exec regression), R-37 (silent env fallback), R-38 (sh -c word-split + hardcoded container name in seed path)
+- **Resolved risks (session 010b)**: R-35 (pre-existing `apps/api/src/index.ts` ServerType typecheck error — cast at `createSocketServer` call site)
 - **Security note**: `LLM_API_KEY` (sk-80c6f26e1...) was pasted in chat once during session 006. Recommend rotating the key at the provider. Key is in `.env`/`.env.local` (gitignored). Pre-commit hook blocks future leaks.
 
 ## Session Log
@@ -39,7 +40,32 @@
   - `scripts/prisma-exec.sh` (rewritten: validation + default-docker + dynamic CID + `-w` flag), `apps/api/package.json` (db:reset single-call), `turbo.json` (dead inputs dropped), `README.md` (default-docker + invalid-value docs), `feature_list.json` (scripts-001 → passing with 9 evidence items), `claude-progress.md` (this session)
 - **Risks resolved**: R-36 (prisma-exec default-flow regression), R-37 (silent env fallback on typo), R-38 (sh -c word-split + hardcoded container name)
 - **Risks remaining**: R-24, R-29..35
-- **Next best step**: Commit scripts-001 changes (4 files, +63/-44). Continue with T17 push of feat/f1-security to origin. F2 (kanban polish) or F3 (task-detail) as next scope track after F1 merge.
+- **Next best step**: Continue with T17 push of feat/f1-security to origin. F2 (kanban polish) or F3 (task-detail) as next scope track after F1 merge. First concrete next-feature task: pick from `feature_list.json` priority-30+ entries (or seed next scope track).
+
+### Session 010b
+
+- **Date**: 2026-06-23
+- **Goal**: Verification gate green — user request "test make sure all green". Run `pnpm test`, `pnpm typecheck`, `pnpm lint`; fix any failure blocking the gate.
+- **Findings**:
+  - `pnpm test` → exit 0, 4/4 successful (vacuous — all 3 packages are placeholder `echo 'no tests yet'`; no real test suite exists in repo yet, R-32)
+  - `pnpm typecheck` → **FAIL** exit 2, pre-existing TS2345 at `apps/api/src/index.ts:64`: `@hono/node-server` `serve()` returns `ServerType` (Http1Server | Http2Server | Server union) but socket.io `new Server()` expects `http.Server`. Pre-existing since commit `7bc6776` (feat(api): socket-events singleton). File NOT touched by f403aee.
+  - `pnpm lint` → exit 0, 3/3 successful (per-app `echo '<placeholder>'` scripts).
+  - `rtk lint` (user-side wrapper, `/home/thanh/.local/bin/rtk`) → exit 254, OOM-killed. **Not the project's lint command.** `rtk lint` runs ESLint directly with no config in this monorepo → loads every file → OOM. Out of repo scope.
+- **Fix** (R-35):
+  - `apps/api/src/index.ts`: added `import type { Server as HttpServer } from 'node:http';` and changed `createSocketServer(server)` → `createSocketServer(server as HttpServer)`.
+  - Cast is safe at runtime: `@hono/node-server` `serve()` defaults to HTTP/1, so `server` is actually `http.Server`. TS just sees the wider union return type.
+  - +2/-1 single-file change.
+- **Re-verification after fix**:
+  - `pnpm typecheck` → exit 0, 4/4 successful, FULL TURBO cache hit, no TS errors.
+  - `pnpm lint` → exit 0, 3/3 successful.
+  - `pnpm test` → exit 0, 4/4 successful.
+- **Artifacts updated**:
+  - `apps/api/src/index.ts` (typecast fix)
+  - `feature_list.json` (qa-001 → passing, last_updated → 2026-06-23)
+  - `claude-progress.md` (this session block + Current Verified State bumped 28→29 + R-35 resolved)
+- **Risks resolved**: R-35 (pre-existing typecheck)
+- **Risks remaining**: R-24, R-29..34 (R-32 zero-tests stays — green is now by-exit-code, still no coverage)
+- **Next best step**: Commit qa-001 changes (3 files, ~+34/-2). Resume F1 merge or pick next scope track.
 
 ### Session 009
 

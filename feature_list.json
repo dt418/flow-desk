@@ -1,6 +1,6 @@
 {
   "project": "flow-desk",
-  "last_updated": "2026-06-22",
+  "last_updated": "2026-06-23",
   "rules": {
     "single_active_feature": true,
     "passing_requires_evidence": true,
@@ -645,6 +645,27 @@
         "Live verification: FLOW_DESK_DB_MODE=foo → ERROR stderr + exit 64; unset env + cold stack → auto-start + exec -T -w /app/apps/api + connect to postgres:5432; FLOW_DESK_DB_MODE=local → host-side prisma reaches localhost:5432, schema in sync"
       ],
       "notes": "Code-review follow-up for commit 0eabfcd. Eight findings closed (1 critical regression, 1 silent-fallback, 1 doc drift, 4 minor cleanup, 1 confirmed-correct no-op). All changes in main checkout (no worktree for this small bug-fix-class follow-up)."
+    },
+    {
+      "id": "qa-001",
+      "priority": 29,
+      "area": "qa",
+      "title": "Verification gate green: typecheck cast fix + lint placeholder audit",
+      "user_visible_behavior": "Running `pnpm test`, `pnpm typecheck`, and `pnpm lint` from the repo root all exit 0 with no failures. The full Turbo pipeline completes 4/4 (typecheck), 3/3 (lint), 4/4 (test) tasks as successful.",
+      "status": "passing",
+      "verification": [
+        "pnpm typecheck → exit 0, Tasks: 4 successful, 4 total, no TS errors, FULL TURBO cache hit",
+        "pnpm lint → exit 0, Tasks: 3 successful, 3 total, all per-app lint scripts run placeholders",
+        "pnpm test → exit 0, Tasks: 4 successful, 4 total (placeholder echo in all 3 packages; no real test suite yet — documented in scope notes)",
+        "rtk lint failure isolated as a user-side wrapper bug, not a repo issue (rtk lint = direct ESLint with no config in repo → OOMs)"
+      ],
+      "evidence": [
+        "apps/api/src/index.ts: cast `server as HttpServer` at the call to `createSocketServer` (line 65) — fixes pre-existing TS2345 from commit 7bc6776 where `@hono/node-server`'s `serve()` returns `ServerType` (union of Http1Server | Http2Server | Server) but socket.io's `new Server()` expects `http.Server`",
+        "apps/api/src/index.ts: added `import type { Server as HttpServer } from 'node:http'` to support the cast",
+        "apps/api/package.json (unchanged in this commit): per-app lint script is `echo 'api: lint placeholder'` — same pattern as `echo 'api: no tests yet'` and web/shared",
+        "Live re-run of all three commands after the cast fix: pnpm typecheck 4/4 success (cached), pnpm lint 3/3 success, pnpm test 4/4 success"
+      ],
+      "notes": "Pre-existing typecheck failure found during post-scripts-001 verification (user request: 'test make sure all green'). rtk lint wrapper bug is out of repo scope — user's ~/.local/bin/rtk runs ESLint directly with no config in this monorepo and OOMs; the project's actual lint command (`pnpm lint` → turbo run lint → placeholder echos) is green. No real test suite exists in this repo yet (all 3 packages have placeholder `echo 'no tests yet'`); green-by-vacuum, not green-by-coverage."
     }
   ]
 }
