@@ -6,9 +6,12 @@ import { requireAuth } from '../../shared/middleware/auth';
 import { BadRequestError, NotFoundError } from '../../shared/errors';
 import { llm } from '../../shared/lib/llm-provider';
 import { logger } from '../../shared/lib/logger';
+import { rateLimit } from '../../shared/middleware/rate-limit';
+import { assertMembership } from '../../shared/lib/access';
 
 export const aiRouter = new Hono();
 aiRouter.use('*', requireAuth());
+aiRouter.use('*', rateLimit({ scope: 'ai', windowSec: 60, max: 5, keyBy: 'user' }));
 
 const suggestSchema = z.object({
   workspaceId: z.string(),
@@ -20,6 +23,7 @@ const suggestSchema = z.object({
 aiRouter.post('/suggest-assignee', async (c) => {
   const auth = c.get('auth');
   const body = suggestSchema.parse(await c.req.json());
+  await assertMembership(body.workspaceId, auth.user.id);
 
   let title = body.title;
   let description = body.description;
@@ -133,7 +137,9 @@ async function loadTasks(workspaceId: string) {
 }
 
 aiRouter.post('/auto-schedule', async (c) => {
+  const auth = c.get('auth');
   const body = autoScheduleSchema.parse(await c.req.json());
+  await assertMembership(body.workspaceId, auth.user.id);
   const tasks = await loadTasks(body.workspaceId);
   const sorted = topologicalSort(tasks);
   if (!sorted) throw new BadRequestError('Circular dependency detected');
