@@ -118,6 +118,16 @@ apps/web/src/pages/          # Route-level components only (thin shells)
 - `init.sh` — standard startup + verification path.
 - `session-handoff.md` — compact handoff for larger sessions.
 
+## Secrets Policy
+
+- **Never paste API keys, tokens, or credentials into chat, commit messages, or PR descriptions.** Treat them as toxic to conversation history.
+- All secrets live in `.env` (gitignored) or `.env.local` (gitignored). The `LLM_API_KEY`, `JWT_SECRET`, `GOOGLE_CLIENT_SECRET`, `AWS_*` values must never appear in any committed file.
+- A pre-commit hook at `.githooks/pre-commit` enforces this:
+  - Blocks staged files matching `.env*` and common credential paths (PEM, `id_rsa`, `service-account*.json`, etc).
+  - Greps staged content for high-confidence secret patterns (`sk-…`, `sk-ant-…`, `AIza…`, `ghp_…`, `AKIA…`, JWT, private-key blocks, `LLM_API_KEY=…`).
+- Hooks are installed automatically by `./init.sh` (`git config core.hooksPath .githooks`). To install manually: `pnpm setup:hooks`. To re-run the check without committing: `pnpm check:secrets`.
+- If a real key is ever exposed, **rotate it at the provider immediately**. The key is compromised the moment it appears in a chat or terminal scrollback.
+
 ## Definition of Done
 
 A feature is done **only when all** are true:

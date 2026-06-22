@@ -44,6 +44,11 @@ export class LLMProvider {
         messages,
         max_tokens: opts.maxTokens ?? this.config.maxTokens,
         temperature: opts.temperature ?? this.config.temperature,
+        // Force non-streaming so res.json() works. Some OpenAI-compatible
+        // proxies (e.g. internal gateways, model aggregators) default to SSE
+        // and our parser would fail with SyntaxError. Pass stream:true later
+        // if/when we want true streaming + a real SSE parser.
+        stream: false,
         ...(opts.jsonMode ? { response_format: { type: 'json_object' } } : {}),
       }),
     });

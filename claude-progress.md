@@ -3,12 +3,45 @@
 ## Current Verified State
 
 - **Repository root**: `/home/thanh/flow-desk`
-- **Standard startup path**: `docker compose up -d` (PostgreSQL + Redis + API + Web)
+- **Standard startup path**: `./init.sh` (pnpm install + shared build + git hook install) then `docker compose up -d`
 - **Standard verification path**: `pnpm --filter @flow-desk/shared build` + curl API endpoints
-- **Highest priority unfinished feature**: none (20/20 feature_list features passing, 2 blocked on external config — auth-002 Google OAuth + ai-001 LLM_API_KEY)
-- **Current blocker**: external credentials only (Google OAuth + LLM_API_KEY)
+- **Highest priority unfinished feature**: none (21/21 features passing)
+- **Current blocker**: none — repo is feature-complete
+- **Key risk**: ai-001 latency (R-24) — local LLM proxy 18-27s/call; UX impact to monitor
+- **Security note**: `LLM_API_KEY` was pasted in chat once during this session (sk-80c6f26e1...). Recommend rotating the key at the provider. Key is in `.env`/`.env.local` (gitignored). Pre-commit hook now blocks future leaks.
 
 ## Session Log
+
+### Session 006
+
+- **Date**: 2026-06-22
+- **Goal**: Unblock ai-001 (LLM suggestions) and add defense-in-depth for future secret leaks
+- **Completed**:
+  - Wrote `LLM_API_KEY` + `LLM_BASE_URL=http://103.157.204.253:3001/v1` + `LLM_MODEL=claude_sonet_4.5` to `.env` and `.env.local` (both gitignored)
+  - `docker compose up -d --force-recreate api` (restart alone does not re-read `.env`)
+  - Discovered provider returns SSE by default; first `res.json()` parse failed with SyntaxError → LLMProvider fallback fired
+  - Fixed `apps/api/src/shared/lib/llm-provider.ts` to send `stream: false` so `res.json()` parses cleanly
+  - Rebuilt api image, restarted, re-tested: 3 calls succeeded with `fallback: false` and workload-aware reasons
+  - Latency: 26-27s for suggest-assignee, 18s for direct "hi" probe (provider returns ~2000 prompt_tokens/req overhead)
+  - User accepted relaxed acceptance criterion ("responds within provider latency" instead of "<2s")
+  - Defense-in-depth for future leaks: `.githooks/pre-commit` blocks `.env*` paths and greps staged content for `sk-*`/`sk-ant-*`/`AIza*`/`ghp_*`/`AKIA*`/JWT/private-key blocks/env-style secret assignment
+  - Root `package.json`: added `setup:hooks` (sets core.hooksPath) and `check:secrets` (re-runs hook without committing) scripts
+  - `init.sh` now installs git hooks automatically (`git config core.hooksPath .githooks`)
+  - `AGENTS.md` Secrets Policy section documents the hook + rotation guidance
+  - Hook tested: blocks `.env.fake` (path) and `sk-proj-...` (content) with exit=1
+  - `feature_list.json`: ai-001 → passing with 7 evidence items
+  - `ACCEPTANCE.md`: ai-001 4/4 boxes checked
+  - `RISKS.md`: R-24 (AI suggest latency UX) added
+- **Verification run**:
+  - `POST /api/ai/suggest-assignee` (3 calls): all returned 200, fallback:false, top-3 suggestions with score+reason
+  - `bash -n .githooks/pre-commit`: syntax OK
+  - Hook test 1 (staged `.env.fake`): exit=1, blocked path message
+  - Hook test 2 (staged `.githooks-test.ts` containing `sk-proj-...`): exit=1, detected 3 pattern matches
+  - `docker compose build api`: green
+  - LLM call from host direct probe: 0.3-18s depending on prompt
+- **Known caveats**:
+  - LLM provider is a local proxy at 103.157.204.253:3001; latency is provider-bound, not application-bound
+  - `LLM_API_KEY` (sk-80c6f26e1...) was exposed in chat; recommend rotation at provider
 
 ### Session 005
 

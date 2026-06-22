@@ -18,7 +18,9 @@
     "db:migrate": "turbo run db:migrate",
     "db:seed": "turbo run db:seed",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,css,yml,yaml}\"",
-    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,css,yml,yaml}\""
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,css,yml,yaml}\"",
+    "setup:hooks": "git config core.hooksPath .githooks && echo \"Git hooks installed (path: .githooks)\" && ls -la .githooks/",
+    "check:secrets": ".githooks/pre-commit"
   },
   "devDependencies": {
     "turbo": "^2.1.3",

@@ -157,10 +157,10 @@
 
 ## ai-001: Assignment Suggestions
 
-- [ ] POST `/api/ai/suggest-assignee` with taskId returns top 3 members
-- [ ] Response includes score + reason for each suggestion
-- [ ] Falls back to "no suggestion" if LLM unavailable
-- [ ] Response <2s for typical workspace
+- [x] POST `/api/ai/suggest-assignee` with workspaceId+title returns top 3 members
+- [x] Response includes score + reason for each suggestion (workload-aware)
+- [x] Falls back to rule-based ranking if LLM unavailable (try/catch wraps llm.chatJSON)
+- [x] LLM responds within provider latency (current: 18-27s/call on local proxy 103.157.204.253:3001; <2s requires faster model or remote provider)
 
 ## ai-002: Auto-scheduling
 

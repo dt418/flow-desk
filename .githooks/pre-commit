@@ -1,0 +1,158 @@
+#!/usr/bin/env bash
+# Pre-commit hook: block accidental secret commits.
+#
+# Two layers of defense:
+#   1. Block staged files matching .env* or known secret paths.
+#   2. Grep staged content for high-entropy secret patterns.
+#
+# Install: pnpm setup:hooks   (or:  git config core.hooksPath .githooks)
+# Bypass (emergency only):    git commit --no-verify
+
+set -euo pipefail
+
+RED=$'\033[0;31m'
+YELLOW=$'\033[0;33m'
+GREEN=$'\033[0;32m'
+RESET=$'\033[0m'
+
+fail() {
+  printf '%s✖ %s%s\n' "$RED" "$1" "$RESET" >&2
+  exit 1
+}
+
+warn() {
+  printf '%s⚠ %s%s\n' "$YELLOW" "$1" "$RESET" >&2
+}
+
+ok() {
+  printf '%s✓ %s%s\n' "$GREEN" "$1" "$RESET"
+}
+
+STAGED_FILES="$(git diff --cached --name-only --diff-filter=ACM)"
+
+if [ -z "$STAGED_FILES" ]; then
+  exit 0
+fi
+
+# --- Layer 1: file-path blacklist --------------------------------------------
+
+BLOCKED_PATTERNS=(
+  '^\.env$'
+  '^\.env\.'
+  '\.env\.local$'
+  '\.env\.production$'
+  '\.env\.staging$'
+  '\.env\.development$'
+  '/\.env$'
+  '/\.env\.'
+  'credentials\.json$'
+  'service-account.*\.json$'
+  'gcp-key\.json$'
+  'aws-credentials$'
+  '\.pem$'
+  '\.key$'
+  'id_rsa$'
+  'id_ed25519$'
+)
+
+violations=0
+for file in $STAGED_FILES; do
+  for pattern in "${BLOCKED_PATTERNS[@]}"; do
+    if printf '%s' "$file" | grep -Eq "$pattern"; then
+      warn "Blocked path: $file  (matches: $pattern)"
+      violations=$((violations + 1))
+    fi
+  done
+done
+
+if [ "$violations" -gt 0 ]; then
+  fail "Refusing to commit $violations file(s) matching secret/credential patterns. Move secrets out of repo or update .gitignore."
+fi
+
+# --- Layer 2: content grep ----------------------------------------------------
+# Patterns: high-confidence API key / token signatures. Add more as needed.
+
+CONTENT_PATTERNS=(
+  # OpenAI / OpenAI-compatible
+  'sk-[A-Za-z0-9_-]{20,}'
+  'sk-proj-[A-Za-z0-9_-]{20,}'
+  'sk-ant-[A-Za-z0-9_-]{20,}'
+  # Anthropic
+  'anthropic-[A-Za-z0-9_-]{20,}'
+  # Google API
+  'AIza[0-9A-Za-z_-]{35}'
+  # GitHub
+  'ghp_[A-Za-z0-9]{30,}'
+  'gho_[A-Za-z0-9]{30,}'
+  'ghs_[A-Za-z0-9]{30,}'
+  'github_pat_[A-Za-z0-9_]{50,}'
+  # AWS
+  'AKIA[0-9A-Z]{16}'
+  'aws_secret_access_key[[:space:]]*=[[:space:]]*["'"'"'][A-Za-z0-9/+=]{40}["'"'"']'
+  # Slack
+  'xox[abprs]-[A-Za-z0-9-]{10,}'
+  # Stripe
+  'sk_live_[0-9a-zA-Z]{24,}'
+  'rk_live_[0-9a-zA-Z]{24,}'
+  # JWT (eyJ prefix)
+  'eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}'
+  # Private key block (checked separately with grep -F to avoid regex bash metachars)
+  'PRIVATE KEY-----'
+)
+
+# Additional high-entropy assignment patterns. Kept outside the array because
+# nested single quotes break bash array parsing on this bash version.
+EXTRA_PATTERNS=(
+  'sk-[A-Za-z0-9_-]{32,}'
+  'ghp_[A-Za-z0-9]{30,}'
+)
+
+content_violations=0
+for file in $STAGED_FILES; do
+  # Skip binary files and the docs that legitimately mention these patterns.
+  case "$file" in
+    *.md|*.MD) continue ;;
+  esac
+  # Skip files we just added (the hook scripts themselves) — they document patterns.
+  case "$file" in
+    .githooks/*|scripts/check-secrets*) continue ;;
+  esac
+
+  # Only grep text files. git diff --cached --numstat shows 0/0 for binary.
+  if git diff --cached --numstat -- "$file" | awk '{print $1}' | grep -q '^-$'; then
+    continue
+  fi
+
+  for pattern in "${CONTENT_PATTERNS[@]}" "${EXTRA_PATTERNS[@]}"; do
+    matches="$(git show ":$file" 2>/dev/null | grep -nE "$pattern" || true)"
+    if [ -n "$matches" ]; then
+      warn "Secret pattern in $file  (pattern: $pattern)"
+      printf '%s\n' "$matches" | sed 's/^/    /' >&2
+      content_violations=$((content_violations + 1))
+    fi
+  done
+
+  # Env-style high-entropy assignment check, e.g. LLM_API_KEY=sk-xxx (regex).
+  # Pattern is assigned to a variable first to avoid bash re-parsing metachars
+  # inside the $(...) subshell.
+  ENV_ASSIGN_PATTERN='(LLM_API_KEY|GOOGLE_CLIENT_SECRET|AWS_SECRET_ACCESS_KEY|JWT_SECRET)[[:space:]]*=[[:space:]]*"?[A-Za-z0-9_/+=.-]{20,}'
+  env_match="$(git show ":$file" 2>/dev/null | grep -nE "$ENV_ASSIGN_PATTERN" || true)"
+  if [ -n "$env_match" ]; then
+    warn "Env-style secret assignment in $file"
+    printf '%s\n' "$env_match" | sed 's/^/    /' >&2
+    content_violations=$((content_violations + 1))
+  fi
+
+  # Fixed-string check for private key block header.
+  if git show ":$file" 2>/dev/null | grep -qF 'PRIVATE KEY-----'; then
+    warn "Private key block in $file"
+    content_violations=$((content_violations + 1))
+  fi
+done
+
+if [ "$content_violations" -gt 0 ]; then
+  fail "Refusing to commit: $content_violations file(s) contain secret-shaped strings. If this is a false positive (e.g. fixture data), use 'git commit --no-verify' and document the exception in your PR."
+fi
+
+ok "pre-commit secret check passed"
+exit 0
