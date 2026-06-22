@@ -7,6 +7,7 @@ import { env } from './shared/lib/env';
 import { logger } from './shared/lib/logger';
 import { errorHandler } from './shared/middleware/error-handler';
 import { requestId } from './shared/middleware/request-id';
+import { rateLimit } from './shared/middleware/rate-limit';
 import { authRouter } from './modules/auth/auth.routes';
 import { workspaceRouter } from './modules/workspace/workspace.routes';
 import { taskRouter } from './modules/task/task.routes';
@@ -16,6 +17,9 @@ import { attachmentRouter } from './modules/attachment/attachment.routes';
 import { aiRouter } from './modules/ai/ai.routes';
 import { createSocketServer } from './shared/lib/socket';
 import { setIo } from './shared/lib/socket-events';
+
+const WRITE_METHODS = new Set(['POST', 'PATCH', 'PUT', 'DELETE']);
+const writeRateLimit = rateLimit({ scope: 'writes', windowSec: 60, max: 60, keyBy: 'user' });
 
 const app = new Hono();
 
@@ -33,6 +37,10 @@ app.use(
     allowHeaders: ['Content-Type', 'Authorization'],
   }),
 );
+app.use('/api/*', async (c, next) => {
+  if (!WRITE_METHODS.has(c.req.method)) return next();
+  return writeRateLimit(c, next);
+});
 
 app.get('/api/health', (c) => c.json({ status: 'ok', timestamp: new Date().toISOString() }));
 
