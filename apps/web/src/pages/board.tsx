@@ -10,6 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { NewTaskModal } from '@/features/task';
 import { useMembers } from '@/features/workspace';
+import { useRealtime } from '@/features/realtime/useRealtime';
 
 interface Task {
   id: string;
@@ -161,6 +162,7 @@ function TaskCard({ task }: { task: Task }) {
 
 export function BoardPage() {
   const { workspaceId = '' } = useParams();
+  useRealtime(workspaceId);
   const qc = useQueryClient();
   const [modalOpen, setModalOpen] = React.useState(false);
   const membersQuery = useMembers(workspaceId);

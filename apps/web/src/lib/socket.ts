@@ -1,9 +1,25 @@
 import { useEffect, useRef, useState } from 'react';
 import { io, type Socket } from 'socket.io-client';
 
-let socket: Socket | null = null;
+type FlowDeskNamespace = '/tasks' | '/notifications' | '/collab';
 
-export function useSocket() {
+const sockets = new Map<FlowDeskNamespace, Socket>();
+
+function getSocket(ns: FlowDeskNamespace): Socket {
+  const existing = sockets.get(ns);
+  if (existing && existing.connected) return existing;
+
+  const apiUrl = import.meta.env.VITE_API_URL ?? '';
+  const socket = io(`${apiUrl}${ns}`, {
+    withCredentials: true,
+    transports: ['websocket', 'polling'],
+    autoConnect: true,
+  });
+  sockets.set(ns, socket);
+  return socket;
+}
+
+export function useNamespacedSocket(ns: FlowDeskNamespace) {
   const [connected, setConnected] = useState(false);
   const startedRef = useRef(false);
 
@@ -11,22 +27,22 @@ export function useSocket() {
     if (startedRef.current) return;
     startedRef.current = true;
 
-    const apiUrl = import.meta.env.VITE_API_URL ?? '';
-    socket = io(apiUrl, {
-      withCredentials: true,
-      transports: ['websocket', 'polling'],
-      autoConnect: true,
-    });
-
-    socket.on('connect', () => setConnected(true));
-    socket.on('disconnect', () => setConnected(false));
+    const socket = getSocket(ns);
+    const onConnect = () => setConnected(true);
+    const onDisconnect = () => setConnected(false);
+    socket.on('connect', onConnect);
+    socket.on('disconnect', onDisconnect);
+    if (socket.connected) setConnected(true);
 
     return () => {
-      socket?.disconnect();
-      socket = null;
-      startedRef.current = false;
+      socket.off('connect', onConnect);
+      socket.off('disconnect', onDisconnect);
     };
-  }, []);
+  }, [ns]);
 
-  return { socket, connected };
+  return { socket: getSocket(ns), connected };
+}
+
+export function useSocket() {
+  return useNamespacedSocket('/tasks');
 }
