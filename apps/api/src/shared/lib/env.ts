@@ -21,7 +21,10 @@ const envSchema = z.object({
   LLM_MAX_TOKENS: z.coerce.number().int().min(1).default(2048),
   LLM_TEMPERATURE: z.coerce.number().min(0).max(2).default(0.7),
   UPLOAD_DIR: z.string().default('/data/attachments'),
-  MAX_UPLOAD_SIZE: z.coerce.number().int().default(25 * 1024 * 1024),
+  MAX_UPLOAD_SIZE: z.coerce
+    .number()
+    .int()
+    .default(25 * 1024 * 1024),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
 });
 

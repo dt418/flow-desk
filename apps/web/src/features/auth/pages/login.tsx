@@ -64,9 +64,7 @@ export function LoginPage() {
             aria-invalid={Boolean(errors.email)}
             {...register('email')}
           />
-          {errors.email && (
-            <p className="text-[11px] text-red-500">{errors.email.message}</p>
-          )}
+          {errors.email && <p className="text-[11px] text-red-500">{errors.email.message}</p>}
         </div>
 
         <div className="space-y-1.5">
@@ -78,9 +76,7 @@ export function LoginPage() {
             aria-invalid={Boolean(errors.password)}
             {...register('password')}
           />
-          {errors.password && (
-            <p className="text-[11px] text-red-500">{errors.password.message}</p>
-          )}
+          {errors.password && <p className="text-[11px] text-red-500">{errors.password.message}</p>}
         </div>
 
         {serverError && (

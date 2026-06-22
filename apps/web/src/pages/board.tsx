@@ -62,7 +62,9 @@ function initials(name: string): string {
   return (parts[0][0]! + parts[parts.length - 1]![0]!).toUpperCase();
 }
 
-function relativeDate(value: string | null): { label: string; tone: 'overdue' | 'soon' | 'normal' } | null {
+function relativeDate(
+  value: string | null,
+): { label: string; tone: 'overdue' | 'soon' | 'normal' } | null {
   if (!value) return null;
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return null;
@@ -72,7 +74,8 @@ function relativeDate(value: string | null): { label: string; tone: 'overdue' | 
   if (days === 0) return { label: 'Today', tone: 'soon' };
   if (days === 1) return { label: 'Tomorrow', tone: 'soon' };
   if (days === -1) return { label: 'Yesterday', tone: 'overdue' };
-  if (days > 1 && days < 7) return { label: d.toLocaleDateString(undefined, { weekday: 'short' }), tone: 'normal' };
+  if (days > 1 && days < 7)
+    return { label: d.toLocaleDateString(undefined, { weekday: 'short' }), tone: 'normal' };
   if (days < 0) return { label: `${-days}d late`, tone: 'overdue' };
   return { label: `+${days}d`, tone: 'normal' };
 }

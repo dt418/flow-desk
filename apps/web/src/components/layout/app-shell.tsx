@@ -90,9 +90,7 @@ export function AppShell() {
 function navItem({ isActive }: { isActive: boolean }) {
   return [
     'block rounded-md px-3 py-2 text-sm font-medium transition-colors',
-    isActive
-      ? 'bg-emerald-500/10 text-emerald-500'
-      : 'text-[var(--fg-2)] hover:bg-[var(--bg-3)]',
+    isActive ? 'bg-emerald-500/10 text-emerald-500' : 'text-[var(--fg-2)] hover:bg-[var(--bg-3)]',
   ].join(' ');
 }
 

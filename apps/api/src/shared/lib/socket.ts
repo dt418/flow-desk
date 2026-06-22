@@ -19,7 +19,8 @@ export function createSocketServer(httpServer: HttpServer) {
   io.use((socket, next) => {
     const token =
       (socket.handshake.auth?.token as string | undefined) ??
-      (socket.handshake.headers.authorization?.replace(/^Bearer\s+/i, '') ?? '');
+      socket.handshake.headers.authorization?.replace(/^Bearer\s+/i, '') ??
+      '';
     try {
       const payload = verifyAccessToken(token);
       socket.data.userId = payload.userId;

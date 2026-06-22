@@ -26,14 +26,14 @@ flow-desk/
 
 ## Alternatives Rejected
 
-| Alternative | Why Rejected |
-|-------------|--------------|
-| **Single package (web + api in one)** | Cannot scale/deploy independently; type sharing becomes implicit |
-| **Two separate repos** | Cross-repo type sharing requires publishing package to npm or git tag |
-| **NPM workspaces** | Slower installs, weaker dependency resolution |
-| **Yarn workspaces (classic)** | No zero-installs; weaker than pnpm |
-| **Nx** | Heavier than Turbo; overkill for 3-package repo |
-| **Lerna** | Maintenance concerns; Turbo is more focused |
+| Alternative                           | Why Rejected                                                          |
+| ------------------------------------- | --------------------------------------------------------------------- |
+| **Single package (web + api in one)** | Cannot scale/deploy independently; type sharing becomes implicit      |
+| **Two separate repos**                | Cross-repo type sharing requires publishing package to npm or git tag |
+| **NPM workspaces**                    | Slower installs, weaker dependency resolution                         |
+| **Yarn workspaces (classic)**         | No zero-installs; weaker than pnpm                                    |
+| **Nx**                                | Heavier than Turbo; overkill for 3-package repo                       |
+| **Lerna**                             | Maintenance concerns; Turbo is more focused                           |
 
 ## Consequences
 

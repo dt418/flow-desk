@@ -27,10 +27,7 @@ export const paginationSchema = z.object({
 
 export const idSchema = z.object({ id: cuidSchema });
 
-export const isoDateString = z
-  .string()
-  .datetime({ offset: true })
-  .or(z.string().date());
+export const isoDateString = z.string().datetime({ offset: true }).or(z.string().date());
 
 export const nonEmptyString = z.string().min(1).max(10_000);
 

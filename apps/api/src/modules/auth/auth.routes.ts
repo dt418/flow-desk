@@ -57,7 +57,11 @@ authRouter.post('/register', async (c) => {
   const access = signAccessToken({ userId: user.id, email: user.email });
   const refresh = signRefreshToken({ userId: user.id, tokenId: crypto.randomUUID() });
   await prisma.refreshToken.create({
-    data: { id: refresh, userId: user.id, expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) },
+    data: {
+      id: refresh,
+      userId: user.id,
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    },
   });
   setAuthCookies(c, access, refresh);
 
@@ -78,7 +82,11 @@ authRouter.post('/login', async (c) => {
   const access = signAccessToken({ userId: user.id, email: user.email });
   const refresh = signRefreshToken({ userId: user.id, tokenId: crypto.randomUUID() });
   await prisma.refreshToken.create({
-    data: { id: refresh, userId: user.id, expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) },
+    data: {
+      id: refresh,
+      userId: user.id,
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    },
   });
   setAuthCookies(c, access, refresh);
 
@@ -116,7 +124,11 @@ authRouter.post('/refresh', async (c) => {
   const access = signAccessToken({ userId: user.id, email: user.email });
   const newRefresh = signRefreshToken({ userId: user.id, tokenId: crypto.randomUUID() });
   await prisma.refreshToken.create({
-    data: { id: newRefresh, userId: user.id, expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) },
+    data: {
+      id: newRefresh,
+      userId: user.id,
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    },
   });
   setAuthCookies(c, access, newRefresh);
 
@@ -223,7 +235,11 @@ authRouter.get('/google/callback', async (c) => {
   const access = signAccessToken({ userId: user.id, email: user.email });
   const refresh = signRefreshToken({ userId: user.id, tokenId: crypto.randomUUID() });
   await prisma.refreshToken.create({
-    data: { id: refresh, userId: user.id, expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) },
+    data: {
+      id: refresh,
+      userId: user.id,
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    },
   });
   setAuthCookies(c, access, refresh);
 

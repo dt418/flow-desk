@@ -142,7 +142,14 @@ async function main() {
         createdById: users[0]!.id,
         dueDate: due,
         position: i,
-        labels: i % 4 === 0 ? ['frontend'] : i % 4 === 1 ? ['backend'] : i % 4 === 2 ? ['design'] : ['devops'],
+        labels:
+          i % 4 === 0
+            ? ['frontend']
+            : i % 4 === 1
+              ? ['backend']
+              : i % 4 === 2
+                ? ['design']
+                : ['devops'],
         ...(tpl.status === 'DONE' ? { completedAt: new Date() } : {}),
       },
     });

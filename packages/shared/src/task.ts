@@ -1,10 +1,24 @@
 import { z } from 'zod';
-import { cuidSchema, nameSchema, optionalString, nonEmptyString, paginationSchema, colorHexSchema } from './common';
+import {
+  cuidSchema,
+  nameSchema,
+  optionalString,
+  nonEmptyString,
+  paginationSchema,
+  colorHexSchema,
+} from './common';
 
 export const taskPrioritySchema = z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']);
 export type TaskPriority = z.infer<typeof taskPrioritySchema>;
 
-export const taskStatusSchema = z.enum(['BACKLOG', 'TODO', 'IN_PROGRESS', 'IN_REVIEW', 'DONE', 'BLOCKED']);
+export const taskStatusSchema = z.enum([
+  'BACKLOG',
+  'TODO',
+  'IN_PROGRESS',
+  'IN_REVIEW',
+  'DONE',
+  'BLOCKED',
+]);
 export type TaskStatus = z.infer<typeof taskStatusSchema>;
 
 export const createTaskSchema = z.object({

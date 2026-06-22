@@ -29,9 +29,7 @@ export function EmptyState({
       </span>
       <div className="space-y-1">
         <p className="text-[13px] font-medium text-[var(--fg)]">{title}</p>
-        {description && (
-          <p className="max-w-sm text-[12px] text-[var(--fg-3)]">{description}</p>
-        )}
+        {description && <p className="max-w-sm text-[12px] text-[var(--fg-3)]">{description}</p>}
       </div>
       {action}
     </div>

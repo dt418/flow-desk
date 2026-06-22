@@ -3,6 +3,7 @@
 ## Context
 
 FlowDesk needs real-time updates for:
+
 - Task create/update/move/delete
 - New comments and @mentions
 - Notifications
@@ -38,6 +39,7 @@ workspace:{id}     → All events for a workspace (everyone subscribed)
 ### Authentication
 
 JWT validated on `connection`:
+
 ```typescript
 io.use((socket, next) => {
   const token = socket.handshake.auth.token;
@@ -64,7 +66,7 @@ Failing connection closes immediately. No anonymous sockets.
 
 ```typescript
 socket.on('disconnect', () => {
-  socket.rooms.forEach(room => socket.leave(room));
+  socket.rooms.forEach((room) => socket.leave(room));
   clearInterval(typingIntervals.get(socket.id));
   typingIntervals.delete(socket.id);
 });
@@ -72,13 +74,13 @@ socket.on('disconnect', () => {
 
 ## Alternatives Rejected
 
-| Alternative | Why Rejected |
-|-------------|--------------|
-| **Raw WebSocket** | No automatic reconnect, no rooms, no fallback; reinventing the wheel |
+| Alternative                  | Why Rejected                                                          |
+| ---------------------------- | --------------------------------------------------------------------- |
+| **Raw WebSocket**            | No automatic reconnect, no rooms, no fallback; reinventing the wheel  |
 | **SSE (Server-Sent Events)** | One-way only; can't send typing indicators back to server efficiently |
-| **WebRTC** | P2P only; doesn't fit server-mediated events like notifications |
-| **Pusher / Ably (managed)** | SaaS lock-in; defeats self-hosted requirement |
-| **Long polling** | Slow; high CPU usage; legacy |
+| **WebRTC**                   | P2P only; doesn't fit server-mediated events like notifications       |
+| **Pusher / Ably (managed)**  | SaaS lock-in; defeats self-hosted requirement                         |
+| **Long polling**             | Slow; high CPU usage; legacy                                          |
 
 ## Consequences
 

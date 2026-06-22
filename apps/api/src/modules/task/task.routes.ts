@@ -34,9 +34,7 @@ taskRouter.get('/', async (c) => {
     ...(query.status ? { status: query.status } : {}),
     ...(query.priority ? { priority: query.priority } : {}),
     ...(query.assigneeId ? { assigneeId: query.assigneeId } : {}),
-    ...(query.search
-      ? { title: { contains: query.search, mode: 'insensitive' as const } }
-      : {}),
+    ...(query.search ? { title: { contains: query.search, mode: 'insensitive' as const } } : {}),
     ...(query.dueBefore || query.dueAfter
       ? {
           dueDate: {

@@ -44,16 +44,10 @@ export async function errorHandler(err: Error, c: Context) {
       );
     }
     if (err.code === 'P2025') {
-      return c.json(
-        { message: 'Resource not found', code: 'NOT_FOUND', requestId },
-        404,
-      );
+      return c.json({ message: 'Resource not found', code: 'NOT_FOUND', requestId }, 404);
     }
   }
 
   logger.error({ err, requestId }, 'unhandled error');
-  return c.json(
-    { message: 'Internal Server Error', code: 'INTERNAL_ERROR', requestId },
-    500,
-  );
+  return c.json({ message: 'Internal Server Error', code: 'INTERNAL_ERROR', requestId }, 500);
 }

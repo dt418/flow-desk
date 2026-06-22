@@ -25,15 +25,15 @@ Teams need a self-hosted, AI-augmented task management platform that goes beyond
 
 ## User Stories
 
-| As a... | I want to... | So that... |
-|---------|--------------|------------|
+| As a...     | I want to...                                | So that...                            |
+| ----------- | ------------------------------------------- | ------------------------------------- |
 | Team member | Create tasks with subtasks and dependencies | Break down work into manageable units |
-| Team member | Drag tasks between Kanban columns | Update status quickly |
-| Team member | @mention colleagues in comments | Get their attention on specific tasks |
-| Team lead | See AI suggestions for task assignments | Balance workload across team |
-| Team lead | View tasks in List/Table for reporting | Filter and export data easily |
-| Org admin | Manage workspace members and roles | Control access appropriately |
-| System | Send real-time notifications | Keep team synced without polling |
+| Team member | Drag tasks between Kanban columns           | Update status quickly                 |
+| Team member | @mention colleagues in comments             | Get their attention on specific tasks |
+| Team lead   | See AI suggestions for task assignments     | Balance workload across team          |
+| Team lead   | View tasks in List/Table for reporting      | Filter and export data easily         |
+| Org admin   | Manage workspace members and roles          | Control access appropriately          |
+| System      | Send real-time notifications                | Keep team synced without polling      |
 
 ## Success Metrics
 
@@ -44,14 +44,14 @@ Teams need a self-hosted, AI-augmented task management platform that goes beyond
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|------------|
-| Frontend | React 18 + Vite + TypeScript + Tailwind CSS v4 + shadcn/ui |
-| Backend | Hono + Node.js + TypeScript |
-| Database | PostgreSQL 16 |
-| Cache | Redis 7 |
-| ORM | Prisma |
-| Realtime | Socket.IO (Redis adapter) |
-| Auth | JWT in httpOnly cookie (bcrypt + Google OAuth) |
-| AI | OpenAI-compatible (custom baseUrl + model) |
-| Deployment | Docker Compose (self-hosted) |
+| Layer      | Technology                                                 |
+| ---------- | ---------------------------------------------------------- |
+| Frontend   | React 18 + Vite + TypeScript + Tailwind CSS v4 + shadcn/ui |
+| Backend    | Hono + Node.js + TypeScript                                |
+| Database   | PostgreSQL 16                                              |
+| Cache      | Redis 7                                                    |
+| ORM        | Prisma                                                     |
+| Realtime   | Socket.IO (Redis adapter)                                  |
+| Auth       | JWT in httpOnly cookie (bcrypt + Google OAuth)             |
+| AI         | OpenAI-compatible (custom baseUrl + model)                 |
+| Deployment | Docker Compose (self-hosted)                               |

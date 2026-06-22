@@ -19,14 +19,7 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import { ChevronDown, ChevronUp, ChevronsUpDown, Search, Settings2 } from 'lucide-react';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from './table';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './table';
 import { cn } from '@/lib/utils';
 
 export interface DataTableProps<TData> {
@@ -94,16 +87,19 @@ export function DataTable<TData>({
               Columns
             </summary>
             <div className="absolute right-0 z-20 mt-1 w-48 rounded-md border border-[var(--border)] bg-[var(--bg-2)] p-2 shadow-lg">
-              {table.getAllColumns().filter((c) => c.getCanHide()).map((c) => (
-                <label key={c.id} className="flex items-center gap-2 px-2 py-1 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={c.getIsVisible()}
-                    onChange={c.getToggleVisibilityHandler()}
-                  />
-                  {typeof c.columnDef.header === 'string' ? c.columnDef.header : c.id}
-                </label>
-              ))}
+              {table
+                .getAllColumns()
+                .filter((c) => c.getCanHide())
+                .map((c) => (
+                  <label key={c.id} className="flex items-center gap-2 px-2 py-1 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={c.getIsVisible()}
+                      onChange={c.getToggleVisibilityHandler()}
+                    />
+                    {typeof c.columnDef.header === 'string' ? c.columnDef.header : c.id}
+                  </label>
+                ))}
             </div>
           </details>
         )}

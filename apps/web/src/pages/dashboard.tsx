@@ -48,7 +48,9 @@ function initials(name: string): string {
   return (parts[0][0]! + parts[parts.length - 1]![0]!).toUpperCase();
 }
 
-function relDays(value: string | null): { label: string; tone: 'overdue' | 'today' | 'soon' | 'normal' } | null {
+function relDays(
+  value: string | null,
+): { label: string; tone: 'overdue' | 'today' | 'soon' | 'normal' } | null {
   if (!value) return null;
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return null;
@@ -58,7 +60,8 @@ function relDays(value: string | null): { label: string; tone: 'overdue' | 'toda
   if (days < 0) return { label: `${-days}d late`, tone: 'overdue' };
   if (days === 0) return { label: 'Today', tone: 'today' };
   if (days === 1) return { label: 'Tomorrow', tone: 'today' };
-  if (days < 7) return { label: d.toLocaleDateString(undefined, { weekday: 'short' }), tone: 'soon' };
+  if (days < 7)
+    return { label: d.toLocaleDateString(undefined, { weekday: 'short' }), tone: 'soon' };
   return { label: formatDate(value), tone: 'normal' };
 }
 
@@ -139,7 +142,10 @@ function TaskRow({ task, workspaceSlug }: { task: TaskRow; workspaceSlug?: strin
           <div className="truncate text-[11px] text-[var(--fg-3)]">/{workspaceSlug}</div>
         )}
       </div>
-      <Badge variant="outline" className={cn('border text-[10px]', PRIORITY_TONE[task.priority] ?? '')}>
+      <Badge
+        variant="outline"
+        className={cn('border text-[10px]', PRIORITY_TONE[task.priority] ?? '')}
+      >
         {task.priority}
       </Badge>
       {due ? (
@@ -225,7 +231,11 @@ export function DashboardPage() {
   endOfWeek.setDate(endOfWeek.getDate() + 7);
 
   const overdueCount = allTasks.filter(
-    (t) => t.assignee?.id === myUserId && t.status !== 'DONE' && t.dueDate && new Date(t.dueDate).getTime() < startOfToday.getTime(),
+    (t) =>
+      t.assignee?.id === myUserId &&
+      t.status !== 'DONE' &&
+      t.dueDate &&
+      new Date(t.dueDate).getTime() < startOfToday.getTime(),
   ).length;
   const dueThisWeekCount = allTasks.filter((t) => {
     if (t.assignee?.id !== myUserId || t.status === 'DONE' || !t.dueDate) return false;
@@ -241,7 +251,8 @@ export function DashboardPage() {
     (t) => t.assignee?.id === myUserId && t.status !== 'DONE',
   ).length;
 
-  void now; void completedThisWeek; // reserved for future completedAt filter
+  void now;
+  void completedThisWeek; // reserved for future completedAt filter
 
   const greeting = React.useMemo(() => {
     const h = new Date().getHours();
@@ -251,7 +262,8 @@ export function DashboardPage() {
     return 'Good evening';
   }, []);
 
-  const loadingWorkspaces = workspaces.isLoading || (workspaceList.length > 0 && taskQueries.some((q) => q.isLoading));
+  const loadingWorkspaces =
+    workspaces.isLoading || (workspaceList.length > 0 && taskQueries.some((q) => q.isLoading));
 
   return (
     <div className="flex w-full flex-col gap-8 p-8">
@@ -261,7 +273,9 @@ export function DashboardPage() {
           <span className="caption">FlowDesk</span>
           <h1 className="text-[28px] font-semibold tracking-tight">
             {greeting}
-            {me.data?.user.name ? <span className="text-[var(--fg-2)]">, {me.data.user.name.split(' ')[0]}</span> : null}
+            {me.data?.user.name ? (
+              <span className="text-[var(--fg-2)]">, {me.data.user.name.split(' ')[0]}</span>
+            ) : null}
           </h1>
           <p className="text-[13px] text-[var(--fg-2)]">
             {workspaceList.length === 0
@@ -284,7 +298,10 @@ export function DashboardPage() {
               ⌘K
             </kbd>
           </button>
-          <button type="button" className="btn-primary inline-flex h-9 items-center gap-2 text-[12px]">
+          <button
+            type="button"
+            className="btn-primary inline-flex h-9 items-center gap-2 text-[12px]"
+          >
             <Plus className="h-4 w-4" />
             New workspace
           </button>
@@ -302,7 +319,12 @@ export function DashboardPage() {
           </>
         ) : (
           <>
-            <StatCard icon={ListChecks} label="My open" value={totalOpen} hint={`across ${workspaceList.length} workspace${workspaceList.length === 1 ? '' : 's'}`} />
+            <StatCard
+              icon={ListChecks}
+              label="My open"
+              value={totalOpen}
+              hint={`across ${workspaceList.length} workspace${workspaceList.length === 1 ? '' : 's'}`}
+            />
             <StatCard
               icon={Calendar}
               label="Due this week"
@@ -317,7 +339,12 @@ export function DashboardPage() {
               tone={overdueCount > 0 ? 'critical' : 'default'}
               hint={overdueCount > 0 ? 'needs attention' : 'all clear'}
             />
-            <StatCard icon={Clock} label="Workspaces" value={workspaceList.length} hint={workspaceList.length === 0 ? 'none yet' : 'active'} />
+            <StatCard
+              icon={Clock}
+              label="Workspaces"
+              value={workspaceList.length}
+              hint={workspaceList.length === 0 ? 'none yet' : 'active'}
+            />
           </>
         )}
       </section>
@@ -368,7 +395,10 @@ export function DashboardPage() {
           ) : workspaceList.length === 0 ? (
             <div className="rounded-xl border border-dashed border-[var(--border)] bg-[var(--bg-2)]/40 p-6 text-center">
               <p className="caption mb-3">You don't have any workspace yet.</p>
-              <button type="button" className="btn-primary inline-flex h-8 items-center gap-1 text-[12px]">
+              <button
+                type="button"
+                className="btn-primary inline-flex h-8 items-center gap-1 text-[12px]"
+              >
                 <Plus className="h-3.5 w-3.5" />
                 Create your first
               </button>

@@ -42,7 +42,11 @@
       "title": "Tailwind v4 design system with Emerald/Teal tokens",
       "user_visible_behavior": "Web app shows correct Emerald/Teal colors in both light and dark mode. Theme toggle works.",
       "status": "passing",
-      "verification": ["Start web dev server", "Verify colors match design system spec", "Toggle theme and confirm light/dark switch"],
+      "verification": [
+        "Start web dev server",
+        "Verify colors match design system spec",
+        "Toggle theme and confirm light/dark switch"
+      ],
       "evidence": [
         "apps/web/src/index.css with @import 'tailwindcss' and @theme block",
         "Emerald 50-950 color tokens defined",
@@ -64,7 +68,11 @@
       "title": "Prisma schema with all entities",
       "user_visible_behavior": "Database migrations run cleanly. All entities (User, Workspace, Task, Column, Comment, etc.) are created.",
       "status": "passing",
-      "verification": ["Run prisma migrate dev", "Verify all tables created", "Verify seed data loads"],
+      "verification": [
+        "Run prisma migrate dev",
+        "Verify all tables created",
+        "Verify seed data loads"
+      ],
       "evidence": [
         "prisma/schema.prisma with 13 models: User, Workspace, WorkspaceMember, Column, Task, TaskDependency, TaskLabel, Comment, Notification, Attachment, RefreshToken",
         "All models have id (cuid), createdAt, updatedAt, deletedAt? for soft-delete",
@@ -85,7 +93,11 @@
       "title": "Docker Compose with PostgreSQL, Redis, API, Web",
       "user_visible_behavior": "docker compose up brings up all services. API accessible at localhost:3000, Web at localhost:5173.",
       "status": "passing",
-      "verification": ["Run docker compose up -d", "Verify all containers healthy", "Hit /api/health and confirm 200"],
+      "verification": [
+        "Run docker compose up -d",
+        "Verify all containers healthy",
+        "Hit /api/health and confirm 200"
+      ],
       "evidence": [
         "docker-compose.yml with 4 services: postgres:16-alpine, redis:7-alpine, api, web",
         "Health checks on postgres, redis, api, web",
@@ -107,7 +119,11 @@
       "title": "Shared package with Zod schemas",
       "user_visible_behavior": "Both apps can import shared types and Zod schemas. Type safety enforced end-to-end.",
       "status": "passing",
-      "verification": ["Import a schema from @flow-desk/shared in API", "Import a type from @flow-desk/shared in Web", "Verify TypeScript compiles"],
+      "verification": [
+        "Import a schema from @flow-desk/shared in API",
+        "Import a type from @flow-desk/shared in Web",
+        "Verify TypeScript compiles"
+      ],
       "evidence": [
         "packages/shared with tsup build, 9 entry points (index, auth, user, workspace, task, comment, notification, attachment, common)",
         "All schemas use Zod with z.infer type exports",

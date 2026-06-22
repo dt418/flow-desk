@@ -19,7 +19,10 @@ import { createSocketServer } from './shared/lib/socket';
 const app = new Hono();
 
 app.use('*', requestId());
-app.use('*', honoLogger((str) => logger.debug(str.trim())));
+app.use(
+  '*',
+  honoLogger((str) => logger.debug(str.trim())),
+);
 app.use(
   '*',
   cors({
@@ -30,9 +33,7 @@ app.use(
   }),
 );
 
-app.get('/api/health', (c) =>
-  c.json({ status: 'ok', timestamp: new Date().toISOString() }),
-);
+app.get('/api/health', (c) => c.json({ status: 'ok', timestamp: new Date().toISOString() }));
 
 app.route('/api/auth', authRouter);
 app.route('/api/workspaces', workspaceRouter);

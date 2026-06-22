@@ -43,13 +43,13 @@ Refresh Token (7 days):
 
 ## Alternatives Rejected
 
-| Alternative | Why Rejected |
-|-------------|--------------|
-| **localStorage** | Vulnerable to XSS; any injected script can steal tokens |
-| **sessionStorage** | Same XSS risk; also lost on tab close |
-| **Cookie without httpOnly** | XSS can read document.cookie and steal token |
-| **Cookie with SameSite=None** | CSRF vulnerability; requires careful origin validation |
-| **Long-lived JWT only (no refresh)** | Cannot revoke tokens; security risk |
+| Alternative                                | Why Rejected                                                                                               |
+| ------------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
+| **localStorage**                           | Vulnerable to XSS; any injected script can steal tokens                                                    |
+| **sessionStorage**                         | Same XSS risk; also lost on tab close                                                                      |
+| **Cookie without httpOnly**                | XSS can read document.cookie and steal token                                                               |
+| **Cookie with SameSite=None**              | CSRF vulnerability; requires careful origin validation                                                     |
+| **Long-lived JWT only (no refresh)**       | Cannot revoke tokens; security risk                                                                        |
 | **Session cookies with server-side store** | Requires sticky sessions or Redis lookup per request; doesn't scale to multi-instance without shared store |
 
 ## Consequences

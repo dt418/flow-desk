@@ -83,13 +83,17 @@ export function Kanban({ onMove, className, children }: KanbanProps) {
 
     const taskId = String(active.id);
     const overId = String(over.id);
-    const fromColumnId = String((active.data.current as { columnId?: string } | undefined)?.columnId ?? '');
+    const fromColumnId = String(
+      (active.data.current as { columnId?: string } | undefined)?.columnId ?? '',
+    );
     if (!fromColumnId) return;
 
     let toColumnId: string | null = null;
     let toIndex = 0;
 
-    const overData = over.data.current as { columnId?: string; index?: number; type?: string } | undefined;
+    const overData = over.data.current as
+      | { columnId?: string; index?: number; type?: string }
+      | undefined;
     if (overData?.type === 'column' && typeof overData.columnId === 'string') {
       toColumnId = overData.columnId;
       toIndex = Number.MAX_SAFE_INTEGER;
@@ -118,7 +122,12 @@ export function Kanban({ onMove, className, children }: KanbanProps) {
           setActiveColumnId(null);
         }}
       >
-        <div className={cn('kanban-scroll flex h-full flex-1 gap-3 overflow-x-auto px-4 py-4', className)}>
+        <div
+          className={cn(
+            'kanban-scroll flex h-full flex-1 gap-3 overflow-x-auto px-4 py-4',
+            className,
+          )}
+        >
           {children}
         </div>
         <DragOverlay dropAnimation={{ duration: 200, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }}>

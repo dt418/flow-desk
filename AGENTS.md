@@ -4,17 +4,17 @@ This repository is designed for long-running coding-agent work. The goal is not 
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|------------|
-| Frontend | React 18 + Vite + TypeScript + Tailwind CSS v4 + shadcn/ui |
-| Backend | Hono + Node.js + TypeScript |
-| Database | PostgreSQL 16 |
-| Cache | Redis 7 |
-| ORM | Prisma |
-| Realtime | Socket.IO (Redis adapter) |
-| Auth | JWT in httpOnly cookie (bcrypt + Google OAuth) |
-| AI | OpenAI-compatible (custom baseUrl + model) |
-| Deployment | Docker Compose (self-hosted) |
+| Layer      | Technology                                                 |
+| ---------- | ---------------------------------------------------------- |
+| Frontend   | React 18 + Vite + TypeScript + Tailwind CSS v4 + shadcn/ui |
+| Backend    | Hono + Node.js + TypeScript                                |
+| Database   | PostgreSQL 16                                              |
+| Cache      | Redis 7                                                    |
+| ORM        | Prisma                                                     |
+| Realtime   | Socket.IO (Redis adapter)                                  |
+| Auth       | JWT in httpOnly cookie (bcrypt + Google OAuth)             |
+| AI         | OpenAI-compatible (custom baseUrl + model)                 |
+| Deployment | Docker Compose (self-hosted)                               |
 
 ## Startup Workflow
 

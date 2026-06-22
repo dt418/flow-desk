@@ -3,12 +3,14 @@
 ## Context
 
 FlowDesk requires AI features (assignment suggestions, auto-scheduling, meeting summarization). Users will deploy FlowDesk in varied environments:
+
 - OpenAI API (cloud)
 - Self-hosted Ollama / LM Studio / vLLM
 - Custom proxies (LiteLLM, OpenRouter)
 - Internal enterprise gateways
 
 We need a provider abstraction that:
+
 1. Supports any OpenAI-compatible endpoint
 2. Accepts custom `baseUrl` and `model` via env vars
 3. Allows swapping providers without code changes
@@ -20,9 +22,9 @@ We need a provider abstraction that:
 ```typescript
 // apps/api/src/shared/lib/llm-provider.ts
 export interface LLMConfig {
-  baseUrl: string;     // e.g. https://api.openai.com/v1
-  apiKey: string;      // any string (can be "unused" for local)
-  model: string;       // e.g. gpt-4o-mini, llama3.1, qwen2.5
+  baseUrl: string; // e.g. https://api.openai.com/v1
+  apiKey: string; // any string (can be "unused" for local)
+  model: string; // e.g. gpt-4o-mini, llama3.1, qwen2.5
   maxTokens?: number;
   temperature?: number;
 }
@@ -34,7 +36,7 @@ export class LLMProvider {
     const res = await fetch(`${this.config.baseUrl}/chat/completions`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${this.config.apiKey}`,
+        Authorization: `Bearer ${this.config.apiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -72,12 +74,12 @@ LLM_TEMPERATURE=0.7
 
 ## Alternatives Rejected
 
-| Alternative | Why Rejected |
-|-------------|--------------|
-| **`openai` npm package** | Couples to OpenAI SDK; harder to swap to non-OpenAI providers that deviate slightly |
-| **`@anthropic-ai/sdk`** | Locks to Claude only |
-| **LangChain / LlamaIndex** | Heavy framework; overhead for our simple use cases; not necessary |
-| **Per-provider implementations** | Massive code duplication; maintenance nightmare |
+| Alternative                      | Why Rejected                                                                        |
+| -------------------------------- | ----------------------------------------------------------------------------------- |
+| **`openai` npm package**         | Couples to OpenAI SDK; harder to swap to non-OpenAI providers that deviate slightly |
+| **`@anthropic-ai/sdk`**          | Locks to Claude only                                                                |
+| **LangChain / LlamaIndex**       | Heavy framework; overhead for our simple use cases; not necessary                   |
+| **Per-provider implementations** | Massive code duplication; maintenance nightmare                                     |
 
 ## Consequences
 

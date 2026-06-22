@@ -99,9 +99,7 @@ export function RegisterPage() {
             aria-invalid={Boolean(errors.password)}
             {...register('password')}
           />
-          {errors.password && (
-            <p className="text-[11px] text-red-500">{errors.password.message}</p>
-          )}
+          {errors.password && <p className="text-[11px] text-red-500">{errors.password.message}</p>}
         </div>
 
         <div className="space-y-1.5">
@@ -113,9 +111,7 @@ export function RegisterPage() {
             aria-invalid={Boolean(errors.confirm)}
             {...register('confirm')}
           />
-          {errors.confirm && (
-            <p className="text-[11px] text-red-500">{errors.confirm.message}</p>
-          )}
+          {errors.confirm && <p className="text-[11px] text-red-500">{errors.confirm.message}</p>}
         </div>
 
         {serverError && (

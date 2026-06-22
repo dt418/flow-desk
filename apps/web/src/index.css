@@ -1,7 +1,7 @@
 @import 'tailwindcss';
-@import "tw-animate-css";
-@import "shadcn/tailwind.css";
-@import "@fontsource-variable/inter";
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+@import '@fontsource-variable/inter';
 
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -92,11 +92,7 @@
   }
 
   body {
-    background-image: radial-gradient(
-      circle at 1px 1px,
-      var(--border) 1px,
-      transparent 0
-    );
+    background-image: radial-gradient(circle at 1px 1px, var(--border) 1px, transparent 0);
     background-size: 24px 24px;
     background-position: -1px -1px;
     @apply bg-background text-foreground;
@@ -140,7 +136,8 @@
   * {
     @apply border-border outline-ring/50;
   }
-  button:not(:disabled), [role="button"]:not(:disabled) {
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
     cursor: pointer;
   }
   html {
@@ -208,13 +205,27 @@
   .kanban-column {
     animation: kanban-column-in 240ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
   }
-  .kanban-column:nth-child(1) { animation-delay: 0ms; }
-  .kanban-column:nth-child(2) { animation-delay: 50ms; }
-  .kanban-column:nth-child(3) { animation-delay: 100ms; }
-  .kanban-column:nth-child(4) { animation-delay: 150ms; }
-  .kanban-column:nth-child(5) { animation-delay: 200ms; }
-  .kanban-column:nth-child(6) { animation-delay: 250ms; }
-  .kanban-column:nth-child(n+7) { animation-delay: 300ms; }
+  .kanban-column:nth-child(1) {
+    animation-delay: 0ms;
+  }
+  .kanban-column:nth-child(2) {
+    animation-delay: 50ms;
+  }
+  .kanban-column:nth-child(3) {
+    animation-delay: 100ms;
+  }
+  .kanban-column:nth-child(4) {
+    animation-delay: 150ms;
+  }
+  .kanban-column:nth-child(5) {
+    animation-delay: 200ms;
+  }
+  .kanban-column:nth-child(6) {
+    animation-delay: 250ms;
+  }
+  .kanban-column:nth-child(n + 7) {
+    animation-delay: 300ms;
+  }
 
   .kanban-column-over {
     background-color: color-mix(in oklab, var(--color-emerald-500) 6%, var(--bg-2));

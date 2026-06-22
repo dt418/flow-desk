@@ -5,9 +5,9 @@ export function formatDate(value: string | Date | null | undefined): string {
   return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: '2-digit' });
 }
 
-export function relativeDays(value: string | Date | null | undefined):
-  | { label: string; tone: 'overdue' | 'today' | 'soon' | 'normal' }
-  | null {
+export function relativeDays(
+  value: string | Date | null | undefined,
+): { label: string; tone: 'overdue' | 'today' | 'soon' | 'normal' } | null {
   if (!value) return null;
   const d = typeof value === 'string' ? new Date(value) : value;
   if (Number.isNaN(d.getTime())) return null;

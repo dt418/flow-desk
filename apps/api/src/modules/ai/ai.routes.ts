@@ -75,13 +75,15 @@ aiRouter.post('/suggest-assignee', async (c) => {
           role: 'user',
           content: JSON.stringify({
             task: { title, description },
-            candidates: members.map((m: { user: { id: string; name: string; email: string }; role: UserRole }) => ({
-              userId: m.user.id,
-              name: m.user.name,
-              email: m.user.email,
-              role: m.role,
-              activeTaskCount: loadMap.get(m.user.id) ?? 0,
-            })),
+            candidates: members.map(
+              (m: { user: { id: string; name: string; email: string }; role: UserRole }) => ({
+                userId: m.user.id,
+                name: m.user.name,
+                email: m.user.email,
+                role: m.role,
+                activeTaskCount: loadMap.get(m.user.id) ?? 0,
+              }),
+            ),
           }),
         },
       ],
@@ -99,8 +101,9 @@ aiRouter.post('/suggest-assignee', async (c) => {
         const load = loadMap.get(m.user.id) ?? 0;
         return { userId: m.user.id, name: m.user.name, activeTaskCount: load };
       })
-      .sort((a: { activeTaskCount: number }, b: { activeTaskCount: number }) =>
-        a.activeTaskCount - b.activeTaskCount,
+      .sort(
+        (a: { activeTaskCount: number }, b: { activeTaskCount: number }) =>
+          a.activeTaskCount - b.activeTaskCount,
       )
       .slice(0, 3)
       .map((m: { userId: string; activeTaskCount: number }) => ({
@@ -114,9 +117,7 @@ aiRouter.post('/suggest-assignee', async (c) => {
 
 const autoScheduleSchema = z.object({ workspaceId: z.string() });
 
-type TaskWithDeps = Awaited<
-  ReturnType<typeof loadTasks>
->[number];
+type TaskWithDeps = Awaited<ReturnType<typeof loadTasks>>[number];
 
 async function loadTasks(workspaceId: string) {
   return prisma.task.findMany({
@@ -142,10 +143,10 @@ aiRouter.post('/auto-schedule', async (c) => {
   const day = 24 * 60 * 60 * 1000;
 
   for (const task of sorted) {
-    const blockerDates = task.dependencies
-      .map((d: { blockingTask: { dueDate: Date | null } }) => d.blockingTask.dueDate?.getTime() ?? 0);
-    const earliestStart =
-      blockerDates.length > 0 ? Math.max(...blockerDates) + day : Date.now();
+    const blockerDates = task.dependencies.map(
+      (d: { blockingTask: { dueDate: Date | null } }) => d.blockingTask.dueDate?.getTime() ?? 0,
+    );
+    const earliestStart = blockerDates.length > 0 ? Math.max(...blockerDates) + day : Date.now();
     const dueMs = task.dueDate ? task.dueDate.getTime() : earliestStart + 3 * day;
     const userLoad = capacity.get(task.assigneeId ?? 'unassigned') ?? 0;
     const start = Math.max(earliestStart, Date.now() + userLoad * day);
@@ -161,9 +162,7 @@ aiRouter.post('/auto-schedule', async (c) => {
   return c.json({ schedule });
 });
 
-function topologicalSort(
-  tasks: TaskWithDeps[],
-): TaskWithDeps[] | null {
+function topologicalSort(tasks: TaskWithDeps[]): TaskWithDeps[] | null {
   const idMap = new Map(tasks.map((t) => [t.id, t]));
   const inDeg = new Map<string, number>();
   const adj = new Map<string, string[]>();

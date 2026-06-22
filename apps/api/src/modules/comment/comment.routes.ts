@@ -1,5 +1,9 @@
 import { Hono } from 'hono';
-import { createCommentSchema, updateCommentSchema, listCommentsQuerySchema } from '@flow-desk/shared/comment';
+import {
+  createCommentSchema,
+  updateCommentSchema,
+  listCommentsQuerySchema,
+} from '@flow-desk/shared/comment';
 import { prisma } from '../../shared/lib/prisma';
 import { requireAuth } from '../../shared/middleware/auth';
 import { NotFoundError, BadRequestError } from '../../shared/errors';

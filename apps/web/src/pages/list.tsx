@@ -21,7 +21,15 @@ interface TaskRow {
   labels: string[];
 }
 
-const STATUS_OPTIONS = ['ALL', 'BACKLOG', 'TODO', 'IN_PROGRESS', 'IN_REVIEW', 'DONE', 'BLOCKED'] as const;
+const STATUS_OPTIONS = [
+  'ALL',
+  'BACKLOG',
+  'TODO',
+  'IN_PROGRESS',
+  'IN_REVIEW',
+  'DONE',
+  'BLOCKED',
+] as const;
 type StatusFilter = (typeof STATUS_OPTIONS)[number];
 
 const PRIORITY_OPTIONS = ['ALL', 'LOW', 'MEDIUM', 'HIGH', 'URGENT'] as const;
@@ -175,7 +183,10 @@ export function ListPage() {
             <div className="flex items-center gap-2">
               <Avatar className="h-5 w-5 text-[9px]">
                 {row.original.assignee.avatarUrl ? (
-                  <AvatarImage src={row.original.assignee.avatarUrl} alt={row.original.assignee.name} />
+                  <AvatarImage
+                    src={row.original.assignee.avatarUrl}
+                    alt={row.original.assignee.name}
+                  />
                 ) : null}
                 <AvatarFallback>{initials(row.original.assignee.name)}</AvatarFallback>
               </Avatar>
