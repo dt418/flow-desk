@@ -10,6 +10,16 @@ import {
 import { prisma } from '../../shared/lib/prisma';
 import { requireAuth } from '../../shared/middleware/auth';
 import { NotFoundError, BadRequestError, ConflictError } from '../../shared/errors';
+import { emitToTask, emitToWorkspace } from '../../shared/lib/socket-events';
+import { logger } from '../../shared/lib/logger';
+
+function safeEmit(fn: () => void, ctx: Record<string, unknown>): void {
+  try {
+    fn();
+  } catch (err) {
+    logger.warn({ err, ...ctx }, 'socket emit failed');
+  }
+}
 
 export const taskRouter = new Hono();
 taskRouter.use('*', requireAuth());
@@ -87,6 +97,10 @@ taskRouter.post('/', async (c) => {
       ...(body.labels ? { labels: { set: body.labels } } : {}),
     },
   });
+  safeEmit(
+    () => emitToWorkspace(task.workspaceId, 'task:created', { task }),
+    { event: 'task:created', taskId: task.id },
+  );
   return c.json({ task }, 201);
 });
 
@@ -131,6 +145,14 @@ taskRouter.patch('/:id', async (c) => {
       version: { increment: 1 },
     },
   });
+  safeEmit(
+    () => emitToWorkspace(task.workspaceId, 'task:updated', { task }),
+    { event: 'task:updated', taskId: task.id },
+  );
+  safeEmit(
+    () => emitToTask(task.id, 'task:updated', { task }),
+    { event: 'task:updated', taskId: task.id },
+  );
   return c.json({ task });
 });
 
@@ -141,6 +163,14 @@ taskRouter.delete('/:id', async (c) => {
   if (!existing) throw new NotFoundError('Task not found');
   await assertMembership(existing.workspaceId, auth.user.id);
   await prisma.task.update({ where: { id }, data: { deletedAt: new Date() } });
+  safeEmit(
+    () => emitToWorkspace(existing.workspaceId, 'task:deleted', { taskId: id }),
+    { event: 'task:deleted', taskId: id },
+  );
+  safeEmit(
+    () => emitToTask(id, 'task:deleted', { taskId: id }),
+    { event: 'task:deleted', taskId: id },
+  );
   return c.json({ ok: true });
 });
 
@@ -262,6 +292,14 @@ taskRouter.post('/:id/move', async (c) => {
     return tx.task.findUnique({ where: { id } });
   });
 
+  safeEmit(
+    () => emitToWorkspace(existing.workspaceId, 'task:moved', { task: movedTask }),
+    { event: 'task:moved', taskId: id },
+  );
+  safeEmit(
+    () => emitToTask(id, 'task:moved', { task: movedTask }),
+    { event: 'task:moved', taskId: id },
+  );
   return c.json({ task: movedTask });
 });
 
@@ -288,6 +326,14 @@ taskRouter.post('/:id/subtasks', async (c) => {
       position: body.position ?? 0,
     },
   });
+  safeEmit(
+    () => emitToWorkspace(parent.workspaceId, 'task:created', { task: subtask }),
+    { event: 'task:created', taskId: subtask.id },
+  );
+  safeEmit(
+    () => emitToTask(parent.id, 'task:subtask:created', { task: subtask }),
+    { event: 'task:subtask:created', parentTaskId: parent.id },
+  );
   return c.json({ task: subtask }, 201);
 });
 
@@ -333,6 +379,11 @@ taskRouter.post('/dependencies', async (c) => {
   const dep = await prisma.taskDependency.create({
     data: { blockingTaskId: body.blockingTaskId, blockedTaskId: body.blockedTaskId },
   });
+  safeEmit(
+    () =>
+      emitToWorkspace(blocking.workspaceId, 'task:dependency:added', { dependency: dep }),
+    { event: 'task:dependency:added', dependencyId: dep.id },
+  );
   return c.json({ dependency: dep }, 201);
 });
 
