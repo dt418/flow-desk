@@ -9,6 +9,7 @@ import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../../sha
 import { env } from '../../shared/lib/env';
 import { logger } from '../../shared/lib/logger';
 import { requireAuth } from '../../shared/middleware/auth';
+import { rateLimit } from '../../shared/middleware/rate-limit';
 import { ConflictError, UnauthorizedError } from '../../shared/errors';
 
 export const authRouter = new Hono();
@@ -35,12 +36,12 @@ function clearAuthCookies(c: Context) {
   deleteCookie(c, 'refresh_token', { path: '/' });
 }
 
-authRouter.post('/register', async (c) => {
+authRouter.post('/register', rateLimit({ scope: 'auth:register', windowSec: 3600, max: 3, keyBy: 'ip' }), async (c) => {
   const body = registerSchema.parse(await c.req.json());
   const existing = await prisma.user.findUnique({ where: { email: body.email } });
   if (existing) throw new ConflictError('Email already registered');
 
-  const passwordHash = await bcrypt.hash(body.password, 12);
+  const passwordHash = await bcrypt.hash(body.password, 10);
   const user = await prisma.user.create({
     data: { email: body.email, name: body.name, passwordHash },
   });
@@ -71,7 +72,7 @@ authRouter.post('/register', async (c) => {
   );
 });
 
-authRouter.post('/login', async (c) => {
+authRouter.post('/login', rateLimit({ scope: 'auth:login', windowSec: 60, max: 5, keyBy: 'ip' }), async (c) => {
   const body = loginSchema.parse(await c.req.json());
   const user = await prisma.user.findUnique({ where: { email: body.email } });
   if (!user || !user.passwordHash) throw new UnauthorizedError('Invalid credentials');
@@ -95,7 +96,7 @@ authRouter.post('/login', async (c) => {
   });
 });
 
-authRouter.post('/refresh', async (c) => {
+authRouter.post('/refresh', rateLimit({ scope: 'auth:refresh', windowSec: 60, max: 30, keyBy: 'ip' }), async (c) => {
   const cookieToken = c.req.header('cookie')?.match(/refresh_token=([^;]+)/)?.[1];
   const body = refreshTokenSchema.safeParse(await c.req.json().catch(() => null));
   const token = body.success ? body.data.refreshToken : cookieToken;
