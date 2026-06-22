@@ -184,3 +184,55 @@
 - [ ] Tasks distributed across all statuses
 - [ ] Some tasks have subtasks and dependencies
 - [ ] Login as `demo@flow-desk.app` (password: `demo1234`) works
+
+## security-001: Rate Limiting
+
+- [ ] `apps/api/src/shared/middleware/rate-limit.ts` exports `rateLimit({scope, windowSec, max, keyBy})` using Redis `INCR` + `EXPIRE`
+- [ ] Auth routes: register 3/h/ip, login 5/min/ip, refresh 30/min/ip
+- [ ] AI routes: 5/min/user on both `/suggest-assignee` and `/auto-schedule`
+- [ ] Broad write limit 60/min/user on POST/PATCH/PUT/DELETE under `/api/*`
+- [ ] Every response carries `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset` headers
+- [ ] 429 response includes `Retry-After` header
+- [ ] `RateLimitError(429, retryAfter)` thrown when limit exceeded; error handler maps to 429
+- [ ] `NODE_ENV=test` or `SKIP_RATE_LIMIT=1` disables rate limiting in tests
+
+## security-002: Socket.IO Emissions
+
+- [ ] `apps/api/src/shared/lib/socket-events.ts` exports `setIo(io)`, `emitToRoom`, `emitToNamespace`, `emitToUser`, `emitToWorkspace`, `emitToTask`
+- [ ] `FlowDeskNamespace = '/tasks' | '/notifications' | '/collab'`
+- [ ] `setIo(io)` called from `index.ts` after `createSocketServer`
+- [ ] Task routes emit `task:created` (workspace), `task:updated/deleted/moved/subtask:created` (workspace + task), `task:dependency:added` (workspace) after successful DB write
+- [ ] Comment routes emit `comment:created/updated/deleted` to `task:{id}` room
+- [ ] Notification route emits `notification:new` to `user:{id}` room on `/notifications`
+- [ ] `safeEmit` wrapper prevents `requireIo()` failure from crashing request when io is unset (test env)
+- [ ] Web `useRealtime(workspaceId, taskId?)` joins `workspace:{id}` + `task:{id}` rooms on `/tasks`, listens to `task:*` and `comment:*`, invalidates React Query keys `['board', workspaceId]` and `['comments', taskId]`
+- [ ] Web `useNotificationsRealtime()` listens on `/notifications` for `notification:new`
+
+## security-003: Attachment IDOR + Membership Gaps
+
+- [ ] `apps/api/src/shared/lib/access.ts` exports `assertMembership(workspaceId, userId)` — throws if no WorkspaceMember row
+- [ ] `attachment.routes.ts`: `assertMembership` called on POST `/`, GET `/?taskId=`, GET `/:id/download` before any task lookup
+- [ ] `task.routes.ts`: `assertMembership` called on POST `/`, PATCH `/:id`, DELETE `/:id`, POST `/:id/move`, POST `/:id/subtasks`, POST `/dependencies`
+- [ ] `comment.routes.ts`: `assertMembership` called on POST `/`, PATCH `/:id`, DELETE `/:id`
+- [ ] `ai.routes.ts`: `assertMembership` called on POST `/suggest-assignee`, POST `/auto-schedule`
+- [ ] Cross-workspace access returns 401 with `{"message":"Not a member","code":"UNAUTHORIZED"}`
+
+## security-004: Membership on Comments + AI
+
+- [ ] Same `assertMembership` helper from security-003 covers comment + AI routes
+- [ ] `POST /api/comments` with foreign `taskId` → 403/401
+- [ ] `POST /api/ai/suggest-assignee` with foreign `workspaceId` → 403/401
+- [ ] `POST /api/ai/auto-schedule` with foreign `workspaceId` → 403/401
+- [ ] AI routes additionally rate-limited 5/min/user
+
+## security-005: bcrypt + LLM Hardening
+
+- [ ] `bcrypt.hash(password, 10)` in `auth.routes.ts` (was 12)
+- [ ] Existing cost-12 hashes still match because `bcrypt.compare` reads cost from hash
+- [ ] `LLMError extends AppError(502, message, 'LLM_UPSTREAM', details)` in `shared/errors/index.ts`
+- [ ] `llm-provider.ts`: `TIMEOUT_MS=30_000`, `MAX_ATTEMPTS=2`, `RETRY_BACKOFF_MS=500`
+- [ ] AbortController cancels fetch after 30s
+- [ ] Retry once on 5xx or AbortError, then throw `LLMError`
+- [ ] `error-handler.ts` status cast widened to `400|401|403|404|409|429|502|503`
+- [ ] 429 responses include `Retry-After` header
+- [ ] LLM upstream errors return 502 with code `LLM_UPSTREAM` (not 500)

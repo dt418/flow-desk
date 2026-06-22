@@ -28,7 +28,24 @@
     "db:migrate": {
       "cache": false
     },
+    "db:migrate-deploy": {
+      "cache": false
+    },
     "db:seed": {
+      "cache": false
+    },
+    "db:push": {
+      "cache": false,
+      "inputs": ["prisma/schema.prisma", ".env", "docker-compose.yml", "scripts/prisma-exec.sh"]
+    },
+    "db:push-skip-generate": {
+      "cache": false
+    },
+    "db:studio": {
+      "cache": false,
+      "persistent": true
+    },
+    "db:reset": {
       "cache": false
     }
   }

@@ -70,3 +70,15 @@
 | ------------------------------ | ----------------------------------------------------------------------------- | -------- | ----------- |
 | **file-001**: File attachments | Multer/multipart upload, local storage in docker volume, thumbnail generation | 1.5d     | passing     |
 | **file-002**: Seed data        | seed.ts with 5 users, 3 workspaces, 50+ tasks, 30+ comments                   | 1d       | passing     |
+
+## Sprint 8: Security Hardening (Day 34)
+
+### Epic: Close P0 Security Gaps
+
+| Story | Tasks | Estimate | Status |
+| ----- | ----- | -------- | ------ |
+| **security-001**: Rate limiting on auth/AI/write paths | Redis INCR+EXPIRE sliding-window middleware (`shared/middleware/rate-limit.ts`); auth:register 3/h/ip, auth:login 5/min/ip, auth:refresh 30/min/ip, AI 5/min/user, broad write 60/min/user; X-RateLimit-* headers; RateLimitError with Retry-After | 0.5d | passing |
+| **security-002**: Socket.IO server-side emissions | `shared/lib/socket-events.ts` singleton + `setIo(io)` + `emitToRoom/Namespace/User/Workspace/Task` over FlowDeskNamespace = `/tasks \| /notifications \| /collab`; task routes emit `task:created/updated/deleted/moved/subtask:created/dependency:added`; comment routes emit `comment:created/updated/deleted`; notification emit `notification:new` to `user:{id}` room | 0.5d | passing |
+| **security-003**: Attachment IDOR closed + membership gaps fixed | `shared/lib/access.ts` `assertMembership(workspaceId, userId)`; applied to attachment POST/GET?taskId=/:id/download, task POST/PATCH/DELETE/move/subtasks/deps, comment POST/PATCH/DELETE, AI suggest-assignee/auto-schedule | 0.5d | passing |
+| **security-004**: Membership checks on POST /comments and AI routes | Same `assertMembership` helper; AI routes additionally rate-limited 5/min/user | 0.25d | passing |
+| **security-005**: bcrypt cost 10 + LLM provider hardening | bcrypt 12 → 10 in `auth.routes.ts`; `LLMError extends AppError(502, 'LLM_UPSTREAM')`; AbortController 30s timeout + 1 retry on 5xx/AbortError with 500ms backoff; error-handler status cast widened to `400\|401\|403\|404\|409\|429\|502\|503` | 0.25d | passing |

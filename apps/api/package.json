@@ -14,11 +14,14 @@
     "lint": "echo 'api: lint placeholder'",
     "test": "echo 'api: no tests yet'",
     "prisma": "prisma",
-    "db:generate": "prisma generate",
-    "db:migrate": "prisma migrate dev",
-    "db:migrate:deploy": "prisma migrate deploy",
-    "db:seed": "esbuild ../../prisma/seed.ts --bundle --platform=node --format=cjs --outfile=dist/seed.cjs --external:@prisma/client --external:bcryptjs && node dist/seed.cjs",
-    "db:studio": "prisma studio"
+    "db:generate": "bash ../../scripts/prisma-exec.sh generate",
+    "db:migrate": "bash ../../scripts/prisma-exec.sh migrate dev",
+    "db:migrate-deploy": "bash ../../scripts/prisma-exec.sh migrate deploy",
+    "db:seed": "bash ../../scripts/prisma-exec.sh seed",
+    "db:studio": "bash ../../scripts/prisma-exec.sh studio",
+    "db:push": "bash ../../scripts/prisma-exec.sh db push",
+    "db:push-skip-generate": "bash ../../scripts/prisma-exec.sh db push --skip-generate",
+    "db:reset": "bash ../../scripts/prisma-exec.sh migrate reset --force --skip-seed && bash ../../scripts/prisma-exec.sh db push --skip-generate"
   },
   "dependencies": {
     "@flow-desk/shared": "workspace:*",

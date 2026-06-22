@@ -3,63 +3,77 @@
 ## Verified Now
 
 - What is currently working:
-  - 22/22 features passing (`feature_list.json`); kanban-bugs-fix added (priority 22)
-  - Stack up: `REDIS_PORT=16379 docker compose up -d` (host 6379 held by system Valkey)
-  - Web bundle `index-Dk3H20JT.js` (568KB / 169KB gz) serving at http://localhost:5173/
-  - API at http://localhost:3000/api; JWT in httpOnly cookie
+  - 27/27 features passing (`feature_list.json`); F1 security track added (security-001..005, priority 23-27, all passing)
+  - Stack up: `docker compose up -d` from `/home/thanh/flow-desk`
+  - Web at http://localhost:5173, API at http://localhost:3000
   - Demo creds: `demo@flow-desk.app` / `demo1234`
-- What verification actually ran:
-  - `pnpm --filter @flow-desk/shared build` → green
-  - `pnpm --filter @flow-desk/api typecheck` → No errors found
-  - `pnpm --filter @flow-desk/web typecheck` → No errors found
-  - `pnpm --filter @flow-desk/web build` → 568KB JS / 63KB CSS, 5.94s
-  - `docker compose build api web` → both images Built
-  - Smoke tests (cookie auth as demo):
-    - POST /api/tasks → 201, position=21, version=0
-    - POST /api/tasks/:id/move same-column reorder → 200, renumbered 0..N-1, version→1
-    - POST /api/tasks/:id/move stale version=99 → 409 CONFLICT + current snapshot
-    - POST /api/tasks/:id/move cross-column to Done → 200, status=DONE + completedAt set, version→2
-    - Subtask CRUD, dep create + cycle-rejected, comment+@mention
+- What verification actually ran (session 009):
+  - Live curl smoke (worktree `feat/f1-security`):
+    - `POST /api/auth/register` → 201, JWT cookies httpOnly, `x-ratelimit-limit: 3` (matches auth:register scope)
+    - `POST /api/auth/login` → 200
+    - `POST /api/workspaces` → 201, `x-ratelimit-limit: 60` (matches writeRateLimit)
+    - `GET /api/workspaces/:id` as Bob (non-member) → 401 `UNAUTHORIZED` (assertMembership works)
+    - `GET /api/workspaces/:id` as Alice → 200
+    - `GET /socket.io/?EIO=4&transport=polling` → 200 with sid + websocket upgrade header
+  - Pre-commit hook ran on F1 commits — no secrets, exit 0
+  - `pnpm prisma db push` (via `docker compose exec api`) → "already in sync with Prisma schema"
 
 ## Changed This Session
 
-- Code or behavior added:
-  - **B2 fix**: POST /api/tasks/:id/move gains `$transaction` that splice-removes from source column, splice-inserts at target position, parks all affected rows to 1M+i, renumbers 0..N-1 in both columns; optimistic-lock rejects stale `version` with 409 + current snapshot; auto-sets status=DONE + completedAt when target is done column
-  - **B1 fix**: New `apps/web/src/features/task/` module (api/hooks/types/index + NewTaskModal) wired to "New task" button on /board; rhform+zod, useCreateTask mutation with React Query invalidation
-  - Board page: snapshotRef rollback pattern on move failure, `position` + `version` now sent on drop
+- Code or behavior added (F1 security track):
+  - **Rate limiting**: `shared/middleware/rate-limit.ts` (Redis INCR+EXPIRE sliding-window); `auth:register` 3/h/ip, `auth:login` 5/min/ip, `auth:refresh` 30/min/ip; AI 5/min/user; broad write 60/min/user; X-RateLimit-* headers + Retry-After on 429
+  - **Socket.IO emissions**: `shared/lib/socket-events.ts` singleton + `setIo(io)` + emit helpers; task routes emit task:created/updated/deleted/moved/subtask:created/dependency:added; comment routes emit comment:created/updated/deleted; notification emit notification:new to user:{id}
+  - **Membership**: `shared/lib/access.ts` `assertMembership(workspaceId, userId)`; applied to attachment POST/GET?taskId=/:id/download, task POST/PATCH/DELETE/move/subtasks/deps, comment POST/PATCH/DELETE, AI suggest-assignee/auto-schedule
+  - **bcrypt**: cost 12 → 10 in `auth.routes.ts`
+  - **LLM hardening**: `LLMError extends AppError(502, 'LLM_UPSTREAM')`; AbortController 30s timeout + 1 retry on 5xx/AbortError with 500ms backoff; error-handler status cast widened to `400|401|403|404|409|429|502|503`
+  - **Web realtime**: `useNamespacedSocket` multi-namespace manager + `useRealtime(workspaceId, taskId?)` hook joins workspace: + task: rooms, invalidates React Query keys; `useNotificationsRealtime()` for notification:new; wired into `pages/board.tsx`
 - Infrastructure or harness changes:
-  - Worktree `.worktrees/kanban-bugs-fix` (branch `feat/kanban-bugs-fix`) — isolation workspace for the fix; main worktree unchanged until merge
+  - Branch `feat/f1-security` pushed to origin, fast-forward merged to main, main pushed
+  - 15 commits total on main (14 F1 + 1 docs)
 
 ## Broken Or Unverified
 
 - Known defect:
-  - **Socket.IO has zero emissions** — rooms joined but no `io.to().emit()` anywhere → clients do not see realtime updates after REST mutations. Confirmed by `grep io.emit|io.to|socket.emit` returning 0 matches in `apps/api/src`. Architecture promised, not wired.
-  - **No rate limiting anywhere** — `RateLimitError` class exists but never instantiated. Auth brute-forceable; AI cost-amplifiable.
-  - **Attachment IDOR** — `GET /api/attachments/:id/download` has no membership check; any authed user can stream any file.
-  - **Membership missing on AI routes** (`/suggest-assignee`, `/auto-schedule`), `POST /comments`, `POST /attachments`.
-  - **Soft-delete gaps**: `PATCH /workspaces/:id`, dependency endpoints, AI suggest-assignee task lookup, comment-task lookup, attachment upload.
+  - **R-29**: Soft-delete gaps — `PATCH /workspaces/:id`, dependency endpoints, AI task lookup, comment-task lookup, attachment upload allow operations on deleted entities (backlog)
+  - **R-30**: Missing pagination on workspaces/members/attachments/board lists (backlog)
+  - **R-31**: Zero service/repository layer (AGENTS.md violation, deferred to F4)
+  - **R-32**: Zero tests across the repo (deferred to F4)
+  - **R-33**: Split-brain selects — native `<select>` instead of Radix in some components (deferred to F2)
+  - **R-34**: DragOverlay shows static "Moving…" instead of card clone (deferred to F2)
+  - **R-35**: Pre-existing `src/index.ts(64,31)` `ServerType` vs `Server<Http1>` typecheck error — confirmed pre-existing via `git stash` + typecheck; does not block runtime
 - Unverified path:
-  - 2-tab real-time board sync (no socket emissions → impossible until Socket.IO bug fixed)
-  - Auth-002 Google OAuth — blocked on real GOOGLE_CLIENT_ID/SECRET/REDIRECT_URI
-- Risk for the next session:
-  - Picking next scope track (F1 P0 broken CTAs / F2 kanban polish / F3 task-detail / F4 Jira clones) without first deciding order; queue is documented in `claude-progress.md` session 008
+  - 2-tab real-time board sync (smoke verify stopped at socket reachability; full 2-tab interaction not exercised in CI-style script)
+  - auth-002 Google OAuth — blocked on real GOOGLE_CLIENT_ID/SECRET/REDIRECT_URI
+  - LLM 31s timeout abort path — not exercised (would require stub fetch)
 
 ## Next Best Step
 
 - Highest-priority unfinished feature:
-  - None pending in `feature_list.json` (22/22 passing). Decision pending for the next scope track from session 008 brainstorm queue.
+  - None pending in `feature_list.json` (27/27 passing). Decision pending for next scope track.
+- Recommended tracks (from session 008 queue):
+  - **F2 Kanban polish** — SortableContext + slot-shift animation + DragOverlay card clone + Radix select migration (R-33, R-34). Visible UX wins.
+  - **F3 Task-detail page** — full task view with edit/delete + comment thread + activity log. Closes the gap between board cards and modals.
+  - **F4 Jira clones** — command palette (⌘K), mentions autocomplete, bulk select. Largest scope.
+  - **Pre-flight**: fix R-35 (clean typecheck pipeline) before stacking new work.
 - Why it is next:
-  - User pivoted to bug-hunt + UX polish after explicit "hoàn thiện tính năng + fix bug + tăng UI/UX clone Jira". Recommended track: **F1 P0 broken CTAs + workspace/task creation flow** (closes the largest visible gap — dashboard "New workspace" / board "New task" no-ops). Track F2 (kanban polish — SortableContext, live-shift animation, snapshot overlay) and F3 (task-detail page + edit/delete) queue behind it. F4 (Jira clones — command palette, mentions autocomplete, bulk select) is the largest.
+  - User pivoted to "hoàn thiện tính năng + fix bug + tăng UI/UX clone Jira". F1 closed the security gaps; UI/UX polish is the visible next win.
 - What counts as passing:
-  - F1: All four broken CTAs wired + working modals (New Workspace, New Task, Task Detail) with form validation, server persistence, sonner feedback, React Query invalidation, optimistic where appropriate. `feature_list.json` entry moved to passing with evidence.
+  - F2: Smooth drag animations + Radix select migration + 2-tab realtime sync verified end-to-end with `useRealtime` invalidation. `feature_list.json` entries flipped to passing with evidence.
 - What must not change during that step:
-  - Architecture standards (routes/service/repository split is a follow-up refactor, not in F1 scope)
+  - Architecture standards (routes/service/repository split stays deferred to F4)
   - Pre-commit secret-hook
-  - Prisma schema (additive only; soft-delete consistency fixes queue separately)
+  - Prisma schema (additive only; soft-delete consistency fixes queue separately as R-29)
 
 ## Commands
 
-- Startup: `REDIS_PORT=16379 docker compose up -d` (override host port 6379 conflict with system Valkey)
-- Verification: `pnpm --filter @flow-desk/shared build && pnpm --filter @flow-desk/api typecheck && pnpm --filter @flow-desk/web typecheck && pnpm --filter @flow-desk/web build`
+- Stack: `pnpm stack:up` / `stack:up:build` / `stack:down` / `stack:logs` / `stack:ps` (smart port-override detection via `scripts/docker-up.sh`)
+- Prisma (runs inside api container via `scripts/prisma-exec.sh`):
+  - `pnpm db:push` / `db:push:skip-generate`
+  - `pnpm db:migrate` / `db:migrate:deploy`
+  - `pnpm db:seed` / `db:studio` / `db:reset`
+  - `pnpm prisma <args>` — arbitrary prisma args through wrapper
+- Build/typecheck/test: `pnpm build` / `pnpm typecheck` / `pnpm test` (turbo run)
+- Local dev (no Docker): `pnpm dev:local` (`scripts/dev-local.sh` checks host postgres+redis then runs api+web in parallel)
 - Smoke: `curl -X POST http://localhost:3000/api/auth/login -H 'Content-Type: application/json' -d '{"email":"demo@flow-desk.app","password":"demo1234"}' -c /tmp/cookies.txt`
-- Focused debug: `docker compose logs -f api` for requestId-tracked logs
+- Focused debug: `pnpm stack:logs` for requestId-tracked logs
+- New scripts (this session): `scripts/dev-local.sh` (run pnpm dev without Docker), `scripts/docker-up.sh` (smart compose up with port-override detection), `scripts/prisma-exec.sh` (docker-exec prisma wrapper)

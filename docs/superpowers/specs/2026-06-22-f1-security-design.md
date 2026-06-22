@@ -2,7 +2,7 @@
 
 **Date:** 2026-06-22
 **Session:** 009
-**Status:** Design — pending user review
+**Status:** Complete — implemented, smoke-verified, merged to main (commits `1f33bcc`..`e15e85c`, docs `6aa9253`)
 
 ## Problem
 
