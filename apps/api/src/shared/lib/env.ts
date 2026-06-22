@@ -26,6 +26,10 @@ const envSchema = z.object({
     .int()
     .default(25 * 1024 * 1024),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
+  SKIP_RATE_LIMIT: z
+    .string()
+    .optional()
+    .transform((v) => v === '1' || v === 'true'),
 });
 
 function normalizeEnv(input: Record<string, unknown>): Record<string, unknown> {
