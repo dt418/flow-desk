@@ -161,17 +161,108 @@ taskRouter.post('/:id/move', async (c) => {
     throw new BadRequestError('Invalid target column');
   }
 
-  const task = await prisma.task.update({
-    where: { id },
-    data: {
-      columnId: body.columnId,
-      position: body.position,
-      status: targetColumn.isDoneColumn ? 'DONE' : existing.status,
-      ...(targetColumn.isDoneColumn ? { completedAt: new Date() } : {}),
-      version: { increment: 1 },
-    },
+  const sourceColumnId = existing.columnId;
+  const isSameColumn = sourceColumnId === body.columnId;
+
+  const [sourceTasks, targetTasks] = await Promise.all([
+    prisma.task.findMany({
+      where: { columnId: sourceColumnId, deletedAt: null },
+      orderBy: { position: 'asc' },
+      select: { id: true },
+    }),
+    isSameColumn
+      ? Promise.resolve([])
+      : prisma.task.findMany({
+          where: { columnId: body.columnId, deletedAt: null },
+          orderBy: { position: 'asc' },
+          select: { id: true },
+        }),
+  ]);
+
+  const sourceNew = sourceTasks.filter((t) => t.id !== id);
+  const targetBase: { id: string }[] = isSameColumn
+    ? sourceNew
+    : targetTasks.filter((t) => t.id !== id);
+  const clampedPos = Math.max(0, Math.min(body.position, targetBase.length));
+  const targetNew: { id: string }[] = [...targetBase];
+  targetNew.splice(clampedPos, 0, { id });
+
+  const movedTask = await prisma.$transaction(async (tx) => {
+    const parkBase = 1_000_000;
+    const parkIds: string[] = sourceNew.map((t) => t.id);
+    if (!isSameColumn) {
+      for (const t of targetTasks) if (t.id !== id) parkIds.push(t.id);
+    }
+    parkIds.push(id);
+
+    for (let i = 0; i < parkIds.length; i++) {
+      await tx.task.update({
+        where: { id: parkIds[i] },
+        data: { position: parkBase + i },
+      });
+    }
+
+    const finalStatus = targetColumn.isDoneColumn ? 'DONE' : existing.status;
+    const finalCompletedAt = targetColumn.isDoneColumn ? new Date() : null;
+
+    if (isSameColumn) {
+      let i = 0;
+      for (const t of targetNew) {
+        if (t.id === id) {
+          await tx.task.update({
+            where: { id },
+            data: {
+              columnId: body.columnId,
+              position: i,
+              status: finalStatus,
+              ...(finalCompletedAt ? { completedAt: finalCompletedAt } : {}),
+              version: { increment: 1 },
+            },
+          });
+        } else {
+          await tx.task.update({
+            where: { id: t.id },
+            data: { columnId: sourceColumnId, position: i },
+          });
+        }
+        i++;
+      }
+    } else {
+      let si = 0;
+      for (const t of sourceNew) {
+        await tx.task.update({
+          where: { id: t.id },
+          data: { columnId: sourceColumnId, position: si },
+        });
+        si++;
+      }
+      let ti = 0;
+      for (const t of targetNew) {
+        if (t.id === id) {
+          await tx.task.update({
+            where: { id },
+            data: {
+              columnId: body.columnId,
+              position: ti,
+              status: finalStatus,
+              ...(finalCompletedAt ? { completedAt: finalCompletedAt } : {}),
+              version: { increment: 1 },
+            },
+          });
+        } else {
+          await tx.task.update({
+            where: { id: t.id },
+            data: { columnId: body.columnId, position: ti },
+          });
+        }
+        ti++;
+      }
+    }
+
+    return tx.task.findUnique({ where: { id } });
   });
-  return c.json({ task });
+
+  return c.json({ task: movedTask });
 });
 
 taskRouter.post('/:id/subtasks', async (c) => {
