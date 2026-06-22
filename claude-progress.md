@@ -6,7 +6,7 @@
 - **Standard startup path**: `./init.sh` (pnpm install + shared build + git hook install) then `docker compose up -d`
 - **Standard verification path**: `pnpm --filter @flow-desk/shared build` + curl API endpoints + `bash scripts/prisma-exec.sh <args>` for prisma
 - **Highest priority unfinished feature**: none (29/29 features passing)
-- **Active branch**: `main` in `/home/thanh/flow-desk` (post-scripts-001 + post-qa-001 verification gate; F1 security-001..005 in `.worktrees/f1-security/feat/f1-security` pending T17 push+merge)
+- **Active branch**: `main` in `/home/thanh/flow-desk` (synced with `origin/main`; F1 security-001..005 fully merged at session 009; session 011 pushed `f403aee` scripts-001 fix + `95788a5` qa-001 typecheck fix; commit range `0eabfcd..95788a5` now on origin)
 - **Current blocker**: none
 - **Key risks** (carry-forward): R-24 (ai-001 latency UX), R-29 (soft-delete gaps), R-30 (missing pagination), R-31 (no service/repository layer), R-32 (zero tests — green-by-vacuum, not green-by-coverage), R-33 (split-brain selects), R-34 (DragOverlay UX)
 - **Resolved risks (session 010)**: R-36 (prisma-exec regression), R-37 (silent env fallback), R-38 (sh -c word-split + hardcoded container name in seed path)
@@ -65,7 +65,31 @@
   - `claude-progress.md` (this session block + Current Verified State bumped 28→29 + R-35 resolved)
 - **Risks resolved**: R-35 (pre-existing typecheck)
 - **Risks remaining**: R-24, R-29..34 (R-32 zero-tests stays — green is now by-exit-code, still no coverage)
-- **Next best step**: Commit qa-001 changes (3 files, ~+34/-2). Resume F1 merge or pick next scope track.
+- **Next best step**: T17 push of scripts-001 + qa-001 to origin; then seed next scope track (F2 kanban polish or F3 task-detail) or pick from priority-30+ features.
+
+### Session 011
+
+- **Date**: 2026-06-23
+- **Goal**: T17 — push scripts-001 (`f403aee`) + qa-001 (`95788a5`) to `origin/main`. Investigate "commit push and merge" request for `feat/f1-security`.
+- **Findings**:
+  - `origin = https://github.com/dt418/flow-desk.git`, `origin/main` previously at `0eabfcd`. Local main ahead 2 commits (`f403aee`, `95788a5`).
+  - `origin/feat/f1-security` already at `6aa9253` (T17 was effectively pushed at session 009 — branch is a historical artifact).
+  - `git merge-base main feat/f1-security` = `6aa9253`. `git log main..feat/f1-security` = **empty** (f1-security has nothing main doesn't have).
+  - `git log feat/f1-security..main` = 4 commits (the 4 that landed in main after session 009 — `8722169`, `0eabfcd`, `f403aee`, `95788a5`).
+  - `git merge --no-commit --no-ff feat/f1-security` from main checkout → "Already up to date". Branch fully merged; merge action is a no-op.
+  - **`feat/f1-security` worktree retained** for history reference; no cleanup needed (small, isolated).
+- **Action**:
+  - `git push origin main` → `0eabfcd..95788a5 main -> main`. main now ≡ origin/main.
+  - Pre-commit hook validated both pushed commits at authoring time; no secret leak risk.
+- **Verification run**:
+  - `git log --oneline -5` on main post-push: `95788a5` (tip), `f403aee`, `0eabfcd`, `8722169`, `6aa9253` (F1 base). Expected lineage.
+  - `git status` → "clean — nothing to commit", no diff vs `origin/main`.
+- **Files or artifacts updated**:
+  - `claude-progress.md` (Current Verified State + this session block)
+  - `feature_list.json` (next: add merge record entry once feature scope defined — none needed now since `feat/f1-security` was already in feature_list at session 009)
+- **Risks resolved**: none new (T17 is operational, not a code change)
+- **Risks remaining**: R-24, R-29..34 (carry-forward)
+- **Next best step**: Seed next scope track (F2 kanban polish or F3 task-detail) via `feature_list.json` priority-30+ entry, or pick from any existing priority-30+ feature. Update `feature_list.json` with a new feature entry describing chosen scope before starting work.
 
 ### Session 009
 
