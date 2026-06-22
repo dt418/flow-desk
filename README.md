@@ -43,12 +43,12 @@ Login: `demo@flow-desk.app` / `demo1234`
 
 ## Database (Prisma)
 
-All prisma commands run from root through turbo + `scripts/prisma-exec.sh`. The wrapper **auto-detects** the mode:
+All prisma commands run from root through turbo + `scripts/prisma-exec.sh`. The wrapper picks a mode:
 
-- **docker** (api container running): exec inside the container where `postgres:5432` resolves
-- **local** (no api container): run prisma on the host, sourcing `.env` from root
+- **docker** (default): exec inside the api container where `postgres:5432` resolves. If the api container is not running, the wrapper auto-starts the stack via `scripts/docker-up.sh`.
+- **local**: run prisma on the host, sourcing `.env` from root. The wrapper never touches the docker stack in this mode.
 
-Force a specific mode with `FLOW_DESK_DB_MODE=docker|local`. In docker mode, if the api container is not running, the wrapper auto-starts it via `scripts/docker-up.sh`.
+Set `FLOW_DESK_DB_MODE=docker|local` to override. Invalid values are rejected with exit code 64.
 
 ```bash
 pnpm db:push              # db push (regenerate client)
@@ -60,9 +60,9 @@ pnpm db:studio            # prisma studio on http://localhost:5555
 pnpm db:reset             # drop + recreate DB + push schema (DESTRUCTIVE)
 pnpm prisma db push --skip-generate  # arbitrary prisma args via wrapper
 
-# Force mode (override auto-detect):
+# Force mode (override default):
+FLOW_DESK_DB_MODE=local  pnpm db:push    # always run on host, no docker stack
 FLOW_DESK_DB_MODE=docker pnpm db:push    # always use docker (auto-starts stack)
-FLOW_DESK_DB_MODE=local  pnpm db:push    # always run on host
 ```
 
 The same commands work from `apps/api/` directly:

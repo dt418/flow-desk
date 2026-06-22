@@ -619,6 +619,32 @@
         "Live curl POST /api/auth/register on worktree -> 201 (bcrypt 10 path exercised)"
       ],
       "notes": "Retry: 1 attempt on 5xx or AbortError, 500ms backoff. Error handler status cast widened to 400|401|403|404|409|429|502|503."
+    },
+    {
+      "id": "scripts-001",
+      "priority": 28,
+      "area": "scripts",
+      "title": "prisma-exec wrapper hardening (review follow-up)",
+      "user_visible_behavior": "scripts/prisma-exec.sh is safe to run from a fresh clone: invalid FLOW_DESK_DB_MODE values are rejected with exit 64, missing api container auto-starts the docker stack, and the default flow connects to the docker postgres without manual mode juggling.",
+      "status": "passing",
+      "verification": [
+        "FLOW_DESK_DB_MODE=foo → exit 64 with clear error to stderr",
+        "FLOW_DESK_DB_MODE unset + api container absent → auto-start stack, exec into container via `docker compose exec -T -w /app/apps/api api pnpm exec prisma`, connects to postgres:5432",
+        "FLOW_DESK_DB_MODE=local → host-side prisma, no docker interaction, .env sourced from root",
+        "bash -n scripts/prisma-exec.sh → syntax OK"
+      ],
+      "evidence": [
+        "scripts/prisma-exec.sh: case-validates FLOW_DESK_DB_MODE up front (lines 38-44), rejects invalid values with exit 64 and stderr message",
+        "scripts/prisma-exec.sh: default-mode is docker (line 54-58), so unset env + cold stack triggers auto-start at lines 63-66 (bash scripts/docker-up.sh up)",
+        "scripts/prisma-exec.sh: docker mode runs `docker compose exec -T -w /app/apps/api api pnpm exec prisma \"$@\"` (line 116) — no `sh -c`, no word-split",
+        "scripts/prisma-exec.sh: hardcoded container name replaced with `docker compose ps -q api` lookup (line 93) for the seed-copy step",
+        "scripts/prisma-exec.sh: local mode sources .env (lines 73-78) for host-side prisma + seed.cjs",
+        "apps/api/package.json: db:reset consolidated to single wrapper call `db push --force-reset --accept-data-loss --skip-generate` (replaces two-call migrate reset + db push pattern that could switch modes mid-reset)",
+        "turbo.json: dead `inputs` on db:push dropped (cache:false made them no-op)",
+        "README.md: mode description now reflects default=docker + auto-start UX; invalid values section added",
+        "Live verification: FLOW_DESK_DB_MODE=foo → ERROR stderr + exit 64; unset env + cold stack → auto-start + exec -T -w /app/apps/api + connect to postgres:5432; FLOW_DESK_DB_MODE=local → host-side prisma reaches localhost:5432, schema in sync"
+      ],
+      "notes": "Code-review follow-up for commit 0eabfcd. Eight findings closed (1 critical regression, 1 silent-fallback, 1 doc drift, 4 minor cleanup, 1 confirmed-correct no-op). All changes in main checkout (no worktree for this small bug-fix-class follow-up)."
     }
   ]
 }

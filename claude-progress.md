@@ -4,15 +4,42 @@
 
 - **Repository root**: `/home/thanh/flow-desk`
 - **Standard startup path**: `./init.sh` (pnpm install + shared build + git hook install) then `docker compose up -d`
-- **Standard verification path**: `pnpm --filter @flow-desk/shared build` + curl API endpoints
-- **Highest priority unfinished feature**: none (27/27 features passing — security-001..005 added at priority 23-27, all passing)
-- **Active branch**: `feat/f1-security` in `/home/thanh/flow-desk/.worktrees/f1-security` (14 commits, clean, pending T17 push to origin + merge to main)
-- **Current blocker**: none (F1 P0 security track complete; pending T17 push + merge)
-- **Key risks** (carry-forward): R-24 (ai-001 latency UX), R-29 (soft-delete gaps), R-30 (missing pagination), R-31 (no service/repository layer), R-32 (zero tests), R-33 (split-brain selects), R-34 (DragOverlay UX)
-- **Resolved risks (session 009)**: R-25 (Socket.IO emissions), R-26 (rate-limit on auth/AI/write), R-27 (attachment IDOR), R-28 (membership checks on AI/comment/attachment)
+- **Standard verification path**: `pnpm --filter @flow-desk/shared build` + curl API endpoints + `bash scripts/prisma-exec.sh <args>` for prisma
+- **Highest priority unfinished feature**: none (28/28 features passing)
+- **Active branch**: `main` in `/home/thanh/flow-desk` (scripts-001 follow-up in working tree, uncommitted; prior security-001..005 in `.worktrees/f1-security/feat/f1-security` pending T17 push+merge)
+- **Current blocker**: none
+- **Key risks** (carry-forward): R-24 (ai-001 latency UX), R-29 (soft-delete gaps), R-30 (missing pagination), R-31 (no service/repository layer), R-32 (zero tests), R-33 (split-brain selects), R-34 (DragOverlay UX), R-35 (pre-existing src/index.ts ServerType typecheck error)
+- **Resolved risks (session 010)**: R-36 (prisma-exec regression), R-37 (silent env fallback), R-38 (sh -c word-split + hardcoded container name in seed path)
 - **Security note**: `LLM_API_KEY` (sk-80c6f26e1...) was pasted in chat once during session 006. Recommend rotating the key at the provider. Key is in `.env`/`.env.local` (gitignored). Pre-commit hook blocks future leaks.
 
 ## Session Log
+
+### Session 010
+
+- **Date**: 2026-06-23
+- **Goal**: Code-review follow-up for commit `0eabfcd` (feat(scripts): prisma-exec auto-detects docker|local mode) — close 8 findings (1 critical, 2 major, 5 minor)
+- **Worktree**: none — small bug-fix-class change in main checkout. Worktree pattern reserved for larger feature tracks (cf. sessions 008/009).
+- **Completed**:
+  - **F1 (R-36, critical)**: default-mode inverted to `docker` so unset `FLOW_DESK_DB_MODE` + cold stack auto-starts via `scripts/docker-up.sh` instead of silently picking local. Pre-`0eabfcd` UX preserved.
+  - **F2 (R-37, critical)**: `scripts/prisma-exec.sh` validates `FLOW_DESK_DB_MODE` up front with case statement; invalid values exit 64 with `ERROR: FLOW_DESK_DB_MODE must be 'docker' or 'local', got: '<value>'` to stderr.
+  - **F3 (major)**: README.md mode bullets rewritten to reflect default=docker + auto-start behavior; invalid-value section added.
+  - **F4 (minor)**: `apps/api/package.json` `db:reset` consolidated to single wrapper call `db push --force-reset --accept-data-loss --skip-generate` (was: two-call `migrate reset --force --skip-seed && db push --skip-generate` which could switch modes mid-reset).
+  - **F5 (minor)**: `turbo.json` dead `inputs` on `db:push` dropped (`cache: false` made them no-op).
+  - **F6 (minor, confirmed no-op)**: local-mode .env sourcing comment is accurate; no change needed.
+  - **F7 (R-38, minor)**: hardcoded container name `flow-desk-api-1` replaced with dynamic `docker compose ps -q api` lookup for the seed-copy step.
+  - **F8 (R-38, minor)**: `docker compose exec api sh -c "cd /app/apps/api && pnpm exec prisma $*"` replaced with `docker compose exec -T -w /app/apps/api api pnpm exec prisma "$@"` — no `sh -c` wrapping, no host-side word-split.
+- **Verification run**:
+  - `bash -n scripts/prisma-exec.sh` → syntax OK
+  - `FLOW_DESK_DB_MODE=foo bash scripts/prisma-exec.sh db push --skip-generate` → `ERROR: FLOW_DESK_DB_MODE must be 'docker' or 'local', got: 'foo'` to stderr, exit 64
+  - `FLOW_DESK_DB_MODE=local bash scripts/prisma-exec.sh db push --skip-generate` → host-side prisma, schema already in sync at localhost:5432, exit 0
+  - Unset `FLOW_DESK_DB_MODE` + api container absent: `bash scripts/prisma-exec.sh db push --skip-generate` → auto-start banner → `docker compose exec -T -w /app/apps/api api pnpm exec prisma db push --skip-generate` → connects to postgres:5432, schema already in sync, exit 0
+  - `docker compose exec --help` confirms `-w, --workdir string` flag (used by the new exec command)
+  - `pnpm exec prisma db push --help` confirms `--accept-data-loss`, `--force-reset`, `--skip-generate` flags (used by consolidated db:reset)
+- **Files or artifacts updated**:
+  - `scripts/prisma-exec.sh` (rewritten: validation + default-docker + dynamic CID + `-w` flag), `apps/api/package.json` (db:reset single-call), `turbo.json` (dead inputs dropped), `README.md` (default-docker + invalid-value docs), `feature_list.json` (scripts-001 → passing with 9 evidence items), `claude-progress.md` (this session)
+- **Risks resolved**: R-36 (prisma-exec default-flow regression), R-37 (silent env fallback on typo), R-38 (sh -c word-split + hardcoded container name)
+- **Risks remaining**: R-24, R-29..35
+- **Next best step**: Commit scripts-001 changes (4 files, +63/-44). Continue with T17 push of feat/f1-security to origin. F2 (kanban polish) or F3 (task-detail) as next scope track after F1 merge.
 
 ### Session 009
 

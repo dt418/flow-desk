@@ -35,8 +35,7 @@
       "cache": false
     },
     "db:push": {
-      "cache": false,
-      "inputs": ["prisma/schema.prisma", ".env", "docker-compose.yml", "scripts/prisma-exec.sh"]
+      "cache": false
     },
     "db:push-skip-generate": {
       "cache": false
