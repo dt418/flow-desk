@@ -5,7 +5,7 @@ import {
   moveTaskSchema,
   createDependencySchema,
   createSubtaskSchema,
-  taskSchema,
+  taskWithRelationsSchema,
 } from '@flow-desk/shared/task';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
@@ -31,7 +31,7 @@ taskRouter.get(
       ...t,
       labels: (t as unknown as { labelsDeprecated?: string[] }).labelsDeprecated ?? [],
     }));
-    return c.json({ data: z.array(taskSchema).parse(apiTasks), nextCursor });
+    return c.json({ data: z.array(taskWithRelationsSchema).parse(apiTasks), nextCursor });
   },
 );
 

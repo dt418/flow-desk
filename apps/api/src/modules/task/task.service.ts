@@ -27,6 +27,8 @@ export const listTasksQuerySchema = CursorPaginationQuery.extend({
   search: z.string().max(200).optional(),
   dueBefore: z.string().datetime({ offset: true }).optional(),
   dueAfter: z.string().datetime({ offset: true }).optional(),
+  sortBy: z.enum(['createdAt', 'updatedAt', 'dueDate', 'priority', 'position']).default('position'),
+  sortOrder: z.enum(['asc', 'desc']).default('asc'),
 });
 export type ListTasksQuery = z.infer<typeof listTasksQuerySchema>;
 
@@ -61,7 +63,7 @@ export const taskService = {
         : {}),
     };
 
-    const order: 'asc' | 'desc' = 'desc';
+    const order: 'asc' | 'desc' = query.sortOrder;
     const decoded = query.cursor ? decodeCursor(query.cursor) : null;
     const cursorWhere: Prisma.TaskWhereInput | undefined = decoded
       ? {
@@ -77,9 +79,20 @@ export const taskService = {
         }
       : undefined;
 
+    const primarySortField = query.sortBy as
+      | 'createdAt'
+      | 'updatedAt'
+      | 'dueDate'
+      | 'priority'
+      | 'position';
+
     const items = await prisma.task.findMany({
       where: cursorWhere ?? where,
-      orderBy: [{ createdAt: order }, { id: order }],
+      orderBy: [
+        { [primarySortField]: order },
+        { createdAt: 'desc' },
+        { id: order },
+      ],
       take: query.limit + 1,
       include: {
         assignee: { select: { id: true, name: true, email: true, avatarUrl: true } },

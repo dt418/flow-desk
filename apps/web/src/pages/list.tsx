@@ -1,5 +1,5 @@
 import { useParams, Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery } from '@tanstack/react-query';
 import type { ColumnDef } from '@tanstack/react-table';
 import { useMemo, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
@@ -16,9 +16,15 @@ interface TaskRow {
   status: string;
   priority: string;
   columnId: string;
+  position: number;
   assignee: { id: string; name: string; email?: string; avatarUrl: string | null } | null;
   dueDate: string | null;
   labels: string[];
+}
+
+interface ListPageResponse {
+  data: TaskRow[];
+  nextCursor: string | null;
 }
 
 const STATUS_OPTIONS = [
@@ -127,22 +133,33 @@ export function ListPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
   const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>('ALL');
 
-  const data = useQuery({
+  const data = useInfiniteQuery<ListPageResponse, Error>({
     queryKey: ['tasks', workspaceId],
-    queryFn: async () => {
-      const res = await api<{ data: TaskRow[]; nextCursor: string | null }>(
-        `/api/tasks?workspaceId=${encodeURIComponent(workspaceId)}`,
-      );
-      return res;
+    initialPageParam: undefined,
+    queryFn: async ({ pageParam }) => {
+      try {
+        const search = new URLSearchParams({ workspaceId, limit: '100' });
+        if (pageParam) search.set('cursor', String(pageParam));
+        const res = await api<ListPageResponse>(`/api/tasks?${search.toString()}`);
+        return {
+          data: Array.isArray(res?.data) ? res.data : [],
+          nextCursor: typeof res?.nextCursor === 'string' ? res.nextCursor : null,
+        };
+      } catch {
+        return { data: [], nextCursor: null };
+      }
     },
+    getNextPageParam: (lastPage) => lastPage?.nextCursor ?? undefined,
     enabled: Boolean(workspaceId),
+    retry: false,
   });
 
   const filtered = useMemo(() => {
-    const tasks = data.data?.data ?? [];
+    const pages = Array.isArray(data.data?.pages) ? data.data.pages : [];
+    const tasks = pages.flatMap((p) => (Array.isArray(p?.data) ? p.data : []));
     return tasks.filter((t) => {
-      if (statusFilter !== 'ALL' && t.status !== statusFilter) return false;
-      if (priorityFilter !== 'ALL' && t.priority !== priorityFilter) return false;
+      if (statusFilter !== 'ALL' && t?.status !== statusFilter) return false;
+      if (priorityFilter !== 'ALL' && t?.priority !== priorityFilter) return false;
       return true;
     });
   }, [data.data, statusFilter, priorityFilter]);
@@ -286,13 +303,27 @@ export function ListPage() {
           Failed to load tasks: {(data.error as Error | null)?.message ?? 'unknown error'}
         </div>
       ) : (
-        <DataTable
-          columns={columns}
-          data={filtered}
-          searchKey="title"
-          searchPlaceholder="Filter by title…"
-          empty="No tasks match the current filters."
-        />
+        <>
+          <DataTable
+            columns={columns}
+            data={filtered}
+            searchKey="title"
+            searchPlaceholder="Filter by title…"
+            empty="No tasks match the current filters."
+          />
+          {data.hasNextPage ? (
+            <div className="flex justify-center pt-1">
+              <button
+                type="button"
+                onClick={() => void data.fetchNextPage()}
+                disabled={data.isFetchingNextPage}
+                className="btn-ghost text-[12px]"
+              >
+                {data.isFetchingNextPage ? 'Loading…' : 'Load more'}
+              </button>
+            </div>
+          ) : null}
+        </>
       )}
     </div>
   );

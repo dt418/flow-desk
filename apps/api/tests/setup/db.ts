@@ -2,7 +2,9 @@ import { resolve } from 'node:path';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../../generated/prisma/client';
 
-export const TEST_DB_URL = 'postgresql://flowdesk:flowdesk@localhost:5432/flowdesk_test?schema=public';
+export const TEST_DB_URL =
+  process.env.TEST_DB_URL ??
+  'postgresql://flowdesk:flowdesk@localhost:5432/flowdesk_test?schema=public';
 const WORKSPACE_ROOT = resolve(__dirname, '../../../..');
 
 export function createTestPrisma() {
