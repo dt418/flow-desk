@@ -12,6 +12,11 @@ function getSocket(ns: FlowDeskNamespace): Socket {
   if (existing && existing.connected) return existing;
 
   const apiUrl = import.meta.env.VITE_API_URL ?? '';
+  const accessToken = (() => {
+    if (typeof document === 'undefined') return '';
+    const match = document.cookie.match(/(?:^|;\s*)access_token=([^;]+)/);
+    return match ? decodeURIComponent(match[1]!) : '';
+  })();
   const socket = io(`${apiUrl}${ns}`, {
     withCredentials: true,
     transports: ['websocket', 'polling'],
@@ -21,6 +26,8 @@ function getSocket(ns: FlowDeskNamespace): Socket {
     reconnectionDelayMax: 30000,
     randomizationFactor: 0.5,
     timeout: 20000,
+    auth: accessToken ? { token: accessToken } : undefined,
+    extraHeaders: accessToken ? { Cookie: `access_token=${accessToken}` } : undefined,
   });
   sockets.set(ns, socket);
   return socket;

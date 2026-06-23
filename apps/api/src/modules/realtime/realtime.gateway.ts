@@ -68,7 +68,13 @@ export function attachPresenceHandlers(
   const namespace = io.of(namespaceName);
 
   namespace.on('connection', (socket) => {
-    const userId = socket.data.userId as string;
+    const userId = (socket.data?.userId as string | undefined) ?? '';
+    if (!userId) {
+      logger.warn({ socketId: socket.id }, 'presence: socket connected without userId, disconnecting');
+      socket.emit('unauthorized', { message: 'missing user context' });
+      socket.disconnect(true);
+      return;
+    }
     const userName = (socket.data.userName as string) ?? `User ${userId.slice(-4)}`;
     const userAvatar = (socket.data.userAvatar as string | null) ?? null;
 
