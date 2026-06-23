@@ -85,6 +85,28 @@ For local dev, set `DATABASE_URL=postgresql://flowdesk:flowdesk@localhost:5432/f
 - Web: <http://localhost:5173>
 - API: <http://localhost:3000>
 
+`dev:local` now starts `shared` (`tsup --watch`) in parallel with api + web, so edits to `packages/shared/src/**` rebuild dist and api's `tsx watch` (`--include='../../packages/shared/dist/**/*.js'`) restarts automatically.
+
+## Dev mode with hot reload in Docker
+
+For an iteration loop without rebuilding the api image on every change:
+
+```bash
+pnpm stack:dev-build      # one-time: build api image with devDeps (tsx, tsup) baked in
+pnpm stack:dev            # up postgres + redis + api (bind-mounts apps/api/src + packages/shared/src)
+```
+
+The api container runs `pnpm --filter @flow-desk/shared dev & pnpm --filter @flow-desk/api dev` — `tsup --watch` rebuilds `packages/shared/dist` on shared source edits; `tsx watch` restarts the api process on `apps/api/src` edits. Both source trees are bind-mounted from the host.
+
+Edit host files → container restarts within ~1s. No image rebuild needed.
+
+To go back to the production image:
+
+```bash
+pnpm stack:dev-down
+pnpm stack:up             # uses compiled dist/index.js, no hot reload
+```
+
 ## Repo layout
 
 ```

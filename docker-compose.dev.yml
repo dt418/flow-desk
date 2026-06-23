@@ -1,0 +1,34 @@
+# docker-compose.dev.yml — api service override for hot-reload dev.
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d api
+#
+# Inside the api container, tsx watches apps/api/src and packages/shared/dist
+# (the latter is rebuilt on demand by tsup --watch in the shared package).
+# Source files are bind-mounted from the host so edits show up immediately.
+#
+# One-time prerequisite (host):
+#   pnpm --filter @flow-desk/shared build   # seed dist so first api boot doesn't crash
+#
+# Edit host files:
+#   apps/api/src/**/*.ts       -> tsx restarts api
+#   packages/shared/src/**/*.ts -> tsup rebuilds dist -> tsx restarts api
+name: flow-desk
+
+services:
+  api:
+    command:
+      - sh
+      - -c
+      - "pnpm --filter @flow-desk/shared build && pnpm --filter @flow-desk/shared dev & pnpm --filter @flow-desk/api dev"
+    working_dir: /app
+    volumes:
+      - ./apps/api/src:/app/apps/api/src:rw
+      - ./packages/shared/src:/app/packages/shared/src:rw
+      - ./packages/shared/package.json:/app/packages/shared/package.json:ro
+    environment:
+      NODE_ENV: development
+    restart: no
+    # Parent healthcheck kept (wget /api/health). tsx restarts the api process
+    # in-place, container stays up, healthcheck sees brief blips covered by
+    # start_period: 20s + retries: 3.

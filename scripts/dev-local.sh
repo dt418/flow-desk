@@ -84,5 +84,9 @@ echo "    Ctrl-C to stop both."
 # Trap SIGINT/SIGTERM to kill both children cleanly
 trap 'echo "==> Stopping..."; kill 0' EXIT INT TERM
 
-# Start api + web in parallel; pnpm -r runs all matching scripts
-pnpm -r --parallel --filter @flow-desk/api --filter @flow-desk/web run dev
+# Start shared (tsup watch) + api (tsx watch) + web (vite) in parallel.
+# pnpm -r --parallel runs each filtered package's `dev` script concurrently.
+# shared runs first-build via the `pnpm --filter @flow-desk/shared build` above,
+# then tsup --watch keeps dist/ in sync; api's tsx watches its own src +
+# ../../packages/shared/dist/**/*.js (set in apps/api/package.json dev script).
+pnpm -r --parallel --filter @flow-desk/shared --filter @flow-desk/api --filter @flow-desk/web run dev
