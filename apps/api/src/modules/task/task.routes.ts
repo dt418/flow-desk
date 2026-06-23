@@ -27,7 +27,11 @@ taskRouter.get(
     const auth = c.get('auth');
     const query = c.req.valid('query');
     const { data, nextCursor } = await taskService.list(query, auth.user.id);
-    return c.json({ data: z.array(taskSchema).parse(data), nextCursor });
+    const apiTasks = data.map((t) => ({
+      ...t,
+      labels: (t as unknown as { labelsDeprecated?: string[] }).labelsDeprecated ?? [],
+    }));
+    return c.json({ data: z.array(taskSchema).parse(apiTasks), nextCursor });
   },
 );
 

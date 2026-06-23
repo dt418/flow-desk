@@ -21,6 +21,11 @@ export const taskStatusSchema = z.enum([
 ]);
 export type TaskStatus = z.infer<typeof taskStatusSchema>;
 
+const isoDateSchema = z
+  .union([z.string(), z.date()])
+  .transform((v) => (v instanceof Date ? v.toISOString() : v));
+const nullableIsoDateSchema = isoDateSchema.nullable();
+
 export const createTaskSchema = z.object({
   workspaceId: cuidSchema,
   columnId: cuidSchema,
@@ -61,14 +66,14 @@ export const taskSchema = z.object({
   status: taskStatusSchema,
   position: z.number().int(),
   assigneeId: cuidSchema.nullable(),
-  dueDate: z.string().nullable(),
-  completedAt: z.string().nullable(),
+  dueDate: nullableIsoDateSchema,
+  completedAt: nullableIsoDateSchema,
   createdById: cuidSchema,
   version: z.number().int(),
   labels: z.array(z.string()),
-  createdAt: z.string(),
-  updatedAt: z.string(),
-  deletedAt: z.string().nullable(),
+  createdAt: isoDateSchema,
+  updatedAt: isoDateSchema,
+  deletedAt: nullableIsoDateSchema,
 });
 export type Task = z.infer<typeof taskSchema>;
 
