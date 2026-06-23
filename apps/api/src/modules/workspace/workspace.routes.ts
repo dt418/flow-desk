@@ -8,47 +8,38 @@ import {
   createColumnSchema,
   updateColumnSchema,
 } from '@flow-desk/shared/workspace';
+import { CursorPaginationQuery } from '@flow-desk/shared/pagination';
+import { zValidator } from '@hono/zod-validator';
 import { prisma } from '../../shared/lib/prisma';
 import { requireAuth, requireWorkspaceRole } from '../../shared/middleware/auth';
+import { rateLimit } from '../../shared/middleware/rate-limit';
+import { RATE_LIMITS } from '../../shared/lib/rate-limit-policies';
 import { NotFoundError, ForbiddenError, ConflictError } from '../../shared/errors';
+import { workspaceService } from './workspace.service';
+import { memberService } from './member.service';
 
 export const workspaceRouter = new Hono();
 
 workspaceRouter.use('*', requireAuth());
 
-workspaceRouter.get('/', async (c) => {
-  const auth = c.get('auth');
-  const memberships = await prisma.workspaceMember.findMany({
-    where: { userId: auth.user.id, workspace: { deletedAt: null } },
-    include: {
-      workspace: {
-        include: {
-          _count: { select: { members: true, tasks: { where: { deletedAt: null } } } },
-        },
-      },
-    },
-  });
-  const workspaces = memberships.map(
-    (m: {
-      role: UserRole;
-      workspace: {
-        id: string;
-        name: string;
-        slug: string;
-        _count: { members: number; tasks: number };
-      };
-    }) => ({
-      id: m.workspace.id,
-      name: m.workspace.name,
-      slug: m.workspace.slug,
-      role: m.role,
-      _count: m.workspace._count,
-    }),
-  );
-  return c.json({ workspaces });
-});
+workspaceRouter.get(
+  '/',
+  rateLimit({ ...RATE_LIMITS.WORKSPACE_LIST, keyBy: 'user', scope: 'workspace:list' }),
+  zValidator('query', CursorPaginationQuery, (result, c) => {
+    if (!result.success) {
+      return c.json({ code: 'INVALID_QUERY', details: result.error.flatten() }, 400);
+    }
+    return undefined;
+  }),
+  async (c) => {
+    const auth = c.get('auth');
+    const query = c.req.valid('query');
+    const result = await workspaceService.list(query, auth.user.id);
+    return c.json({ data: result.data, nextCursor: result.nextCursor });
+  },
+);
 
-workspaceRouter.post('/', async (c) => {
+workspaceRouter.post('/', rateLimit({ ...RATE_LIMITS.WORKSPACE_CREATE, keyBy: 'user', scope: 'workspace:create' }), async (c) => {
   const auth = c.get('auth');
   const body = createWorkspaceSchema.parse(await c.req.json());
 
@@ -90,53 +81,48 @@ workspaceRouter.get(
   },
 );
 
-workspaceRouter.patch('/:workspaceId', requireWorkspaceRole(['OWNER', 'ADMIN']), async (c) => {
+workspaceRouter.patch('/:workspaceId', rateLimit({ ...RATE_LIMITS.WORKSPACE_UPDATE, keyBy: 'user', scope: 'workspace:update' }), requireWorkspaceRole(['OWNER', 'ADMIN']), async (c) => {
   const id = c.req.param('workspaceId')!;
+  const auth = c.get('auth');
   const body = updateWorkspaceSchema.parse(await c.req.json());
-  const workspace = await prisma.workspace.update({ where: { id }, data: body });
-  return c.json({ workspace });
+  const existing = await prisma.workspace.findFirst({ where: { id, deletedAt: null } });
+  if (!existing) throw new NotFoundError('Workspace not found');
+  const data: { name?: string; description?: string | null; visibility?: 'PRIVATE' | 'PUBLIC' } = {};
+  if (body.name !== undefined) data.name = body.name;
+  if (body.description !== undefined) data.description = body.description ?? undefined;
+  if (body.visibility !== undefined) data.visibility = body.visibility;
+  const updated = await prisma.workspace.update({
+    where: { id },
+    data: {
+      ...(data.name !== undefined ? { name: data.name } : {}),
+      ...(data.description !== undefined ? { description: data.description } : {}),
+      ...(data.visibility !== undefined ? { visibility: data.visibility } : {}),
+    },
+  });
+  return c.json({ workspace: updated });
 });
 
-workspaceRouter.delete('/:workspaceId', requireWorkspaceRole(['OWNER']), async (c) => {
+workspaceRouter.delete('/:workspaceId', rateLimit({ ...RATE_LIMITS.WORKSPACE_DELETE, keyBy: 'user', scope: 'workspace:delete' }), requireWorkspaceRole(['OWNER']), async (c) => {
   const id = c.req.param('workspaceId')!;
   await prisma.workspace.update({ where: { id }, data: { deletedAt: new Date() } });
   return c.json({ ok: true });
 });
 
 workspaceRouter.get(
-  '/:workspaceId/board',
-  requireWorkspaceRole(['OWNER', 'ADMIN', 'MEMBER', 'GUEST']),
-  async (c) => {
-    const id = c.req.param('workspaceId')!;
-    const columns = await prisma.column.findMany({
-      where: { workspaceId: id },
-      orderBy: { position: 'asc' },
-      include: {
-        tasks: {
-          where: { deletedAt: null },
-          orderBy: { position: 'asc' },
-          include: {
-            assignee: { select: { id: true, name: true, email: true, avatarUrl: true } },
-          },
-          take: 50,
-        },
-      },
-    });
-    return c.json({ columns });
-  },
-);
-
-workspaceRouter.get(
   '/:workspaceId/members',
   requireWorkspaceRole(['OWNER', 'ADMIN', 'MEMBER', 'GUEST']),
+  zValidator('query', CursorPaginationQuery, (result, c) => {
+    if (!result.success) {
+      return c.json({ code: 'INVALID_QUERY', details: result.error.flatten() }, 400);
+    }
+    return undefined;
+  }),
   async (c) => {
     const id = c.req.param('workspaceId')!;
-    const members = await prisma.workspaceMember.findMany({
-      where: { workspaceId: id },
-      include: { user: { select: { id: true, email: true, name: true, avatarUrl: true } } },
-      orderBy: { joinedAt: 'asc' },
-    });
-    return c.json({ members });
+    const auth = c.get('auth');
+    const query = c.req.valid('query');
+    const result = await memberService.list(query, id, auth.user.id);
+    return c.json({ data: result.data, nextCursor: result.nextCursor });
   },
 );
 

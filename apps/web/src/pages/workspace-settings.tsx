@@ -9,6 +9,7 @@ import {
   ColumnsTab,
   DangerZoneTab,
 } from '@/features/workspace';
+import { LabelManagerPage } from '@/features/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { initials } from '@/features/workspace/components/role';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -50,6 +51,7 @@ export function WorkspaceSettingsPage() {
           general: <GeneralTab workspaceId={workspaceId} />,
           members: <MembersTab workspaceId={workspaceId} />,
           columns: <ColumnsTab workspaceId={workspaceId} />,
+          labels: <LabelManagerPage workspaceId={workspaceId} embedded />,
           danger: <DangerZoneTab workspaceId={workspaceId} />,
         }}
       </SettingsTabs>

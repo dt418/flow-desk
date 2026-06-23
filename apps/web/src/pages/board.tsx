@@ -8,9 +8,10 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import { NewTaskModal } from '@/features/task';
+import { NewTaskModal, TaskCard } from '@/features/task';
 import { useMembers } from '@/features/workspace';
 import { useRealtime } from '@/features/realtime/useRealtime';
+import { EmptyBoardState, PresenceBar } from '@/features/board';
 
 interface Task {
   id: string;
@@ -91,72 +92,6 @@ function PriorityDot({ priority }: { priority: string }) {
       <span className={cn('h-1.5 w-1.5 rounded-full', PRIORITY_DOT[priority] ?? 'bg-slate-400')} />
       {priority}
     </span>
-  );
-}
-
-function TaskCard({ task }: { task: Task }) {
-  const due = relativeDate(task.dueDate);
-  return (
-    <article
-      className={cn(
-        'group relative overflow-hidden rounded-lg border bg-[var(--bg)] p-3 pl-4',
-        'border-[var(--border)] shadow-[0_1px_0_rgba(0,0,0,0.02)]',
-        'transition-[border-color,box-shadow] duration-150 hover:border-[var(--fg-3)]',
-      )}
-    >
-      <span
-        aria-hidden
-        className={cn(
-          'absolute inset-y-0 left-0 w-[3px] rounded-l-lg',
-          PRIORITY_BAR[task.priority] ?? 'bg-transparent',
-        )}
-      />
-      <span className="absolute right-2 top-2 rounded font-mono text-[10px] text-[var(--fg-3)] opacity-0 transition-opacity group-hover:opacity-100">
-        {shortId(task.id)}
-      </span>
-      <div className="line-clamp-2 pr-6 text-[13px] font-medium leading-snug">{task.title}</div>
-      {task.labels.length > 0 && (
-        <div className="mt-2 flex flex-wrap gap-1">
-          {task.labels.slice(0, 3).map((l) => (
-            <span
-              key={l}
-              className="rounded bg-[var(--bg-3)] px-1.5 py-0.5 text-[10px] uppercase tracking-wider text-[var(--fg-2)]"
-            >
-              {l}
-            </span>
-          ))}
-        </div>
-      )}
-      <div className="mt-2.5 flex items-center justify-between">
-        {due ? (
-          <span
-            className={cn(
-              'rounded px-1.5 py-0.5 text-[10px] tabular-nums',
-              due.tone === 'overdue'
-                ? 'bg-red-500/10 text-red-500'
-                : due.tone === 'soon'
-                  ? 'bg-amber-500/10 text-amber-600'
-                  : 'bg-[var(--bg-3)] text-[var(--fg-2)]',
-            )}
-          >
-            {due.label}
-          </span>
-        ) : (
-          <span />
-        )}
-        <div className="flex items-center gap-2">
-          <PriorityDot priority={task.priority} />
-          {task.assignee && (
-            <Avatar className="h-5 w-5 text-[9px]">
-              {task.assignee.avatarUrl ? (
-                <AvatarImage src={task.assignee.avatarUrl} alt={task.assignee.name} />
-              ) : null}
-              <AvatarFallback>{initials(task.assignee.name)}</AvatarFallback>
-            </Avatar>
-          )}
-        </div>
-      </div>
-    </article>
   );
 }
 
@@ -285,6 +220,7 @@ export function BoardPage() {
           </span>
         </div>
         <div className="flex items-center gap-1">
+          <PresenceBar workspaceId={workspaceId} />
           <div className="flex items-center rounded-md border border-[var(--border)] bg-[var(--bg-2)] p-0.5 text-[12px]">
             <span className="rounded bg-[var(--bg-3)] px-2.5 py-1 font-medium text-[var(--fg)]">
               Board
@@ -323,13 +259,25 @@ export function BoardPage() {
 
       {data.isError && <div className="caption p-6 text-red-500">Failed to load board.</div>}
 
-      {data.data && (
-        <Kanban onMove={handleMove}>
+      {data.data && orderedColumns.reduce((acc, c) => acc + c.tasks.length, 0) === 0 && (
+        <EmptyBoardState onCreate={() => setModalOpen(true)} />
+      )}
+
+      {data.data && orderedColumns.reduce((acc, c) => acc + c.tasks.length, 0) > 0 && (
+        <Kanban
+          onMove={handleMove}
+          renderOverlay={(taskId) => {
+            const task = orderedColumns
+              .flatMap((c) => c.tasks)
+              .find((t) => t.id === taskId);
+            return task ? <TaskCard task={task as unknown as Parameters<typeof TaskCard>[0]['task']} workspaceId={workspaceId} /> : null;
+          }}
+        >
           {orderedColumns.map(({ meta, tasks }) => (
             <KanbanColumn key={meta.id} id={meta.id} name={meta.name} count={tasks.length}>
               {tasks.map((t, i) => (
                 <KanbanCard key={t.id} id={t.id} columnId={meta.id} index={i}>
-                  <TaskCard task={t} />
+                  <TaskCard task={t as unknown as Parameters<typeof TaskCard>[0]['task']} workspaceId={workspaceId} />
                 </KanbanCard>
               ))}
             </KanbanColumn>

@@ -1,4 +1,28 @@
-# Session Handoff
+# Session Handoff — FlowDesk
+
+**Last session**: 012 (F3-F6 ship) — 2026-06-23
+
+**Status**: 33 features passing (29 + F2 + F3 + F4 + F5 + F6). 142/142 BE integration tests pass.
+
+**Risks remaining**: R-24 (ai-001 LLM latency UX) is the only material carry-forward. All R-29..R-34 closed.
+
+**F6 design note**: presence gateway mounted on `/tasks` namespace (not `/collab`) to match existing PresenceBar client wiring.
+
+**Next scope candidates** (not committed):
+- Admin tool for 30-day soft-delete recovery (R-16)
+- R-24 latency mitigation: UX spinners, request cancellation on unmount
+- CI: add `pnpm test:integration` as required check on PR
+- FE cleanup: replace legacy native `<select>` in NewTaskModal with Radix Select
+
+**Verified state** (re-run `./init.sh` + `docker compose up -d`):
+- `pnpm typecheck` → exit 0
+- `pnpm --filter @flow-desk/api test:integration` → 142/142 pass
+- `pnpm --filter @flow-desk/web build` → exit 0
+
+**Auth-002** still blocked on real Google OAuth credentials.
+
+**Open TODOs**:
+- None from F2-F6 (presence TODO in PresenceBar.tsx resolved)
 
 ## Verified Now
 

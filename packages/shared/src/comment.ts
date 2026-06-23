@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { cuidSchema, nonEmptyString, paginationSchema } from './common';
+import { cuidSchema, nonEmptyString } from './common';
+import { CursorPaginationQuery } from './pagination';
 
 export const createCommentSchema = z.object({
   taskId: cuidSchema,
@@ -42,7 +43,7 @@ export const commentWithAuthorSchema = commentSchema.extend({
 });
 export type CommentWithAuthor = z.infer<typeof commentWithAuthorSchema>;
 
-export const listCommentsQuerySchema = paginationSchema.extend({
+export const listCommentsQuerySchema = CursorPaginationQuery.extend({
   taskId: cuidSchema,
 });
 export type ListCommentsQuery = z.infer<typeof listCommentsQuerySchema>;

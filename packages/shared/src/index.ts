@@ -6,3 +6,5 @@ export * from './task';
 export * from './comment';
 export * from './notification';
 export * from './attachment';
+export * from './label';
+export * from './pagination';

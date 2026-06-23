@@ -12,7 +12,10 @@
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",
     "lint": "echo 'api: lint placeholder'",
-    "test": "echo 'api: no tests yet'",
+    "test": "vitest run --config vitest.config.ts",
+    "test:watch": "vitest --config vitest.config.ts",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "test:coverage": "vitest run --coverage --config vitest.config.ts",
     "prisma": "prisma",
     "db:generate": "bash ../../scripts/prisma-exec.sh generate",
     "db:migrate": "bash ../../scripts/prisma-exec.sh migrate dev",
@@ -26,7 +29,9 @@
   "dependencies": {
     "@flow-desk/shared": "workspace:*",
     "@hono/node-server": "^1.13.2",
+    "@hono/zod-validator": "^0.8.0",
     "@prisma/client": "^5.20.0",
+    "@socket.io/redis-adapter": "^8.3.0",
     "bcryptjs": "^2.4.3",
     "cookie": "^1.0.1",
     "cors": "^2.8.5",
@@ -39,7 +44,6 @@
     "pino-pretty": "^11.2.2",
     "rate-limiter-flexible": "^5.0.4",
     "socket.io": "^4.8.0",
-    "@socket.io/redis-adapter": "^8.3.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
@@ -47,9 +51,13 @@
     "@types/cors": "^2.8.17",
     "@types/jsonwebtoken": "^9.0.7",
     "@types/node": "^22.7.4",
+    "@types/supertest": "^6.0.2",
+    "@vitest/coverage-v8": "^2.1.0",
     "prisma": "^5.20.0",
+    "supertest": "^7.0.0",
     "tsup": "^8.3.5",
     "tsx": "^4.19.1",
-    "typescript": "^5.6.2"
+    "typescript": "^5.6.2",
+    "vitest": "^2.1.0"
   }
 }

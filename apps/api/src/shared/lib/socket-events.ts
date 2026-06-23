@@ -1,8 +1,17 @@
 import type { Server as SocketServer } from 'socket.io';
+import type { TaskLabel } from '@prisma/client';
 
 export type FlowDeskNamespace = '/tasks' | '/notifications' | '/collab';
 
 export type EventPayload = Record<string, unknown>;
+
+export type ServerEmitEvents = {
+  'label:created': (payload: { label: TaskLabel }) => void;
+  'label:updated': (payload: { label: TaskLabel }) => void;
+  'label:deleted': (payload: { labelId: string }) => void;
+  'task:labels-changed': (payload: { taskId: string; labelIds: string[] }) => void;
+  'workspace:created': (payload: { workspace: { id: string; name: string; slug: string } }) => void;
+};
 
 let ioRef: SocketServer | null = null;
 
@@ -10,8 +19,7 @@ export function setIo(io: SocketServer): void {
   ioRef = io;
 }
 
-function requireIo(): SocketServer {
-  if (!ioRef) throw new Error('socket.io server not initialized');
+function requireIo(): SocketServer | null {
   return ioRef;
 }
 
@@ -21,7 +29,9 @@ export function emitToRoom(
   event: string,
   payload: EventPayload,
 ): void {
-  requireIo().of(ns).to(room).emit(event, payload);
+  const io = requireIo();
+  if (!io) return;
+  io.of(ns).to(room).emit(event, payload);
 }
 
 export function emitToNamespace(
@@ -29,7 +39,9 @@ export function emitToNamespace(
   event: string,
   payload: EventPayload,
 ): void {
-  requireIo().of(ns).emit(event, payload);
+  const io = requireIo();
+  if (!io) return;
+  io.of(ns).emit(event, payload);
 }
 
 export function emitToUser(userId: string, event: string, payload: EventPayload): void {

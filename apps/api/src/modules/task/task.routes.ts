@@ -2,168 +2,58 @@ import { Hono } from 'hono';
 import {
   createTaskSchema,
   updateTaskSchema,
-  listTasksQuerySchema,
   moveTaskSchema,
   createDependencySchema,
   createSubtaskSchema,
+  taskSchema,
 } from '@flow-desk/shared/task';
-import { prisma } from '../../shared/lib/prisma';
+import { zValidator } from '@hono/zod-validator';
+import { z } from 'zod';
 import { requireAuth } from '../../shared/middleware/auth';
-import { NotFoundError, BadRequestError, ConflictError } from '../../shared/errors';
-import { emitToTask, emitToWorkspace } from '../../shared/lib/socket-events';
-import { logger } from '../../shared/lib/logger';
-import { assertMembership } from '../../shared/lib/access';
-
-function safeEmit(fn: () => void, ctx: Record<string, unknown>): void {
-  try {
-    fn();
-  } catch (err) {
-    logger.warn({ err, ...ctx }, 'socket emit failed');
-  }
-}
+import { taskService, listTasksQuerySchema } from './task.service';
 
 export const taskRouter = new Hono();
 taskRouter.use('*', requireAuth());
 
-taskRouter.get('/', async (c) => {
-  const auth = c.get('auth');
-  const query = listTasksQuerySchema.parse(c.req.query());
-  await assertMembership(query.workspaceId, auth.user.id);
-
-  const where = {
-    workspaceId: query.workspaceId,
-    deletedAt: null,
-    ...(query.columnId ? { columnId: query.columnId } : {}),
-    ...(query.status ? { status: query.status } : {}),
-    ...(query.priority ? { priority: query.priority } : {}),
-    ...(query.assigneeId ? { assigneeId: query.assigneeId } : {}),
-    ...(query.search ? { title: { contains: query.search, mode: 'insensitive' as const } } : {}),
-    ...(query.dueBefore || query.dueAfter
-      ? {
-          dueDate: {
-            ...(query.dueBefore ? { lte: new Date(query.dueBefore) } : {}),
-            ...(query.dueAfter ? { gte: new Date(query.dueAfter) } : {}),
-          },
-        }
-      : {}),
-  };
-
-  const [tasks, total] = await Promise.all([
-    prisma.task.findMany({
-      where,
-      orderBy: { [query.sortBy]: query.sortOrder },
-      skip: (query.page - 1) * query.pageSize,
-      take: query.pageSize,
-      include: {
-        assignee: { select: { id: true, name: true, email: true, avatarUrl: true } },
-      },
-    }),
-    prisma.task.count({ where }),
-  ]);
-
-  return c.json({ tasks, total, page: query.page, pageSize: query.pageSize });
-});
+taskRouter.get(
+  '/',
+  zValidator('query', listTasksQuerySchema, (result, c) => {
+    if (!result.success) {
+      return c.json({ code: 'INVALID_QUERY', details: result.error.flatten() }, 400);
+    }
+    return undefined;
+  }),
+  async (c) => {
+    const auth = c.get('auth');
+    const query = c.req.valid('query');
+    const { data, nextCursor } = await taskService.list(query, auth.user.id);
+    return c.json({ data: z.array(taskSchema).parse(data), nextCursor });
+  },
+);
 
 taskRouter.post('/', async (c) => {
   const auth = c.get('auth');
   const body = createTaskSchema.parse(await c.req.json());
-  await assertMembership(body.workspaceId, auth.user.id);
-
-  const last = await prisma.task.findFirst({
-    where: { columnId: body.columnId, deletedAt: null },
-    orderBy: { position: 'desc' },
-  });
-
-  const task = await prisma.task.create({
-    data: {
-      workspaceId: body.workspaceId,
-      columnId: body.columnId,
-      title: body.title,
-      description: body.description ?? null,
-      priority: body.priority,
-      status: body.status,
-      assigneeId: body.assigneeId ?? null,
-      dueDate: body.dueDate ? new Date(body.dueDate) : null,
-      createdById: auth.user.id,
-      parentTaskId: body.parentTaskId ?? null,
-      position: body.position ?? (last ? last.position + 1 : 0),
-      ...(body.labels ? { labels: { set: body.labels } } : {}),
-    },
-  });
-  safeEmit(
-    () => emitToWorkspace(task.workspaceId, 'task:created', { task }),
-    { event: 'task:created', taskId: task.id },
-  );
-  return c.json({ task }, 201);
+  return c.json({ task: await taskService.create(auth.user.id, body) }, 201);
 });
 
 taskRouter.get('/:id', async (c) => {
   const auth = c.get('auth');
   const id = c.req.param('id')!;
-  const task = await prisma.task.findFirst({
-    where: { id, deletedAt: null },
-    include: {
-      assignee: { select: { id: true, name: true, email: true, avatarUrl: true } },
-      createdBy: { select: { id: true, name: true, email: true, avatarUrl: true } },
-      subtasks: { where: { deletedAt: null }, orderBy: { position: 'asc' } },
-      dependencies: true,
-      blockers: true,
-      _count: { select: { comments: { where: { deletedAt: null } }, attachments: true } },
-    },
-  });
-  if (!task) throw new NotFoundError('Task not found');
-  await assertMembership(task.workspaceId, auth.user.id);
-  return c.json({ task });
+  return c.json({ task: await taskService.get(auth.user.id, id) });
 });
 
 taskRouter.patch('/:id', async (c) => {
   const auth = c.get('auth');
   const id = c.req.param('id')!;
   const body = updateTaskSchema.parse(await c.req.json());
-  const existing = await prisma.task.findFirst({ where: { id, deletedAt: null } });
-  if (!existing) throw new NotFoundError('Task not found');
-  await assertMembership(existing.workspaceId, auth.user.id);
-
-  if (body.version !== undefined && body.version !== existing.version) {
-    throw new ConflictError('Task was updated by another user', {
-      current: existing,
-    });
-  }
-
-  const task = await prisma.task.update({
-    where: { id },
-    data: {
-      ...body,
-      ...(body.dueDate ? { dueDate: new Date(body.dueDate) } : {}),
-      version: { increment: 1 },
-    },
-  });
-  safeEmit(
-    () => emitToWorkspace(task.workspaceId, 'task:updated', { task }),
-    { event: 'task:updated', taskId: task.id },
-  );
-  safeEmit(
-    () => emitToTask(task.id, 'task:updated', { task }),
-    { event: 'task:updated', taskId: task.id },
-  );
-  return c.json({ task });
+  return c.json({ task: await taskService.update(auth.user.id, id, body) });
 });
 
 taskRouter.delete('/:id', async (c) => {
   const auth = c.get('auth');
   const id = c.req.param('id')!;
-  const existing = await prisma.task.findFirst({ where: { id, deletedAt: null } });
-  if (!existing) throw new NotFoundError('Task not found');
-  await assertMembership(existing.workspaceId, auth.user.id);
-  await prisma.task.update({ where: { id }, data: { deletedAt: new Date() } });
-  safeEmit(
-    () => emitToWorkspace(existing.workspaceId, 'task:deleted', { taskId: id }),
-    { event: 'task:deleted', taskId: id },
-  );
-  safeEmit(
-    () => emitToTask(id, 'task:deleted', { taskId: id }),
-    { event: 'task:deleted', taskId: id },
-  );
+  await taskService.delete(auth.user.id, id);
   return c.json({ ok: true });
 });
 
@@ -171,217 +61,23 @@ taskRouter.post('/:id/move', async (c) => {
   const auth = c.get('auth');
   const id = c.req.param('id')!;
   const body = moveTaskSchema.parse(await c.req.json());
-  const existing = await prisma.task.findFirst({ where: { id, deletedAt: null } });
-  if (!existing) throw new NotFoundError('Task not found');
-  await assertMembership(existing.workspaceId, auth.user.id);
-
-  if (body.version !== existing.version) {
-    throw new ConflictError('Task was updated by another user', { current: existing });
-  }
-
-  const targetColumn = await prisma.column.findUnique({ where: { id: body.columnId } });
-  if (!targetColumn || targetColumn.workspaceId !== existing.workspaceId) {
-    throw new BadRequestError('Invalid target column');
-  }
-
-  const sourceColumnId = existing.columnId;
-  const isSameColumn = sourceColumnId === body.columnId;
-
-  const [sourceTasks, targetTasks] = await Promise.all([
-    prisma.task.findMany({
-      where: { columnId: sourceColumnId, deletedAt: null },
-      orderBy: { position: 'asc' },
-      select: { id: true },
-    }),
-    isSameColumn
-      ? Promise.resolve([])
-      : prisma.task.findMany({
-          where: { columnId: body.columnId, deletedAt: null },
-          orderBy: { position: 'asc' },
-          select: { id: true },
-        }),
-  ]);
-
-  const sourceNew = sourceTasks.filter((t) => t.id !== id);
-  const targetBase: { id: string }[] = isSameColumn
-    ? sourceNew
-    : targetTasks.filter((t) => t.id !== id);
-  const clampedPos = Math.max(0, Math.min(body.position, targetBase.length));
-  const targetNew: { id: string }[] = [...targetBase];
-  targetNew.splice(clampedPos, 0, { id });
-
-  const movedTask = await prisma.$transaction(async (tx) => {
-    const parkBase = 1_000_000;
-    const parkIds: string[] = sourceNew.map((t) => t.id);
-    if (!isSameColumn) {
-      for (const t of targetTasks) if (t.id !== id) parkIds.push(t.id);
-    }
-    parkIds.push(id);
-
-    for (let i = 0; i < parkIds.length; i++) {
-      await tx.task.update({
-        where: { id: parkIds[i] },
-        data: { position: parkBase + i },
-      });
-    }
-
-    const finalStatus = targetColumn.isDoneColumn ? 'DONE' : existing.status;
-    const finalCompletedAt = targetColumn.isDoneColumn ? new Date() : null;
-
-    if (isSameColumn) {
-      let i = 0;
-      for (const t of targetNew) {
-        if (t.id === id) {
-          await tx.task.update({
-            where: { id },
-            data: {
-              columnId: body.columnId,
-              position: i,
-              status: finalStatus,
-              ...(finalCompletedAt ? { completedAt: finalCompletedAt } : {}),
-              version: { increment: 1 },
-            },
-          });
-        } else {
-          await tx.task.update({
-            where: { id: t.id },
-            data: { columnId: sourceColumnId, position: i },
-          });
-        }
-        i++;
-      }
-    } else {
-      let si = 0;
-      for (const t of sourceNew) {
-        await tx.task.update({
-          where: { id: t.id },
-          data: { columnId: sourceColumnId, position: si },
-        });
-        si++;
-      }
-      let ti = 0;
-      for (const t of targetNew) {
-        if (t.id === id) {
-          await tx.task.update({
-            where: { id },
-            data: {
-              columnId: body.columnId,
-              position: ti,
-              status: finalStatus,
-              ...(finalCompletedAt ? { completedAt: finalCompletedAt } : {}),
-              version: { increment: 1 },
-            },
-          });
-        } else {
-          await tx.task.update({
-            where: { id: t.id },
-            data: { columnId: body.columnId, position: ti },
-          });
-        }
-        ti++;
-      }
-    }
-
-    return tx.task.findUnique({ where: { id } });
-  });
-
-  safeEmit(
-    () => emitToWorkspace(existing.workspaceId, 'task:moved', { task: movedTask }),
-    { event: 'task:moved', taskId: id },
-  );
-  safeEmit(
-    () => emitToTask(id, 'task:moved', { task: movedTask }),
-    { event: 'task:moved', taskId: id },
-  );
-  return c.json({ task: movedTask });
+  return c.json({ task: await taskService.move(auth.user.id, id, body) });
 });
 
 taskRouter.post('/:id/subtasks', async (c) => {
   const auth = c.get('auth');
   const id = c.req.param('id')!;
-  const parent = await prisma.task.findFirst({ where: { id, deletedAt: null } });
-  if (!parent) throw new NotFoundError('Parent task not found');
-  await assertMembership(parent.workspaceId, auth.user.id);
-
   const body = createSubtaskSchema.parse(await c.req.json());
-  const subtask = await prisma.task.create({
-    data: {
-      workspaceId: parent.workspaceId,
-      columnId: body.columnId,
-      title: body.title,
-      description: body.description ?? null,
-      priority: body.priority,
-      status: body.status,
-      assigneeId: body.assigneeId ?? null,
-      dueDate: body.dueDate ? new Date(body.dueDate) : null,
-      createdById: auth.user.id,
-      parentTaskId: parent.id,
-      position: body.position ?? 0,
-    },
-  });
-  safeEmit(
-    () => emitToWorkspace(parent.workspaceId, 'task:created', { task: subtask }),
-    { event: 'task:created', taskId: subtask.id },
-  );
-  safeEmit(
-    () => emitToTask(parent.id, 'task:subtask:created', { task: subtask }),
-    { event: 'task:subtask:created', parentTaskId: parent.id },
-  );
-  return c.json({ task: subtask }, 201);
+  return c.json({ task: await taskService.createSubtask(auth.user.id, id, body) }, 201);
 });
 
 taskRouter.post('/dependencies', async (c) => {
   const auth = c.get('auth');
   const body = createDependencySchema.parse(await c.req.json());
-  if (body.blockingTaskId === body.blockedTaskId) {
-    throw new BadRequestError('A task cannot block itself');
-  }
-
-  const [blocking, blocked] = await Promise.all([
-    prisma.task.findUnique({ where: { id: body.blockingTaskId } }),
-    prisma.task.findUnique({ where: { id: body.blockedTaskId } }),
-  ]);
-  if (!blocking || !blocked) throw new NotFoundError('Task not found');
-  if (blocking.workspaceId !== blocked.workspaceId) {
-    throw new BadRequestError('Tasks must be in same workspace');
-  }
-  await assertMembership(blocking.workspaceId, auth.user.id);
-
-  const existing = await prisma.taskDependency.findFirst({
-    where: { blockingTaskId: body.blockingTaskId, blockedTaskId: body.blockedTaskId },
-  });
-  if (existing) throw new ConflictError('Dependency already exists');
-
-  // Cycle detection via BFS
-  const visited = new Set<string>();
-  const queue: string[] = [body.blockingTaskId];
-  while (queue.length) {
-    const current = queue.shift()!;
-    if (current === body.blockedTaskId) {
-      throw new BadRequestError('Dependency would create a cycle');
-    }
-    if (visited.has(current)) continue;
-    visited.add(current);
-    const deps = await prisma.taskDependency.findMany({
-      where: { blockedTaskId: current },
-      select: { blockingTaskId: true },
-    });
-    for (const d of deps) queue.push(d.blockingTaskId);
-  }
-
-  const dep = await prisma.taskDependency.create({
-    data: { blockingTaskId: body.blockingTaskId, blockedTaskId: body.blockedTaskId },
-  });
-  safeEmit(
-    () =>
-      emitToWorkspace(blocking.workspaceId, 'task:dependency:added', { dependency: dep }),
-    { event: 'task:dependency:added', dependencyId: dep.id },
-  );
-  return c.json({ dependency: dep }, 201);
+  return c.json({ dependency: await taskService.createDependency(auth.user.id, body) }, 201);
 });
 
 taskRouter.delete('/dependencies/:id', async (c) => {
-  const id = c.req.param('id')!;
-  await prisma.taskDependency.delete({ where: { id } });
+  await taskService.deleteDependency(c.req.param('id')!);
   return c.json({ ok: true });
 });

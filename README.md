@@ -102,6 +102,12 @@ RISKS.md         # Risk register
 AGENTS.md        # Agent operating instructions
 ```
 
+## Recent changes
+
+- **Session 012 (F3-F6)**: closed R-29 (soft-delete extension), R-30 (cursor pagination), R-31 (service/repo split for all remaining modules), R-32 (142 integration tests), R-34 (real-card DragOverlay + server presence gateway). 142/142 BE tests pass.
+- **Session 011 (F2 Kanban Polish)**: labels module (BE+FE), workspace service split, member invite endpoint, Radix primitives (dialog/dropdown-menu/popover/tooltip), workspace switcher, settings UI, task-card label select, welcome flow, realtime polish, Playwright E2E scaffold.
+- See `CHANGELOG.md`, `claude-progress.md`, and `feature_list.json` for the full session record.
+
 ## Security
 
 - **Rate limiting**: Redis-backed sliding-window middleware on auth (`auth:register` 3/h/ip, `auth:login` 5/min/ip, `auth:refresh` 30/min/ip), AI routes (5/min/user), and all `/api/*` writes (60/min/user). Every response carries `X-RateLimit-*` headers; 429 responses include `Retry-After`.

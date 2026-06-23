@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { cuidSchema } from './common';
+import { CursorPaginationQuery } from './pagination';
 
 export const MAX_UPLOAD_SIZE = 25 * 1024 * 1024;
 
@@ -20,7 +21,7 @@ export const attachmentSchema = z.object({
 });
 export type Attachment = z.infer<typeof attachmentSchema>;
 
-export const listAttachmentsQuerySchema = z.object({
+export const listAttachmentsQuerySchema = CursorPaginationQuery.extend({
   taskId: cuidSchema,
 });
 export type ListAttachmentsQuery = z.infer<typeof listAttachmentsQuerySchema>;

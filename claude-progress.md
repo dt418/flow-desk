@@ -5,15 +5,49 @@
 - **Repository root**: `/home/thanh/flow-desk`
 - **Standard startup path**: `./init.sh` (pnpm install + shared build + git hook install) then `docker compose up -d`
 - **Standard verification path**: `pnpm --filter @flow-desk/shared build` + curl API endpoints + `bash scripts/prisma-exec.sh <args>` for prisma
-- **Highest priority unfinished feature**: none (29/29 features passing)
-- **Active branch**: `main` in `/home/thanh/flow-desk` (synced with `origin/main`; F1 security-001..005 fully merged at session 009; session 011 pushed `f403aee` scripts-001 fix + `95788a5` qa-001 typecheck fix; commit range `0eabfcd..95788a5` now on origin)
+- **Highest priority unfinished feature**: none (33 features passing — F2 + F3-F6 all green)
+- **Active branch**: `main` in `/home/thanh/flow-desk`
+- **F2 + F3-F6 just completed (sessions 011 + 012)**: 142/142 BE integration tests pass, typecheck green on both apps, web build green
 - **Current blocker**: none
-- **Key risks** (carry-forward): R-24 (ai-001 latency UX), R-29 (soft-delete gaps), R-30 (missing pagination), R-31 (no service/repository layer), R-32 (zero tests — green-by-vacuum, not green-by-coverage), R-33 (split-brain selects), R-34 (DragOverlay UX)
+- **Key risks** (carry-forward): R-24 (ai-001 latency UX) — only material risk remaining
+- **Resolved in F2 (session 011)**: R-33 (split-brain selects — Radix primitives added)
+- **Resolved in F3-F6 (session 012)**: R-29 (soft-delete gaps + extension), R-30 (cursor pagination), R-31 (service/repo split all modules), R-32 (zero tests — 142 integration tests), R-34 (DragOverlay real-card clone)
 - **Resolved risks (session 010)**: R-36 (prisma-exec regression), R-37 (silent env fallback), R-38 (sh -c word-split + hardcoded container name in seed path)
 - **Resolved risks (session 010b)**: R-35 (pre-existing `apps/api/src/index.ts` ServerType typecheck error — cast at `createSocketServer` call site)
 - **Security note**: `LLM_API_KEY` (sk-80c6f26e1...) was pasted in chat once during session 006. Recommend rotating the key at the provider. Key is in `.env`/`.env.local` (gitignored). Pre-commit hook blocks future leaks.
 
 ## Session Log
+
+### Session 012 — F3-F6 Backend Hardening + Realtime Polish
+
+- **Date**: 2026-06-23
+- **Goal**: Ship F3 (R-29 soft-delete), F4 (R-30 cursor pagination), F5 (R-31+R-32 service/repo + tests), F6 (R-34 presence + DragOverlay)
+- **Execution**: subagent-driven 4-way parallel (F3, F4, F5, F6). F6 returned empty (similar to subagent D in F2) — implemented inline.
+- **Completed**: see `feature_list.json` entries F3-F6 — all 4 passing
+- **Verification**:
+  - `pnpm --filter @flow-desk/api test:integration` → 13 files, 142/142 tests pass
+  - `pnpm --filter @flow-desk/api typecheck` → exit 0
+  - `pnpm --filter @flow-desk/web typecheck` → exit 0
+  - `pnpm --filter @flow-desk/web build` → exit 0 (chunk-size warning only)
+- **Notable F5 bug fix**: `topologicalSort` in ai.service.ts was iterating `t.dependencies` (tasks t blocks) instead of `t.blockers` (tasks t is blocked by), causing self-loops and false-positive cycle detection. Now fixed.
+- **F3 infra fixes**: TRUNCATE→DELETE in tx with `session_replication_role=replica` resolves test deadlocks that masked earlier results.
+- **F6 design choice**: presence gateway mounted on `/tasks` namespace (not `/collab`) to match existing PresenceBar client wiring — no FE breaking change.
+- **Next scope**: candidate work — admin tool for 30-day soft-delete recovery (R-16), R-24 latency mitigation (UX spinners/cancellation), CI integration of `pnpm test:integration` as required check, FE cleanup of legacy native `<select>` in NewTaskModal.
+
+### Session 011 — F2 Kanban Polish
+
+- **Date**: 2026-06-23
+- **Goal**: Build F2 (Jira-clone polish) — labels module, workspace service split, Radix selects, realtime polish, E2E
+- **Plan**: `/tmp/f2-plan.md` (1496 lines, Epics 4-12)
+- **Execution**: subagent-driven 4-way parallel (A=BE 4-6, B=FE 7-9, C=Welcome+Realtime 10-11, D=E2E 12). Subagent D returned empty on first pass → re-implemented inline (playwright.config.ts + e2e/fixtures.ts + 2 specs).
+- **Completed**: see `feature_list.json` entry F2 — 9 sub-stories passing, 42/42 BE integration tests pass, web typecheck+build green, api typecheck green
+- **Reconciliation gaps closed inline**:
+  - `apps/web/src/pages/board.tsx`: removed inline TaskCard (97 LOC) → imported `@/features/task` TaskCard; wired PresenceBar in header; wired EmptyBoardState when total tasks === 0
+  - Subagent C left `TODO(server)` in PresenceBar.tsx for `apps/api/src/modules/realtime/realtime.gateway.ts` — captured in F6 backlog
+- **Backend contract adaptations** (deviations from plan):
+  - `LabelSchema.color` is a named enum (8 values), not free hex — UI uses RadioGroup
+  - `Task.labelsDeprecated` is `String[]`, not JSON — dual-write stores label names only
+- **Next scope**: F3 (close R-29 soft-delete gaps)
 
 ### Session 010
 

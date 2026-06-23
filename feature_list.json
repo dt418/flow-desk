@@ -1,6 +1,8 @@
 {
   "project": "flow-desk",
   "last_updated": "2026-06-23",
+  "f3_active": true,
+  "f3_f6_shipped": ["F3", "F4", "F5", "F6"],
   "rules": {
     "single_active_feature": true,
     "passing_requires_evidence": true,
@@ -666,6 +668,123 @@
         "Live re-run of all three commands after the cast fix: pnpm typecheck 4/4 success (cached), pnpm lint 3/3 success, pnpm test 4/4 success"
       ],
       "notes": "Pre-existing typecheck failure found during post-scripts-001 verification (user request: 'test make sure all green'). rtk lint wrapper bug is out of repo scope — user's ~/.local/bin/rtk runs ESLint directly with no config in this monorepo and OOMs; the project's actual lint command (`pnpm lint` → turbo run lint → placeholder echos) is green. No real test suite exists in this repo yet (all 3 packages have placeholder `echo 'no tests yet'`); green-by-vacuum, not green-by-coverage."
+    },
+    {
+      "id": "F2",
+      "priority": 30,
+      "area": "polish",
+      "title": "Kanban polish: labels module, workspace service split, Radix selects, DragOverlay-style realtime",
+      "user_visible_behavior": "Workspace labels (create/edit/delete/assign to tasks with dual-write + cache + socket broadcast); workspace service/repo extraction with invite+role endpoints; Radix Select primitives on Workspace settings; optimistic mutations with rollback; socket reconnection with backoff; presence indicators; Playwright E2E scaffold.",
+      "status": "passing",
+      "verification": [
+        "pnpm --filter @flow-desk/web typecheck → exit 0",
+        "pnpm --filter @flow-desk/api typecheck → exit 0",
+        "pnpm --filter @flow-desk/api test:integration → 6 files, 42/42 tests passed",
+        "pnpm --filter @flow-desk/web build → exit 0"
+      ],
+      "evidence": [
+        "Subagent A (BE Epics 4-6): apps/api/src/modules/label/{label.cache,label.repository,label.service,label.routes,index}.ts; apps/api/src/modules/task/{task-label.repository,task-label.service,task-label.routes}.ts; apps/api/src/modules/workspace/{workspace.repository,workspace.service,member.service}.ts; apps/api/src/shared/{errors/codes,lib/rate-limit-policies}.ts; apps/api/src/app.ts buildApp factory; packages/shared/src/label.ts; prisma/schema.prisma TaskLabelAssignment + Task.labelsDeprecated + TaskLabel.version",
+        "Subagent A tests: apps/api/tests/{setup,integration}/ with 6 test files covering label repo, label service, label routes, task-label service, workspace service, member service — all 42 tests pass",
+        "Subagent B (FE Epics 7-9): apps/web/src/lib/{api,queryClient}.ts + useAuth + RequireAuth; shadcn add dialog/dropdown-menu/popover/tooltip; apps/web/src/features/workspace/components/WorkspaceSwitcher.tsx; apps/web/src/features/label/{types,api,hooks,index}.ts + components/{LabelChip,LabelFormDialog}.tsx + pages/LabelManagerPage.tsx; apps/web/src/features/task/components/{TaskCard,TaskLabelSelect}.tsx; SettingsTabs labels tab wired",
+        "Subagent C (Epics 10-11): apps/web/src/features/onboarding/{hooks,components,index}.ts; apps/web/src/features/board/{components/{EmptyBoardState,PresenceBar},hooks/useMoveTask,index}.ts; apps/web/src/lib/socket.ts reconnection config (backoff 1s→30s, randomization 0.5, timeout 20s) + useSocketStatus",
+        "Subagent D (E2E — recovered inline): playwright.config.ts (chromium, webServer auto, baseURL 5173); e2e/{fixtures,critical-path,realtime}.spec.ts",
+        "Reconciliation inline: apps/web/src/pages/board.tsx — inline TaskCard replaced with @/features/task TaskCard (workspaceId prop); PresenceBar wired in header; EmptyBoardState wired when total tasks === 0",
+        "Backend label contract: LabelSchema uses named colors (8 RadioGroup) not hex; Task.labelsDeprecated is String[] not JSON — UI adapted to match",
+        "R-33 closed (Radix primitives added; members tab uses shadcn dropdown-menu for invite role; label form uses RadioGroup)",
+        "R-34 partially closed (snapshot+rollback pattern from kanban-bugs-fix carries forward; Full DragOverlay with SortableContext deferred to F5/F6 — out of F2 scope)"
+      ],
+      "notes": "F2 = session 011. Plan /tmp/f2-plan.md (1496 lines, Epics 4-12). Subagent-driven 4-way parallel execution. Subagent D returned empty on first pass — re-implemented inline. Subagent C added TODO(server) for presence gateway in apps/api/src/modules/realtime/realtime.gateway.ts (deferred to F6)."
+    },
+    {
+      "id": "F3",
+      "priority": 31,
+      "area": "backend",
+      "title": "Close R-29: soft-delete gap audit + Prisma softDelete extension",
+      "user_visible_behavior": "All mutation paths filter `deletedAt: null`; Prisma `softDeleteExtension` auto-injects filter on findFirst/findMany/count/aggregate/groupBy for 6 soft-delete models (User, Workspace, Task, TaskLabel, TaskLabelAssignment, Comment); deleted entities return 404/403 on subsequent API access.",
+      "status": "passing",
+      "verification": [
+        "pnpm --filter @flow-desk/api test:integration → 13 files, 142/142 pass (57 including 15 new soft-delete tests)",
+        "pnpm --filter @flow-desk/api typecheck → exit 0"
+      ],
+      "evidence": [
+        "apps/api/src/shared/lib/prisma-extension.ts — softDeleteExtension auto-filters findFirst/findMany/count/aggregate/groupBy",
+        "apps/api/src/shared/lib/prisma.ts — wires extension via basePrisma.$extends(softDeleteExtension)",
+        "apps/api/src/modules/task/task.service.ts — createDependency uses repo.findActiveById (was findUniqueRaw gap)",
+        "apps/api/src/modules/ai/ai.repository.ts — findTask adds deletedAt:null to findUnique",
+        "apps/api/src/modules/attachment/attachment.{service,repository}.ts — uploadAttachment/getDownloadAttachment filter deletedAt:null on task lookup",
+        "apps/api/src/modules/comment/comment.service.ts — findFirst deletedAt:null for task lookup on create/update/delete",
+        "apps/api/src/modules/workspace/workspace.routes.ts — PATCH /:id pre-check findFirst+NotFoundError",
+        "apps/api/tests/integration/soft-delete.test.ts — 15 integration tests, one per module + edge cases",
+        "apps/api/tests/setup/{db,factories}.ts — TRUNCATE→DELETE in tx with session_replication_role=replica (unblocks test infra deadlocks)",
+        "apps/api/vitest.integration.config.ts — alias regex handles @flow-desk/shared/<sub-path>"
+      ],
+      "notes": "F3 = session 012. Subagent-driven. Notification module skipped (no deletedAt field on Notification model)."
+    },
+    {
+      "id": "F4",
+      "priority": 32,
+      "area": "backend",
+      "title": "Close R-30: cursor-based pagination on all list endpoints",
+      "user_visible_behavior": "GET /api/workspaces, /members, /tasks, /comments, /attachments, /notifications, /board accept ?cursor=X&limit=N (1-100, default 20), return {data, nextCursor} envelope; cursor is opaque base64url(ISO cuid).",
+      "status": "passing",
+      "verification": [
+        "pnpm --filter @flow-desk/api test:integration → 12 pagination tests pass (roundtrip + 6 module cursors + 2 edge cases)",
+        "pnpm --filter @flow-desk/api typecheck → exit 0"
+      ],
+      "evidence": [
+        "packages/shared/src/pagination.ts — CursorPaginationQuery, CursorPaginationEnvelope, encodeCursor(Date,id), decodeCursor(value)",
+        "packages/shared/package.json + tsup.config.ts — add ./pagination export/entry",
+        "apps/api/src/modules/board/board.routes.ts — extracted from workspace; cursor pagination",
+        "apps/api/src/modules/workspace/{workspace.repository,member.service}.ts — listForUserCursor + list(workspaceId,userId,query)",
+        "apps/api/src/modules/{attachment,comment,notification,task}/*.service.ts — list-only service with cursor",
+        "apps/api/src/app.ts — wire boardRouter at /api/workspaces/:wid/board",
+        "apps/api/tests/integration/pagination.test.ts — 12 tests"
+      ],
+      "notes": "F4 = session 012. Breaking change: response envelopes changed ({workspaces}→{data,nextCursor}, etc.). F5 fixed the pre-existing F2 task.service bugs flagged by F4 testing."
+    },
+    {
+      "id": "F5",
+      "priority": 33,
+      "area": "backend",
+      "title": "Close R-31 + R-32: service/repo split + integration test coverage for remaining modules",
+      "user_visible_behavior": "task/comment/notification/attachment/ai modules now follow AGENTS.md service/repo/routes/schema split; integration tests for each (143 total across repo).",
+      "status": "passing",
+      "verification": [
+        "pnpm --filter @flow-desk/api test:integration → 142/142 pass (was 42 before F5)",
+        "pnpm --filter @flow-desk/api typecheck → exit 0"
+      ],
+      "evidence": [
+        "task/{task.repository,task.service,task.routes}.ts — split (task.routes.ts: 367→89 lines); task.service.test.ts 29 tests",
+        "comment/{comment.service,comment.repository}.ts + comment.service.test.ts 14 tests",
+        "notification/{notification.service,notification.repository}.ts + notification.service.test.ts 8 tests",
+        "attachment/{attachment.service,attachment.repository}.ts + attachment.service.test.ts 14 tests",
+        "ai/{ai.service,ai.repository}.ts + ai.service.test.ts 8 tests — FIXED pre-existing bug: topologicalSort iterated t.dependencies instead of t.blockers (self-loops); repo.listOpenTasksForSchedule include fixed",
+        "packages/shared/package.json — added ./pagination + ./label exports",
+        "apps/api/vitest.integration.config.ts — UPLOAD_DIR env var"
+      ],
+      "notes": "F5 = session 012. Subagent-driven. label/task-label/workspace already split in F2 — skipped."
+    },
+    {
+      "id": "F6",
+      "priority": 34,
+      "area": "realtime",
+      "title": "Close R-34 + presence gateway + DragOverlay real-card clone",
+      "user_visible_behavior": "Server-side presence gateway in apps/api/src/modules/realtime/realtime.gateway.ts handles presence:join/heartbeat/leave/disconnect on /tasks namespace; broadcasts presence:update to workspace room; stale users swept every 10s (30s TTL). Kanban DragOverlay now renders real TaskCard clone (not 'Moving…') via renderOverlay prop wired in pages/board.tsx.",
+      "status": "passing",
+      "verification": [
+        "pnpm --filter @flow-desk/api typecheck → exit 0",
+        "pnpm --filter @flow-desk/web typecheck → exit 0",
+        "pnpm --filter @flow-desk/web build → exit 0",
+        "pnpm --filter @flow-desk/api test:integration → 142/142 pass"
+      ],
+      "evidence": [
+        "apps/api/src/modules/realtime/realtime.gateway.ts — attachPresenceHandlers(io, redis, '/tasks'); upsertPresence/removePresence/broadcastPresence Redis-backed; 30s TTL + 10s sweeper",
+        "apps/api/src/shared/lib/socket.ts — attachPresenceHandlers called after namespace setup; io.use middleware now async (loads user name+avatar from prisma for presence payloads)",
+        "apps/web/src/components/ui/kanban.tsx — added renderOverlay?: (taskId) => ReactNode prop; DragOverlay wraps it when provided, falls back to 'Moving…' placeholder",
+        "apps/web/src/pages/board.tsx — Kanban renderOverlay looks up task by id across columns and renders TaskCard clone",
+        "apps/web/src/features/board/components/PresenceBar.tsx — removed TODO(server) comment; protocol now documented as implemented"
+      ],
+      "notes": "F6 = session 012. Subagent returned empty twice (similar to subagent D in F2) — implemented inline. namespace choice: /tasks (matches PresenceBar existing usage) instead of /collab to avoid FE wiring changes."
     }
   ]
 }

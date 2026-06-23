@@ -151,7 +151,7 @@ model Task {
   completedAt  DateTime?
   createdById  String
   version      Int          @default(0)
-  labels       String[]     @default([])
+  labelsDeprecated String[]  @default([])
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
   deletedAt    DateTime?
@@ -166,6 +166,7 @@ model Task {
   blockers     TaskDependency[]  @relation("BlockedTask")
   comments     Comment[]
   attachments  Attachment[]
+  assignments  TaskLabelAssignment[] @relation("TaskAssignments")
 
   @@index([workspaceId, deletedAt])
   @@index([columnId])
@@ -188,17 +189,37 @@ model TaskDependency {
   @@index([blockedTaskId])
 }
 
+model TaskLabelAssignment {
+  id        String   @id @default(cuid())
+  taskId    String
+  labelId   String
+  createdAt DateTime @default(now())
+  deletedAt DateTime?
+
+  task  Task      @relation("TaskAssignments", fields: [taskId], references: [id], onDelete: Cascade)
+  label TaskLabel @relation("LabelAssignments", fields: [labelId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, labelId])
+  @@index([taskId])
+  @@index([labelId])
+}
+
 model TaskLabel {
   id          String   @id @default(cuid())
   workspaceId String
   name        String
   color       String
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+  version     Int      @default(0)
 
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspace   Workspace             @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  assignments TaskLabelAssignment[] @relation("LabelAssignments")
 
   @@unique([workspaceId, name])
   @@index([workspaceId])
+  @@index([deletedAt])
 }
 
 model Comment {

@@ -4,6 +4,7 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/features/auth';
 import { useTheme } from '@/lib/theme';
 import { useSocket } from '@/lib/socket';
+import { WorkspaceSwitcher } from '@/features/workspace';
 
 interface WorkspaceSummary {
   id: string;
@@ -24,6 +25,16 @@ export function AppShell() {
     queryFn: () => api<{ workspaces: WorkspaceSummary[] }>('/api/workspaces'),
   });
 
+  const activeWorkspaceId = (() => {
+    if (typeof window === 'undefined') return undefined;
+    const match = window.location.pathname.match(/\/(?:board|list|workspaces)\/([^/]+)/);
+    return match?.[1];
+  })();
+
+  const onCreateWorkspace = () => {
+    navigate('/');
+  };
+
   const onLogout = async () => {
     await logout();
     qc.clear();
@@ -33,8 +44,13 @@ export function AppShell() {
   return (
     <div className="flex h-full bg-[var(--bg)] text-[var(--fg)]">
       <aside className="flex w-60 flex-col border-r border-[var(--border)] bg-[var(--bg-2)]">
-        <div className="px-4 py-4">
+        <div className="flex flex-col gap-3 px-4 py-4">
           <h2 className="text-lg font-semibold text-emerald-500">FlowDesk</h2>
+          <WorkspaceSwitcher
+            currentWorkspaceId={activeWorkspaceId}
+            onCreateWorkspace={onCreateWorkspace}
+            variant="sidebar"
+          />
         </div>
 
         <nav className="flex-1 space-y-1 overflow-y-auto px-2">
@@ -42,7 +58,7 @@ export function AppShell() {
             Dashboard
           </NavLink>
 
-          <div className="px-2 pt-4 label-xs">Workspaces</div>
+          <div className="px-2 pt-4 label-xs">Quick links</div>
           {workspaces.data?.workspaces.map((w) => (
             <div key={w.id} className="space-y-1">
               <NavLink to={`/board/${w.id}`} className={navItem}>

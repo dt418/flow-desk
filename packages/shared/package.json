@@ -47,10 +47,20 @@
       "import": "./dist/attachment.mjs",
       "require": "./dist/attachment.js"
     },
+    "./pagination": {
+      "types": "./dist/pagination.d.ts",
+      "import": "./dist/pagination.mjs",
+      "require": "./dist/pagination.js"
+    },
     "./common": {
       "types": "./dist/common.d.ts",
       "import": "./dist/common.mjs",
       "require": "./dist/common.js"
+    },
+    "./label": {
+      "types": "./dist/label.d.ts",
+      "import": "./dist/label.mjs",
+      "require": "./dist/label.js"
     }
   },
   "scripts": {
@@ -65,6 +75,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@types/node": "^22.7.4",
     "tsup": "^8.3.5",
     "typescript": "^5.6.2"
   }

@@ -50,11 +50,13 @@ export type KanbanMoveHandler = (
 
 export interface KanbanProps {
   onMove: KanbanMoveHandler;
+  /** Optional renderer for the dragged card inside <DragOverlay>. Receives the active taskId. */
+  renderOverlay?: (taskId: string) => React.ReactNode;
   className?: string;
   children: React.ReactNode;
 }
 
-export function Kanban({ onMove, className, children }: KanbanProps) {
+export function Kanban({ onMove, renderOverlay, className, children }: KanbanProps) {
   const [activeId, setActiveId] = React.useState<string | null>(null);
   const [activeColumnId, setActiveColumnId] = React.useState<string | null>(null);
   const activeRef = React.useRef<HTMLElement | null>(null);
@@ -132,9 +134,15 @@ export function Kanban({ onMove, className, children }: KanbanProps) {
         </div>
         <DragOverlay dropAnimation={{ duration: 200, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }}>
           {activeId ? (
-            <div className="kanban-drag-overlay pointer-events-none w-[272px] rotate-1 rounded-lg border border-emerald-500/60 bg-[var(--bg)] p-3 shadow-2xl">
-              <span className="caption">Moving…</span>
-            </div>
+            renderOverlay ? (
+              <div className="pointer-events-none w-[272px] rotate-1 shadow-2xl">
+                {renderOverlay(activeId)}
+              </div>
+            ) : (
+              <div className="kanban-drag-overlay pointer-events-none w-[272px] rotate-1 rounded-lg border border-emerald-500/60 bg-[var(--bg)] p-3 shadow-2xl">
+                <span className="caption">Moving…</span>
+              </div>
+            )
           ) : null}
         </DragOverlay>
       </DndContext>

@@ -82,3 +82,30 @@
 | **security-003**: Attachment IDOR closed + membership gaps fixed | `shared/lib/access.ts` `assertMembership(workspaceId, userId)`; applied to attachment POST/GET?taskId=/:id/download, task POST/PATCH/DELETE/move/subtasks/deps, comment POST/PATCH/DELETE, AI suggest-assignee/auto-schedule | 0.5d | passing |
 | **security-004**: Membership checks on POST /comments and AI routes | Same `assertMembership` helper; AI routes additionally rate-limited 5/min/user | 0.25d | passing |
 | **security-005**: bcrypt cost 10 + LLM provider hardening | bcrypt 12 → 10 in `auth.routes.ts`; `LLMError extends AppError(502, 'LLM_UPSTREAM')`; AbortController 30s timeout + 1 retry on 5xx/AbortError with 500ms backoff; error-handler status cast widened to `400\|401\|403\|404\|409\|429\|502\|503` | 0.25d | passing |
+
+## Sprint 9: Kanban Polish (Session 011)
+
+### Epic: F2 — Jira-clone parity pass
+
+| Story | Tasks | Estimate | Status |
+| --- | --- | --- | --- |
+| **F2.labels-be**: Label Zod schema + repo + service + cache + routes + typed socket events | Epic 4 (6 tasks, full code) | 1.5d | passing |
+| **F2.task-label-assign-be**: TaskLabelAssignment repo + service (dual-write to Task.labelsDeprecated) + routes | Epic 5 (3 tasks) | 0.5d | passing |
+| **F2.workspace-be**: Workspace service/repo extraction + member invite endpoint + role change | Epic 6 (3 tasks) | 1d | passing |
+| **F2.fe-foundation**: type-safe api client + TanStack Query + shadcn primitives + auth guard | Epic 7 (3 tasks) | 0.5d | passing |
+| **F2.workspace-ui**: switcher + settings page + members tab + invite modal | Epic 8 (4 tasks) | 1d | passing |
+| **F2.label-ui**: manager page + chip component + task-card label select (Radix Popover) | Epic 9 (3 tasks) | 1d | passing |
+| **F2.welcome**: onboarding wizard + empty board state | Epic 10 (2 tasks) | 0.5d | passing |
+| **F2.realtime**: socket reconnection + optimistic reconciliation + presence UI | Epic 11 (3 tasks) | 1d | passing |
+| **F2.e2e**: Playwright config + fixtures + critical-path + realtime specs | Epic 12 (3 tasks) | 0.5d | passing |
+
+## Sprint 10-13: Backend Hardening + Realtime Polish (Session 012)
+
+### Epic: F3-F6 — close R-29 / R-30 / R-31 / R-32 / R-34
+
+| Story | Tasks | Estimate | Status |
+| --- | --- | --- | --- |
+| **F3.r29-soft-delete**: 12 mutation-path gaps audited + Prisma softDelete extension | Audit + add filters + extension + 15 tests | 1d | passing |
+| **F4.r30-cursor-pagination**: cursor/limit on 7 list endpoints + shared envelope | packages/shared/pagination.ts + 7 routes + 12 tests | 1d | passing |
+| **F5.r31-r32-service-repo-tests**: split task/comment/notification/attachment/ai + tests | 5 modules × (repo+service+routes slim) + 73 tests + topologicalSort bug fix | 2d | passing |
+| **F6.r34-presence-drag-overlay**: server presence gateway + DragOverlay real-card clone | realtime.gateway.ts + Redis-backed presence (30s TTL, 10s sweeper) + Kanban renderOverlay prop | 1d | passing |

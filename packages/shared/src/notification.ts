@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { cuidSchema, paginationSchema } from './common';
+import { cuidSchema } from './common';
+import { CursorPaginationQuery } from './pagination';
 
 export const notificationTypeSchema = z.enum([
   'TASK_ASSIGNED',
@@ -25,7 +26,7 @@ export const notificationSchema = z.object({
 });
 export type Notification = z.infer<typeof notificationSchema>;
 
-export const listNotificationsQuerySchema = paginationSchema.extend({
+export const listNotificationsQuerySchema = CursorPaginationQuery.extend({
   unreadOnly: z.coerce.boolean().default(false),
 });
 export type ListNotificationsQuery = z.infer<typeof listNotificationsQuerySchema>;

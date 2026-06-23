@@ -5,6 +5,7 @@ import { redis } from './redis';
 import { verifyAccessToken } from './jwt';
 import { logger } from './logger';
 import { env } from './env';
+import { attachPresenceHandlers } from '../../modules/realtime/realtime.gateway';
 
 export function createSocketServer(httpServer: HttpServer) {
   const io = new SocketServer(httpServer, {
@@ -16,7 +17,7 @@ export function createSocketServer(httpServer: HttpServer) {
   const subClient = redis.duplicate();
   io.adapter(createAdapter(pubClient, subClient));
 
-  io.use((socket, next) => {
+  io.use(async (socket, next) => {
     const token =
       (socket.handshake.auth?.token as string | undefined) ??
       socket.handshake.headers.authorization?.replace(/^Bearer\s+/i, '') ??
@@ -24,6 +25,18 @@ export function createSocketServer(httpServer: HttpServer) {
     try {
       const payload = verifyAccessToken(token);
       socket.data.userId = payload.userId;
+      try {
+        const { prisma } = await import('./prisma');
+        const user = await prisma.user.findUnique({
+          where: { id: payload.userId },
+          select: { name: true, avatarUrl: true },
+        });
+        socket.data.userName = user?.name ?? `User ${payload.userId.slice(-4)}`;
+        socket.data.userAvatar = user?.avatarUrl ?? null;
+      } catch {
+        socket.data.userName = `User ${payload.userId.slice(-4)}`;
+        socket.data.userAvatar = null;
+      }
       next();
     } catch (err) {
       logger.warn({ err }, 'socket auth failed');
@@ -63,6 +76,8 @@ export function createSocketServer(httpServer: HttpServer) {
       });
     });
   }
+
+  attachPresenceHandlers(io, redis, '/tasks');
 
   return io;
 }

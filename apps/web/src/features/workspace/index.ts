@@ -20,3 +20,4 @@ export { MembersTab } from './components/MembersTab';
 export { ColumnsTab } from './components/ColumnsTab';
 export { DangerZoneTab } from './components/DangerZoneTab';
 export { SettingsTabs } from './components/SettingsTabs';
+export { WorkspaceSwitcher } from './components/WorkspaceSwitcher';
