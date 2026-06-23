@@ -1,6 +1,6 @@
 import type { prisma } from '../../shared/lib/prisma';
 type PrismaClient = typeof prisma;
-import type { Prisma } from '@prisma/client';
+import type { Prisma } from '../../../generated/prisma/client';
 
 const ASSIGNEE_SELECT = { id: true, name: true, email: true, avatarUrl: true } as const;
 

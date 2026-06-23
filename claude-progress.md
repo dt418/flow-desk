@@ -7,32 +7,58 @@
 - **Standard verification path**: `pnpm --filter @flow-desk/shared build` + curl API endpoints + `bash scripts/prisma-exec.sh <args>` for prisma
 - **Highest priority unfinished feature**: none (33 features passing — F2 + F3-F6 all green)
 - **Active branch**: `main` in `/home/thanh/flow-desk`
-- **F2 + F3-F6 just completed (sessions 011 + 012)**: 142/142 BE integration tests pass, typecheck green on both apps, web build green
+- **Prisma**: **7.8.0** (migrated from 5.22 in session 014; new `prisma-client` generator + `prisma.config.ts` + `PrismaPg` adapter; custom output at `apps/api/generated/prisma/`)
+- **pnpm**: 11.8.0 (migrated from 9.12 in session 013; hoist settings moved to `pnpm-workspace.yaml`)
+- **Node**: 22-alpine (migrated from 20 in session 013)
 - **Current blocker**: none
 - **Key risks** (carry-forward): R-24 (ai-001 latency UX) — only material risk remaining
 - **Resolved in F2 (session 011)**: R-33 (split-brain selects — Radix primitives added)
 - **Resolved in F3-F6 (session 012)**: R-29 (soft-delete gaps + extension), R-30 (cursor pagination), R-31 (service/repo split all modules), R-32 (zero tests — 142 integration tests), R-34 (DragOverlay real-card clone)
 - **Resolved risks (session 010)**: R-36 (prisma-exec regression), R-37 (silent env fallback), R-38 (sh -c word-split + hardcoded container name in seed path)
 - **Resolved risks (session 010b)**: R-35 (pre-existing `apps/api/src/index.ts` ServerType typecheck error — cast at `createSocketServer` call site)
+- **Resolved risks (session 014)**: docker build broken with Prisma 5 + pnpm 11 + lefthook (root causes: (a) `.dockerignore` nested node_modules leak, (b) hoist settings in `.npmrc` ignored by pnpm 11 — both fixed). Also: full Prisma 5→7 migration (generator, config, adapter, imports, dockerfile, prisma-exec, seed ESM bundle).
 - **Security note**: `LLM_API_KEY` (sk-80c6f26e1...) was pasted in chat once during session 006. Recommend rotating the key at the provider. Key is in `.env`/`.env.local` (gitignored). Pre-commit hook blocks future leaks.
 
 ## Session Log
 
-### Session 013 — Realtime crash fix + realistic seed
+### Session 014 — Prisma 5 → 7 migration + docker build fix
 
 - **Date**: 2026-06-23
-- **Goal**: Fix api container crash on every socket reconnect; expand seed with realistic data
-- **Bug**: `TypeError: Cannot read properties of undefined (reading 'slice')` at `apps/api/dist/index.js:2648:61` (presence handler). Root cause: FE socket client (`apps/web/src/lib/socket.ts`) connected without sending JWT, so BE `io.use` middleware had no token. In race conditions the connection event still fired and `userId.slice(-4)` threw.
-- **Fix**:
-  - `apps/web/src/lib/socket.ts`: read `access_token` from `document.cookie`, pass in `auth.token` + `extraHeaders.Cookie`
-  - `apps/api/src/modules/realtime/realtime.gateway.ts`: presence handler rejects with no `userId` (warn + `emit('unauthorized')` + `socket.disconnect(true)`)
-  - Rebuilt `apps/api/dist`, restarted container — api healthy, no more TypeError
-- **Seed** (`prisma/seed.ts`): expanded 5 users/2 workspaces/24 tasks → **15 users/6 workspaces/51 tasks/60 subtasks/14 deps/199 comments/120 notifications/16 attachments/26 labels**. Realistic status/priority/due-date distribution. Fixed enum mismatches: GUEST (not VIEWER), TASK_MENTIONED/TASK_DUE_SOON, Attachment.uploadedById/size/type.
+- **Goal**: Docker build was failing with `Could not resolve @prisma/client` (pnpm 11 + monorepo hoisting). User requested Prisma 7 migration per official Prisma docker + turborepo guides.
+- **Root causes fixed (separate issues)**:
+  1. `.dockerignore` pattern `node_modules` did NOT exclude nested `apps/api/node_modules` in current Docker version. Fix: `**/node_modules` (root cause of stale host-side bin script overwriting pnpm-installed symlinks during COPY).
+  2. pnpm v11 silently ignores hoist settings in `.npmrc`. `public-hoist-pattern[]=*prisma*` was dead. Fix: move to `publicHoistPattern` in `pnpm-workspace.yaml`.
+- **Prisma 5 → 7 migration** (per official guides):
+  - `prisma/schema.prisma`: `provider = "prisma-client"` + `output = "../apps/api/generated/prisma"`, dropped `url` from datasource
+  - New `prisma.config.ts` at workspace root with `defineConfig` + `env('DATABASE_URL')`
+  - Generated client at `apps/api/generated/prisma/client.ts` (custom output, per docs)
+  - All 19 import sites updated: `from '@prisma/client'` → `from '../../../generated/prisma/client'` (3 levels from `apps/api/src/...`, 2 from `apps/api/tests/setup/...`)
+  - All `new PrismaClient({...})` rewritten with `PrismaPg` driver adapter pattern (3 sites: api main, test setup, seed)
+  - `apps/api/tsconfig.json`: dropped `rootDir: src`, added `generated/**/*` to `include` (TS error: generated dir not under rootDir)
+  - `apps/api/package.json`: `prisma ^5.22 → ^7`, added `@prisma/adapter-pg ^7`, `pg ^8`, `dotenv ^16`, `@types/pg`
+  - Deleted legacy `apps/api/prisma/schema.prisma` (preexisting v5 default; would shadow new config)
+  - `prisma/seed.ts`: ESM bundle required (Prisma 7 client uses `import.meta.url`) — `prisma-exec.sh` updated to `--format=esm` + `--banner` for `require` shim
+  - `docker/api.Dockerfile`: `COPY prisma.config.ts`, `ENV DATABASE_URL` placeholder for generate step, `COPY apps/api/generated` to runtime
+  - `scripts/prisma-exec.sh`: cwd `/app/apps/api → /app` so root `prisma.config.ts` is picked up by Prisma 7
+  - `turbo.json`: `build.dependsOn: ["^build", "^db:generate"]`, added `prisma/schema.prisma` + `prisma.config.ts` to globalDependencies, `DATABASE_URL` to globalEnv, `generated/**` to build outputs
+  - `.gitignore`: added `apps/api/generated/` (per docs warning)
+  - `pnpm --filter @flow-desk/api test:integration`: `migrateTestDb()` cwd fixed to absolute workspace root (`resolve(__dirname, '../../../..')`) + dropped `--skip-generate` (unknown flag in Prisma 7)
 - **Verified**:
+  - `pnpm install --no-frozen-lockfile` → ok (Prisma 7.8.0 + @prisma/client 7.8.0 + @prisma/adapter-pg 7.8.0)
+  - `pnpm exec prisma generate` → `✔ Generated Prisma Client (7.8.0) to ./apps/api/generated/prisma`
+  - `pnpm --filter @flow-desk/api typecheck` → exit 0
+  - `pnpm --filter @flow-desk/web typecheck` → exit 0
+  - `pnpm --filter @flow-desk/web build` → exit 0
+  - `pnpm --filter @flow-desk/api test:integration` → 13 files, **142/142 tests pass**
   - `docker compose up -d --build api web` → all healthy
-  - `/api/health` → 200, `POST /api/auth/login` → 200, `GET /api/workspaces` → paginated
-  - Web at `:5173` → 200
-- **Next scope**: candidates — CI integration of `pnpm test:integration` as required check, R-24 latency UX (spinners + cancellation), admin tool for 30-day soft-delete recovery (R-16), replace legacy native `<select>` in NewTaskModal with Radix Select.
+  - `/api/health` → 200
+  - `scripts/prisma-exec.sh seed` (docker mode) → 51 tasks / 120 notifications / 16 attachments seeded
+  - `POST /api/auth/login` demo/demo1234 → 200, `GET /api/workspaces` → 200
+- **Schema drift note**: prod DB schema was older (`TaskLabelAssignment` missing). `scripts/prisma-exec.sh db push` applied before seed. `20260621155750_dev` migration also applied on api boot.
+- **Key risks closed**: docker build with monorepo pnpm + prisma generate, Prisma 5 → 7 deprecation (no v5 leftover deps), ESM/CJS interop for seed bundle.
+- **Next scope**: candidates — R-24 latency UX, R-16 soft-delete admin tool, CI integration of `pnpm test:integration` as required check, R-35 leftover apps/api/.gitignore cleanup, R-33 Radix select in NewTaskModal.
+
+
 
 ### Session 012 — F3-F6 Backend Hardening + Realtime Polish
 

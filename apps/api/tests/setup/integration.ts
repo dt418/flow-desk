@@ -1,6 +1,6 @@
 import { beforeAll, afterAll, beforeEach } from 'vitest';
 import { createTestPrisma, resetTestDb, migrateTestDb, TEST_DB_URL } from './db';
-import type { PrismaClient } from '@prisma/client';
+import type { PrismaClient } from '../../generated/prisma/client';
 
 process.env.DATABASE_URL = TEST_DB_URL;
 process.env.NODE_ENV = 'test';

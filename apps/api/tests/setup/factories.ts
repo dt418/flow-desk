@@ -1,4 +1,4 @@
-import type { PrismaClient, UserRole } from '@prisma/client';
+import type { PrismaClient, UserRole } from '../../generated/prisma/client';
 import { signAccessToken } from '../../src/shared/lib/jwt';
 
 let idCounter = 0;

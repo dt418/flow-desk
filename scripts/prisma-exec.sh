@@ -78,14 +78,16 @@ if [ "$DETECTED" = "local" ] && [ -f "$ROOT_DIR/.env" ]; then
 fi
 
 # Special handling for "seed": build on host, then run in the right place.
+# Prisma 7's generated client uses `import.meta.url`, which requires ESM output.
 if [ "${1:-}" = "seed" ]; then
   shift
-  SEED_CJS_HOST="$API_CWD/dist/seed.cjs"
-  echo "==> Building seed.cjs on host"
+  SEED_ESM_HOST="$API_CWD/dist/seed.mjs"
+  echo "==> Building seed.mjs on host"
   pnpm --filter @flow-desk/api exec esbuild ../../prisma/seed.ts \
-    --bundle --platform=node --format=cjs \
-    --outfile="$SEED_CJS_HOST" \
-    --external:@prisma/client --external:bcryptjs
+    --bundle --platform=node --format=esm \
+    --outfile="$SEED_ESM_HOST" \
+    --external:@prisma/client --external:bcryptjs \
+    --banner:js="import { createRequire as __cR } from 'module'; const require = __cR(import.meta.url);"
 
   if [ "$DETECTED" = "docker" ]; then
     # Resolve the api container id dynamically so a top-level `name:` change
@@ -95,26 +97,26 @@ if [ "${1:-}" = "seed" ]; then
       echo "ERROR: api container not running after auto-start" >&2
       exit 1
     fi
-    echo "==> docker — copying seed.cjs into api container ($API_CID)"
-    docker cp "$SEED_CJS_HOST" "${API_CID}:/app/apps/api/dist/seed.cjs"
-    echo "==> Running seed.cjs inside api container"
-    docker compose exec -T api node /app/apps/api/dist/seed.cjs "$@"
+    echo "==> docker — copying seed.mjs into api container ($API_CID)"
+    docker cp "$SEED_ESM_HOST" "${API_CID}:/app/apps/api/dist/seed.mjs"
+    echo "==> Running seed.mjs inside api container"
+    docker compose exec -T api node /app/apps/api/dist/seed.mjs "$@"
   else
-    echo "==> local — running seed.cjs on host"
-    (cd "$API_CWD" && pnpm exec node dist/seed.cjs "$@")
+    echo "==> local — running seed.mjs on host"
+    (cd "$API_CWD" && pnpm exec node dist/seed.mjs "$@")
   fi
   exit 0
 fi
 
 if [ "$DETECTED" = "docker" ]; then
-  # Run prisma inside the api container. `-w` sets the working dir so we
-  # don't need a wrapping `sh -c "cd ... && ..."` — which would force a
-  # host-side word-split of "$*" and break args with spaces.
+  # Run prisma inside the api container. `-w` sets the working dir to the
+  # workspace root so the new `prisma.config.ts` (Prisma 7) is picked up.
   # `pnpm exec prisma` picks up the local node_modules binary (NOT the root
   # `prisma` script, which would recurse into this wrapper).
-  echo "==> docker compose exec -T -w /app/apps/api api pnpm exec prisma $*"
-  docker compose exec -T -w /app/apps/api api pnpm exec prisma "$@"
+  echo "==> docker compose exec -T -w /app api pnpm exec prisma $*"
+  docker compose exec -T -w /app api pnpm exec prisma "$@"
 else
-  echo "==> pnpm exec prisma (cwd: $API_CWD)"
-  (cd "$API_CWD" && pnpm exec prisma "$@")
+  # Prisma 7 reads prisma.config.ts from CWD; run from workspace root.
+  echo "==> pnpm exec prisma (cwd: $ROOT_DIR)"
+  (cd "$ROOT_DIR" && pnpm exec prisma "$@")
 fi

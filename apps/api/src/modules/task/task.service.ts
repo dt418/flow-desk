@@ -2,7 +2,7 @@ import { prisma } from '../../shared/lib/prisma';
 import { decodeCursor, encodeCursor, CursorPaginationQuery } from '@flow-desk/shared/pagination';
 import { cuidSchema } from '@flow-desk/shared/common';
 import { assertMembership } from '../../shared/lib/access';
-import type { Prisma, TaskStatus, TaskPriority } from '@prisma/client';
+import type { Prisma, TaskStatus, TaskPriority } from '../../../generated/prisma/client';
 import { z } from 'zod';
 import {
   taskStatusSchema,

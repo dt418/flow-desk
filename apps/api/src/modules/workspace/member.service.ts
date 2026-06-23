@@ -1,10 +1,10 @@
 import { prisma } from '../../shared/lib/prisma';
 import { ForbiddenError, ConflictError, NotFoundError, BadRequestError } from '../../shared/errors';
 import { assertRole, assertMembership } from '../../shared/lib/access';
-import type { UserRole } from '@prisma/client';
+import type { UserRole } from '../../../generated/prisma/client';
 import type { CursorPaginationQuery } from '@flow-desk/shared/pagination';
 import { decodeCursor, encodeCursor } from '@flow-desk/shared/pagination';
-import type { Prisma } from '@prisma/client';
+import type { Prisma } from '../../../generated/prisma/client';
 
 export const memberService = {
   async list(query: CursorPaginationQuery, workspaceId: string, userId: string) {

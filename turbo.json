@@ -1,11 +1,11 @@
 {
   "$schema": "https://turbo.build/schema.json",
-  "globalDependencies": ["**/.env.*local", ".env"],
-  "globalEnv": ["NODE_ENV", "FLOW_DESK_DB_MODE"],
+  "globalDependencies": ["**/.env.*local", ".env", "prisma/schema.prisma", "prisma.config.ts"],
+  "globalEnv": ["NODE_ENV", "FLOW_DESK_DB_MODE", "DATABASE_URL"],
   "tasks": {
     "build": {
-      "dependsOn": ["^build"],
-      "outputs": ["dist/**", ".vite/**", "build/**"]
+      "dependsOn": ["^build", "^db:generate"],
+      "outputs": ["dist/**", ".vite/**", "build/**", "generated/**"]
     },
     "dev": {
       "cache": false,

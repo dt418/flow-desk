@@ -1,9 +1,12 @@
-import { PrismaClient } from '@prisma/client';
+import { resolve } from 'node:path';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { PrismaClient } from '../../generated/prisma/client';
 
 export const TEST_DB_URL = 'postgresql://flowdesk:flowdesk@localhost:5432/flowdesk_test?schema=public';
+const WORKSPACE_ROOT = resolve(__dirname, '../../../..');
 
 export function createTestPrisma() {
-  return new PrismaClient({ datasourceUrl: TEST_DB_URL });
+  return new PrismaClient({ adapter: new PrismaPg({ connectionString: TEST_DB_URL }) });
 }
 
 export async function resetTestDb(prisma: PrismaClient) {
@@ -24,9 +27,9 @@ export async function resetTestDb(prisma: PrismaClient) {
 
 export async function migrateTestDb() {
   const { execSync } = await import('node:child_process');
-  execSync('pnpm exec prisma db push --skip-generate', {
+  execSync('pnpm exec prisma db push', {
     env: { ...process.env, DATABASE_URL: TEST_DB_URL },
-    cwd: process.cwd(),
+    cwd: WORKSPACE_ROOT,
     stdio: 'inherit',
   });
 }

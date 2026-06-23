@@ -1,7 +1,11 @@
-import { PrismaClient, type Prisma } from '@prisma/client';
+import 'dotenv/config';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { PrismaClient, type Prisma } from '../apps/api/generated/prisma/client';
 import bcrypt from 'bcryptjs';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({
+  adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
+});
 
 const USERS = [
   { email: 'demo@flow-desk.app', name: 'Demo User', role: 'OWNER' as const },

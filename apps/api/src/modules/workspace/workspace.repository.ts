@@ -1,5 +1,5 @@
 import { prisma } from '../../shared/lib/prisma';
-import type { Prisma, Workspace } from '@prisma/client';
+import type { Prisma, Workspace } from '../../../generated/prisma/client';
 
 export const workspaceRepo = {
   findById: (id: string) =>

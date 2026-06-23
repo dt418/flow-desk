@@ -2,13 +2,12 @@
 // Soft-delete on User, Workspace, Task, Comment, Attachment via deletedAt
 
 generator client {
-  provider      = "prisma-client-js"
-  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+  provider = "prisma-client"
+  output   = "../apps/api/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 enum UserRole {

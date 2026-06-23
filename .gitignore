@@ -16,3 +16,4 @@ prisma/.env
 data
 prisma/migrations/dev.db*
 .worktrees/
+apps/api/generated/
