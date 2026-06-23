@@ -15,10 +15,8 @@ echo "==> Syncing dependencies"
 echo "==> Running baseline verification (shared package build)"
 "${VERIFY_CMD[@]}"
 
-echo "==> Installing git hooks (pre-commit secret check)"
-git config core.hooksPath .githooks
-chmod +x .githooks/pre-commit
-ls -la .githooks/
+echo "==> Installing git hooks (lefthook: pre-commit secret check + typecheck, pre-push full verify)"
+pnpm setup:lefthook
 
 echo "==> Startup command"
 printf '    %q' "${START_CMD[@]}"

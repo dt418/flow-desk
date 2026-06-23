@@ -102,6 +102,25 @@ RISKS.md         # Risk register
 AGENTS.md        # Agent operating instructions
 ```
 
+## Git hooks (lefthook)
+
+Hooks are managed by [lefthook](https://github.com/evilmartians/lefthook) (config: `lefthook.yml`).
+
+- `pnpm setup:lefthook` — install hooks (also runs in `./init.sh`)
+- `pnpm check:secrets` — re-run the secret scanner manually
+- `pnpm verify` — run all pre-commit + pre-push gates locally
+
+**pre-commit** (fast, ~15s):
+- Secret scan (`.githooks/pre-commit`)
+- Per-package typecheck (`shared` / `api` / `web`) — only the package whose files changed
+
+**pre-push** (heavier, ~60-90s):
+- Full typecheck (all packages)
+- BE integration tests (142 tests)
+- Web build
+
+Bypass (emergency): `git commit --no-verify` / `git push --no-verify`.
+
 ## Recent changes
 
 - **Session 012 (F3-F6)**: closed R-29 (soft-delete extension), R-30 (cursor pagination), R-31 (service/repo split for all remaining modules), R-32 (142 integration tests), R-34 (real-card DragOverlay + server presence gateway). 142/142 BE tests pass.

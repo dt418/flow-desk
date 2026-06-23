@@ -1,0 +1,35 @@
+# FlowDesk lefthook configuration
+#
+# Install:  pnpm setup:lefthook  (or:  lefthook install)
+# Bypass:   git commit --no-verify / git push --no-verify
+# Run all:  pnpm verify
+#
+# pre-commit:  fast gates (<15s) — secret scan + per-package typecheck
+# pre-push:    heavier gates (<90s) — full typecheck + BE integration tests + web build
+
+pre-commit:
+  parallel: true
+  commands:
+    secrets:
+      glob: "*"
+      exclude: "(\\.githooks/|\\.lefthook/|lefthook\\.yml|docs/|\\.md$)"
+      run: bash .githooks/pre-commit
+    typecheck-shared:
+      glob: "packages/shared/src/**/*.ts"
+      run: pnpm --filter @flow-desk/shared typecheck
+    typecheck-api:
+      glob: "apps/api/src/**/*.ts"
+      run: pnpm --filter @flow-desk/api typecheck
+    typecheck-web:
+      glob: "apps/web/src/**/*.{ts,tsx}"
+      run: pnpm --filter @flow-desk/web typecheck
+
+pre-push:
+  parallel: true
+  commands:
+    typecheck-all:
+      run: pnpm typecheck
+    test-api:
+      run: pnpm --filter @flow-desk/api test:integration
+    build-web:
+      run: pnpm --filter @flow-desk/web build

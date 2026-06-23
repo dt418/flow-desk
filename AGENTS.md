@@ -125,7 +125,9 @@ apps/web/src/pages/          # Route-level components only (thin shells)
 - A pre-commit hook at `.githooks/pre-commit` enforces this:
   - Blocks staged files matching `.env*` and common credential paths (PEM, `id_rsa`, `service-account*.json`, etc).
   - Greps staged content for high-confidence secret patterns (`sk-…`, `sk-ant-…`, `AIza…`, `ghp_…`, `AKIA…`, JWT, private-key blocks, `LLM_API_KEY=…`).
-- Hooks are installed automatically by `./init.sh` (`git config core.hooksPath .githooks`). To install manually: `pnpm setup:hooks`. To re-run the check without committing: `pnpm check:secrets`.
+- Hooks are installed automatically by `./init.sh` (calls `pnpm setup:lefthook`). Configuration in `lefthook.yml`. To install manually: `pnpm setup:lefthook`. To re-run the secret check without committing: `pnpm check:secrets`. To run all gates locally: `pnpm verify`.
+- **pre-commit**: secret scan (`.githooks/pre-commit`) + per-package typecheck (web/api/shared) — runs in ~15s.
+- **pre-push**: full typecheck + BE integration tests + web build — runs in ~60-90s.
 - If a real key is ever exposed, **rotate it at the provider immediately**. The key is compromised the moment it appears in a chat or terminal scrollback.
 
 ## Definition of Done
