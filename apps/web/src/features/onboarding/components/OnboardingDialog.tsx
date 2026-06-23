@@ -343,11 +343,11 @@ export function OnboardingGate() {
   const { user } = useAuth();
   const workspacesQuery = useQuery({
     queryKey: ['workspaces'],
-    queryFn: () => api<{ workspaces: Array<{ id: string }> }>('/api/workspaces'),
+    queryFn: () => api<{ data: Array<{ id: string }>; nextCursor: string | null }>('/api/workspaces'),
     enabled: Boolean(user),
     staleTime: 60_000,
   });
-  const count = workspacesQuery.data?.workspaces.length ?? 0;
+  const count = workspacesQuery.data?.data.length ?? 0;
   const { show, markComplete } = useOnboarding(count);
 
   const handleClose = React.useCallback(() => {

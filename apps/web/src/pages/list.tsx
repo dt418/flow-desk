@@ -130,7 +130,7 @@ export function ListPage() {
   const data = useQuery({
     queryKey: ['tasks', workspaceId],
     queryFn: async () => {
-      const res = await api<{ tasks: TaskRow[]; total: number }>(
+      const res = await api<{ data: TaskRow[]; nextCursor: string | null }>(
         `/api/tasks?workspaceId=${encodeURIComponent(workspaceId)}`,
       );
       return res;
@@ -139,7 +139,7 @@ export function ListPage() {
   });
 
   const filtered = useMemo(() => {
-    const tasks = data.data?.tasks ?? [];
+    const tasks = data.data?.data ?? [];
     return tasks.filter((t) => {
       if (statusFilter !== 'ALL' && t.status !== statusFilter) return false;
       if (priorityFilter !== 'ALL' && t.priority !== priorityFilter) return false;

@@ -1,6 +1,7 @@
 import { test as base, type Page, type BrowserContext } from '@playwright/test';
 import { PrismaClient } from '@prisma/client';
-import { createUser, createWorkspace, addMember, cleanDatabase } from '../apps/api/tests/setup/factories';
+import bcrypt from 'bcryptjs';
+import { createUser, createWorkspace, cleanDatabase } from '../apps/api/tests/setup/factories';
 
 const prisma = new PrismaClient();
 
@@ -20,16 +21,21 @@ export const test = base.extend<{
 }>({
   db: [
     async ({}, use) => {
-      await cleanDatabase();
+      await cleanDatabase(prisma);
       await use();
-      await cleanDatabase();
+      await cleanDatabase(prisma);
     },
     { auto: true, scope: 'worker' },
   ],
   seedUser: async ({}, use) => {
     const password = 'e2epass123';
-    const user = await createUser({ email: `e2e-${Date.now()}@flow-desk.app`, password });
-    const ws = await createWorkspace({ name: 'E2E Workspace', ownerId: user.id });
+    const email = `e2e-${Date.now()}@flow-desk.app`;
+    const user = await createUser(prisma, email, 'E2E User');
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { passwordHash: await bcrypt.hash(password, 10) },
+    });
+    const ws = await createWorkspace(prisma, user.id, 'E2E Workspace');
     await use({
       id: user.id,
       email: user.email,

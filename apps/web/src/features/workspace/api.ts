@@ -26,7 +26,7 @@ export const workspaceApi = {
     });
   },
   members(workspaceId: string) {
-    return api<{ members: MemberRow[] }>(
+    return api<{ data: MemberRow[]; nextCursor: string | null }>(
       `/api/workspaces/${encodeURIComponent(workspaceId)}/members`,
     );
   },

@@ -37,6 +37,7 @@
     "verify": "lefthook run pre-commit && lefthook run pre-push"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.0",
     "lefthook": "^2.1.9",
     "prettier": "^3.3.3",
     "turbo": "^2.1.3",

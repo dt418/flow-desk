@@ -13,6 +13,11 @@ interface WorkspaceSummary {
   role: 'OWNER' | 'ADMIN' | 'MEMBER' | 'GUEST';
 }
 
+interface WorkspacesResponse {
+  data: WorkspaceSummary[];
+  nextCursor: string | null;
+}
+
 export function AppShell() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
@@ -22,7 +27,7 @@ export function AppShell() {
 
   const workspaces = useQuery({
     queryKey: ['workspaces'],
-    queryFn: () => api<{ workspaces: WorkspaceSummary[] }>('/api/workspaces'),
+    queryFn: () => api<WorkspacesResponse>('/api/workspaces'),
   });
 
   const activeWorkspaceId = (() => {
@@ -59,7 +64,7 @@ export function AppShell() {
           </NavLink>
 
           <div className="px-2 pt-4 label-xs">Quick links</div>
-          {workspaces.data?.workspaces.map((w) => (
+          {(workspaces.data?.data ?? []).map((w) => (
             <div key={w.id} className="space-y-1">
               <NavLink to={`/board/${w.id}`} className={navItem}>
                 {w.name}

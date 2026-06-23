@@ -29,7 +29,7 @@ export function useWorkspaceRole(workspaceId: string): UserRole | null {
 export function useMembers(workspaceId: string) {
   return useQuery({
     queryKey: workspaceKeys.members(workspaceId),
-    queryFn: () => workspaceApi.members(workspaceId).then((r) => r.members),
+    queryFn: () => workspaceApi.members(workspaceId).then((r) => r.data),
     enabled: Boolean(workspaceId),
   });
 }

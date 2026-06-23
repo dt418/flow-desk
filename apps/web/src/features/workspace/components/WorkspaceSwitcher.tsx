@@ -42,10 +42,10 @@ export function WorkspaceSwitcher({
 
   const workspaces = useQuery({
     queryKey: ['workspaces'],
-    queryFn: () => api<{ workspaces: WorkspaceSummary[] }>('/api/workspaces'),
+    queryFn: () => api<{ data: WorkspaceSummary[]; nextCursor: string | null }>('/api/workspaces'),
   });
 
-  const list = workspaces.data?.workspaces ?? [];
+  const list = workspaces.data?.data ?? [];
   const current =
     list.find((w) => w.id === currentWorkspaceId) ?? (currentWorkspaceId ? null : list[0] ?? null);
 

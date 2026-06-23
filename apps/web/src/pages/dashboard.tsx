@@ -190,24 +190,24 @@ export function DashboardPage() {
 
   const workspaces = useQuery({
     queryKey: ['workspaces'],
-    queryFn: () => api<{ workspaces: WorkspaceSummary[] }>('/api/workspaces'),
+    queryFn: () => api<{ data: WorkspaceSummary[]; nextCursor: string | null }>('/api/workspaces'),
   });
 
-  const workspaceList = workspaces.data?.workspaces ?? [];
+  const workspaceList = workspaces.data?.data ?? [];
 
   // Fetch tasks per workspace in parallel to build a unified "my tasks" feed.
   const taskQueries = useQueries({
     queries: workspaceList.map((w) => ({
       queryKey: ['tasks', w.id],
       queryFn: () =>
-        api<{ tasks: TaskRow[] }>(`/api/tasks?workspaceId=${encodeURIComponent(w.id)}`),
+        api<{ data: TaskRow[]; nextCursor: string | null }>(`/api/tasks?workspaceId=${encodeURIComponent(w.id)}`),
       enabled: Boolean(w.id),
       staleTime: 30_000,
     })),
   });
 
   const allTasks = React.useMemo<TaskRow[]>(() => {
-    return taskQueries.flatMap((q) => q.data?.tasks ?? []);
+    return taskQueries.flatMap((q) => q.data?.data ?? []);
   }, [taskQueries]);
 
   const myUserId = me.data?.user.id;
