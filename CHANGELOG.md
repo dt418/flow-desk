@@ -2,9 +2,29 @@
 
 All notable changes to FlowDesk.
 
-## [Unreleased] — Sessions 011 + 012
+## [Unreleased] — Sessions 011 + 012 + 013
 
-### Added (Session 011 — F2 Kanban Polish)
+### Session 013 (this commit)
+
+#### Fixed — realtime crash
+- `apps/web/src/lib/socket.ts`: socket client now reads `access_token` cookie and passes it in `auth.token` + `extraHeaders.Cookie`. Without this, the JWT middleware on the BE side had no token to verify and could let an unauth'd connection through.
+- `apps/api/src/modules/realtime/realtime.gateway.ts`: presence handler now rejects connections with no `userId` (logger.warn + emit `unauthorized` + `socket.disconnect(true)`) instead of throwing `TypeError: Cannot read properties of undefined (reading 'slice')` and crashing the api container.
+
+#### Changed — seed (realistic data)
+- `prisma/seed.ts` expanded from 5 users / 2 workspaces / 24 tasks to **15 users / 6 workspaces / 51 tasks / 60 subtasks / 14 deps / 199 comments / 120 notifications / 16 attachments / 26 labels**.
+- Mixes OWNER / ADMIN / MEMBER / GUEST roles across workspaces. Uses the new `TaskLabelAssignment` join table from F2 + dual-writes `Task.labelsDeprecated` for backward compat with F1 FE clients. Realistic status mix (BACKLOG / TODO / IN_PROGRESS / IN_REVIEW / DONE / BLOCKED) with overdue / today / soon / future due dates.
+- Fixed enum mismatches caught on first run: `VIEWER` → `GUEST`; `MENTION`/`DUE_SOON` → `TASK_MENTIONED`/`TASK_DUE_SOON`; `uploaderId`/`sizeBytes` → `uploadedById`/`size`; added required `Attachment.type`.
+- Removed `startedAt` field (not in current Task schema).
+
+#### Verified
+- `docker compose up -d --build api web` — api healthy, no crashes
+- `curl /api/health` → 200
+- `POST /api/auth/login demo@flow-desk.app` → 200, returns user
+- `GET /api/workspaces` (paginated) → returns 1 page with `nextCursor`
+- Web at :5173 → 200 (static served by nginx)
+- All 6 workspaces visible to demo user
+
+### Session 012 — F3-F6 Backend Hardening + Realtime Polish
 
 - **Label module (BE)**: `apps/api/src/modules/label/` — Zod schema, repo, service (with `clearWorkspaceLabelsCache`), Redis cache (60s TTL), Hono routes; 6 sub-tasks + 9 integration tests.
 - **Task-label assignment (BE)**: `TaskLabelAssignment` join table; service performs dual-write to `Task.labelsDeprecated` (string array) for backward compat with legacy FE clients; socket `task:labels-changed` broadcast on assign/unassign; 3 sub-tasks + 7 tests.

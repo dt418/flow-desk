@@ -18,6 +18,22 @@
 
 ## Session Log
 
+### Session 013 — Realtime crash fix + realistic seed
+
+- **Date**: 2026-06-23
+- **Goal**: Fix api container crash on every socket reconnect; expand seed with realistic data
+- **Bug**: `TypeError: Cannot read properties of undefined (reading 'slice')` at `apps/api/dist/index.js:2648:61` (presence handler). Root cause: FE socket client (`apps/web/src/lib/socket.ts`) connected without sending JWT, so BE `io.use` middleware had no token. In race conditions the connection event still fired and `userId.slice(-4)` threw.
+- **Fix**:
+  - `apps/web/src/lib/socket.ts`: read `access_token` from `document.cookie`, pass in `auth.token` + `extraHeaders.Cookie`
+  - `apps/api/src/modules/realtime/realtime.gateway.ts`: presence handler rejects with no `userId` (warn + `emit('unauthorized')` + `socket.disconnect(true)`)
+  - Rebuilt `apps/api/dist`, restarted container — api healthy, no more TypeError
+- **Seed** (`prisma/seed.ts`): expanded 5 users/2 workspaces/24 tasks → **15 users/6 workspaces/51 tasks/60 subtasks/14 deps/199 comments/120 notifications/16 attachments/26 labels**. Realistic status/priority/due-date distribution. Fixed enum mismatches: GUEST (not VIEWER), TASK_MENTIONED/TASK_DUE_SOON, Attachment.uploadedById/size/type.
+- **Verified**:
+  - `docker compose up -d --build api web` → all healthy
+  - `/api/health` → 200, `POST /api/auth/login` → 200, `GET /api/workspaces` → paginated
+  - Web at `:5173` → 200
+- **Next scope**: candidates — CI integration of `pnpm test:integration` as required check, R-24 latency UX (spinners + cancellation), admin tool for 30-day soft-delete recovery (R-16), replace legacy native `<select>` in NewTaskModal with Radix Select.
+
 ### Session 012 — F3-F6 Backend Hardening + Realtime Polish
 
 - **Date**: 2026-06-23

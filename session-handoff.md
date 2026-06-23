@@ -1,28 +1,26 @@
 # Session Handoff — FlowDesk
 
-**Last session**: 012 (F3-F6 ship) — 2026-06-23
+**Last session**: 013 (fix socket crash + expand seed) — 2026-06-23
 
-**Status**: 33 features passing (29 + F2 + F3 + F4 + F5 + F6). 142/142 BE integration tests pass.
+**Status**: 33 features passing (29 + F2 + F3 + F4 + F5 + F6). 142/142 BE integration tests pass. Realistic seed data loaded (15 users, 6 workspaces, 51 tasks, 60 subtasks, 199 comments, 120 notifications, 16 attachments, 26 labels).
 
-**Risks remaining**: R-24 (ai-001 LLM latency UX) is the only material carry-forward. All R-29..R-34 closed.
-
-**F6 design note**: presence gateway mounted on `/tasks` namespace (not `/collab`) to match existing PresenceBar client wiring.
-
-**Next scope candidates** (not committed):
-- Admin tool for 30-day soft-delete recovery (R-16)
-- R-24 latency mitigation: UX spinners, request cancellation on unmount
-- CI: add `pnpm test:integration` as required check on PR
-- FE cleanup: replace legacy native `<select>` in NewTaskModal with Radix Select
+**Session 013 — fix + seed**:
+- Fixed socket connection crash: `apps/web/src/lib/socket.ts` now sends `access_token` cookie in `auth.token` + `extraHeaders.Cookie` so the BE JWT middleware can verify. `apps/api/src/modules/realtime/realtime.gateway.ts` defensive guard rejects connections with no `userId` instead of throwing.
+- Expanded `prisma/seed.ts` to 15 users / 6 workspaces / 51 tasks / 60 subtasks / 14 deps / 199 comments / 120 notifications / 16 attachments. Realistic status, priority, and due-date distribution. Uses new `TaskLabelAssignment` join table from F2.
 
 **Verified state** (re-run `./init.sh` + `docker compose up -d`):
 - `pnpm typecheck` → exit 0
 - `pnpm --filter @flow-desk/api test:integration` → 142/142 pass
 - `pnpm --filter @flow-desk/web build` → exit 0
+- `curl http://localhost:3000/api/health` → 200
+- `curl http://localhost:5173/` → 200
+- Login `demo@flow-desk.app / demo1234` works, sees 6 workspaces
+
+**Risks remaining**: R-24 (ai-001 LLM latency UX) is the only material carry-forward. All R-29..R-34 closed.
 
 **Auth-002** still blocked on real Google OAuth credentials.
 
-**Open TODOs**:
-- None from F2-F6 (presence TODO in PresenceBar.tsx resolved)
+**Open TODOs**: none.
 
 ## Verified Now
 
