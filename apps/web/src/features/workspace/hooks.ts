@@ -20,10 +20,10 @@ export function useWorkspace(workspaceId: string) {
 
 export function useWorkspaceRole(workspaceId: string): UserRole | null {
   const qc = useQueryClient();
-  const list = qc.getQueryData<{ workspaces: Array<{ id: string; role: UserRole }> }>(
+  const list = qc.getQueryData<{ data: Array<{ id: string; role: UserRole }> }>(
     workspaceKeys.all,
   );
-  return list?.workspaces.find((w) => w.id === workspaceId)?.role ?? null;
+  return list?.data.find((w) => w.id === workspaceId)?.role ?? null;
 }
 
 export function useMembers(workspaceId: string) {
