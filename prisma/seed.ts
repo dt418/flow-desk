@@ -31,7 +31,7 @@ const WORKSPACES: Array<{
   description: string;
   ownerIdx: number;
   columns: string[];
-  members: Array<{ userIdx: number; role: 'OWNER' | 'ADMIN' | 'MEMBER' | 'VIEWER' }>;
+  members: Array<{ userIdx: number; role: 'OWNER' | 'ADMIN' | 'MEMBER' | 'GUEST' }>;
   labels: Array<{ name: string; color: string }>;
 }> = [
   {
@@ -307,7 +307,7 @@ async function main() {
         ownerId: owner.id,
         members: {
           create: ws.members.map((m) => ({
-            userId: users[m.userIdx]!.id,
+            user: { connect: { id: users[m.userIdx]!.id } },
             role: m.role,
           })),
         },
@@ -319,12 +319,16 @@ async function main() {
           })),
         },
       },
-      include: { columns: { orderBy: { position: 'asc' } } },
+    });
+    const createdColumns = await prisma.column.findMany({
+      where: { workspaceId: created.id },
+      orderBy: { position: 'asc' },
+      select: { id: true, name: true, isDoneColumn: true },
     });
     allWorkspaces.push({
       id: created.id,
       name: created.name,
-      columns: created.columns,
+      columns: createdColumns,
       memberIds: ws.members.map((m) => m.userIdx),
       ownerIdx: ws.ownerIdx,
     });
@@ -399,7 +403,7 @@ async function main() {
           createdById: users[ws.ownerIdx]!.id,
           dueDate: due,
           position: i,
-          labelsDeprecated: labelsDeprecated as Prisma.InputJsonValue,
+          labelsDeprecated: labelsDeprecated,
           version: 0,
           ...(tpl.status === 'DONE' ? { completedAt: daysFromNow(-1 * (1 + (i % 5))) } : {}),
         },
