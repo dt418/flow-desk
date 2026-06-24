@@ -175,6 +175,25 @@ export const taskService = {
     });
   },
 
+  async restore(userId: string, id: string) {
+    const existing = await repo.findActiveById(prisma, id);
+    if (!existing) throw new NotFoundError('Task not found');
+    await assertMembership(existing.workspaceId, userId);
+    const task = await prisma.task.update({
+      where: { id },
+      data: { deletedAt: null },
+    });
+    safeEmit(() => emitToWorkspace(existing.workspaceId, 'task:restored', { task }), {
+      event: 'task:restored',
+      taskId: id,
+    });
+    safeEmit(() => emitToTask(id, 'task:restored', { task }), {
+      event: 'task:restored',
+      taskId: id,
+    });
+    return task;
+  },
+
   async move(userId: string, id: string, body: MoveTaskInput) {
     const existing = await repo.findActiveById(prisma, id);
     if (!existing) throw new NotFoundError('Task not found');

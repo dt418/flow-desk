@@ -68,6 +68,12 @@ taskRouter.post('/:id/move', async (c) => {
   return c.json({ task: await taskService.move(auth.user.id, id, body) });
 });
 
+taskRouter.post('/:id/restore', async (c) => {
+  const auth = c.get('auth');
+  const id = c.req.param('id')!;
+  return c.json({ task: await taskService.restore(auth.user.id, id) });
+});
+
 taskRouter.post('/:id/subtasks', async (c) => {
   const auth = c.get('auth');
   const id = c.req.param('id')!;

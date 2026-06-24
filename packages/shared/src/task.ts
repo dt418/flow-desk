@@ -158,6 +158,9 @@ export const createSubtaskSchema = createTaskSchema.omit({ parentTaskId: true })
 });
 export type CreateSubtaskInput = z.infer<typeof createSubtaskSchema>;
 
+export const restoreTaskSchema = z.object({});
+export type RestoreTaskInput = z.infer<typeof restoreTaskSchema>;
+
 export const taskLabelSchema = z.object({
   id: cuidSchema,
   workspaceId: cuidSchema,

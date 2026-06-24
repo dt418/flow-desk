@@ -1,4 +1,4 @@
-import type { CreateTaskInput, Task } from '@flow-desk/shared/task';
+import type { CreateTaskInput, Task, UpdateTaskInput } from '@flow-desk/shared/task';
 import { api } from '@/lib/api';
 
 export const taskApi = {
@@ -12,6 +12,22 @@ export const taskApi = {
     return api<{ task: Task }>(`/api/tasks/${encodeURIComponent(taskId)}/move`, {
       method: 'POST',
       json: body,
+    });
+  },
+  update(taskId: string, body: UpdateTaskInput) {
+    return api<{ task: Task }>(`/api/tasks/${encodeURIComponent(taskId)}`, {
+      method: 'PATCH',
+      json: body,
+    });
+  },
+  delete(taskId: string) {
+    return api<{ ok: boolean }>(`/api/tasks/${encodeURIComponent(taskId)}`, {
+      method: 'DELETE',
+    });
+  },
+  restore(taskId: string) {
+    return api<{ task: Task }>(`/api/tasks/${encodeURIComponent(taskId)}/restore`, {
+      method: 'POST',
     });
   },
 };

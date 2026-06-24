@@ -31,6 +31,7 @@ export function useRealtime(workspaceId: string, taskId?: string) {
       'task:created',
       'task:updated',
       'task:deleted',
+      'task:restored',
       'task:moved',
       'task:subtask:created',
       'task:dependency:added',

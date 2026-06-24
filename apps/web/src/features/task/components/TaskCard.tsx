@@ -1,6 +1,8 @@
 import * as React from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { TaskLabelSelect } from './TaskLabelSelect';
 
@@ -23,6 +25,8 @@ interface Props {
   canEditLabels?: boolean;
   className?: string;
   onClick?: (taskId: string) => void;
+  onEdit?: (taskId: string) => void;
+  onDelete?: (taskId: string) => void;
 }
 
 const PRIORITY_BAR: Record<TaskCardData['priority'], string> = {
@@ -74,12 +78,13 @@ function PriorityDot({ priority }: { priority: TaskCardData['priority'] }) {
   );
 }
 
-export function TaskCard({ task, workspaceId, canEditLabels = true, className, onClick }: Props) {
+export function TaskCard({ task, workspaceId, canEditLabels = true, className, onClick, onEdit, onDelete }: Props) {
   const due = relativeDate(task.dueDate);
 
   const onCardClick = (e: React.MouseEvent<HTMLElement>) => {
     const target = e.target as HTMLElement;
     if (target.closest('[data-task-label-trigger]')) return;
+    if (target.closest('[data-task-kebab]')) return;
     if (target.closest('button, [role="button"], a, input, select, textarea')) return;
     onClick?.(task.id);
   };
@@ -94,6 +99,7 @@ export function TaskCard({ task, workspaceId, canEditLabels = true, className, o
         if (e.key === 'Enter' || e.key === ' ') {
           const target = e.target as HTMLElement;
           if (target.closest('[data-task-label-trigger]')) return;
+          if (target.closest('[data-task-kebab]')) return;
           if (target.closest('button, [role="button"], a, input, select, textarea')) return;
           e.preventDefault();
           onClick(task.id);
@@ -117,6 +123,38 @@ export function TaskCard({ task, workspaceId, canEditLabels = true, className, o
       <span className="absolute right-2 top-2 rounded font-mono text-[10px] text-[var(--fg-3)] opacity-0 transition-opacity group-hover:opacity-100">
         {shortId(task.id)}
       </span>
+      {(onEdit || onDelete) && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              data-task-kebab
+              className="absolute right-7 top-1.5 rounded p-1 opacity-0 transition-opacity hover:bg-[var(--bg-2)] group-hover:opacity-100"
+              onClick={(e) => e.stopPropagation()}
+              aria-label="Task actions"
+            >
+              <MoreHorizontal className="h-4 w-4 text-[var(--fg-2)]" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="min-w-[120px]">
+            {onEdit && (
+              <DropdownMenuItem onClick={() => onEdit(task.id)}>
+                <Pencil className="mr-2 h-3.5 w-3.5" />
+                Edit
+              </DropdownMenuItem>
+            )}
+            {onDelete && (
+              <DropdownMenuItem
+                onClick={() => onDelete(task.id)}
+                className="text-red-600 focus:text-red-600"
+              >
+                <Trash2 className="mr-2 h-3.5 w-3.5" />
+                Delete
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
       <div className="line-clamp-2 pr-6 text-[13px] font-medium leading-snug">{task.title}</div>
 
       <div data-task-label-trigger className="mt-2">

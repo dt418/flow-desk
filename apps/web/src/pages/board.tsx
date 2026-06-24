@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import { NewTaskModal, TaskCard } from '@/features/task';
+import { NewTaskModal, TaskCard, TaskEditModal, useDeleteTask, useRestoreTask } from '@/features/task';
 import { useMembers } from '@/features/workspace';
 import { useRealtime } from '@/features/realtime/useRealtime';
 import { EmptyBoardState, PresenceBar } from '@/features/board';
@@ -100,7 +100,11 @@ export function BoardPage() {
   useRealtime(workspaceId);
   const qc = useQueryClient();
   const [modalOpen, setModalOpen] = React.useState(false);
+  const [editModalOpen, setEditModalOpen] = React.useState(false);
+  const [selectedTaskId, setSelectedTaskId] = React.useState<string | null>(null);
   const membersQuery = useMembers(workspaceId);
+  const deleteTask = useDeleteTask(workspaceId);
+  const restoreTask = useRestoreTask(workspaceId);
 
   const data = useQuery({
     queryKey: ['board', workspaceId],
@@ -210,6 +214,39 @@ export function BoardPage() {
     moveMutation.mutate({ taskId, toColumnId, position: clampedPosition, version: taskVersion });
   };
 
+  const handleCardOpen = (taskId: string) => {
+    setSelectedTaskId(taskId);
+    setEditModalOpen(true);
+  };
+
+  const handleDelete = (taskId: string) => {
+    deleteTask.mutate(taskId, {
+      onSuccess: () => {
+        toast('Task deleted', {
+          action: {
+            label: 'Undo',
+            onClick: () => {
+              restoreTask.mutate(taskId);
+            },
+          },
+          duration: 5000,
+        });
+      },
+      onError: (err) => {
+        toast.error(err instanceof ApiError ? err.message : 'Failed to delete task');
+      },
+    });
+  };
+
+  const selectedTask = React.useMemo(() => {
+    if (!selectedTaskId) return null;
+    for (const col of orderedColumns) {
+      const found = col.tasks.find((t) => t.id === selectedTaskId);
+      if (found) return found;
+    }
+    return null;
+  }, [selectedTaskId, orderedColumns]);
+
   return (
     <div className="flex h-full flex-col">
       <header className="flex shrink-0 items-center justify-between border-b border-[var(--border)] bg-[var(--bg)]/80 px-6 py-3 backdrop-blur">
@@ -277,7 +314,13 @@ export function BoardPage() {
             <KanbanColumn key={meta.id} id={meta.id} name={meta.name} count={tasks.length}>
               {tasks.map((t, i) => (
                 <KanbanCard key={t.id} id={t.id} columnId={meta.id} index={i}>
-                  <TaskCard task={t as unknown as Parameters<typeof TaskCard>[0]['task']} workspaceId={workspaceId} />
+                  <TaskCard
+                    task={t as unknown as Parameters<typeof TaskCard>[0]['task']}
+                    workspaceId={workspaceId}
+                    onClick={() => handleCardOpen(t.id)}
+                    onEdit={handleCardOpen}
+                    onDelete={handleDelete}
+                  />
                 </KanbanCard>
               ))}
             </KanbanColumn>
@@ -295,6 +338,21 @@ export function BoardPage() {
           id: m.user.id,
           name: m.user.name,
         }))}
+      />
+
+      <TaskEditModal
+        open={editModalOpen}
+        onClose={() => {
+          setEditModalOpen(false);
+          setSelectedTaskId(null);
+        }}
+        workspaceId={workspaceId}
+        columns={orderedColumns.map(({ meta }) => ({ id: meta.id, name: meta.name }))}
+        members={(membersQuery.data ?? []).map((m) => ({
+          id: m.user.id,
+          name: m.user.name,
+        }))}
+        initial={selectedTask as unknown as Parameters<typeof TaskEditModal>[0]['initial']}
       />
     </div>
   );
