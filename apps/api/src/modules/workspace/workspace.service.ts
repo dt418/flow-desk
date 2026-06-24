@@ -4,7 +4,7 @@ import { BadRequestError, ForbiddenError, ConflictError, NotFoundError } from '.
 import { assertRole } from '../../shared/lib/access';
 import type { CursorPaginationQuery } from '@flow-desk/shared/pagination';
 import { decodeCursor, encodeCursor } from '@flow-desk/shared/pagination';
-import type { Prisma } from '../../../generated/prisma/client';
+import type { Prisma } from '@flowdesk/db';
 
 export const workspaceService = {
   async list(query: CursorPaginationQuery, userId: string) {

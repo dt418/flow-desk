@@ -11,7 +11,7 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "db:generate": "prisma generate --schema=./prisma/schema.prisma",
+    "db:generate": "DATABASE_URL=postgresql://localhost:5432/flowdesk prisma generate --schema=./prisma/schema.prisma",
     "db:push": "prisma db push --schema=./prisma/schema.prisma",
     "db:migrate": "prisma migrate dev --schema=./prisma/schema.prisma",
     "db:studio": "prisma studio --schema=./prisma/schema.prisma"
@@ -19,11 +19,12 @@
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
-    "prisma": "^7.8.0"
+    "pg": "^8.22.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
-    "typescript": "^5.4.0",
-    "dotenv": "^16.4.0"
+    "dotenv": "^16.6.1",
+    "prisma": "^7.8.0",
+    "typescript": "^5.4.0"
   }
 }

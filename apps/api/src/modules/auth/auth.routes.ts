@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { registerSchema, loginSchema, refreshTokenSchema } from '@flow-desk/shared/auth';
 import { prisma } from '../../shared/lib/prisma';
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../../shared/lib/jwt';
-import { env } from '../../shared/lib/env';
+import { env } from '../../shared/lib/prisma';
 import { logger } from '../../shared/lib/logger';
 import { requireAuth } from '../../shared/middleware/auth';
 import { rateLimit } from '../../shared/middleware/rate-limit';

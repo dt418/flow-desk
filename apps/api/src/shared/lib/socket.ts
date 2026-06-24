@@ -4,7 +4,7 @@ import type { Server as HttpServer } from 'node:http';
 import { redis } from './redis';
 import { verifyAccessToken } from './jwt';
 import { logger } from './logger';
-import { env } from './env';
+import { env } from './prisma';
 import { attachPresenceHandlers } from '../../modules/realtime/realtime.gateway';
 
 export function createSocketServer(httpServer: HttpServer) {

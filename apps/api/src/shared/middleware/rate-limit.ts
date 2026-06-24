@@ -1,6 +1,6 @@
 import type { MiddlewareHandler } from 'hono';
 import { redis } from '../lib/redis';
-import { env } from '../lib/env';
+import { env } from '../lib/prisma';
 import { RateLimitError } from '../errors';
 
 type RateLimitOptions = {

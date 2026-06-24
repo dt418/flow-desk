@@ -1,4 +1,4 @@
-import type { Prisma } from '../../../generated/prisma/client';
+import type { Prisma } from '@flowdesk/db';
 import type { prisma } from '../../shared/lib/prisma';
 type PrismaClient = typeof prisma;
 

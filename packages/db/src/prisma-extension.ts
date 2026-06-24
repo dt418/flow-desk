@@ -1,4 +1,5 @@
-import { Prisma } from '../../generated/client';
+// @ts-ignore - generated client uses ESM import.meta.url pattern
+import { Prisma } from '../../generated/client.js';
 
 const SOFT_DELETE_MODELS = new Set<string>([
   'User',
@@ -21,19 +22,19 @@ export const softDeleteExtension = Prisma.defineExtension({
   name: 'softDelete',
   query: {
     $allModels: {
-      async findFirst({ model, args, query }) {
+      async findFirst({ model, args, query }: { model: string | undefined; args: Record<string, unknown>; query: (args: Record<string, unknown>) => unknown }) {
         return query(injectDeletedAtNull(args ?? {}, model));
       },
-      async findMany({ model, args, query }) {
+      async findMany({ model, args, query }: { model: string | undefined; args: Record<string, unknown>; query: (args: Record<string, unknown>) => unknown }) {
         return query(injectDeletedAtNull(args ?? {}, model));
       },
-      async count({ model, args, query }) {
+      async count({ model, args, query }: { model: string | undefined; args: Record<string, unknown>; query: (args: Record<string, unknown>) => unknown }) {
         return query(injectDeletedAtNull(args ?? {}, model));
       },
-      async aggregate({ model, args, query }) {
+      async aggregate({ model, args, query }: { model: string | undefined; args: Record<string, unknown>; query: (args: Record<string, unknown>) => unknown }) {
         return query(injectDeletedAtNull(args ?? {}, model));
       },
-      async groupBy({ model, args, query }) {
+      async groupBy({ model, args, query }: { model: string | undefined; args: Record<string, unknown>; query: (args: Record<string, unknown>) => unknown }) {
         return query(injectDeletedAtNull(args ?? {}, model));
       },
     },

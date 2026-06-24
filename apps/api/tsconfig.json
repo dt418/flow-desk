@@ -16,8 +16,14 @@
     "isolatedModules": true,
     "declaration": false,
     "sourceMap": true,
-    "types": ["node"]
+    "types": ["node"],
+    "paths": {
+      "@flowdesk/db": ["../../packages/db/src"],
+      "@flowdesk/db/*": ["../../packages/db/src/*"],
+      "@flowdesk/env": ["../../packages/env/src"],
+      "@flowdesk/env/*": ["../../packages/env/src/*"]
+    }
   },
-  "include": ["src/**/*", "generated/**/*"],
+  "include": ["src/**/*", "generated/**/*", "../../packages/db/generated/**/*", "../../packages/db/src/**/*", "../../packages/env/src/**/*"],
   "exclude": ["node_modules", "dist"]
 }

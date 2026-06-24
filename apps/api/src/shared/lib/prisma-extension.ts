@@ -1,4 +1,4 @@
-import { Prisma } from '../../../generated/prisma/client';
+import { Prisma } from '@flowdesk/db';
 
 const SOFT_DELETE_MODELS = new Set<string>([
   'User',

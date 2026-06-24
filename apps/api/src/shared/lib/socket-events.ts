@@ -1,5 +1,5 @@
 import type { Server as SocketServer } from 'socket.io';
-import type { TaskLabel } from '../../../generated/prisma/client';
+import type { TaskLabel } from '@flowdesk/db';
 
 export type FlowDeskNamespace = '/tasks' | '/notifications' | '/collab';
 

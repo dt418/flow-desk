@@ -7,7 +7,7 @@ import { randomUUID } from 'node:crypto';
 import { extname, join } from 'node:path';
 import { BadRequestError, NotFoundError } from '../../shared/errors';
 import { assertMembership } from '../../shared/lib/access';
-import { env } from '../../shared/lib/env';
+import { env } from '../../shared/lib/prisma';
 import { decodeCursor, encodeCursor } from '@flow-desk/shared/pagination';
 import * as repo from './attachment.repository';
 

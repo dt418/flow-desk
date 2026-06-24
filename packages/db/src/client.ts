@@ -1,4 +1,5 @@
-import { PrismaClient } from '../generated/client';
+// @ts-ignore - generated client uses ESM import.meta.url pattern
+import { PrismaClient } from '../generated/client.js';
 import { PrismaPg } from '@prisma/adapter-pg';
 
 const globalForPrisma = globalThis as {

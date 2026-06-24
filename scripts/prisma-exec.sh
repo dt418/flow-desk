@@ -83,7 +83,7 @@ if [ "${1:-}" = "seed" ]; then
   shift
   SEED_ESM_HOST="$API_CWD/dist/seed.mjs"
   echo "==> Building seed.mjs on host"
-  pnpm --filter @flow-desk/api exec esbuild ../../prisma/seed.ts \
+  pnpm --filter @flow-desk/api exec esbuild ../../packages/db/prisma/seed.ts \
     --bundle --platform=node --format=esm \
     --outfile="$SEED_ESM_HOST" \
     --external:@prisma/client --external:bcryptjs \

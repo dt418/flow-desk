@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-import { env } from './env';
+import { env } from './prisma';
 
 export interface AccessTokenPayload {
   userId: string;

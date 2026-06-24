@@ -1,4 +1,4 @@
-import { env } from './env';
+import { env } from './prisma';
 import { logger } from './logger';
 import { LLMError } from '../errors';
 

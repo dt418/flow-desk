@@ -1,6 +1,6 @@
 import type { Context, Next } from 'hono';
 import { getCookie } from 'hono/cookie';
-import type { UserRole } from '../../../generated/prisma/client';
+import type { UserRole } from '@flowdesk/db';
 import { verifyAccessToken, signAccessToken } from '../lib/jwt';
 import { UnauthorizedError } from '../errors';
 import { prisma } from '../lib/prisma';

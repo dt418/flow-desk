@@ -1,4 +1,4 @@
-import type { UserRole } from '../../../generated/prisma/client';
+import type { UserRole } from '@flowdesk/db';
 import type { prisma } from '../../shared/lib/prisma';
 type PrismaClient = typeof prisma;
 

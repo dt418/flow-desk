@@ -4,7 +4,7 @@ import { RATE_LIMITS } from '../../shared/lib/rate-limit-policies';
 import { requireWorkspaceRole } from '../../shared/middleware/auth';
 import { prisma } from '../../shared/lib/prisma';
 import { decodeCursor, encodeCursor } from '@flow-desk/shared/pagination';
-import type { Prisma } from '../../../generated/prisma/client';
+import type { Prisma } from '@flowdesk/db';
 
 export const boardRouter = new Hono();
 
