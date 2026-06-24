@@ -19,9 +19,11 @@
     "forceConsistentCasingInFileNames": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@flowdesk/env": ["../../packages/env/src"],
+      "@flowdesk/env/*": ["../../packages/env/src/*"]
     },
     "types": ["vite/client", "node"]
   },
-  "include": ["src", "vite.config.ts"]
+  "include": ["src", "vite.config.ts", "../../packages/env/src/**/*"]
 }
