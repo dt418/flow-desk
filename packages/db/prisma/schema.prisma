@@ -1,0 +1,291 @@
+// FlowDesk Prisma schema
+// Soft-delete on User, Workspace, Task, Comment, Attachment via deletedAt
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  OWNER
+  ADMIN
+  MEMBER
+  GUEST
+}
+
+enum WorkspaceVisibility {
+  PRIVATE
+  PUBLIC
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum TaskStatus {
+  BACKLOG
+  TODO
+  IN_PROGRESS
+  IN_REVIEW
+  DONE
+  BLOCKED
+}
+
+enum NotificationType {
+  TASK_ASSIGNED
+  TASK_MENTIONED
+  TASK_DUE_SOON
+  TASK_OVERDUE
+  TASK_COMPLETED
+  COMMENT_REPLY
+  WORKSPACE_INVITE
+  WORKSPACE_ROLE_CHANGED
+}
+
+enum AttachmentType {
+  IMAGE
+  VIDEO
+  AUDIO
+  DOCUMENT
+  OTHER
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  avatarUrl    String?
+  passwordHash String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  deletedAt    DateTime?
+
+  ownedWorkspaces  Workspace[]        @relation("WorkspaceOwner")
+  memberships      WorkspaceMember[]
+  createdTasks     Task[]             @relation("TaskCreator")
+  assignedTasks    Task[]             @relation("TaskAssignee")
+  comments         Comment[]
+  notifications    Notification[]
+  attachments      Attachment[]
+  refreshTokens    RefreshToken[]
+
+  @@index([email])
+  @@index([deletedAt])
+}
+
+model Workspace {
+  id          String              @id @default(cuid())
+  name        String
+  slug        String              @unique
+  description String?
+  visibility  WorkspaceVisibility @default(PRIVATE)
+  ownerId     String
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  deletedAt   DateTime?
+
+  owner   User              @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  members WorkspaceMember[]
+  columns Column[]
+  tasks   Task[]
+  labels  TaskLabel[]
+
+  @@index([slug])
+  @@index([ownerId])
+  @@index([deletedAt])
+}
+
+model WorkspaceMember {
+  id          String   @id @default(cuid())
+  workspaceId String
+  userId      String
+  role        UserRole @default(MEMBER)
+  joinedAt    DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+  @@index([userId])
+  @@index([workspaceId])
+}
+
+model Column {
+  id           String   @id @default(cuid())
+  workspaceId  String
+  name         String
+  position     Int
+  color        String?
+  isDoneColumn Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  tasks     Task[]
+
+  @@index([workspaceId])
+  @@index([workspaceId, position])
+}
+
+model Task {
+  id           String       @id @default(cuid())
+  workspaceId  String
+  columnId     String
+  parentTaskId String?
+  title        String
+  description  String?
+  priority     TaskPriority @default(MEDIUM)
+  status       TaskStatus   @default(TODO)
+  position     Int          @default(0)
+  assigneeId   String?
+  dueDate      DateTime?
+  completedAt  DateTime?
+  createdById  String
+  version      Int          @default(0)
+  labelsDeprecated String[]  @default([])
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  deletedAt    DateTime?
+
+  workspace    Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  column       Column            @relation(fields: [columnId], references: [id], onDelete: Restrict)
+  parent       Task?             @relation("TaskParent", fields: [parentTaskId], references: [id], onDelete: SetNull)
+  subtasks     Task[]            @relation("TaskParent")
+  assignee     User?             @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  createdBy    User              @relation("TaskCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  dependencies TaskDependency[]  @relation("BlockingTask")
+  blockers     TaskDependency[]  @relation("BlockedTask")
+  comments     Comment[]
+  attachments  Attachment[]
+  assignments  TaskLabelAssignment[] @relation("TaskAssignments")
+
+  @@index([workspaceId, deletedAt])
+  @@index([columnId])
+  @@index([assigneeId])
+  @@index([parentTaskId])
+  @@index([status])
+  @@index([dueDate])
+}
+
+model TaskDependency {
+  id              String   @id @default(cuid())
+  blockingTaskId  String
+  blockedTaskId   String
+  createdAt       DateTime @default(now())
+
+  blockingTask Task @relation("BlockingTask", fields: [blockingTaskId], references: [id], onDelete: Cascade)
+  blockedTask  Task @relation("BlockedTask", fields: [blockedTaskId], references: [id], onDelete: Cascade)
+
+  @@unique([blockingTaskId, blockedTaskId])
+  @@index([blockedTaskId])
+}
+
+model TaskLabelAssignment {
+  id        String   @id @default(cuid())
+  taskId    String
+  labelId   String
+  createdAt DateTime @default(now())
+  deletedAt DateTime?
+
+  task  Task      @relation("TaskAssignments", fields: [taskId], references: [id], onDelete: Cascade)
+  label TaskLabel @relation("LabelAssignments", fields: [labelId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, labelId])
+  @@index([taskId])
+  @@index([labelId])
+}
+
+model TaskLabel {
+  id          String   @id @default(cuid())
+  workspaceId String
+  name        String
+  color       String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+  version     Int      @default(0)
+
+  workspace   Workspace             @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  assignments TaskLabelAssignment[] @relation("LabelAssignments")
+
+  @@unique([workspaceId, name])
+  @@index([workspaceId])
+  @@index([deletedAt])
+}
+
+model Comment {
+  id               String   @id @default(cuid())
+  taskId           String
+  authorId         String
+  parentCommentId  String?
+  content          String
+  mentionedUserIds String[] @default([])
+  editedAt         DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  deletedAt        DateTime?
+
+  task    Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  author  User      @relation(fields: [authorId], references: [id], onDelete: Restrict)
+  parent  Comment?  @relation("CommentReplies", fields: [parentCommentId], references: [id], onDelete: SetNull)
+  replies Comment[] @relation("CommentReplies")
+
+  @@index([taskId, deletedAt])
+  @@index([authorId])
+  @@index([parentCommentId])
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  body      String
+  data      Json?
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+  @@index([userId, createdAt])
+}
+
+model Attachment {
+  id           String         @id @default(cuid())
+  taskId       String
+  uploadedById String
+  filename     String
+  mimeType     String
+  size         Int
+  type         AttachmentType
+  storagePath  String
+  createdAt    DateTime       @default(now())
+
+  task       Task  @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  uploadedBy User  @relation(fields: [uploadedById], references: [id], onDelete: Restrict)
+
+  @@index([taskId])
+  @@index([uploadedById])
+}
+
+model RefreshToken {
+  id        String    @id
+  userId    String
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
