@@ -26,6 +26,7 @@ export default defineConfig({
         secure: false,
       },
     },
+    allowedHosts: true,
   },
   build: {
     outDir: 'dist',
