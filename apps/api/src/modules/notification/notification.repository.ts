@@ -1,4 +1,4 @@
-import type { Prisma } from '../../../generated/prisma/client';
+import type { Prisma } from '@flowdesk/db';
 import type { prisma } from '../../shared/lib/prisma';
 type PrismaClient = typeof prisma;
 
@@ -16,7 +16,11 @@ export function listForUser(
   });
 }
 
-export function countForUser(prisma: PrismaClient, userId: string, where: Prisma.NotificationWhereInput = {}) {
+export function countForUser(
+  prisma: PrismaClient,
+  userId: string,
+  where: Prisma.NotificationWhereInput = {},
+) {
   return prisma.notification.count({ where: { userId, ...where } });
 }
 

@@ -71,7 +71,9 @@ describe('GET /api/tasks route', () => {
     });
     expect(res.status).toBe(200);
     const body = (await res.json()) as {
-      data: Array<{ assignee: { id: string; name: string; email: string; avatarUrl: string | null } | null }>;
+      data: Array<{
+        assignee: { id: string; name: string; email: string; avatarUrl: string | null } | null;
+      }>;
     };
     expect(body.data).toHaveLength(1);
     expect(body.data[0]!.assignee).not.toBeNull();

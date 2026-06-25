@@ -1,7 +1,8 @@
 import 'dotenv/config';
+
 import type { Server as HttpServer } from 'node:http';
 import { serve } from '@hono/node-server';
-import { env } from './shared/lib/env';
+import { env } from './shared/lib/prisma';
 import { logger } from './shared/lib/logger';
 import { buildApp } from './app';
 import { createSocketServer } from './shared/lib/socket';

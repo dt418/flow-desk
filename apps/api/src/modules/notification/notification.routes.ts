@@ -1,9 +1,6 @@
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
-import {
-  listNotificationsQuerySchema,
-  markReadSchema,
-} from '@flow-desk/shared/notification';
+import { listNotificationsQuerySchema, markReadSchema } from '@flow-desk/shared/notification';
 import { prisma } from '../../shared/lib/prisma';
 import { requireAuth } from '../../shared/middleware/auth';
 import * as svc from './notification.service';

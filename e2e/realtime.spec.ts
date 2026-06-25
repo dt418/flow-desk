@@ -1,7 +1,12 @@
 import { test, expect, apiLogin } from './fixtures';
 import type { BrowserContext, Page } from '@playwright/test';
 
-async function openBoardAs(context: BrowserContext, email: string, password: string, workspaceId: string): Promise<Page> {
+async function openBoardAs(
+  context: BrowserContext,
+  email: string,
+  password: string,
+  workspaceId: string,
+): Promise<Page> {
   const page = await context.newPage();
   await page.goto('/login');
   await page.getByLabel('Email').fill(email);

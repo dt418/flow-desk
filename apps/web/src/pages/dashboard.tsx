@@ -200,7 +200,9 @@ export function DashboardPage() {
     queries: workspaceList.map((w) => ({
       queryKey: ['tasks', w.id],
       queryFn: () =>
-        api<{ data: TaskRow[]; nextCursor: string | null }>(`/api/tasks?workspaceId=${encodeURIComponent(w.id)}`),
+        api<{ data: TaskRow[]; nextCursor: string | null }>(
+          `/api/tasks?workspaceId=${encodeURIComponent(w.id)}`,
+        ),
       enabled: Boolean(w.id),
       staleTime: 30_000,
     })),

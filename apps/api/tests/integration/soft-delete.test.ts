@@ -1,6 +1,13 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { getTestPrisma } from '../setup/integration';
-import { cleanDatabase, createUser, createWorkspace, addMember, createTask, getAuthCookie } from '../setup/factories';
+import {
+  cleanDatabase,
+  createUser,
+  createWorkspace,
+  addMember,
+  createTask,
+  getAuthCookie,
+} from '../setup/factories';
 import { buildApp } from '../../src/app';
 
 describe('soft-delete gap audit (R-29)', () => {
@@ -11,13 +18,26 @@ describe('soft-delete gap audit (R-29)', () => {
     await cleanDatabase(prisma);
   });
 
-  async function setupOwnerWorkspace(): Promise<{ ownerId: string; wid: string; cookie: string; colId: string }> {
+  async function setupOwnerWorkspace(): Promise<{
+    ownerId: string;
+    wid: string;
+    cookie: string;
+    colId: string;
+  }> {
     const owner = await createUser(prisma);
     const w = await createWorkspace(prisma, owner.id, 'Soft WS');
-    const cols = await prisma.column.findMany({ where: { workspaceId: w.id }, orderBy: { position: 'asc' } });
+    const cols = await prisma.column.findMany({
+      where: { workspaceId: w.id },
+      orderBy: { position: 'asc' },
+    });
     const todoCol = cols.find((c) => c.name === 'Todo');
     if (!todoCol) throw new Error('Todo column missing in factory');
-    return { ownerId: owner.id, wid: w.id, cookie: await getAuthCookie(prisma, owner.id), colId: todoCol.id };
+    return {
+      ownerId: owner.id,
+      wid: w.id,
+      cookie: await getAuthCookie(prisma, owner.id),
+      colId: todoCol.id,
+    };
   }
 
   async function setupMember(workspaceId: string, ownerId: string) {
@@ -26,7 +46,12 @@ describe('soft-delete gap audit (R-29)', () => {
     return { memberId: m.id, memberCookie: await getAuthCookie(prisma, m.id) };
   }
 
-  async function makeTask(workspaceId: string, columnId: string, createdById: string, title: string) {
+  async function makeTask(
+    workspaceId: string,
+    columnId: string,
+    createdById: string,
+    title: string,
+  ) {
     return createTask(prisma, workspaceId, columnId, createdById, title);
   }
 
@@ -92,7 +117,13 @@ describe('soft-delete gap audit (R-29)', () => {
       const res = await app.request(`/api/tasks/${t.id}/subtasks`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Cookie: cookie },
-        body: JSON.stringify({ workspaceId: wid, title: 'sub', columnId: colId, status: 'TODO', priority: 'MEDIUM' }),
+        body: JSON.stringify({
+          workspaceId: wid,
+          title: 'sub',
+          columnId: colId,
+          status: 'TODO',
+          priority: 'MEDIUM',
+        }),
       });
       expect(res.status).toBe(404);
     });

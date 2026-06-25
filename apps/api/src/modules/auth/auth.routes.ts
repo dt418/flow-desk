@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { registerSchema, loginSchema, refreshTokenSchema } from '@flow-desk/shared/auth';
 import { prisma } from '../../shared/lib/prisma';
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../../shared/lib/jwt';
-import { env } from '../../shared/lib/env';
+import { env } from '../../shared/lib/prisma';
 import { logger } from '../../shared/lib/logger';
 import { requireAuth } from '../../shared/middleware/auth';
 import { rateLimit } from '../../shared/middleware/rate-limit';
@@ -36,105 +36,117 @@ function clearAuthCookies(c: Context) {
   deleteCookie(c, 'refresh_token', { path: '/' });
 }
 
-authRouter.post('/register', rateLimit({ scope: 'auth:register', windowSec: 3600, max: 3, keyBy: 'ip' }), async (c) => {
-  const body = registerSchema.parse(await c.req.json());
-  const existing = await prisma.user.findUnique({ where: { email: body.email } });
-  if (existing) throw new ConflictError('Email already registered');
+authRouter.post(
+  '/register',
+  rateLimit({ scope: 'auth:register', windowSec: 3600, max: 3, keyBy: 'ip' }),
+  async (c) => {
+    const body = registerSchema.parse(await c.req.json());
+    const existing = await prisma.user.findUnique({ where: { email: body.email } });
+    if (existing) throw new ConflictError('Email already registered');
 
-  const passwordHash = await bcrypt.hash(body.password, 10);
-  const user = await prisma.user.create({
-    data: { email: body.email, name: body.name, passwordHash },
-  });
+    const passwordHash = await bcrypt.hash(body.password, 10);
+    const user = await prisma.user.create({
+      data: { email: body.email, name: body.name, passwordHash },
+    });
 
-  await prisma.workspace.create({
-    data: {
-      name: `${body.name}'s workspace`,
-      slug: `ws-${user.id.slice(-6)}`,
-      ownerId: user.id,
-      members: { create: { userId: user.id, role: 'OWNER' } },
-    },
-  });
+    await prisma.workspace.create({
+      data: {
+        name: `${body.name}'s workspace`,
+        slug: `ws-${user.id.slice(-6)}`,
+        ownerId: user.id,
+        members: { create: { userId: user.id, role: 'OWNER' } },
+      },
+    });
 
-  const access = signAccessToken({ userId: user.id, email: user.email });
-  const refresh = signRefreshToken({ userId: user.id, tokenId: crypto.randomUUID() });
-  await prisma.refreshToken.create({
-    data: {
-      id: refresh,
-      userId: user.id,
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-    },
-  });
-  setAuthCookies(c, access, refresh);
+    const access = signAccessToken({ userId: user.id, email: user.email });
+    const refresh = signRefreshToken({ userId: user.id, tokenId: crypto.randomUUID() });
+    await prisma.refreshToken.create({
+      data: {
+        id: refresh,
+        userId: user.id,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      },
+    });
+    setAuthCookies(c, access, refresh);
 
-  return c.json(
-    { user: { id: user.id, email: user.email, name: user.name, avatarUrl: user.avatarUrl } },
-    201,
-  );
-});
+    return c.json(
+      { user: { id: user.id, email: user.email, name: user.name, avatarUrl: user.avatarUrl } },
+      201,
+    );
+  },
+);
 
-authRouter.post('/login', rateLimit({ scope: 'auth:login', windowSec: 60, max: 5, keyBy: 'ip' }), async (c) => {
-  const body = loginSchema.parse(await c.req.json());
-  const user = await prisma.user.findUnique({ where: { email: body.email } });
-  if (!user || !user.passwordHash) throw new UnauthorizedError('Invalid credentials');
+authRouter.post(
+  '/login',
+  rateLimit({ scope: 'auth:login', windowSec: 60, max: 5, keyBy: 'ip' }),
+  async (c) => {
+    const body = loginSchema.parse(await c.req.json());
+    const user = await prisma.user.findUnique({ where: { email: body.email } });
+    if (!user || !user.passwordHash) throw new UnauthorizedError('Invalid credentials');
 
-  const ok = await bcrypt.compare(body.password, user.passwordHash);
-  if (!ok) throw new UnauthorizedError('Invalid credentials');
+    const ok = await bcrypt.compare(body.password, user.passwordHash);
+    if (!ok) throw new UnauthorizedError('Invalid credentials');
 
-  const access = signAccessToken({ userId: user.id, email: user.email });
-  const refresh = signRefreshToken({ userId: user.id, tokenId: crypto.randomUUID() });
-  await prisma.refreshToken.create({
-    data: {
-      id: refresh,
-      userId: user.id,
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-    },
-  });
-  setAuthCookies(c, access, refresh);
+    const access = signAccessToken({ userId: user.id, email: user.email });
+    const refresh = signRefreshToken({ userId: user.id, tokenId: crypto.randomUUID() });
+    await prisma.refreshToken.create({
+      data: {
+        id: refresh,
+        userId: user.id,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      },
+    });
+    setAuthCookies(c, access, refresh);
 
-  return c.json({
-    user: { id: user.id, email: user.email, name: user.name, avatarUrl: user.avatarUrl },
-  });
-});
+    return c.json({
+      user: { id: user.id, email: user.email, name: user.name, avatarUrl: user.avatarUrl },
+    });
+  },
+);
 
-authRouter.post('/refresh', rateLimit({ scope: 'auth:refresh', windowSec: 60, max: 30, keyBy: 'ip' }), async (c) => {
-  const cookieToken = c.req.header('cookie')?.match(/refresh_token=([^;]+)/)?.[1];
-  const body = refreshTokenSchema.safeParse(await c.req.json().catch(() => null));
-  const token = body.success ? body.data.refreshToken : cookieToken;
-  if (!token) throw new UnauthorizedError('Missing refresh token');
+authRouter.post(
+  '/refresh',
+  rateLimit({ scope: 'auth:refresh', windowSec: 60, max: 30, keyBy: 'ip' }),
+  async (c) => {
+    const cookieToken = c.req.header('cookie')?.match(/refresh_token=([^;]+)/)?.[1];
+    const body = refreshTokenSchema.safeParse(await c.req.json().catch(() => null));
+    const token = body.success ? body.data.refreshToken : cookieToken;
+    if (!token) throw new UnauthorizedError('Missing refresh token');
 
-  let payload;
-  try {
-    payload = verifyRefreshToken(token);
-  } catch {
-    throw new UnauthorizedError('Invalid refresh token');
-  }
+    let payload;
+    try {
+      payload = verifyRefreshToken(token);
+    } catch {
+      throw new UnauthorizedError('Invalid refresh token');
+    }
 
-  const stored = await prisma.refreshToken.findUnique({ where: { id: payload.tokenId } });
-  if (!stored || stored.revokedAt || stored.expiresAt < new Date()) {
-    throw new UnauthorizedError('Refresh token revoked or expired');
-  }
+    const stored = await prisma.refreshToken.findUnique({ where: { id: payload.tokenId } });
+    if (!stored || stored.revokedAt || stored.expiresAt < new Date()) {
+      throw new UnauthorizedError('Refresh token revoked or expired');
+    }
 
-  const user = await prisma.user.findUnique({ where: { id: payload.userId } });
-  if (!user) throw new UnauthorizedError('User not found');
+    const user = await prisma.user.findUnique({ where: { id: payload.userId } });
+    if (!user) throw new UnauthorizedError('User not found');
 
-  await prisma.refreshToken.update({
-    where: { id: payload.tokenId },
-    data: { revokedAt: new Date() },
-  });
+    await prisma.refreshToken.update({
+      where: { id: payload.tokenId },
+      data: { revokedAt: new Date() },
+    });
 
-  const access = signAccessToken({ userId: user.id, email: user.email });
-  const newRefresh = signRefreshToken({ userId: user.id, tokenId: crypto.randomUUID() });
-  await prisma.refreshToken.create({
-    data: {
-      id: newRefresh,
-      userId: user.id,
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-    },
-  });
-  setAuthCookies(c, access, newRefresh);
+    const access = signAccessToken({ userId: user.id, email: user.email });
+    const newRefresh = signRefreshToken({ userId: user.id, tokenId: crypto.randomUUID() });
+    await prisma.refreshToken.create({
+      data: {
+        id: newRefresh,
+        userId: user.id,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      },
+    });
+    setAuthCookies(c, access, newRefresh);
 
-  return c.json({ ok: true });
-});
+    return c.json({ ok: true });
+  },
+);
 
 authRouter.post('/logout', requireAuth(), async (c) => {
   const cookieToken = c.req.header('cookie')?.match(/refresh_token=([^;]+)/)?.[1];

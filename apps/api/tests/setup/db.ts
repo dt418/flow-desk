@@ -1,6 +1,6 @@
 import { resolve } from 'node:path';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { PrismaClient } from '../../generated/prisma/client';
+import { PrismaClient } from '../../../../packages/db/generated/client';
 
 export const TEST_DB_URL =
   process.env.TEST_DB_URL ??

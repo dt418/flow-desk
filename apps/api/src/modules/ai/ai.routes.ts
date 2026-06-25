@@ -2,7 +2,12 @@ import { Hono } from 'hono';
 import { prisma } from '../../shared/lib/prisma';
 import { requireAuth } from '../../shared/middleware/auth';
 import { rateLimit } from '../../shared/middleware/rate-limit';
-import { suggestAssignee, autoSchedule, suggestAssigneeSchema, autoScheduleSchema } from './ai.service';
+import {
+  suggestAssignee,
+  autoSchedule,
+  suggestAssigneeSchema,
+  autoScheduleSchema,
+} from './ai.service';
 
 export const aiRouter = new Hono();
 aiRouter.use('*', requireAuth());

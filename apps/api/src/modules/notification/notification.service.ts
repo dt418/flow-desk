@@ -4,7 +4,11 @@ import type { ListNotificationsQuery, MarkReadInput } from '@flow-desk/shared/no
 import { decodeCursor, encodeCursor } from '@flow-desk/shared/pagination';
 import * as repo from './notification.repository';
 
-export async function listNotifications(prisma: PrismaClient, userId: string, query: ListNotificationsQuery) {
+export async function listNotifications(
+  prisma: PrismaClient,
+  userId: string,
+  query: ListNotificationsQuery,
+) {
   const baseWhere = query.unreadOnly ? { readAt: null } : {};
   const decoded = query.cursor ? decodeCursor(query.cursor) : null;
   const cursorWhere = decoded

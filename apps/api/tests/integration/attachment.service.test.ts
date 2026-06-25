@@ -1,6 +1,13 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { getTestPrisma } from '../setup/integration';
-import { cleanDatabase, createUser, createWorkspace, addMember, createColumn, createTask } from '../setup/factories';
+import {
+  cleanDatabase,
+  createUser,
+  createWorkspace,
+  addMember,
+  createColumn,
+  createTask,
+} from '../setup/factories';
 import * as svc from '../../src/modules/attachment/attachment.service';
 import { prisma as db } from '../../src/shared/lib/prisma';
 import { BadRequestError, NotFoundError } from '../../src/shared/errors';
@@ -16,7 +23,9 @@ describe('attachment.service', () => {
     const owner = await createUser(prisma, 'owner@test.com');
     const member = await createUser(prisma, 'member@test.com');
     const outsider = await createUser(prisma, 'outsider@test.com');
-    ownerId = owner.id; memberId = member.id; outsiderId = outsider.id;
+    ownerId = owner.id;
+    memberId = member.id;
+    outsiderId = outsider.id;
     const w = await createWorkspace(prisma, owner.id);
     wid = w.id;
     await addMember(prisma, wid, member.id, 'MEMBER');
@@ -38,22 +47,36 @@ describe('attachment.service', () => {
   describe('listAttachments', () => {
     it('lists by task (cursor)', async () => {
       await prisma.attachment.create({
-        data: { taskId, uploadedById: ownerId, filename: 'a.txt', mimeType: 'text/plain', size: 10, type: 'DOCUMENT', storagePath: '/tmp/x' },
+        data: {
+          taskId,
+          uploadedById: ownerId,
+          filename: 'a.txt',
+          mimeType: 'text/plain',
+          size: 10,
+          type: 'DOCUMENT',
+          storagePath: '/tmp/x',
+        },
       });
       const res = await svc.listAttachments(db, ownerId, { taskId, limit: 10 } as never);
       expect(res.data).toHaveLength(1);
     });
 
     it('missing taskId (400)', async () => {
-      await expect(svc.listAttachments(db, ownerId, { taskId: '', limit: 10 } as never)).rejects.toThrow(BadRequestError);
+      await expect(
+        svc.listAttachments(db, ownerId, { taskId: '', limit: 10 } as never),
+      ).rejects.toThrow(BadRequestError);
     });
 
     it('missing task (404)', async () => {
-      await expect(svc.listAttachments(db, ownerId, { taskId: 'nope', limit: 10 } as never)).rejects.toThrow(NotFoundError);
+      await expect(
+        svc.listAttachments(db, ownerId, { taskId: 'nope', limit: 10 } as never),
+      ).rejects.toThrow(NotFoundError);
     });
 
     it('non-member rejected', async () => {
-      await expect(svc.listAttachments(db, outsiderId, { taskId, limit: 10 } as never)).rejects.toThrow(BadRequestError);
+      await expect(
+        svc.listAttachments(db, outsiderId, { taskId, limit: 10 } as never),
+      ).rejects.toThrow(BadRequestError);
     });
   });
 
@@ -68,12 +91,16 @@ describe('attachment.service', () => {
 
     it('non-member rejected', async () => {
       const file = new File(['x'], 'a.txt', { type: 'text/plain' });
-      await expect(svc.uploadAttachment(db, outsiderId, taskId, file)).rejects.toThrow(BadRequestError);
+      await expect(svc.uploadAttachment(db, outsiderId, taskId, file)).rejects.toThrow(
+        BadRequestError,
+      );
     });
 
     it('missing task (404)', async () => {
       const file = new File(['x'], 'a.txt', { type: 'text/plain' });
-      await expect(svc.uploadAttachment(db, ownerId, 'missing', file)).rejects.toThrow(NotFoundError);
+      await expect(svc.uploadAttachment(db, ownerId, 'missing', file)).rejects.toThrow(
+        NotFoundError,
+      );
     });
   });
 
@@ -88,13 +115,17 @@ describe('attachment.service', () => {
     });
 
     it('missing (404)', async () => {
-      await expect(svc.getDownloadAttachment(db, ownerId, 'missing')).rejects.toThrow(NotFoundError);
+      await expect(svc.getDownloadAttachment(db, ownerId, 'missing')).rejects.toThrow(
+        NotFoundError,
+      );
     });
 
     it('non-member rejected', async () => {
       const file = new File(['x'], 'a.txt', { type: 'text/plain' });
       const att = await svc.uploadAttachment(db, ownerId, taskId, file);
-      await expect(svc.getDownloadAttachment(db, outsiderId, att.id)).rejects.toThrow(BadRequestError);
+      await expect(svc.getDownloadAttachment(db, outsiderId, att.id)).rejects.toThrow(
+        BadRequestError,
+      );
     });
   });
 });

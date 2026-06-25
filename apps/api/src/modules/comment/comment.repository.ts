@@ -1,4 +1,4 @@
-import type { Prisma } from '../../../generated/prisma/client';
+import type { Prisma } from '@flowdesk/db';
 import type { prisma } from '../../shared/lib/prisma';
 type PrismaClient = typeof prisma;
 
@@ -42,7 +42,10 @@ export function listWorkspaceMembers(prisma: PrismaClient, workspaceId: string) 
   });
 }
 
-export function createManyNotifications(prisma: PrismaClient, data: Prisma.NotificationCreateManyInput[]) {
+export function createManyNotifications(
+  prisma: PrismaClient,
+  data: Prisma.NotificationCreateManyInput[],
+) {
   return prisma.notification.createMany({ data });
 }
 
@@ -53,7 +56,11 @@ export function findNotificationsSince(
   since: Date,
 ) {
   return prisma.notification.findMany({
-    where: { userId: { in: userIds }, type: type as Prisma.NotificationWhereInput['type'], createdAt: { gte: since } },
+    where: {
+      userId: { in: userIds },
+      type: type as Prisma.NotificationWhereInput['type'],
+      createdAt: { gte: since },
+    },
     orderBy: { createdAt: 'asc' },
   });
 }

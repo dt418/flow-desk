@@ -41,7 +41,15 @@ interface Props {
   initial?: TaskCardData | null;
 }
 
-export function TaskEditModal({ open, onClose, workspaceId, columns, defaultColumnId, members, initial }: Props) {
+export function TaskEditModal({
+  open,
+  onClose,
+  workspaceId,
+  columns,
+  defaultColumnId,
+  members,
+  initial,
+}: Props) {
   const create = useCreateTask(workspaceId);
   const update = useUpdateTask(workspaceId);
   const firstInputRef = React.useRef<HTMLInputElement | null>(null);
@@ -135,7 +143,9 @@ export function TaskEditModal({ open, onClose, workspaceId, columns, defaultColu
       }
       onClose();
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : `Failed to ${isEdit ? 'update' : 'create'} task`);
+      toast.error(
+        err instanceof ApiError ? err.message : `Failed to ${isEdit ? 'update' : 'create'} task`,
+      );
     }
   });
 
@@ -273,7 +283,7 @@ export function TaskEditModal({ open, onClose, workspaceId, columns, defaultColu
               disabled={isSubmitting}
               className="h-9 bg-emerald-500 px-4 text-[12px] text-white hover:bg-emerald-600"
             >
-              {isSubmitting ? (isEdit ? 'Saving…' : 'Creating…') : (isEdit ? 'Save' : 'Create task')}
+              {isSubmitting ? (isEdit ? 'Saving…' : 'Creating…') : isEdit ? 'Save' : 'Create task'}
             </Button>
           </div>
         </form>

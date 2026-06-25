@@ -1,16 +1,11 @@
-import { PrismaClient } from '../../../generated/prisma/client';
-import { PrismaPg } from '@prisma/adapter-pg';
-import { env } from './env';
-import { softDeleteExtension } from './prisma-extension';
+import { createPrismaClient, softDeleteExtension } from '@flowdesk/db';
+import { parseBackendEnv } from '@flowdesk/env';
 
-const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
+export const env = parseBackendEnv(process.env);
 
-const basePrisma =
-  globalForPrisma.prisma ??
-  new PrismaClient({
-    adapter: new PrismaPg({ connectionString: env.DATABASE_URL }),
-    log: env.NODE_ENV === 'development' ? ['warn', 'error'] : ['error'],
-  });
+const globalForPrisma = globalThis as unknown as { prisma?: ReturnType<typeof createPrismaClient> };
+
+const basePrisma = globalForPrisma.prisma ?? createPrismaClient(env.DATABASE_URL);
 
 if (env.NODE_ENV !== 'production') globalForPrisma.prisma = basePrisma;
 

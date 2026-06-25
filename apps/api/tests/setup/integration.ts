@@ -1,6 +1,6 @@
 import { beforeAll, afterAll, beforeEach } from 'vitest';
 import { createTestPrisma, resetTestDb, migrateTestDb, TEST_DB_URL } from './db';
-import type { PrismaClient } from '../../generated/prisma/client';
+import type { PrismaClient } from '../../../../packages/db/generated/client';
 
 process.env.DATABASE_URL = TEST_DB_URL;
 process.env.NODE_ENV = 'test';
@@ -11,7 +11,9 @@ let migrationDone = false;
 export function getTestPrisma(): PrismaClient {
   if (!prisma) {
     if (!migrationDone) {
-      throw new Error('getTestPrisma() called before beforeAll completed. Move prisma access inside it/beforeEach/test bodies.');
+      throw new Error(
+        'getTestPrisma() called before beforeAll completed. Move prisma access inside it/beforeEach/test bodies.',
+      );
     }
     prisma = createTestPrisma();
   }

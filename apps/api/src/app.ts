@@ -1,8 +1,7 @@
-import 'dotenv/config';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger as honoLogger } from 'hono/logger';
-import { env } from './shared/lib/env';
+import { env } from './shared/lib/prisma';
 import { logger } from './shared/lib/logger';
 import { errorHandler } from './shared/middleware/error-handler';
 import { requestId } from './shared/middleware/request-id';

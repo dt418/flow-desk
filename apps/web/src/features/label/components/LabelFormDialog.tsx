@@ -113,9 +113,7 @@ export function LabelFormDialog({ open, onClose, workspaceId, initial }: Props) 
               aria-invalid={Boolean(errors.name)}
               {...register('name')}
             />
-            {errors.name && (
-              <p className="text-[11px] text-red-500">{errors.name.message}</p>
-            )}
+            {errors.name && <p className="text-[11px] text-red-500">{errors.name.message}</p>}
           </div>
 
           <div className="flex flex-col gap-1.5">
@@ -146,9 +144,7 @@ export function LabelFormDialog({ open, onClose, workspaceId, initial }: Props) 
                 );
               })}
             </div>
-            {errors.color && (
-              <p className="text-[11px] text-red-500">{errors.color.message}</p>
-            )}
+            {errors.color && <p className="text-[11px] text-red-500">{errors.color.message}</p>}
           </div>
 
           {name && color && (

@@ -7,7 +7,8 @@ describe('GET /api/workspaces/:wid/labels', () => {
   let prisma: ReturnType<typeof getTestPrisma>;
   let ownerId: string, wid: string;
 
-  beforeEach(async () => { prisma = getTestPrisma();
+  beforeEach(async () => {
+    prisma = getTestPrisma();
     await cleanDatabase(prisma);
     const u = await createUser(prisma);
     ownerId = u.id;

@@ -1,6 +1,6 @@
 import type { prisma } from '../../shared/lib/prisma';
 type PrismaClient = typeof prisma;
-import type { Prisma } from '../../../generated/prisma/client';
+import type { Prisma } from '@flowdesk/db';
 
 const ASSIGNEE_SELECT = { id: true, name: true, email: true, avatarUrl: true } as const;
 
@@ -55,7 +55,11 @@ export function findColumn(prisma: PrismaClient, id: string) {
   return prisma.column.findUnique({ where: { id } });
 }
 
-export function findDependency(prisma: PrismaClient, blockingTaskId: string, blockedTaskId: string) {
+export function findDependency(
+  prisma: PrismaClient,
+  blockingTaskId: string,
+  blockedTaskId: string,
+) {
   return prisma.taskDependency.findFirst({ where: { blockingTaskId, blockedTaskId } });
 }
 
@@ -66,7 +70,10 @@ export function listBlockersOf(prisma: PrismaClient, blockedTaskId: string) {
   });
 }
 
-export function createDependency(prisma: PrismaClient, data: { blockingTaskId: string; blockedTaskId: string }) {
+export function createDependency(
+  prisma: PrismaClient,
+  data: { blockingTaskId: string; blockedTaskId: string },
+) {
   return prisma.taskDependency.create({ data });
 }
 

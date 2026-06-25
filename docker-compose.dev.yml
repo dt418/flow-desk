@@ -20,7 +20,7 @@ services:
     command:
       - sh
       - -c
-      - "pnpm --filter @flow-desk/shared build && pnpm --filter @flow-desk/shared dev & pnpm --filter @flow-desk/api dev"
+      - 'pnpm --filter @flow-desk/shared build && pnpm --filter @flow-desk/shared dev & pnpm --filter @flow-desk/api dev'
     working_dir: /app
     volumes:
       - ./apps/api/src:/app/apps/api/src:rw

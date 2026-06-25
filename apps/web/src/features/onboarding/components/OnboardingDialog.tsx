@@ -173,9 +173,7 @@ export function OnboardingDialog({ open, onClose }: OnboardingDialogProps) {
           <div className="mt-4 space-y-4">
             <div className="flex items-center gap-3 rounded-lg border border-[var(--border)] bg-[var(--bg-2)]/60 p-3">
               <Avatar className="h-12 w-12 text-sm">
-                {user?.avatarUrl ? (
-                  <AvatarImage src={user.avatarUrl} alt={user.name} />
-                ) : null}
+                {user?.avatarUrl ? <AvatarImage src={user.avatarUrl} alt={user.name} /> : null}
                 <AvatarFallback>{initials(user?.name ?? '?')}</AvatarFallback>
               </Avatar>
               <div className="min-w-0">
@@ -184,8 +182,8 @@ export function OnboardingDialog({ open, onClose }: OnboardingDialogProps) {
               </div>
             </div>
             <p className="text-[13px] leading-relaxed text-[var(--fg-2)]">
-              Hi {user?.name?.split(' ')[0] ?? 'there'} — let&apos;s set up your workspace so you can
-              start tracking work. Three quick steps and you&apos;re done.
+              Hi {user?.name?.split(' ')[0] ?? 'there'} — let&apos;s set up your workspace so you
+              can start tracking work. Three quick steps and you&apos;re done.
             </p>
             <div className="flex justify-end">
               <Button
@@ -343,7 +341,8 @@ export function OnboardingGate() {
   const { user } = useAuth();
   const workspacesQuery = useQuery({
     queryKey: ['workspaces'],
-    queryFn: () => api<{ data: Array<{ id: string }>; nextCursor: string | null }>('/api/workspaces'),
+    queryFn: () =>
+      api<{ data: Array<{ id: string }>; nextCursor: string | null }>('/api/workspaces'),
     enabled: Boolean(user),
     staleTime: 60_000,
   });

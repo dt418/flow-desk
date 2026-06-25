@@ -20,25 +20,26 @@
 
 ## File Structure
 
-| File | Responsibility |
-|---|---|
-| `packages/shared/src/task.ts` | Zod schema for restore (empty body) |
-| `apps/api/src/modules/task/task.service.ts` | `restore()` method + emit `task:restored` |
-| `apps/api/src/modules/task/task.routes.ts` | `POST /:id/restore` route |
-| `apps/api/tests/integration/task.routes.test.ts` | Integration tests for restore |
-| `apps/web/src/features/task/api.ts` | `update()`, `restore()` client methods |
-| `apps/web/src/features/task/hooks.ts` | `useUpdateTask`, `useDeleteTask`, `useRestoreTask` |
-| `apps/web/src/features/task/components/TaskEditModal.tsx` | Unified create/edit modal |
-| `apps/web/src/features/task/components/NewTaskModal.tsx` | Thin wrapper re-exporting `TaskEditModal` |
-| `apps/web/src/features/task/components/TaskCard.tsx` | Kebab menu (Edit/Delete) |
-| `apps/web/src/pages/board.tsx` | Modal state, optimistic delete, toast Undo |
-| `apps/web/src/features/realtime/useRealtime.ts` | Add `task:restored` event listener |
+| File                                                      | Responsibility                                     |
+| --------------------------------------------------------- | -------------------------------------------------- |
+| `packages/shared/src/task.ts`                             | Zod schema for restore (empty body)                |
+| `apps/api/src/modules/task/task.service.ts`               | `restore()` method + emit `task:restored`          |
+| `apps/api/src/modules/task/task.routes.ts`                | `POST /:id/restore` route                          |
+| `apps/api/tests/integration/task.routes.test.ts`          | Integration tests for restore                      |
+| `apps/web/src/features/task/api.ts`                       | `update()`, `restore()` client methods             |
+| `apps/web/src/features/task/hooks.ts`                     | `useUpdateTask`, `useDeleteTask`, `useRestoreTask` |
+| `apps/web/src/features/task/components/TaskEditModal.tsx` | Unified create/edit modal                          |
+| `apps/web/src/features/task/components/NewTaskModal.tsx`  | Thin wrapper re-exporting `TaskEditModal`          |
+| `apps/web/src/features/task/components/TaskCard.tsx`      | Kebab menu (Edit/Delete)                           |
+| `apps/web/src/pages/board.tsx`                            | Modal state, optimistic delete, toast Undo         |
+| `apps/web/src/features/realtime/useRealtime.ts`           | Add `task:restored` event listener                 |
 
 ---
 
 ### Task 1: Backend — Add restore endpoint
 
 **Files:**
+
 - Create: none
 - Modify: `packages/shared/src/task.ts:149`
 - Modify: `apps/api/src/modules/task/task.service.ts:177`
@@ -46,6 +47,7 @@
 - Test: `apps/api/tests/integration/task.routes.test.ts`
 
 **Interfaces:**
+
 - Consumes: existing `repo.findActiveById`, `assertMembership`, `safeEmit`
 - Produces: `POST /api/tasks/:id/restore` → `{ task: Task }`, emits `task:restored`
 
@@ -137,9 +139,11 @@ git commit -m "feat(api): add task restore endpoint + task:restored socket event
 ### Task 2: Frontend — Add API client methods
 
 **Files:**
+
 - Modify: `apps/web/src/features/task/api.ts:11`
 
 **Interfaces:**
+
 - Consumes: `Task` type from `@flow-desk/shared/task`
 - Produces: `taskApi.update(id, body)`, `taskApi.restore(id)`
 
@@ -178,9 +182,11 @@ git commit -m "feat(web): add taskApi.update + restore methods"
 ### Task 3: Frontend — Add mutation hooks
 
 **Files:**
+
 - Modify: `apps/web/src/features/task/hooks.ts:9`
 
 **Interfaces:**
+
 - Consumes: `taskApi`, `taskKeys`
 - Produces: `useUpdateTask`, `useDeleteTask`, `useRestoreTask`
 
@@ -192,8 +198,13 @@ After `useCreateTask` (line ~17):
 export function useUpdateTask(workspaceId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, body }: { id: string; body: import('@flow-desk/shared/task').UpdateTaskInput }) =>
-      taskApi.update(id, body),
+    mutationFn: ({
+      id,
+      body,
+    }: {
+      id: string;
+      body: import('@flow-desk/shared/task').UpdateTaskInput;
+    }) => taskApi.update(id, body),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: taskKeys.board(workspaceId) });
     },
@@ -203,7 +214,8 @@ export function useUpdateTask(workspaceId: string) {
 export function useDeleteTask(workspaceId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => taskApi.delete ?? api<{ ok: boolean }>(`/api/tasks/${id}`, { method: 'DELETE' }),
+    mutationFn: (id: string) =>
+      taskApi.delete ?? api<{ ok: boolean }>(`/api/tasks/${id}`, { method: 'DELETE' }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: taskKeys.board(workspaceId) });
     },
@@ -269,11 +281,13 @@ git commit -m "feat(web): add useUpdateTask, useDeleteTask, useRestoreTask hooks
 ### Task 4: Frontend — Create unified TaskEditModal
 
 **Files:**
+
 - Create: `apps/web/src/features/task/components/TaskEditModal.tsx`
 - Modify: `apps/web/src/features/task/components/NewTaskModal.tsx`
 - Modify: `apps/web/src/features/task/index.ts`
 
 **Interfaces:**
+
 - Consumes: `useCreateTask`, `useUpdateTask`, form patterns from `NewTaskModal`
 - Produces: `TaskEditModal` (create/edit), `NewTaskModal` as thin wrapper
 
@@ -305,8 +319,14 @@ const formSchema = z.object({
 });
 type FormInput = z.infer<typeof formSchema>;
 
-export interface ColumnOption { id: string; name: string; }
-export interface MemberOption { id: string; name: string; }
+export interface ColumnOption {
+  id: string;
+  name: string;
+}
+export interface MemberOption {
+  id: string;
+  name: string;
+}
 
 interface Props {
   open: boolean;
@@ -318,7 +338,15 @@ interface Props {
   initial?: TaskCardData | null;
 }
 
-export function TaskEditModal({ open, onClose, workspaceId, columns, defaultColumnId, members, initial }: Props) {
+export function TaskEditModal({
+  open,
+  onClose,
+  workspaceId,
+  columns,
+  defaultColumnId,
+  members,
+  initial,
+}: Props) {
   const create = useCreateTask(workspaceId);
   const update = useUpdateTask(workspaceId);
   const firstInputRef = React.useRef<HTMLInputElement | null>(null);
@@ -365,7 +393,9 @@ export function TaskEditModal({ open, onClose, workspaceId, columns, defaultColu
 
   React.useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [open, onClose]);
@@ -378,7 +408,9 @@ export function TaskEditModal({ open, onClose, workspaceId, columns, defaultColu
 
   const onSubmit = handleSubmit(async (values) => {
     try {
-      const dueDate = values.dueDate ? new Date(`${values.dueDate}T00:00:00.000Z`).toISOString() : null;
+      const dueDate = values.dueDate
+        ? new Date(`${values.dueDate}T00:00:00.000Z`).toISOString()
+        : null;
       if (isEdit && initial) {
         await update.mutateAsync({
           id: initial.id,
@@ -408,7 +440,9 @@ export function TaskEditModal({ open, onClose, workspaceId, columns, defaultColu
       }
       onClose();
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : `Failed to ${isEdit ? 'update' : 'create'} task`);
+      toast.error(
+        err instanceof ApiError ? err.message : `Failed to ${isEdit ? 'update' : 'create'} task`,
+      );
     }
   });
 
@@ -441,7 +475,10 @@ export function TaskEditModal({ open, onClose, workspaceId, columns, defaultColu
             <Input
               id="task-title"
               {...register('title')}
-              ref={(el) => { register('title').ref(el); firstInputRef.current = el; }}
+              ref={(el) => {
+                register('title').ref(el);
+                firstInputRef.current = el;
+              }}
               placeholder="What needs to happen?"
               aria-invalid={Boolean(errors.title)}
             />
@@ -467,7 +504,11 @@ export function TaskEditModal({ open, onClose, workspaceId, columns, defaultColu
                 {...register('columnId')}
                 className="flex h-9 w-full rounded-md border border-[var(--border)] bg-[var(--bg-2)] px-3 text-[13px] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-emerald-500/60"
               >
-                {columns.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
+                {columns.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
               </select>
             </div>
             <div className="space-y-1.5">
@@ -512,7 +553,11 @@ export function TaskEditModal({ open, onClose, workspaceId, columns, defaultColu
                 className="flex h-9 w-full rounded-md border border-[var(--border)] bg-[var(--bg-2)] px-3 text-[13px] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-emerald-500/60"
               >
                 <option value="">Unassigned</option>
-                {members.map((m) => (<option key={m.id} value={m.id}>{m.name}</option>))}
+                {members.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.name}
+                  </option>
+                ))}
               </select>
             </div>
             <div className="space-y-1.5">
@@ -522,7 +567,12 @@ export function TaskEditModal({ open, onClose, workspaceId, columns, defaultColu
           </div>
 
           <div className="mt-2 flex items-center justify-end gap-2">
-            <Button type="button" variant="ghost" onClick={onClose} className="h-9 px-3 text-[12px]">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={onClose}
+              className="h-9 px-3 text-[12px]"
+            >
               Cancel
             </Button>
             <Button
@@ -530,7 +580,7 @@ export function TaskEditModal({ open, onClose, workspaceId, columns, defaultColu
               disabled={isSubmitting}
               className="h-9 bg-emerald-500 px-4 text-[12px] text-white hover:bg-emerald-600"
             >
-              {isSubmitting ? (isEdit ? 'Saving…' : 'Creating…') : (isEdit ? 'Save' : 'Create task')}
+              {isSubmitting ? (isEdit ? 'Saving…' : 'Creating…') : isEdit ? 'Save' : 'Create task'}
             </Button>
           </div>
         </form>
@@ -585,9 +635,11 @@ git commit -m "refactor(web): TaskEditModal unifies create/edit; NewTaskModal th
 ### Task 5: Frontend — Add kebab menu to TaskCard
 
 **Files:**
+
 - Modify: `apps/web/src/features/task/components/TaskCard.tsx:77`
 
 **Interfaces:**
+
 - Consumes: `onClick` callback (already exists), add `onEdit`, `onDelete`
 - Produces: TaskCard with kebab menu (Edit/Delete)
 
@@ -596,7 +648,12 @@ git commit -m "refactor(web): TaskEditModal unifies create/edit; NewTaskModal th
 Add to imports:
 
 ```tsx
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 ```
 
@@ -625,37 +682,39 @@ export function TaskCard({ task, workspaceId, canEditLabels = true, className, o
 After the `<span className="absolute right-2...` line (~line 117), add:
 
 ```tsx
-{(onEdit || onDelete) && (
-  <DropdownMenu>
-    <DropdownMenuTrigger asChild>
-      <button
-        type="button"
-        className="absolute right-8 top-2 rounded p-1 opacity-0 transition-opacity hover:bg-[var(--bg-2)] group-hover:opacity-100"
-        onClick={(e) => e.stopPropagation()}
-        aria-label="Task actions"
-      >
-        <MoreHorizontal className="h-4 w-4 text-[var(--fg-2)]" />
-      </button>
-    </DropdownMenuTrigger>
-    <DropdownMenuContent align="end" className="min-w-[120px]">
-      {onEdit && (
-        <DropdownMenuItem onClick={() => onEdit(task.id)}>
-          <Pencil className="mr-2 h-3.5 w-3.5" />
-          Edit
-        </DropdownMenuItem>
-      )}
-      {onDelete && (
-        <DropdownMenuItem
-          onClick={() => onDelete(task.id)}
-          className="text-red-600 focus:text-red-600"
+{
+  (onEdit || onDelete) && (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          className="absolute right-8 top-2 rounded p-1 opacity-0 transition-opacity hover:bg-[var(--bg-2)] group-hover:opacity-100"
+          onClick={(e) => e.stopPropagation()}
+          aria-label="Task actions"
         >
-          <Trash2 className="mr-2 h-3.5 w-3.5" />
-          Delete
-        </DropdownMenuItem>
-      )}
-    </DropdownMenuContent>
-  </DropdownMenu>
-)}
+          <MoreHorizontal className="h-4 w-4 text-[var(--fg-2)]" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="min-w-[120px]">
+        {onEdit && (
+          <DropdownMenuItem onClick={() => onEdit(task.id)}>
+            <Pencil className="mr-2 h-3.5 w-3.5" />
+            Edit
+          </DropdownMenuItem>
+        )}
+        {onDelete && (
+          <DropdownMenuItem
+            onClick={() => onDelete(task.id)}
+            className="text-red-600 focus:text-red-600"
+          >
+            <Trash2 className="mr-2 h-3.5 w-3.5" />
+            Delete
+          </DropdownMenuItem>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
 ```
 
 - [ ] **Step 3: Run typecheck**
@@ -675,9 +734,11 @@ git commit -m "feat(web): add kebab menu to TaskCard with Edit/Delete actions"
 ### Task 6: Frontend — Wire board page with edit modal, delete, undo
 
 **Files:**
+
 - Modify: `apps/web/src/pages/board.tsx:98`
 
 **Interfaces:**
+
 - Consumes: `TaskEditModal`, `useDeleteTask`, `useRestoreTask`, `sonner` toast
 - Produces: Full CRUD board experience with undo
 
@@ -707,7 +768,7 @@ After `membersQuery`:
 
 ```tsx
 const handleEdit = (taskId: string) => {
-  const task = orderedColumns.flatMap(c => c.tasks).find(t => t.id === taskId);
+  const task = orderedColumns.flatMap((c) => c.tasks).find((t) => t.id === taskId);
   if (task) {
     setSelectedTask(task as TaskCardData);
     setEditModalOpen(true);
@@ -715,9 +776,9 @@ const handleEdit = (taskId: string) => {
 };
 
 const handleDelete = (taskId: string) => {
-  const task = orderedColumns.flatMap(c => c.tasks).find(t => t.id === taskId);
+  const task = orderedColumns.flatMap((c) => c.tasks).find((t) => t.id === taskId);
   if (!task) return;
-  
+
   deleteTask.mutate(taskId, {
     onSuccess: () => {
       toast('Task deleted', {
@@ -760,10 +821,13 @@ After the existing `NewTaskModal` at bottom (~line 288):
 ```tsx
 <TaskEditModal
   open={editModalOpen}
-  onClose={() => { setEditModalOpen(false); setSelectedTask(null); }}
+  onClose={() => {
+    setEditModalOpen(false);
+    setSelectedTask(null);
+  }}
   workspaceId={workspaceId}
   columns={orderedColumns.map(({ meta }) => ({ id: meta.id, name: meta.name }))}
-  members={(membersQuery.data ?? []).map(m => ({ id: m.user.id, name: m.user.name }))}
+  members={(membersQuery.data ?? []).map((m) => ({ id: m.user.id, name: m.user.name }))}
   initial={selectedTask}
 />
 ```
@@ -785,9 +849,11 @@ git commit -m "feat(web): wire board with edit modal, delete + undo toast"
 ### Task 7: Frontend — Add task:restored realtime listener
 
 **Files:**
+
 - Modify: `apps/web/src/features/realtime/useRealtime.ts:30`
 
 **Interfaces:**
+
 - Consumes: existing socket pattern
 - Produces: invalidation on `task:restored` event
 
@@ -819,9 +885,11 @@ git commit -m "feat(web): listen for task:restored socket event"
 ### Task 8: Integration verification
 
 **Files:**
+
 - No new files
 
 **Interfaces:**
+
 - Consumes: full stack
 - Produces: verified working CRUD
 

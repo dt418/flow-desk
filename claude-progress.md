@@ -58,8 +58,6 @@
 - **Key risks closed**: docker build with monorepo pnpm + prisma generate, Prisma 5 → 7 deprecation (no v5 leftover deps), ESM/CJS interop for seed bundle.
 - **Next scope**: candidates — R-24 latency UX, R-16 soft-delete admin tool, CI integration of `pnpm test:integration` as required check, R-35 leftover apps/api/.gitignore cleanup, R-33 Radix select in NewTaskModal.
 
-
-
 ### Session 012 — F3-F6 Backend Hardening + Realtime Polish
 
 - **Date**: 2026-06-23
@@ -173,7 +171,7 @@
 - **Goal**: Ship F1 security track — close R-25/R-26/R-27/R-28 (Socket.IO emissions + rate-limit + attachment IDOR + membership checks)
 - **Worktree**: `.worktrees/f1-security` on branch `feat/f1-security`, isolated from main. 14 commits, clean.
 - **Completed** (T1-T17):
-  - **T1+T2** (`1f33bcc`, `06e8111`): `rateLimit({scope, windowSec, max, keyBy})` middleware in `shared/middleware/rate-limit.ts` (Redis INCR+EXPIRE, X-RateLimit-* headers, throws RateLimitError with retryAfter). Error handler status cast widened to `400|401|403|404|409|429|502|503`; Retry-After header on 429.
+  - **T1+T2** (`1f33bcc`, `06e8111`): `rateLimit({scope, windowSec, max, keyBy})` middleware in `shared/middleware/rate-limit.ts` (Redis INCR+EXPIRE, X-RateLimit-\* headers, throws RateLimitError with retryAfter). Error handler status cast widened to `400|401|403|404|409|429|502|503`; Retry-After header on 429.
   - **T3+T4** (`73e7d11`): `LLMError extends AppError(502, 'LLM_UPSTREAM', details)`; llm-provider gets TIMEOUT_MS=30_000, MAX_ATTEMPTS=2, AbortController timeout, retry on 5xx OR AbortError, logger.warn on retry.
   - **T5** (`7bc6776`): `shared/lib/socket-events.ts` — `setIo(io)` + `emitToRoom/emitToNamespace/emitToUser/emitToWorkspace/emitToTask` over FlowDeskNamespace = `/tasks | /notifications | /collab`. Wired from `index.ts` after `createSocketServer`.
   - **T6** (`d0c78e3`): task routes emit `task:created/updated/deleted/moved/subtask:created/dependency:added` via `emitToWorkspace` + `emitToTask` after successful DB write.
@@ -183,8 +181,8 @@
   - **T10** (`1b93ca4`): attachment routes POST/GET?taskId=/GET/:id/download all assertMembership — closes IDOR (R-27).
   - **T11** (`3871a86`): AI routes assertMembership + 5/min/user rate limit.
   - **T12** (`0b9d4c4`): bcrypt cost 12 → 10 in auth.routes.ts; per-route rate limits `auth:register` 3/h/ip, `auth:login` 5/min/ip, `auth:refresh` 30/min/ip.
-  - **T13** (`eb814b1`): `writeRateLimit` middleware on /api/* POST/PATCH/PUT/DELETE — 60/min/user.
-  - **T14** (`e15e85c`): web `useNamespacedSocket('/tasks' | '/notifications' | '/collab')` shared manager + `useRealtime(workspaceId, taskId?)` hook joins workspace:+task: rooms, listens task:*+comment:*, invalidates React Query keys; `useNotificationsRealtime()` for notification:new. Wired into `pages/board.tsx`.
+  - **T13** (`eb814b1`): `writeRateLimit` middleware on /api/\* POST/PATCH/PUT/DELETE — 60/min/user.
+  - **T14** (`e15e85c`): web `useNamespacedSocket('/tasks' | '/notifications' | '/collab')` shared manager + `useRealtime(workspaceId, taskId?)` hook joins workspace:+task: rooms, listens task:_+comment:_, invalidates React Query keys; `useNotificationsRealtime()` for notification:new. Wired into `pages/board.tsx`.
   - **T15** (smoke verify, see verification block).
   - **T16**: feature_list.json security-001..005 → passing with 7+ evidence items each; claude-progress.md current-state flipped to 27/27.
   - **T17**: pending — push feat/f1-security to origin + merge to main.

@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import type { UserRole } from '../../../generated/prisma/client';
+import type { UserRole } from '@flowdesk/db';
 import {
   createWorkspaceSchema,
   updateWorkspaceSchema,
@@ -39,33 +39,37 @@ workspaceRouter.get(
   },
 );
 
-workspaceRouter.post('/', rateLimit({ ...RATE_LIMITS.WORKSPACE_CREATE, keyBy: 'user', scope: 'workspace:create' }), async (c) => {
-  const auth = c.get('auth');
-  const body = createWorkspaceSchema.parse(await c.req.json());
+workspaceRouter.post(
+  '/',
+  rateLimit({ ...RATE_LIMITS.WORKSPACE_CREATE, keyBy: 'user', scope: 'workspace:create' }),
+  async (c) => {
+    const auth = c.get('auth');
+    const body = createWorkspaceSchema.parse(await c.req.json());
 
-  const slugTaken = await prisma.workspace.findUnique({ where: { slug: body.slug } });
-  if (slugTaken) throw new ConflictError('Slug already taken');
+    const slugTaken = await prisma.workspace.findUnique({ where: { slug: body.slug } });
+    if (slugTaken) throw new ConflictError('Slug already taken');
 
-  const workspace = await prisma.workspace.create({
-    data: {
-      name: body.name,
-      slug: body.slug,
-      description: body.description,
-      visibility: body.visibility,
-      ownerId: auth.user.id,
-      members: { create: { userId: auth.user.id, role: 'OWNER' } },
-      columns: {
-        create: [
-          { name: 'Backlog', position: 0, isDoneColumn: false },
-          { name: 'Todo', position: 1, isDoneColumn: false },
-          { name: 'In Progress', position: 2, isDoneColumn: false },
-          { name: 'Done', position: 3, isDoneColumn: true },
-        ],
+    const workspace = await prisma.workspace.create({
+      data: {
+        name: body.name,
+        slug: body.slug,
+        description: body.description,
+        visibility: body.visibility,
+        ownerId: auth.user.id,
+        members: { create: { userId: auth.user.id, role: 'OWNER' } },
+        columns: {
+          create: [
+            { name: 'Backlog', position: 0, isDoneColumn: false },
+            { name: 'Todo', position: 1, isDoneColumn: false },
+            { name: 'In Progress', position: 2, isDoneColumn: false },
+            { name: 'Done', position: 3, isDoneColumn: true },
+          ],
+        },
       },
-    },
-  });
-  return c.json({ workspace }, 201);
-});
+    });
+    return c.json({ workspace }, 201);
+  },
+);
 
 workspaceRouter.get(
   '/:workspaceId',
@@ -81,32 +85,43 @@ workspaceRouter.get(
   },
 );
 
-workspaceRouter.patch('/:workspaceId', rateLimit({ ...RATE_LIMITS.WORKSPACE_UPDATE, keyBy: 'user', scope: 'workspace:update' }), requireWorkspaceRole(['OWNER', 'ADMIN']), async (c) => {
-  const id = c.req.param('workspaceId')!;
-  const auth = c.get('auth');
-  const body = updateWorkspaceSchema.parse(await c.req.json());
-  const existing = await prisma.workspace.findFirst({ where: { id, deletedAt: null } });
-  if (!existing) throw new NotFoundError('Workspace not found');
-  const data: { name?: string; description?: string | null; visibility?: 'PRIVATE' | 'PUBLIC' } = {};
-  if (body.name !== undefined) data.name = body.name;
-  if (body.description !== undefined) data.description = body.description ?? undefined;
-  if (body.visibility !== undefined) data.visibility = body.visibility;
-  const updated = await prisma.workspace.update({
-    where: { id },
-    data: {
-      ...(data.name !== undefined ? { name: data.name } : {}),
-      ...(data.description !== undefined ? { description: data.description } : {}),
-      ...(data.visibility !== undefined ? { visibility: data.visibility } : {}),
-    },
-  });
-  return c.json({ workspace: updated });
-});
+workspaceRouter.patch(
+  '/:workspaceId',
+  rateLimit({ ...RATE_LIMITS.WORKSPACE_UPDATE, keyBy: 'user', scope: 'workspace:update' }),
+  requireWorkspaceRole(['OWNER', 'ADMIN']),
+  async (c) => {
+    const id = c.req.param('workspaceId')!;
+    const auth = c.get('auth');
+    const body = updateWorkspaceSchema.parse(await c.req.json());
+    const existing = await prisma.workspace.findFirst({ where: { id, deletedAt: null } });
+    if (!existing) throw new NotFoundError('Workspace not found');
+    const data: { name?: string; description?: string | null; visibility?: 'PRIVATE' | 'PUBLIC' } =
+      {};
+    if (body.name !== undefined) data.name = body.name;
+    if (body.description !== undefined) data.description = body.description ?? undefined;
+    if (body.visibility !== undefined) data.visibility = body.visibility;
+    const updated = await prisma.workspace.update({
+      where: { id },
+      data: {
+        ...(data.name !== undefined ? { name: data.name } : {}),
+        ...(data.description !== undefined ? { description: data.description } : {}),
+        ...(data.visibility !== undefined ? { visibility: data.visibility } : {}),
+      },
+    });
+    return c.json({ workspace: updated });
+  },
+);
 
-workspaceRouter.delete('/:workspaceId', rateLimit({ ...RATE_LIMITS.WORKSPACE_DELETE, keyBy: 'user', scope: 'workspace:delete' }), requireWorkspaceRole(['OWNER']), async (c) => {
-  const id = c.req.param('workspaceId')!;
-  await prisma.workspace.update({ where: { id }, data: { deletedAt: new Date() } });
-  return c.json({ ok: true });
-});
+workspaceRouter.delete(
+  '/:workspaceId',
+  rateLimit({ ...RATE_LIMITS.WORKSPACE_DELETE, keyBy: 'user', scope: 'workspace:delete' }),
+  requireWorkspaceRole(['OWNER']),
+  async (c) => {
+    const id = c.req.param('workspaceId')!;
+    await prisma.workspace.update({ where: { id }, data: { deletedAt: new Date() } });
+    return c.json({ ok: true });
+  },
+);
 
 workspaceRouter.get(
   '/:workspaceId/members',

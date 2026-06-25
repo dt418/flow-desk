@@ -2,7 +2,7 @@ import { prisma } from '../../shared/lib/prisma';
 import { decodeCursor, encodeCursor, CursorPaginationQuery } from '@flow-desk/shared/pagination';
 import { cuidSchema } from '@flow-desk/shared/common';
 import { assertMembership } from '../../shared/lib/access';
-import type { Prisma, TaskStatus, TaskPriority } from '../../../generated/prisma/client';
+import type { Prisma, TaskStatus, TaskPriority } from '@flowdesk/db';
 import { z } from 'zod';
 import {
   taskStatusSchema,
@@ -88,11 +88,7 @@ export const taskService = {
 
     const items = await prisma.task.findMany({
       where: cursorWhere ?? where,
-      orderBy: [
-        { [primarySortField]: order },
-        { createdAt: 'desc' },
-        { id: order },
-      ],
+      orderBy: [{ [primarySortField]: order }, { createdAt: 'desc' }, { id: order }],
       take: query.limit + 1,
       include: {
         assignee: { select: { id: true, name: true, email: true, avatarUrl: true } },
@@ -252,14 +248,20 @@ export const taskService = {
               },
             });
           } else {
-            await tx.task.update({ where: { id: t.id }, data: { columnId: sourceColumnId, position: i } });
+            await tx.task.update({
+              where: { id: t.id },
+              data: { columnId: sourceColumnId, position: i },
+            });
           }
           i++;
         }
       } else {
         let si = 0;
         for (const t of sourceNew) {
-          await tx.task.update({ where: { id: t.id }, data: { columnId: sourceColumnId, position: si } });
+          await tx.task.update({
+            where: { id: t.id },
+            data: { columnId: sourceColumnId, position: si },
+          });
           si++;
         }
         let ti = 0;
@@ -276,7 +278,10 @@ export const taskService = {
               },
             });
           } else {
-            await tx.task.update({ where: { id: t.id }, data: { columnId: body.columnId, position: ti } });
+            await tx.task.update({
+              where: { id: t.id },
+              data: { columnId: body.columnId, position: ti },
+            });
           }
           ti++;
         }

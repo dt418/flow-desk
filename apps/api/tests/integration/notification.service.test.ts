@@ -1,6 +1,13 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { getTestPrisma } from '../setup/integration';
-import { cleanDatabase, createUser, createWorkspace, addMember, createColumn, createTask } from '../setup/factories';
+import {
+  cleanDatabase,
+  createUser,
+  createWorkspace,
+  addMember,
+  createColumn,
+  createTask,
+} from '../setup/factories';
 import * as svc from '../../src/modules/notification/notification.service';
 import { prisma as db } from '../../src/shared/lib/prisma';
 
@@ -24,7 +31,10 @@ describe('notification.service', () => {
 
   describe('listNotifications', () => {
     it('lists all (cursor)', async () => {
-      const res = await svc.listNotifications(db, userId, { limit: 10, unreadOnly: false } as never);
+      const res = await svc.listNotifications(db, userId, {
+        limit: 10,
+        unreadOnly: false,
+      } as never);
       expect(res.data).toHaveLength(3);
       expect(res.unreadCount).toBe(3);
     });
@@ -40,13 +50,20 @@ describe('notification.service', () => {
       const p1 = await svc.listNotifications(db, userId, { limit: 1, unreadOnly: false } as never);
       expect(p1.data).toHaveLength(1);
       expect(p1.nextCursor).not.toBeNull();
-      const p2 = await svc.listNotifications(db, userId, { limit: 1, cursor: p1.nextCursor!, unreadOnly: false } as never);
+      const p2 = await svc.listNotifications(db, userId, {
+        limit: 1,
+        cursor: p1.nextCursor!,
+        unreadOnly: false,
+      } as never);
       expect(p2.data).toHaveLength(1);
     });
 
     it('isolation: other user notifications not visible', async () => {
       const other = await createUser(prisma, 'other@test.com');
-      const res = await svc.listNotifications(db, other.id, { limit: 10, unreadOnly: false } as never);
+      const res = await svc.listNotifications(db, other.id, {
+        limit: 10,
+        unreadOnly: false,
+      } as never);
       expect(res.data).toHaveLength(0);
     });
   });
@@ -80,9 +97,13 @@ describe('notification.service', () => {
 
     it('only affects own notifications', async () => {
       const other = await createUser(prisma, 'other@test.com');
-      await prisma.notification.create({ data: { userId: other.id, type: 'TASK_ASSIGNED', title: 'x', body: 'y' } });
+      await prisma.notification.create({
+        data: { userId: other.id, type: 'TASK_ASSIGNED', title: 'x', body: 'y' },
+      });
       await svc.markAllRead(db, userId);
-      const otherUnread = await prisma.notification.count({ where: { userId: other.id, readAt: null } });
+      const otherUnread = await prisma.notification.count({
+        where: { userId: other.id, readAt: null },
+      });
       expect(otherUnread).toBe(1);
     });
   });

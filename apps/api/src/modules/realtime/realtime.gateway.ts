@@ -22,16 +22,22 @@ export interface PresenceUserPayload {
 }
 
 function parseRedisMap(raw: Record<string, string>): PresenceRecord[] {
-  return Object.values(raw).map((v) => {
-    try {
-      return JSON.parse(v) as PresenceRecord;
-    } catch {
-      return null;
-    }
-  }).filter((x): x is PresenceRecord => x !== null);
+  return Object.values(raw)
+    .map((v) => {
+      try {
+        return JSON.parse(v) as PresenceRecord;
+      } catch {
+        return null;
+      }
+    })
+    .filter((x): x is PresenceRecord => x !== null);
 }
 
-export async function broadcastPresence(redis: Redis, namespace: ReturnType<SocketServer['of']>, workspaceId: string): Promise<void> {
+export async function broadcastPresence(
+  redis: Redis,
+  namespace: ReturnType<SocketServer['of']>,
+  workspaceId: string,
+): Promise<void> {
   const raw = await redis.hgetall(PRESENCE_KEY(workspaceId));
   const records = parseRedisMap(raw);
   const now = Date.now();
@@ -56,7 +62,11 @@ export async function upsertPresence(
   await redis.expire(PRESENCE_KEY(workspaceId), Math.ceil(TTL_MS / 1000) * 4);
 }
 
-export async function removePresence(redis: Redis, workspaceId: string, socketId: string): Promise<void> {
+export async function removePresence(
+  redis: Redis,
+  workspaceId: string,
+  socketId: string,
+): Promise<void> {
   await redis.hdel(PRESENCE_KEY(workspaceId), socketId);
 }
 
@@ -70,7 +80,10 @@ export function attachPresenceHandlers(
   namespace.on('connection', (socket) => {
     const userId = (socket.data?.userId as string | undefined) ?? '';
     if (!userId) {
-      logger.warn({ socketId: socket.id }, 'presence: socket connected without userId, disconnecting');
+      logger.warn(
+        { socketId: socket.id },
+        'presence: socket connected without userId, disconnecting',
+      );
       socket.emit('unauthorized', { message: 'missing user context' });
       socket.disconnect(true);
       return;
@@ -113,7 +126,9 @@ export function attachPresenceHandlers(
         if (room.startsWith('workspace:')) {
           const wid = room.slice('workspace:'.length);
           await removePresence(redis, wid, socket.id);
-          await broadcastPresence(redis, namespace, wid).catch((err) => logger.warn({ err }, 'presence broadcast failed'));
+          await broadcastPresence(redis, namespace, wid).catch((err) =>
+            logger.warn({ err }, 'presence broadcast failed'),
+          );
         }
       }
     });

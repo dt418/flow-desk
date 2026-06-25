@@ -1,10 +1,15 @@
 {
   "$schema": "https://turbo.build/schema.json",
-  "globalDependencies": ["**/.env.*local", ".env", "prisma/schema.prisma", "prisma.config.ts"],
+  "globalDependencies": [
+    "**/.env.*local",
+    "packages/db/prisma/schema.prisma",
+    "prisma.config.ts"
+  ],
   "globalEnv": ["NODE_ENV", "FLOW_DESK_DB_MODE", "DATABASE_URL"],
   "tasks": {
     "build": {
       "dependsOn": ["^build", "^db:generate"],
+      "env": ["VITE_API_URL", "VITE_APP_NAME", "VITE_STRIPE_PUBLIC_KEY"],
       "outputs": ["dist/**", ".vite/**", "build/**", "generated/**"]
     },
     "dev": {
@@ -20,10 +25,12 @@
     },
     "test": {
       "dependsOn": ["^build"],
-      "outputs": ["coverage/**"]
+      "outputs": []
     },
     "db:generate": {
-      "cache": false
+      "cache": false,
+      "inputs": ["packages/db/prisma/**/*.prisma"],
+      "outputs": ["generated/**"]
     },
     "db:migrate": {
       "cache": false

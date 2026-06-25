@@ -1,10 +1,9 @@
 import { prisma } from '../../shared/lib/prisma';
 import { ForbiddenError, ConflictError, NotFoundError, BadRequestError } from '../../shared/errors';
 import { assertRole, assertMembership } from '../../shared/lib/access';
-import type { UserRole } from '../../../generated/prisma/client';
+import type { UserRole, Prisma } from '@flowdesk/db';
 import type { CursorPaginationQuery } from '@flow-desk/shared/pagination';
 import { decodeCursor, encodeCursor } from '@flow-desk/shared/pagination';
-import type { Prisma } from '../../../generated/prisma/client';
 
 export const memberService = {
   async list(query: CursorPaginationQuery, workspaceId: string, userId: string) {
@@ -52,12 +51,7 @@ export const memberService = {
     });
   },
 
-  async changeRole(
-    workspaceId: string,
-    targetUserId: string,
-    newRole: UserRole,
-    userId: string,
-  ) {
+  async changeRole(workspaceId: string, targetUserId: string, newRole: UserRole, userId: string) {
     await assertRole(workspaceId, userId, ['OWNER']);
     if (newRole !== 'OWNER') {
       const ownerCount = await prisma.workspaceMember.count({

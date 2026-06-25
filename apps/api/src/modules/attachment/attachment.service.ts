@@ -7,7 +7,7 @@ import { randomUUID } from 'node:crypto';
 import { extname, join } from 'node:path';
 import { BadRequestError, NotFoundError } from '../../shared/errors';
 import { assertMembership } from '../../shared/lib/access';
-import { env } from '../../shared/lib/env';
+import { env } from '../../shared/lib/prisma';
 import { decodeCursor, encodeCursor } from '@flow-desk/shared/pagination';
 import * as repo from './attachment.repository';
 
@@ -28,7 +28,11 @@ export function classifyMime(mime: string): AttachmentKind {
   return 'OTHER';
 }
 
-export async function listAttachments(prisma: PrismaClient, userId: string, query: ListAttachmentsQuery) {
+export async function listAttachments(
+  prisma: PrismaClient,
+  userId: string,
+  query: ListAttachmentsQuery,
+) {
   if (!query.taskId) throw new BadRequestError('taskId required');
   const task = await repo.findTaskWorkspace(prisma, query.taskId);
   if (!task) throw new NotFoundError('Task not found');

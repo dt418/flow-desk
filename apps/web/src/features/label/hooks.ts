@@ -4,8 +4,7 @@ import type { Label, CreateLabelInput, UpdateLabelInput } from './types';
 
 export const labelKeys = {
   all: (workspaceId: string) => ['labels', workspaceId] as const,
-  task: (workspaceId: string, taskId: string) =>
-    ['labels', workspaceId, 'task', taskId] as const,
+  task: (workspaceId: string, taskId: string) => ['labels', workspaceId, 'task', taskId] as const,
 };
 
 export function useLabels(workspaceId: string) {

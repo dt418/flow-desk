@@ -1,5 +1,5 @@
+import { Prisma } from '../../../generated/prisma/client';
 import { prisma } from '../../shared/lib/prisma';
-import type { Prisma } from '../../../generated/prisma/client';
 
 export const taskLabelRepo = {
   async listForTask(taskId: string) {

@@ -1,6 +1,15 @@
 import { z } from 'zod';
 
-export const LABEL_COLORS = ['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'gray'] as const;
+export const LABEL_COLORS = [
+  'red',
+  'orange',
+  'yellow',
+  'green',
+  'blue',
+  'purple',
+  'pink',
+  'gray',
+] as const;
 export type LabelColor = (typeof LABEL_COLORS)[number];
 
 export const labelColorSchema = z.enum(LABEL_COLORS);
@@ -15,12 +24,21 @@ export const labelSchema = z.object({
 });
 
 export const createLabelSchema = z.object({
-  name: z.string().min(1).max(50).regex(/^[a-zA-Z0-9 _-]+$/, 'Only letters, digits, space, underscore, hyphen'),
+  name: z
+    .string()
+    .min(1)
+    .max(50)
+    .regex(/^[a-zA-Z0-9 _-]+$/, 'Only letters, digits, space, underscore, hyphen'),
   color: labelColorSchema,
 });
 
 export const updateLabelSchema = z.object({
-  name: z.string().min(1).max(50).regex(/^[a-zA-Z0-9 _-]+$/).optional(),
+  name: z
+    .string()
+    .min(1)
+    .max(50)
+    .regex(/^[a-zA-Z0-9 _-]+$/)
+    .optional(),
   color: labelColorSchema.optional(),
 });
 

@@ -8,7 +8,13 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import { NewTaskModal, TaskCard, TaskEditModal, useDeleteTask, useRestoreTask } from '@/features/task';
+import {
+  NewTaskModal,
+  TaskCard,
+  TaskEditModal,
+  useDeleteTask,
+  useRestoreTask,
+} from '@/features/task';
 import { useMembers } from '@/features/workspace';
 import { useRealtime } from '@/features/realtime/useRealtime';
 import { EmptyBoardState, PresenceBar } from '@/features/board';
@@ -169,8 +175,7 @@ export function BoardPage() {
       }
       moveSnapshotRef.current = null;
       moveIdRef.current = null;
-      const message =
-        err instanceof ApiError ? err.message : 'Move failed. Reverted board state.';
+      const message = err instanceof ApiError ? err.message : 'Move failed. Reverted board state.';
       toast.error(message);
     },
     onSettled: () => {
@@ -205,12 +210,11 @@ export function BoardPage() {
         : { ...base, [fromColumnId]: fromList, [toColumnId]: toList };
     });
     // Compute clamped position from the post-splice target length (server also clamps).
-    const baseLen =
-      (columnsById[fromColumnId]?.length ?? 0) - 1; // removed one
-    const targetLen = fromColumnId === toColumnId ? baseLen : columnsById[toColumnId]?.length ?? 0;
+    const baseLen = (columnsById[fromColumnId]?.length ?? 0) - 1; // removed one
+    const targetLen =
+      fromColumnId === toColumnId ? baseLen : (columnsById[toColumnId]?.length ?? 0);
     const clampedPosition = Math.min(Math.max(toIndex, 0), targetLen);
-    const taskVersion =
-      columnsById[fromColumnId]?.find((t) => t.id === taskId)?.version ?? 0;
+    const taskVersion = columnsById[fromColumnId]?.find((t) => t.id === taskId)?.version ?? 0;
     moveMutation.mutate({ taskId, toColumnId, position: clampedPosition, version: taskVersion });
   };
 
@@ -304,10 +308,13 @@ export function BoardPage() {
         <Kanban
           onMove={handleMove}
           renderOverlay={(taskId) => {
-            const task = orderedColumns
-              .flatMap((c) => c.tasks)
-              .find((t) => t.id === taskId);
-            return task ? <TaskCard task={task as unknown as Parameters<typeof TaskCard>[0]['task']} workspaceId={workspaceId} /> : null;
+            const task = orderedColumns.flatMap((c) => c.tasks).find((t) => t.id === taskId);
+            return task ? (
+              <TaskCard
+                task={task as unknown as Parameters<typeof TaskCard>[0]['task']}
+                workspaceId={workspaceId}
+              />
+            ) : null;
           }}
         >
           {orderedColumns.map(({ meta, tasks }) => (

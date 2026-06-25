@@ -1,5 +1,5 @@
 import Redis from 'ioredis';
-import { env } from './env';
+import { env } from './prisma';
 
 const globalForRedis = globalThis as unknown as { redis?: Redis };
 

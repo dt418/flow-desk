@@ -19,8 +19,7 @@ export function useCreateTask(workspaceId: string) {
 export function useUpdateTask(workspaceId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, body }: { id: string; body: UpdateTaskInput }) =>
-      taskApi.update(id, body),
+    mutationFn: ({ id, body }: { id: string; body: UpdateTaskInput }) => taskApi.update(id, body),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: taskKeys.board(workspaceId) });
     },

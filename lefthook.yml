@@ -11,17 +11,17 @@ pre-commit:
   parallel: true
   commands:
     secrets:
-      glob: "*"
+      glob: '*'
       exclude: "(\\.githooks/|\\.lefthook/|lefthook\\.yml|docs/|\\.md$)"
       run: bash .githooks/pre-commit
     typecheck-shared:
-      glob: "packages/shared/src/**/*.ts"
+      glob: 'packages/shared/src/**/*.ts'
       run: pnpm --filter @flow-desk/shared typecheck
     typecheck-api:
-      glob: "apps/api/src/**/*.ts"
+      glob: 'apps/api/src/**/*.ts'
       run: pnpm --filter @flow-desk/api typecheck
     typecheck-web:
-      glob: "apps/web/src/**/*.{ts,tsx}"
+      glob: 'apps/web/src/**/*.{ts,tsx}'
       run: pnpm --filter @flow-desk/web typecheck
 
 pre-push:

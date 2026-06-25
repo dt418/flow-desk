@@ -27,9 +27,9 @@ waiting for navigation until "load"
   2  | import { PrismaClient } from '@prisma/client';
   3  | import bcrypt from 'bcryptjs';
   4  | import { createUser, createWorkspace, cleanDatabase } from '../apps/api/tests/setup/factories';
-  5  | 
+  5  |
   6  | const prisma = new PrismaClient();
-  7  | 
+  7  |
   8  | export interface SeededUser {
   9  |   id: string;
   10 |   email: string;
@@ -37,7 +37,7 @@ waiting for navigation until "load"
   12 |   workspaceId: string;
   13 |   workspaceName: string;
   14 | }
-  15 | 
+  15 |
   16 | export const test = base.extend<{
   17 |   db: void;
   18 |   seedUser: SeededUser;
@@ -74,10 +74,10 @@ waiting for navigation until "load"
   49 |     await use({ baseURL });
   50 |   },
   51 | });
-  52 | 
+  52 |
   53 | export { expect } from '@playwright/test';
   54 | export type { Page, BrowserContext };
-  55 | 
+  55 |
   56 | export async function loginViaUI(page: Page, email: string, password: string) {
   57 |   await page.goto('/login');
   58 |   await page.getByLabel('Email').fill(email);
@@ -86,7 +86,7 @@ waiting for navigation until "load"
 > 61 |   await page.waitForURL(/\/(w|dashboard)/, { timeout: 10_000 });
      |              ^ TimeoutError: page.waitForURL: Timeout 10000ms exceeded.
   62 | }
-  63 | 
+  63 |
   64 | export async function apiLogin(email: string, password: string): Promise<string> {
   65 |   const res = await fetch(`${process.env.API_BASE_URL ?? 'http://localhost:3000'}/api/auth/login`, {
   66 |     method: 'POST',
@@ -99,6 +99,6 @@ waiting for navigation until "load"
   73 |   if (!match) throw new Error('No access_token cookie in response');
   74 |   return `access_token=${match[1]}`;
   75 | }
-  76 | 
+  76 |
   77 | export { prisma };
 ```

@@ -18,10 +18,7 @@ export function EmptyBoardState({ ctaDisabled = false, onCreate }: EmptyBoardSta
     <div className="flex h-full flex-1 items-center justify-center px-6 py-16">
       <div className="flex w-full max-w-md flex-col items-center text-center">
         <div className="relative mb-6 flex h-32 w-32 items-center justify-center">
-          <span
-            aria-hidden
-            className="absolute inset-0 rounded-full bg-emerald-500/10 blur-2xl"
-          />
+          <span aria-hidden className="absolute inset-0 rounded-full bg-emerald-500/10 blur-2xl" />
           <span
             aria-hidden
             className="absolute inset-3 rounded-2xl border border-[var(--border)] bg-[var(--bg-2)]/80 shadow-sm"

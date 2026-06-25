@@ -1,11 +1,7 @@
 import * as React from 'react';
 import { toast } from 'sonner';
 import { Check, Plus } from 'lucide-react';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
@@ -81,9 +77,7 @@ export function TaskLabelSelect({
       ) : (
         assigned.slice(0, 4).map((l) => <LabelChip key={l.id} label={l} size={size} />)
       )}
-      {assigned.length > 4 && (
-        <span className="caption px-1">+{assigned.length - 4}</span>
-      )}
+      {assigned.length > 4 && <span className="caption px-1">+{assigned.length - 4}</span>}
     </div>
   );
 
@@ -92,7 +86,13 @@ export function TaskLabelSelect({
   }
 
   return (
-    <Popover open={open} onOpenChange={(v) => { setOpen(v); if (!v) setSearch(''); }}>
+    <Popover
+      open={open}
+      onOpenChange={(v) => {
+        setOpen(v);
+        if (!v) setSearch('');
+      }}
+    >
       <PopoverTrigger asChild>{trigger ?? defaultTrigger}</PopoverTrigger>
       <PopoverContent align="start" className="w-64 p-2">
         <div className="flex flex-col gap-2">

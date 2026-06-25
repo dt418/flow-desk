@@ -1,6 +1,6 @@
 import type { MiddlewareHandler } from 'hono';
 import { redis } from '../lib/redis';
-import { env } from '../lib/env';
+import { env } from '../lib/prisma';
 import { RateLimitError } from '../errors';
 
 type RateLimitOptions = {
@@ -26,10 +26,7 @@ export function rateLimit(opts: RateLimitOptions): MiddlewareHandler {
       return next();
     }
 
-    const identity =
-      keyBy === 'ip'
-        ? getClientIp(c)
-        : (c.get('auth')?.user?.id ?? getClientIp(c));
+    const identity = keyBy === 'ip' ? getClientIp(c) : (c.get('auth')?.user?.id ?? getClientIp(c));
 
     const bucket = Math.floor(Date.now() / 1000 / windowSec);
     const key = `rl:${scope}:${identity}:${bucket}`;

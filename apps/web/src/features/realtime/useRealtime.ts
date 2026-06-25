@@ -26,7 +26,8 @@ export function useRealtime(workspaceId: string, taskId?: string) {
     const workspaceRoom = `workspace:${workspaceId}`;
     joinRoom(socket, workspaceRoom);
 
-    const invalidateBoard = () => qc.invalidateQueries({ queryKey: realtimeKeys.board(workspaceId) });
+    const invalidateBoard = () =>
+      qc.invalidateQueries({ queryKey: realtimeKeys.board(workspaceId) });
     const events = [
       'task:created',
       'task:updated',
@@ -55,13 +56,13 @@ export function useRealtime(workspaceId: string, taskId?: string) {
     joinRoom(socket, taskRoom);
 
     const invalidateComments = () => qc.invalidateQueries({ queryKey: commentsKey });
-    const commentHandlers = (['comment:created', 'comment:updated', 'comment:deleted'] as const).map(
-      (evt) => {
-        const handler = () => invalidateComments();
-        socket.on(evt, handler);
-        return [evt, handler] as const;
-      },
-    );
+    const commentHandlers = (
+      ['comment:created', 'comment:updated', 'comment:deleted'] as const
+    ).map((evt) => {
+      const handler = () => invalidateComments();
+      socket.on(evt, handler);
+      return [evt, handler] as const;
+    });
 
     return () => {
       leaveRoom(socket, taskRoom);

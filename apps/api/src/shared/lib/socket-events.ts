@@ -1,5 +1,5 @@
 import type { Server as SocketServer } from 'socket.io';
-import type { TaskLabel } from '../../../generated/prisma/client';
+import type { TaskLabel } from '@flowdesk/db';
 
 export type FlowDeskNamespace = '/tasks' | '/notifications' | '/collab';
 
@@ -34,11 +34,7 @@ export function emitToRoom(
   io.of(ns).to(room).emit(event, payload);
 }
 
-export function emitToNamespace(
-  ns: FlowDeskNamespace,
-  event: string,
-  payload: EventPayload,
-): void {
+export function emitToNamespace(ns: FlowDeskNamespace, event: string, payload: EventPayload): void {
   const io = requireIo();
   if (!io) return;
   io.of(ns).emit(event, payload);
@@ -48,11 +44,7 @@ export function emitToUser(userId: string, event: string, payload: EventPayload)
   emitToRoom('/notifications', `user:${userId}`, event, payload);
 }
 
-export function emitToWorkspace(
-  workspaceId: string,
-  event: string,
-  payload: EventPayload,
-): void {
+export function emitToWorkspace(workspaceId: string, event: string, payload: EventPayload): void {
   emitToRoom('/tasks', `workspace:${workspaceId}`, event, payload);
 }
 

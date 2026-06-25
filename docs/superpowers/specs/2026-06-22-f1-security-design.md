@@ -49,6 +49,7 @@ function rateLimit(opts: {
 **Key format:** `rl:${scope}:${ipOrUserId}:${floor(now/windowSec)}`
 
 **Algorithm:**
+
 1. Compute window bucket key
 2. `INCR` key → returns current count
 3. If count === 1: `EXPIRE` key with `windowSec` (atomic-ish; minor race acceptable)
@@ -61,13 +62,13 @@ function rateLimit(opts: {
 
 **Wire-up points** (per-route middleware, not global):
 
-| Route group | Scope | Limit |
-|---|---|---|
-| `POST /api/auth/login` | `auth:login` | 10/min/IP |
-| `POST /api/auth/register` | `auth:register` | 5/min/IP |
-| `POST /api/auth/refresh` | `auth:refresh` | 30/min/IP |
-| All `/api/ai/*` | `ai:user` | 20/min/user |
-| All write paths (`POST/PATCH/DELETE` under `/api`) | `write:user` | 60/min/user |
+| Route group                                        | Scope           | Limit       |
+| -------------------------------------------------- | --------------- | ----------- |
+| `POST /api/auth/login`                             | `auth:login`    | 10/min/IP   |
+| `POST /api/auth/register`                          | `auth:register` | 5/min/IP    |
+| `POST /api/auth/refresh`                           | `auth:refresh`  | 30/min/IP   |
+| All `/api/ai/*`                                    | `ai:user`       | 20/min/user |
+| All write paths (`POST/PATCH/DELETE` under `/api`) | `write:user`    | 60/min/user |
 
 **Implementation:** Mount per-router via `router.use(path, middleware)` or inline at handler top. Auth routes get specific limits; AI gets its own; everything else falls under the broad write limit applied via `app.use('/api/*', method-aware)` except for routes that already declare stricter limits.
 
@@ -101,6 +102,7 @@ export function emitNotification(userId: string, notification: NotificationDto) 
 **Wire-up:** at the END of successful handlers (after `prisma.X.create/update/delete` returns), call the matching helper. No emit on validation/auth failures.
 
 **Mount points:**
+
 - `task.routes.ts`: POST `/:id/move` → `emitTaskMoved`; POST `/` → `emitTaskCreated`; PATCH `/:id` → `emitTaskUpdated`; DELETE `/:id` → `emitTaskDeleted`
 - `comment.routes.ts`: POST `/` → `emitCommentCreated`
 - `notification.routes.ts`: any internal `prisma.notification.create` → `emitNotification` (but typically created by other modules; emit from there)
@@ -126,9 +128,11 @@ For all 3 handlers, fetch task with workspaceId, then call `assertMembership(wor
 ### 4. Membership Checks — Comments + AI
 
 **File:** `apps/api/src/modules/comment/comment.routes.ts`
+
 - `POST /`: after task lookup, call `assertMembership(task.workspaceId, auth.user.id)`.
 
 **File:** `apps/api/src/modules/ai/ai.routes.ts`
+
 - `POST /suggest-assignee`: after Zod parse, `assertMembership(body.workspaceId, auth.user.id)`.
 - `POST /auto-schedule`: same.
 
@@ -137,6 +141,7 @@ All 3 use the same `assertMembership` helper from §3.
 ### 5. bcrypt 12 → 10
 
 **Files:** `apps/api/src/modules/auth/auth.routes.ts`
+
 - Change `bcrypt.hash(password, 12)` → `bcrypt.hash(password, 10)` (line ~43)
 - Change `bcrypt.compare(password, user.password)` stays the same (compare is fine at cost 10)
 
@@ -154,23 +159,23 @@ All 3 use the same `assertMembership` helper from §3.
 
 ## File Touch List
 
-| File | Action | Lines est. |
-|---|---|---|
-| `apps/api/src/shared/middleware/rate-limit.ts` | NEW | ~70 |
-| `apps/api/src/shared/middleware/error-handler.ts` | EDIT (add `Retry-After` for 429) | +5 |
-| `apps/api/src/shared/lib/socket.ts` | EDIT (call `setIo(io)`) | +2 |
-| `apps/api/src/shared/lib/socket-events.ts` | NEW | ~60 |
-| `apps/api/src/shared/lib/access.ts` | NEW (extract assertMembership) | ~15 |
-| `apps/api/src/modules/auth/auth.routes.ts` | EDIT (bcrypt 10 + rate limits) | +15/-5 |
-| `apps/api/src/modules/attachment/attachment.routes.ts` | EDIT (assertMembership × 3) | +10 |
-| `apps/api/src/modules/comment/comment.routes.ts` | EDIT (assertMembership + emit) | +5 |
-| `apps/api/src/modules/task/task.routes.ts` | EDIT (emit × 4) | +8 |
-| `apps/api/src/modules/ai/ai.routes.ts` | EDIT (assertMembership × 2 + rate limit) | +10 |
-| `apps/api/src/shared/lib/llm-provider.ts` | EDIT (timeout + retry + AppError) | +20/-5 |
-| `apps/api/src/shared/errors/index.ts` | EDIT (LLMError extends AppError) | +3 |
-| `apps/api/src/index.ts` | EDIT (rate-limit middleware mount) | +10 |
-| `apps/web/src/lib/socket.ts` | EDIT (subscriptions for events) | +20 |
-| `apps/web/src/pages/board.tsx` | EDIT (invalidate on socket event) | +10 |
+| File                                                   | Action                                   | Lines est. |
+| ------------------------------------------------------ | ---------------------------------------- | ---------- |
+| `apps/api/src/shared/middleware/rate-limit.ts`         | NEW                                      | ~70        |
+| `apps/api/src/shared/middleware/error-handler.ts`      | EDIT (add `Retry-After` for 429)         | +5         |
+| `apps/api/src/shared/lib/socket.ts`                    | EDIT (call `setIo(io)`)                  | +2         |
+| `apps/api/src/shared/lib/socket-events.ts`             | NEW                                      | ~60        |
+| `apps/api/src/shared/lib/access.ts`                    | NEW (extract assertMembership)           | ~15        |
+| `apps/api/src/modules/auth/auth.routes.ts`             | EDIT (bcrypt 10 + rate limits)           | +15/-5     |
+| `apps/api/src/modules/attachment/attachment.routes.ts` | EDIT (assertMembership × 3)              | +10        |
+| `apps/api/src/modules/comment/comment.routes.ts`       | EDIT (assertMembership + emit)           | +5         |
+| `apps/api/src/modules/task/task.routes.ts`             | EDIT (emit × 4)                          | +8         |
+| `apps/api/src/modules/ai/ai.routes.ts`                 | EDIT (assertMembership × 2 + rate limit) | +10        |
+| `apps/api/src/shared/lib/llm-provider.ts`              | EDIT (timeout + retry + AppError)        | +20/-5     |
+| `apps/api/src/shared/errors/index.ts`                  | EDIT (LLMError extends AppError)         | +3         |
+| `apps/api/src/index.ts`                                | EDIT (rate-limit middleware mount)       | +10        |
+| `apps/web/src/lib/socket.ts`                           | EDIT (subscriptions for events)          | +20        |
+| `apps/web/src/pages/board.tsx`                         | EDIT (invalidate on socket event)        | +10        |
 
 Total: ~10 new lines × 3 new files + ~120 line edits across 11 files.
 
