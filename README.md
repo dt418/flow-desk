@@ -110,18 +110,21 @@ pnpm stack:up             # uses compiled dist/index.js, no hot reload
 ## Repo layout
 
 ```
-apps/web/        # React + Vite
-apps/api/        # Hono + Prisma
-packages/shared/ # Zod schemas + types
-prisma/          # schema.prisma + seed.ts
-docker/          # Dockerfiles + nginx config
-scripts/         # dev-local.sh (no Docker) + docker-up.sh (smart compose)
-PRD.md           # Product requirements
-ADR-*.md         # Architecture decisions (001..006)
-TASKS.md         # Sprint backlog
-ACCEPTANCE.md    # Testable acceptance criteria
-RISKS.md         # Risk register
-AGENTS.md        # Agent operating instructions
+docs/USER.md        # End-user guide (install + features + how-to)
+docs/DEV.md         # Developer onboarding
+docs/ARCHITECTURE.md # Architecture deep-dive (read once before editing a module)
+apps/web/           # React + Vite
+apps/api/           # Hono + Prisma
+packages/shared/    # Zod schemas + types
+prisma/             # schema.prisma + seed.ts
+docker/             # Dockerfiles + nginx config
+scripts/            # dev-local.sh (no Docker) + docker-up.sh (smart compose)
+PRD.md              # Product requirements
+ADR-*.md            # Architecture decisions (001..006)
+TASKS.md            # Sprint backlog
+ACCEPTANCE.md       # Testable acceptance criteria
+RISKS.md            # Risk register
+AGENTS.md           # Agent operating instructions
 ```
 
 ## Git hooks (lefthook)
