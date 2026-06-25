@@ -332,7 +332,7 @@ RUN pnpm exec prisma generate --schema=../packages/db/prisma/schema.prisma
 
 ```json
 {
-  "globalDependencies": ["packages/db/prisma/schema.prisma", "packages/db/prisma.config.ts"],
+  "globalDependencies": ["packages/db/prisma/schema.prisma", "prisma.config.ts"],
   "globalEnv": ["NODE_ENV"],
   "tasks": {
     "build": {
