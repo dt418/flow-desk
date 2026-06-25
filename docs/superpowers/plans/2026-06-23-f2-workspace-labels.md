@@ -9,6 +9,7 @@
 **Goal:** Ship production-ready dashboard create-org UI + workspace switcher + TaskLabel CRUD (with proper M2M migration) + `/welcome` onboarding. Closes R-32 (zero tests) and lays foundation for F3-F6.
 
 **Architecture:**
+
 - Backend: new `label` + `workspaces` modules under `apps/api/src/modules/`. Hono routes per module, Prisma interactive transaction for cross-workspace validation, Socket.IO events for realtime.
 - Frontend: new `features/labels` + `features/workspaces` under `apps/web/src/features/`. TanStack Query hooks with optimistic mutations (where safe). cmdk search when workspace count >10.
 - Migration: 2-phase additive. Phase 1 (this PR): rename `Task.labels` → `Task.labelsDeprecated`, add `TaskLabelAssignment` M2M model, dual-write on `assignLabels()`. Phase 2 (future PR after ≥1 sprint in prod): drop `labelsDeprecated` column.
@@ -29,6 +30,7 @@
 ### Create (new files)
 
 **Backend — test infra**
+
 - `apps/api/vitest.config.ts` — unit test config
 - `apps/api/vitest.integration.config.ts` — integration test config (real Postgres)
 - `apps/api/tests/setup/unit.ts` — vitest setup for unit
@@ -37,6 +39,7 @@
 - `apps/api/tests/integration/.gitkeep` — placeholder
 
 **Backend — label module**
+
 - `apps/api/src/modules/label/label.schema.ts` — Zod schemas
 - `apps/api/src/modules/label/label.repository.ts` — Prisma queries
 - `apps/api/src/modules/label/label.service.ts` — business logic
@@ -46,6 +49,7 @@
 - `apps/api/src/modules/label/index.ts` — public exports
 
 **Backend — workspaces module**
+
 - `apps/api/src/modules/workspaces/workspace.schema.ts`
 - `apps/api/src/modules/workspaces/workspace.repository.ts`
 - `apps/api/src/modules/workspaces/workspace.service.ts`
@@ -55,26 +59,32 @@
 - `apps/api/src/modules/workspaces/index.ts`
 
 **Backend — shared**
+
 - `apps/api/src/shared/assert-role.ts` — RBAC helper
 - `apps/api/src/shared/errors/codes.ts` — extended error code registry
 
 **Backend — task service extension**
+
 - `apps/api/src/modules/tasks/task.service.ts` — add `assignLabels()` method (Modify)
 - `apps/api/src/modules/tasks/task.routes.ts` — add `PUT /tasks/:tid/labels` route (Modify)
 
 **Backend — rate-limit policies**
+
 - `apps/api/src/shared/rate-limit/policies.ts` — register label/assign/workspace-create policies (Modify or Create)
 
 **Backend — scripts**
+
 - `scripts/backfill-task-labels.ts` — idempotent per-task migration
 - `scripts/verify-f2-migration.ts` — post-migration invariant checks
 
 **Frontend — infra**
+
 - `apps/web/vitest.config.ts`
 - `apps/web/tests/setup.ts`
 - `apps/web/playwright.config.ts`
 
 **Frontend — workspaces feature**
+
 - `apps/web/src/features/workspaces/api.ts`
 - `apps/web/src/features/workspaces/hooks.ts`
 - `apps/web/src/features/workspaces/types.ts`
@@ -85,6 +95,7 @@
 - `apps/web/src/features/workspaces/index.ts`
 
 **Frontend — labels feature**
+
 - `apps/web/src/features/labels/api.ts`
 - `apps/web/src/features/labels/hooks.ts`
 - `apps/web/src/features/labels/types.ts`
@@ -95,14 +106,17 @@
 - `apps/web/src/features/labels/index.ts`
 
 **Frontend — pages**
+
 - `apps/web/src/pages/welcome.tsx`
 - `apps/web/src/pages/dashboard.tsx` (Modify)
 
 **Frontend — realtime**
+
 - `apps/web/src/lib/socket-events.ts` (Modify — extend event union)
 - `apps/web/src/hooks/useRealtimeInvalidation.ts`
 
 **E2E tests**
+
 - `apps/web/e2e/f2-workspace-create.spec.ts`
 - `apps/web/e2e/f2-label-crud.spec.ts`
 - `apps/web/e2e/f2-switcher.spec.ts`
@@ -110,6 +124,7 @@
 - `apps/web/e2e/f2-onboarding-guard.spec.ts`
 
 **Specs & docs**
+
 - `docs/superpowers/specs/2026-06-23-f2-workspace-labels-design.md` (already exists — DRAFT)
 
 ### Modify (existing files)
@@ -143,6 +158,7 @@ R-32: `pnpm test` echoes placeholder. F2 closes this with a real vitest + Playwr
 ### Task 1.1: Install backend test deps + vitest configs
 
 **Files:**
+
 - Modify: `apps/api/package.json`
 - Create: `apps/api/vitest.config.ts`
 - Create: `apps/api/vitest.integration.config.ts`
@@ -152,6 +168,7 @@ R-32: `pnpm test` echoes placeholder. F2 closes this with a real vitest + Playwr
 - [ ] **Step 1: Install dependencies**
 
 Run from repo root:
+
 ```bash
 pnpm --filter @flow-desk/api add -D vitest@^2.1.0 @vitest/coverage-v8@^2.1.0 supertest@^7.0.0 @types/supertest@^6.0.2
 ```
@@ -159,6 +176,7 @@ pnpm --filter @flow-desk/api add -D vitest@^2.1.0 @vitest/coverage-v8@^2.1.0 sup
 - [ ] **Step 2: Replace `test` script in `apps/api/package.json`**
 
 Edit `apps/api/package.json` line 15-16:
+
 ```json
     "test": "vitest run --config vitest.config.ts",
     "test:watch": "vitest --config vitest.config.ts",
@@ -234,7 +252,9 @@ beforeEach(() => {
 
 process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = process.env.JWT_SECRET ?? 'test-secret-do-not-use-in-prod';
-process.env.DATABASE_URL = process.env.DATABASE_URL ?? 'postgresql://flowdesk:flowdesk@localhost:5432/flowdesk?schema=public';
+process.env.DATABASE_URL =
+  process.env.DATABASE_URL ??
+  'postgresql://flowdesk:flowdesk@localhost:5432/flowdesk?schema=public';
 process.env.REDIS_URL = process.env.REDIS_URL ?? 'redis://localhost:6379';
 ```
 
@@ -243,7 +263,8 @@ process.env.REDIS_URL = process.env.REDIS_URL ?? 'redis://localhost:6379';
 ```ts
 import { PrismaClient } from '@prisma/client';
 
-export const TEST_DB_URL = 'postgresql://flowdesk:flowdesk@localhost:5432/flowdesk_test?schema=public';
+export const TEST_DB_URL =
+  'postgresql://flowdesk:flowdesk@localhost:5432/flowdesk_test?schema=public';
 
 export function createTestPrisma() {
   return new PrismaClient({ datasourceUrl: TEST_DB_URL });
@@ -278,6 +299,7 @@ git commit -m "test(api): install vitest + integration config (R-32 setup)"
 ### Task 1.2: Integration setup file
 
 **Files:**
+
 - Create: `apps/api/tests/setup/integration.ts`
 - Create: `apps/api/tests/integration/.gitkeep`
 
@@ -329,6 +351,7 @@ git commit -m "test(api): integration setup with truncate per test"
 ### Task 1.3: Smoke unit test
 
 **Files:**
+
 - Create: `apps/api/src/shared/__tests__/smoke.test.ts`
 
 - [ ] **Step 1: Write the test**
@@ -358,6 +381,7 @@ git commit -m "test(api): smoke unit test"
 ### Task 1.4: Smoke integration test (verifies DB infra)
 
 **Files:**
+
 - Create: `apps/api/tests/integration/db.integration.test.ts`
 
 - [ ] **Step 1: Write the test**
@@ -397,6 +421,7 @@ git commit -m "test(api): integration smoke verifies db + truncate"
 ### Task 1.5: Install Playwright + write config
 
 **Files:**
+
 - Create: `apps/web/playwright.config.ts`
 - Modify: `apps/web/package.json`
 
@@ -425,9 +450,7 @@ export default defineConfig({
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
   },
-  projects: [
-    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
-  ],
+  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: {
     command: 'pnpm --filter @flow-desk/api dev & pnpm --filter @flow-desk/web dev',
     url: 'http://localhost:5173',
@@ -442,6 +465,7 @@ export default defineConfig({
 - [ ] **Step 3: Add scripts to `apps/web/package.json`**
 
 Insert after line 13:
+
 ```json
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
@@ -464,11 +488,13 @@ git commit -m "test(web): playwright e2e config"
 ### Task 1.6: Root-level test gate script
 
 **Files:**
+
 - Modify: `package.json` (root)
 
 - [ ] **Step 1: Add scripts to root `package.json`**
 
 Insert into `"scripts"` block:
+
 ```json
     "test:all": "pnpm --filter @flow-desk/api test && pnpm --filter @flow-desk/api test:integration && pnpm --filter @flow-desk/web test && pnpm --filter @flow-desk/web test:e2e",
 ```
@@ -485,11 +511,12 @@ git add package.json
 git commit -m "chore: root test:all gate script"
 ```
 
-------
+---
 
 ## Epic 2: Database Schema (TaskLabelAssignment + Rename `Task.labels`)
 
 **Files:**
+
 - Modify: `prisma/schema.prisma:154` (rename `labels` → `labelsDeprecated`)
 - Create: `prisma/migrations/<timestamp>_f2_labels/migration.sql`
 - Create: `scripts/backfill-task-labels.ts`
@@ -498,6 +525,7 @@ git commit -m "chore: root test:all gate script"
 ### Task 2.1: Add `TaskLabelAssignment` model + rename `Task.labels`
 
 **Files:**
+
 - Modify: `prisma/schema.prisma`
 
 - [ ] **Step 1: Add `TaskLabelAssignment` model at end of file (before closing `)` if any)**
@@ -521,11 +549,13 @@ model TaskLabelAssignment {
 - [ ] **Step 2: Rename `Task.labels` → `Task.labelsDeprecated` (line 154)**
 
 Find:
+
 ```prisma
   labels String[] @default([])
 ```
 
 Replace with:
+
 ```prisma
   labelsDeprecated String[] @default([])
 
@@ -535,6 +565,7 @@ Replace with:
 - [ ] **Step 3: Add back-relation on `TaskLabel` model (line 191-202)**
 
 Find:
+
 ```prisma
 model TaskLabel {
   id          String   @id @default(cuid())
@@ -554,6 +585,7 @@ model TaskLabel {
 ```
 
 Replace with (add `assignments` line before `@@unique`):
+
 ```prisma
   workspace   Workspace             @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   assignments TaskLabelAssignment[] @relation("LabelAssignments")
@@ -578,11 +610,13 @@ git commit -m "feat(db): TaskLabelAssignment model + rename Task.labels to label
 ### Task 2.2: Generate migration
 
 **Files:**
+
 - Create: `prisma/migrations/<timestamp>_f2_labels/migration.sql` (auto-generated)
 
 - [ ] **Step 1: Create migration with explicit rename SQL**
 
 Run:
+
 ```bash
 cd apps/api && pnpm prisma migrate dev --create-only --name f2_labels
 ```
@@ -635,6 +669,7 @@ git commit -m "feat(db): apply f2_labels migration (TaskLabelAssignment + labels
 ### Task 2.3: Backfill existing task labels to assignments
 
 **Files:**
+
 - Create: `scripts/backfill-task-labels.ts`
 - Test: `scripts/backfill-task-labels.test.ts`
 
@@ -656,7 +691,12 @@ describe('backfill-task-labels', () => {
     await db.user.deleteMany({});
     const user = await db.user.create({ data: { email: 'a@b.c', name: 'A' } });
     const ws = await db.workspace.create({
-      data: { name: 'W', slug: 'w', ownerId: user.id, members: { create: { userId: user.id, role: 'OWNER' } } },
+      data: {
+        name: 'W',
+        slug: 'w',
+        ownerId: user.id,
+        members: { create: { userId: user.id, role: 'OWNER' } },
+      },
     });
     await db.taskLabel.createMany({
       data: [
@@ -666,12 +706,15 @@ describe('backfill-task-labels', () => {
     });
     await db.task.create({
       data: {
-        title: 'T1', columnId: (await db.column.findFirst({ where: { board: { workspaceId: ws.id } } }))!.id,
+        title: 'T1',
+        columnId: (await db.column.findFirst({ where: { board: { workspaceId: ws.id } } }))!.id,
         labelsDeprecated: ['bug', 'ui'],
       },
     });
   });
-  afterAll(async () => { await db.$disconnect(); });
+  afterAll(async () => {
+    await db.$disconnect();
+  });
 
   it('creates one TaskLabelAssignment per legacy label', async () => {
     const { runBackfill } = await import('./backfill-task-labels');
@@ -696,11 +739,19 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 export type BackfillOpts = { dryRun?: boolean; batchSize?: number };
-export type BackfillResult = { processed: number; created: number; failed: number; skipped: number };
+export type BackfillResult = {
+  processed: number;
+  created: number;
+  failed: number;
+  skipped: number;
+};
 
 export async function runBackfill(opts: BackfillOpts = {}): Promise<BackfillResult> {
   const { dryRun = false, batchSize = 50 } = opts;
-  let processed = 0, created = 0, failed = 0, skipped = 0;
+  let processed = 0,
+    created = 0,
+    failed = 0,
+    skipped = 0;
 
   const tasks = await prisma.task.findMany({
     where: { labelsDeprecated: { isEmpty: false } },
@@ -712,21 +763,27 @@ export async function runBackfill(opts: BackfillOpts = {}): Promise<BackfillResu
     processed++;
     try {
       const labelNames = task.labelsDeprecated;
-      const task0 = await prisma.task.findUnique({ where: { id: task.id }, select: { column: { select: { board: { select: { workspaceId: true } } } } } });
-      if (!task0) { skipped++; continue; }
+      const task0 = await prisma.task.findUnique({
+        where: { id: task.id },
+        select: { column: { select: { board: { select: { workspaceId: true } } } } },
+      });
+      if (!task0) {
+        skipped++;
+        continue;
+      }
       const labels = await prisma.taskLabel.findMany({
         where: { workspaceId: task0.column.board.workspaceId, name: { in: labelNames } },
         select: { id: true, name: true },
       });
-      const matched = labelNames.filter(n => labels.some(l => l.name === n));
-      const unmatched = labelNames.filter(n => !labels.some(l => l.name === n));
+      const matched = labelNames.filter((n) => labels.some((l) => l.name === n));
+      const unmatched = labelNames.filter((n) => !labels.some((l) => l.name === n));
       skipped += unmatched.length;
 
       if (!dryRun && matched.length > 0) {
         await prisma.$transaction(async (tx) => {
           await tx.taskLabelAssignment.createMany({
-            data: matched.map(name => {
-              const label = labels.find(l => l.name === name)!;
+            data: matched.map((name) => {
+              const label = labels.find((l) => l.name === name)!;
               return { taskId: task.id, labelId: label.id };
             }),
             skipDuplicates: true,
@@ -745,7 +802,7 @@ export async function runBackfill(opts: BackfillOpts = {}): Promise<BackfillResu
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
-  runBackfill({ dryRun: process.argv.includes('--dry-run') }).then(r => {
+  runBackfill({ dryRun: process.argv.includes('--dry-run') }).then((r) => {
     const failPct = r.processed > 0 ? (r.failed / r.processed) * 100 : 0;
     console.log(JSON.stringify({ ...r, failPct }, null, 2));
     process.exit(failPct > 5 ? 1 : 0);
@@ -773,6 +830,7 @@ git commit -m "feat(scripts): idempotent task-label backfill with --dry-run"
 ### Task 2.4: Add migration verification script
 
 **Files:**
+
 - Create: `scripts/verify-f2-migration.ts`
 
 - [ ] **Step 1: Implement verify script**
@@ -791,14 +849,22 @@ export async function verifyF2Migration(): Promise<Check[]> {
     SELECT EXISTS (
       SELECT FROM information_schema.tables WHERE table_name = 'TaskLabelAssignment'
     ) as exists`;
-  checks.push({ name: 'TaskLabelAssignment table', pass: tlaExists[0]?.exists === true, detail: tlaExists[0]?.exists ? 'present' : 'missing' });
+  checks.push({
+    name: 'TaskLabelAssignment table',
+    pass: tlaExists[0]?.exists === true,
+    detail: tlaExists[0]?.exists ? 'present' : 'missing',
+  });
 
   // 2. Unique index on (taskId, labelId)
   const uniqueIdx = await prisma.$queryRaw<Array<{ exists: boolean }>>`
     SELECT EXISTS (
       SELECT FROM pg_indexes WHERE indexname = 'TaskLabelAssignment_taskId_labelId_key'
     ) as exists`;
-  checks.push({ name: 'unique index (taskId,labelId)', pass: uniqueIdx[0]?.exists === true, detail: uniqueIdx[0]?.exists ? 'present' : 'missing' });
+  checks.push({
+    name: 'unique index (taskId,labelId)',
+    pass: uniqueIdx[0]?.exists === true,
+    detail: uniqueIdx[0]?.exists ? 'present' : 'missing',
+  });
 
   // 3. Task.labelsDeprecated exists, Task.labels does NOT
   const labelsDeprecatedExists = await prisma.$queryRaw<Array<{ exists: boolean }>>`
@@ -809,21 +875,39 @@ export async function verifyF2Migration(): Promise<Check[]> {
     SELECT EXISTS (
       SELECT FROM information_schema.columns WHERE table_name = 'Task' AND column_name = 'labels'
     ) as exists`;
-  checks.push({ name: 'Task.labelsDeprecated present', pass: labelsDeprecatedExists[0]?.exists === true, detail: 'ok' });
-  checks.push({ name: 'Task.labels removed', pass: labelsExists[0]?.exists === false, detail: labelsExists[0]?.exists ? 'STILL EXISTS — phase 2 incomplete' : 'gone' });
+  checks.push({
+    name: 'Task.labelsDeprecated present',
+    pass: labelsDeprecatedExists[0]?.exists === true,
+    detail: 'ok',
+  });
+  checks.push({
+    name: 'Task.labels removed',
+    pass: labelsExists[0]?.exists === false,
+    detail: labelsExists[0]?.exists ? 'STILL EXISTS — phase 2 incomplete' : 'gone',
+  });
 
   // 4. Assignment count consistency
   const allAssignments = await prisma.taskLabelAssignment.count();
-  const allLegacyLabels = await prisma.task.findMany({ where: { labelsDeprecated: { isEmpty: false } }, select: { id: true, labelsDeprecated: true } });
-  const expectedAssignments = allLegacyLabels.reduce((sum, t) => sum + t.labelsDeprecated.length, 0);
-  checks.push({ name: 'assignment count matches legacy labels', pass: allAssignments === expectedAssignments, detail: `${allAssignments} assignments vs ${expectedAssignments} legacy` });
+  const allLegacyLabels = await prisma.task.findMany({
+    where: { labelsDeprecated: { isEmpty: false } },
+    select: { id: true, labelsDeprecated: true },
+  });
+  const expectedAssignments = allLegacyLabels.reduce(
+    (sum, t) => sum + t.labelsDeprecated.length,
+    0,
+  );
+  checks.push({
+    name: 'assignment count matches legacy labels',
+    pass: allAssignments === expectedAssignments,
+    detail: `${allAssignments} assignments vs ${expectedAssignments} legacy`,
+  });
 
   return checks;
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
-  verifyF2Migration().then(checks => {
-    const allPass = checks.every(c => c.pass);
+  verifyF2Migration().then((checks) => {
+    const allPass = checks.every((c) => c.pass);
     console.log(JSON.stringify(checks, null, 2));
     process.exit(allPass ? 0 : 1);
   });
@@ -837,7 +921,7 @@ Expected: 5 checks pass, exit 0
 
 - [ ] **Step 3: Commit**
 
-```bash
+````bash
 git add scripts/verify-f2-migration.ts
 git commit -m "feat(scripts): verify-f2-migration pre-cutover gate"
 ```---
@@ -873,7 +957,7 @@ describe('withCode', () => {
     expect(e.name).toBe('AppError');
   });
 });
-```
+````
 
 - [ ] **Step 2: Run, expect FAIL**
 
@@ -927,6 +1011,7 @@ git commit -m "feat(api): centralized error codes + withCode() factory"
 ### Task 3.2: Rate-limit policy constants
 
 **Files:**
+
 - Create: `apps/api/src/shared/rate-limit-policies.ts`
 - Create: `apps/api/src/shared/rate-limit-policies.test.ts`
 

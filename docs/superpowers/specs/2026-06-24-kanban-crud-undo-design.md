@@ -32,14 +32,14 @@ The backend already supports soft-delete (`taskService.delete` → `repo.softDel
 
 ## User Stories
 
-| ID  | Story                                                                                                  | Acceptance                                                                                        |
-| --- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------- |
-| U1  | As a member, I can click a task card on the board to open its edit modal.                              | Click on any card body opens `TaskEditModal` populated with the task's current values.            |
-| U2  | As a member, I can change any field and save; the change reflects on the board without a full reload.  | Save button PATCHes `/api/tasks/:id` and board re-snapshots via cache invalidation.              |
-| U3  | As a member, I can right-click or open a kebab menu on a card and choose "Delete".                     | Kebab menu offers Edit, Delete. Click Delete → toast with Undo (5s window).                       |
-| U4  | As a member, if I accidentally delete, I click Undo within 5 s and the card comes back as before.     | Undo POSTs `/api/tasks/:id/restore`. Card reappears at its prior column/position.                  |
-| U5  | As a member, I see realtime updates from other users: task edited, deleted, restored.                  | `useRealtime` already listens to workspace events; new handlers for `task:updated`, `task:restored` invalidate board. |
-| U6  | As a member, deleting a card fails (e.g., 409 version conflict) — the card stays; undo does not appear. | Mutation onError reverts optimistic delete; no toast on Undo failure.                              |
+| ID  | Story                                                                                                   | Acceptance                                                                                                            |
+| --- | ------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| U1  | As a member, I can click a task card on the board to open its edit modal.                               | Click on any card body opens `TaskEditModal` populated with the task's current values.                                |
+| U2  | As a member, I can change any field and save; the change reflects on the board without a full reload.   | Save button PATCHes `/api/tasks/:id` and board re-snapshots via cache invalidation.                                   |
+| U3  | As a member, I can right-click or open a kebab menu on a card and choose "Delete".                      | Kebab menu offers Edit, Delete. Click Delete → toast with Undo (5s window).                                           |
+| U4  | As a member, if I accidentally delete, I click Undo within 5 s and the card comes back as before.       | Undo POSTs `/api/tasks/:id/restore`. Card reappears at its prior column/position.                                     |
+| U5  | As a member, I see realtime updates from other users: task edited, deleted, restored.                   | `useRealtime` already listens to workspace events; new handlers for `task:updated`, `task:restored` invalidate board. |
+| U6  | As a member, deleting a card fails (e.g., 409 version conflict) — the card stays; undo does not appear. | Mutation onError reverts optimistic delete; no toast on Undo failure.                                                 |
 
 ## Success Metrics
 
@@ -111,20 +111,20 @@ USER                         BOARD                          TASK HOOKS          
 
 ## Files Touched
 
-| Layer | File | Action | Why |
-|---|---|---|---|
-| shared | `packages/shared/src/task.ts` | Modify (add `restoreTaskSchema`) | request validation mirror |
-| api | `apps/api/src/modules/task/task.routes.ts` | Modify (add POST `/:id/restore`) | expose endpoint |
-| api | `apps/api/src/modules/task/task.service.ts` | Modify (add `restore`, emit `task:updated` from `update`) | backend business logic |
-| api | `apps/api/tests/integration/task.routes.test.ts` | Modify (add restore route tests) | AC for new endpoints |
-| api | `apps/api/tests/integration/task.service.test.ts` | Modify (add restore service tests) | unit-level service coverage |
-| web | `apps/web/src/features/task/api.ts` | Modify (add `update`, `restore`) | client SDK |
-| web | `apps/web/src/features/task/components/NewTaskModal.tsx` | Modify (rename file usage; will move file to TaskEditModal.tsx) | share modal between create + edit |
-| web | `apps/web/src/features/task/components/TaskEditModal.tsx` | Create (refactor out of NewTaskModal) | above |
-| web | `apps/web/src/features/task/hooks.ts` | Modify (add `useUpdateTask`, `useDeleteTask`, `useRestoreTask`) | mutation layer |
-| web | `apps/web/src/features/task/index.ts` | Modify (barrel exports) | export new modal + hooks |
-| web | `apps/web/src/features/task/components/TaskCard.tsx` | Modify (kebab menu + click handler) | UI affordance |
-| web | `apps/web/src/pages/board.tsx` | Modify (modal state, realtime handlers, optimistic delete wiring) | wire it all |
+| Layer  | File                                                      | Action                                                            | Why                               |
+| ------ | --------------------------------------------------------- | ----------------------------------------------------------------- | --------------------------------- |
+| shared | `packages/shared/src/task.ts`                             | Modify (add `restoreTaskSchema`)                                  | request validation mirror         |
+| api    | `apps/api/src/modules/task/task.routes.ts`                | Modify (add POST `/:id/restore`)                                  | expose endpoint                   |
+| api    | `apps/api/src/modules/task/task.service.ts`               | Modify (add `restore`, emit `task:updated` from `update`)         | backend business logic            |
+| api    | `apps/api/tests/integration/task.routes.test.ts`          | Modify (add restore route tests)                                  | AC for new endpoints              |
+| api    | `apps/api/tests/integration/task.service.test.ts`         | Modify (add restore service tests)                                | unit-level service coverage       |
+| web    | `apps/web/src/features/task/api.ts`                       | Modify (add `update`, `restore`)                                  | client SDK                        |
+| web    | `apps/web/src/features/task/components/NewTaskModal.tsx`  | Modify (rename file usage; will move file to TaskEditModal.tsx)   | share modal between create + edit |
+| web    | `apps/web/src/features/task/components/TaskEditModal.tsx` | Create (refactor out of NewTaskModal)                             | above                             |
+| web    | `apps/web/src/features/task/hooks.ts`                     | Modify (add `useUpdateTask`, `useDeleteTask`, `useRestoreTask`)   | mutation layer                    |
+| web    | `apps/web/src/features/task/index.ts`                     | Modify (barrel exports)                                           | export new modal + hooks          |
+| web    | `apps/web/src/features/task/components/TaskCard.tsx`      | Modify (kebab menu + click handler)                               | UI affordance                     |
+| web    | `apps/web/src/pages/board.tsx`                            | Modify (modal state, realtime handlers, optimistic delete wiring) | wire it all                       |
 
 11 files touched / created. No DB migration (existing `deletedAt`). No new deps (uses shadcn dropdown-menu already shipped).
 
@@ -161,10 +161,10 @@ A8. Backend integration tests pass; pre-push gates green.
 
 ## Risks
 
-| Risk | L | I | Mitigation |
-|---|---|---|---|
-| Restore race: cache invalidation may undo two-clients editing the same task | M | M | Restore uses optimistic UI + invalidates board — second client sees fresh snapshot. |
-| Undo window expired → can't undo | M | L | Toast copy: "Deleted. Undo for 5 s." Editor can undo manually by recreating. |
-| Kebab menu clicking accidentally toggles delete | L | M | Confirm Undo via toast instead of native confirm() — soft pressure, opt-in restore. |
-| Click handler conflicts with drag start | M | M | Click body only fires if not drag; use `@dnd-kit` `isDragging` state to suppress. |
-| `task:updated` event not currently emitted → missed by other clients | M | H | Add emit in `update()`; covered by service test. |
+| Risk                                                                        | L   | I   | Mitigation                                                                          |
+| --------------------------------------------------------------------------- | --- | --- | ----------------------------------------------------------------------------------- |
+| Restore race: cache invalidation may undo two-clients editing the same task | M   | M   | Restore uses optimistic UI + invalidates board — second client sees fresh snapshot. |
+| Undo window expired → can't undo                                            | M   | L   | Toast copy: "Deleted. Undo for 5 s." Editor can undo manually by recreating.        |
+| Kebab menu clicking accidentally toggles delete                             | L   | M   | Confirm Undo via toast instead of native confirm() — soft pressure, opt-in restore. |
+| Click handler conflicts with drag start                                     | M   | M   | Click body only fires if not drag; use `@dnd-kit` `isDragging` state to suppress.   |
+| `task:updated` event not currently emitted → missed by other clients        | M   | H   | Add emit in `update()`; covered by service test.                                    |

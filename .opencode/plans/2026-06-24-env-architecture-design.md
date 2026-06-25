@@ -4,7 +4,7 @@
 
 **Phase**: Design Draft v3
 **Date**: 2026-06-24
-**Owner**: th**
+**Owner**: th\*\*
 **PRDs**: None
 
 ---
@@ -15,7 +15,7 @@ FlowDesk has 3 environment management issues:
 
 1. **`env.ts` inline** — validation only in `apps/api`, not shareable
 2. **Prisma at root** — doesn't follow `packages/db` convention
-3. **Frontend doesn't validate VITE_*** — type-safe but not runtime-safe
+3. **Frontend doesn't validate VITE\_\*** — type-safe but not runtime-safe
 
 Goal: Extract into `packages/env` and `packages/db`, validate both backend and frontend.
 
@@ -35,11 +35,13 @@ Goal: Extract into `packages/env` and `packages/db`, validate both backend and f
 ## packages/env Responsibilities
 
 **MUST:**
+
 - Define Zod schemas
 - Parse environment variables
 - Export inferred types
 
 **MUST NOT:**
+
 - Call `dotenv.config()`
 - Read .env files
 - Cache environment variables
@@ -74,9 +76,7 @@ export const sharedSchema = z.object({
 
 export type SharedEnv = z.infer<typeof sharedSchema>;
 
-export function parseSharedEnv(
-  env: Record<string, string | undefined>,
-): SharedEnv {
+export function parseSharedEnv(env: Record<string, string | undefined>): SharedEnv {
   return sharedSchema.parse(env);
 }
 ```
@@ -106,7 +106,10 @@ export const backendSchema = z.object({
   LLM_MAX_TOKENS: z.coerce.number().int().min(1).default(2048),
   LLM_TEMPERATURE: z.coerce.number().min(0).max(2).default(0.7),
   UPLOAD_DIR: z.string().default('/data/attachments'),
-  MAX_UPLOAD_SIZE: z.coerce.number().int().default(25 * 1024 * 1024),
+  MAX_UPLOAD_SIZE: z.coerce
+    .number()
+    .int()
+    .default(25 * 1024 * 1024),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
   SKIP_RATE_LIMIT: z
     .string()
@@ -116,9 +119,7 @@ export const backendSchema = z.object({
 
 export type BackendEnv = z.infer<typeof backendSchema>;
 
-export function parseBackendEnv(
-  env: Record<string, string | undefined>,
-): BackendEnv {
+export function parseBackendEnv(env: Record<string, string | undefined>): BackendEnv {
   return backendSchema.parse(env);
 }
 ```
@@ -136,9 +137,7 @@ export const frontendSchema = z.object({
 
 export type FrontendEnv = z.infer<typeof frontendSchema>;
 
-export function parseFrontendEnv(
-  env: Record<string, unknown>,
-): FrontendEnv {
+export function parseFrontendEnv(env: Record<string, unknown>): FrontendEnv {
   return frontendSchema.parse(env);
 }
 ```
@@ -190,6 +189,7 @@ datasource db {
 ```
 
 **Prisma 7 Notes:**
+
 - Uses `prisma-client` generator (not `prisma-client-js`)
 - Uses `@prisma/adapter-pg` for PostgreSQL connection
 - Client output: `packages/db/generated/`
@@ -271,10 +271,10 @@ Vite automatically loads `VITE_*` vars into `import.meta.env`.
 
 ### Build-time vs Runtime Separation
 
-| Type | Vars | Method | Example |
-|------|------|--------|---------|
-| Build-time | VITE_* | `build args` | `VITE_API_URL` |
-| Runtime | DATABASE_URL, JWT_SECRET | `env_file` or `environment` | All backend secrets |
+| Type       | Vars                     | Method                      | Example             |
+| ---------- | ------------------------ | --------------------------- | ------------------- |
+| Build-time | VITE\_\*                 | `build args`                | `VITE_API_URL`      |
+| Runtime    | DATABASE_URL, JWT_SECRET | `env_file` or `environment` | All backend secrets |
 
 ### Backend Runtime (api service)
 
@@ -286,6 +286,7 @@ api:
 ```
 
 Runtime vars loaded from `.env`:
+
 ```env
 DATABASE_URL=
 REDIS_URL=
@@ -310,7 +311,7 @@ web:
       VITE_API_URL: ${VITE_API_URL:-http://localhost:3000}
 ```
 
-VITE_* vars are baked into the frontend bundle at build time.
+VITE\_\* vars are baked into the frontend bundle at build time.
 
 ### docker/api.Dockerfile
 
@@ -321,7 +322,7 @@ RUN pnpm exec prisma generate --schema=../packages/db/prisma/schema.prisma
 # Copy output to api (or reference from packages/db)
 ```
 
-**Key Rule**: Backend secrets are runtime variables. VITE_* variables are build-time variables.
+**Key Rule**: Backend secrets are runtime variables. VITE\_\* variables are build-time variables.
 
 ---
 
@@ -331,19 +332,12 @@ RUN pnpm exec prisma generate --schema=../packages/db/prisma/schema.prisma
 
 ```json
 {
-  "globalDependencies": [
-    "packages/db/prisma/schema.prisma",
-    "packages/db/prisma.config.ts"
-  ],
+  "globalDependencies": ["packages/db/prisma/schema.prisma", "packages/db/prisma.config.ts"],
   "globalEnv": ["NODE_ENV"],
   "tasks": {
     "build": {
       "dependsOn": ["^build", "^db:generate"],
-      "env": [
-        "VITE_API_URL",
-        "VITE_APP_NAME",
-        "VITE_STRIPE_PUBLIC_KEY"
-      ],
+      "env": ["VITE_API_URL", "VITE_APP_NAME", "VITE_STRIPE_PUBLIC_KEY"],
       "outputs": ["dist/**", ".vite/**"]
     },
     "db:generate": {
@@ -359,6 +353,7 @@ RUN pnpm exec prisma generate --schema=../packages/db/prisma/schema.prisma
 ```
 
 **Notes:**
+
 - `.env` NOT in `globalDependencies` — avoids invalidating entire monorepo cache on local .env changes
 - `VITE_*` in task `env` ensures web rebuilds when these vars change
 - `db:generate` depends on schema changes
@@ -462,12 +457,12 @@ This makes regression detection significantly easier.
 
 ## Risks
 
-| Risk | Likelihood | Impact | Mitigation |
-|------|------------|--------|------------|
-| Breaking API imports | High | High | Test each module after migration |
-| Docker build fails on new paths | Medium | High | Update Dockerfile paths in Phase 3 |
-| Circular dependency (env → db → env) | Low | High | env does not import db |
-| VITE_* not in turbo cache | Low | Medium | Add to task env array |
+| Risk                                 | Likelihood | Impact | Mitigation                         |
+| ------------------------------------ | ---------- | ------ | ---------------------------------- |
+| Breaking API imports                 | High       | High   | Test each module after migration   |
+| Docker build fails on new paths      | Medium     | High   | Update Dockerfile paths in Phase 3 |
+| Circular dependency (env → db → env) | Low        | High   | env does not import db             |
+| VITE\_\* not in turbo cache          | Low        | Medium | Add to task env array              |
 
 ---
 

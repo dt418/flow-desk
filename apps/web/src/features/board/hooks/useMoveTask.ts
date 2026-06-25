@@ -78,9 +78,7 @@ export function useMoveTask({ workspaceId, socket: externalSocket }: UseMoveTask
     const handler = (e: { taskId: string; version: number }) => {
       const data = qc.getQueryData<BoardSnapshot>(queryKey);
       if (!data) return;
-      const found = data.columns
-        .flatMap((c) => c.tasks)
-        .find((t) => t.id === e.taskId);
+      const found = data.columns.flatMap((c) => c.tasks).find((t) => t.id === e.taskId);
       if (found && found.version < e.version) {
         qc.invalidateQueries({ queryKey });
       }

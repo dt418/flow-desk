@@ -11,22 +11,35 @@ const AssignBody = z.object({ labelId: z.string().cuid() });
 
 export const taskLabelRouter = new Hono()
   .use('*', requireAuth())
-  .get('/', rateLimit({ ...RATE_LIMITS.LABEL_LIST, keyBy: 'user', scope: 'task-labels:list' }),
-    zValidator('param', Param), async (c) => {
+  .get(
+    '/',
+    rateLimit({ ...RATE_LIMITS.LABEL_LIST, keyBy: 'user', scope: 'task-labels:list' }),
+    zValidator('param', Param),
+    async (c) => {
       const { wid, tid } = c.req.valid('param');
       const auth = c.get('auth');
       return c.json({ data: await taskLabelService.listForTask(wid, tid, auth.user.id) });
-    })
-  .post('/', rateLimit({ ...RATE_LIMITS.LABEL_ASSIGN, keyBy: 'user', scope: 'task-labels:assign' }),
-    zValidator('param', Param), zValidator('json', AssignBody), async (c) => {
+    },
+  )
+  .post(
+    '/',
+    rateLimit({ ...RATE_LIMITS.LABEL_ASSIGN, keyBy: 'user', scope: 'task-labels:assign' }),
+    zValidator('param', Param),
+    zValidator('json', AssignBody),
+    async (c) => {
       const { wid, tid } = c.req.valid('param');
       const { labelId } = c.req.valid('json');
       const auth = c.get('auth');
       return c.json(await taskLabelService.assign(wid, tid, labelId, auth.user.id));
-    })
-  .delete('/:labelId', rateLimit({ ...RATE_LIMITS.LABEL_ASSIGN, keyBy: 'user', scope: 'task-labels:assign' }),
-    zValidator('param', Param.extend({ labelId: z.string().cuid() })), async (c) => {
+    },
+  )
+  .delete(
+    '/:labelId',
+    rateLimit({ ...RATE_LIMITS.LABEL_ASSIGN, keyBy: 'user', scope: 'task-labels:assign' }),
+    zValidator('param', Param.extend({ labelId: z.string().cuid() })),
+    async (c) => {
       const { wid, tid, labelId } = c.req.valid('param');
       const auth = c.get('auth');
       return c.json(await taskLabelService.unassign(wid, tid, labelId, auth.user.id));
-    });
+    },
+  );

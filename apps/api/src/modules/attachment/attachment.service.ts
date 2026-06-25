@@ -28,7 +28,11 @@ export function classifyMime(mime: string): AttachmentKind {
   return 'OTHER';
 }
 
-export async function listAttachments(prisma: PrismaClient, userId: string, query: ListAttachmentsQuery) {
+export async function listAttachments(
+  prisma: PrismaClient,
+  userId: string,
+  query: ListAttachmentsQuery,
+) {
   if (!query.taskId) throw new BadRequestError('taskId required');
   const task = await repo.findTaskWorkspace(prisma, query.taskId);
   if (!task) throw new NotFoundError('Task not found');

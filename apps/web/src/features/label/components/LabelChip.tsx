@@ -15,11 +15,7 @@ function parseHex(hex: string): [number, number, number] | null {
   const m = /^#([0-9a-fA-F]{6})$/.exec(hex.trim());
   if (!m) return null;
   const v = m[1]!;
-  return [
-    parseInt(v.slice(0, 2), 16),
-    parseInt(v.slice(2, 4), 16),
-    parseInt(v.slice(4, 6), 16),
-  ];
+  return [parseInt(v.slice(0, 2), 16), parseInt(v.slice(2, 4), 16), parseInt(v.slice(4, 6), 16)];
 }
 
 function srgbToLinear(c: number): number {
@@ -71,7 +67,12 @@ export function LabelChip({ label, size = 'sm', className, onRemove }: Props) {
           className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full transition-colors hover:bg-black/15"
         >
           <svg width="8" height="8" viewBox="0 0 8 8" aria-hidden focusable="false">
-            <path d="M1 1l6 6M7 1l-6 6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+            <path
+              d="M1 1l6 6M7 1l-6 6"
+              stroke="currentColor"
+              strokeWidth="1.4"
+              strokeLinecap="round"
+            />
           </svg>
         </button>
       )}

@@ -5,10 +5,12 @@
 **Status**: 33 features passing (29 + F2 + F3 + F4 + F5 + F6). 142/142 BE integration tests pass. Realistic seed data loaded (15 users, 6 workspaces, 51 tasks, 60 subtasks, 199 comments, 120 notifications, 16 attachments, 26 labels).
 
 **Session 013 — fix + seed**:
+
 - Fixed socket connection crash: `apps/web/src/lib/socket.ts` now sends `access_token` cookie in `auth.token` + `extraHeaders.Cookie` so the BE JWT middleware can verify. `apps/api/src/modules/realtime/realtime.gateway.ts` defensive guard rejects connections with no `userId` instead of throwing.
 - Expanded `prisma/seed.ts` to 15 users / 6 workspaces / 51 tasks / 60 subtasks / 14 deps / 199 comments / 120 notifications / 16 attachments. Realistic status, priority, and due-date distribution. Uses new `TaskLabelAssignment` join table from F2.
 
 **Verified state** (re-run `./init.sh` + `docker compose up -d`):
+
 - `pnpm typecheck` → exit 0
 - `pnpm --filter @flow-desk/api test:integration` → 142/142 pass
 - `pnpm --filter @flow-desk/web build` → exit 0
@@ -43,7 +45,7 @@
 ## Changed This Session
 
 - Code or behavior added (F1 security track):
-  - **Rate limiting**: `shared/middleware/rate-limit.ts` (Redis INCR+EXPIRE sliding-window); `auth:register` 3/h/ip, `auth:login` 5/min/ip, `auth:refresh` 30/min/ip; AI 5/min/user; broad write 60/min/user; X-RateLimit-* headers + Retry-After on 429
+  - **Rate limiting**: `shared/middleware/rate-limit.ts` (Redis INCR+EXPIRE sliding-window); `auth:register` 3/h/ip, `auth:login` 5/min/ip, `auth:refresh` 30/min/ip; AI 5/min/user; broad write 60/min/user; X-RateLimit-\* headers + Retry-After on 429
   - **Socket.IO emissions**: `shared/lib/socket-events.ts` singleton + `setIo(io)` + emit helpers; task routes emit task:created/updated/deleted/moved/subtask:created/dependency:added; comment routes emit comment:created/updated/deleted; notification emit notification:new to user:{id}
   - **Membership**: `shared/lib/access.ts` `assertMembership(workspaceId, userId)`; applied to attachment POST/GET?taskId=/:id/download, task POST/PATCH/DELETE/move/subtasks/deps, comment POST/PATCH/DELETE, AI suggest-assignee/auto-schedule
   - **bcrypt**: cost 12 → 10 in `auth.routes.ts`

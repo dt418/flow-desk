@@ -1,6 +1,10 @@
 import type { prisma } from '../../shared/lib/prisma';
 type PrismaClient = typeof prisma;
-import type { CreateCommentInput, UpdateCommentInput, ListCommentsQuery } from '@flow-desk/shared/comment';
+import type {
+  CreateCommentInput,
+  UpdateCommentInput,
+  ListCommentsQuery,
+} from '@flow-desk/shared/comment';
 import { BadRequestError, NotFoundError } from '../../shared/errors';
 import { assertMembership } from '../../shared/lib/access';
 import { emitToTask, emitToUser } from '../../shared/lib/socket-events';
@@ -66,7 +70,11 @@ export async function listComments(prisma: PrismaClient, userId: string, query: 
   return { data, nextCursor };
 }
 
-export async function createComment(prisma: PrismaClient, userId: string, body: CreateCommentInput) {
+export async function createComment(
+  prisma: PrismaClient,
+  userId: string,
+  body: CreateCommentInput,
+) {
   const task = await prisma.task.findFirst({ where: { id: body.taskId, deletedAt: null } });
   if (!task) throw new NotFoundError('Task not found');
   await assertMembership(task.workspaceId, userId);
@@ -96,7 +104,12 @@ export async function createComment(prisma: PrismaClient, userId: string, body: 
       })),
     );
 
-    const notifications = await repo.findNotificationsSince(prisma, recipientIds, 'COMMENT_REPLY', comment.createdAt);
+    const notifications = await repo.findNotificationsSince(
+      prisma,
+      recipientIds,
+      'COMMENT_REPLY',
+      comment.createdAt,
+    );
     for (const notif of notifications) {
       safeEmit(() => emitToUser(notif.userId, 'notification:new', { notification: notif }), {
         event: 'notification:new',
@@ -114,7 +127,12 @@ export async function createComment(prisma: PrismaClient, userId: string, body: 
   return comment;
 }
 
-export async function updateComment(prisma: PrismaClient, userId: string, id: string, body: UpdateCommentInput) {
+export async function updateComment(
+  prisma: PrismaClient,
+  userId: string,
+  id: string,
+  body: UpdateCommentInput,
+) {
   const existing = await repo.findUniqueRaw(prisma, id);
   if (!existing || existing.deletedAt) throw new NotFoundError('Comment not found');
   if (existing.authorId !== userId) {

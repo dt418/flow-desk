@@ -133,10 +133,12 @@ Hooks are managed by [lefthook](https://github.com/evilmartians/lefthook) (confi
 - `pnpm verify` — run all pre-commit + pre-push gates locally
 
 **pre-commit** (fast, ~15s):
+
 - Secret scan (`.githooks/pre-commit`)
 - Per-package typecheck (`shared` / `api` / `web`) — only the package whose files changed
 
 **pre-push** (heavier, ~60-90s):
+
 - Full typecheck (all packages)
 - BE integration tests (142 tests)
 - Web build

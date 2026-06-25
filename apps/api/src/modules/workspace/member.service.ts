@@ -51,12 +51,7 @@ export const memberService = {
     });
   },
 
-  async changeRole(
-    workspaceId: string,
-    targetUserId: string,
-    newRole: UserRole,
-    userId: string,
-  ) {
+  async changeRole(workspaceId: string, targetUserId: string, newRole: UserRole, userId: string) {
     await assertRole(workspaceId, userId, ['OWNER']);
     if (newRole !== 'OWNER') {
       const ownerCount = await prisma.workspaceMember.count({

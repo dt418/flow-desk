@@ -55,7 +55,11 @@ export function findColumn(prisma: PrismaClient, id: string) {
   return prisma.column.findUnique({ where: { id } });
 }
 
-export function findDependency(prisma: PrismaClient, blockingTaskId: string, blockedTaskId: string) {
+export function findDependency(
+  prisma: PrismaClient,
+  blockingTaskId: string,
+  blockedTaskId: string,
+) {
   return prisma.taskDependency.findFirst({ where: { blockingTaskId, blockedTaskId } });
 }
 
@@ -66,7 +70,10 @@ export function listBlockersOf(prisma: PrismaClient, blockedTaskId: string) {
   });
 }
 
-export function createDependency(prisma: PrismaClient, data: { blockingTaskId: string; blockedTaskId: string }) {
+export function createDependency(
+  prisma: PrismaClient,
+  data: { blockingTaskId: string; blockedTaskId: string },
+) {
   return prisma.taskDependency.create({ data });
 }
 

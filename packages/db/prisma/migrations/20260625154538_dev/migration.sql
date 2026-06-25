@@ -87,7 +87,7 @@ CREATE TABLE "Task" (
     "completedAt" TIMESTAMP(3),
     "createdById" TEXT NOT NULL,
     "version" INTEGER NOT NULL DEFAULT 0,
-    "labels" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "labelsDeprecated" TEXT[] DEFAULT ARRAY[]::TEXT[],
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "deletedAt" TIMESTAMP(3),
@@ -106,12 +106,26 @@ CREATE TABLE "TaskDependency" (
 );
 
 -- CreateTable
+CREATE TABLE "TaskLabelAssignment" (
+    "id" TEXT NOT NULL,
+    "taskId" TEXT NOT NULL,
+    "labelId" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "deletedAt" TIMESTAMP(3),
+
+    CONSTRAINT "TaskLabelAssignment_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "TaskLabel" (
     "id" TEXT NOT NULL,
     "workspaceId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "color" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "deletedAt" TIMESTAMP(3),
+    "version" INTEGER NOT NULL DEFAULT 0,
 
     CONSTRAINT "TaskLabel_pkey" PRIMARY KEY ("id")
 );
@@ -233,7 +247,19 @@ CREATE INDEX "TaskDependency_blockedTaskId_idx" ON "TaskDependency"("blockedTask
 CREATE UNIQUE INDEX "TaskDependency_blockingTaskId_blockedTaskId_key" ON "TaskDependency"("blockingTaskId", "blockedTaskId");
 
 -- CreateIndex
+CREATE INDEX "TaskLabelAssignment_taskId_idx" ON "TaskLabelAssignment"("taskId");
+
+-- CreateIndex
+CREATE INDEX "TaskLabelAssignment_labelId_idx" ON "TaskLabelAssignment"("labelId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "TaskLabelAssignment_taskId_labelId_key" ON "TaskLabelAssignment"("taskId", "labelId");
+
+-- CreateIndex
 CREATE INDEX "TaskLabel_workspaceId_idx" ON "TaskLabel"("workspaceId");
+
+-- CreateIndex
+CREATE INDEX "TaskLabel_deletedAt_idx" ON "TaskLabel"("deletedAt");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "TaskLabel_workspaceId_name_key" ON "TaskLabel"("workspaceId", "name");
@@ -297,6 +323,12 @@ ALTER TABLE "TaskDependency" ADD CONSTRAINT "TaskDependency_blockingTaskId_fkey"
 
 -- AddForeignKey
 ALTER TABLE "TaskDependency" ADD CONSTRAINT "TaskDependency_blockedTaskId_fkey" FOREIGN KEY ("blockedTaskId") REFERENCES "Task"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TaskLabelAssignment" ADD CONSTRAINT "TaskLabelAssignment_taskId_fkey" FOREIGN KEY ("taskId") REFERENCES "Task"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TaskLabelAssignment" ADD CONSTRAINT "TaskLabelAssignment_labelId_fkey" FOREIGN KEY ("labelId") REFERENCES "TaskLabel"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "TaskLabel" ADD CONSTRAINT "TaskLabel_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "Workspace"("id") ON DELETE CASCADE ON UPDATE CASCADE;

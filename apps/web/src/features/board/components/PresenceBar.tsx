@@ -70,11 +70,7 @@ export function PresenceBar({ workspaceId, max = 5, className }: PresenceBarProp
   if (users.length === 0) {
     return (
       <div
-        className={cn(
-          'inline-flex items-center gap-1.5 text-[var(--fg-3)]',
-          'caption',
-          className,
-        )}
+        className={cn('inline-flex items-center gap-1.5 text-[var(--fg-3)]', 'caption', className)}
         aria-label="No active collaborators"
         title="No active collaborators"
       >
@@ -94,12 +90,7 @@ export function PresenceBar({ workspaceId, max = 5, className }: PresenceBarProp
     >
       <div className="flex -space-x-2">
         {visible.map((u) => (
-          <Avatar
-            key={u.userId}
-            size="sm"
-            className="ring-2 ring-[var(--bg)]"
-            title={u.name}
-          >
+          <Avatar key={u.userId} size="sm" className="ring-2 ring-[var(--bg)]" title={u.name}>
             {u.avatarUrl ? <AvatarImage src={u.avatarUrl} alt={u.name} /> : null}
             <AvatarFallback>{initials(u.name)}</AvatarFallback>
           </Avatar>
@@ -113,9 +104,7 @@ export function PresenceBar({ workspaceId, max = 5, className }: PresenceBarProp
           </span>
         )}
       </div>
-      <span className="caption hidden sm:inline">
-        {users.length} online
-      </span>
+      <span className="caption hidden sm:inline">{users.length} online</span>
     </div>
   );
 }

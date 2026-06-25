@@ -7,15 +7,13 @@ interface TaskLabelsPayload {
 
 export const labelApi = {
   list(workspaceId: string) {
-    return api<{ labels: Label[] }>(
-      `/api/workspaces/${encodeURIComponent(workspaceId)}/labels`,
-    );
+    return api<{ labels: Label[] }>(`/api/workspaces/${encodeURIComponent(workspaceId)}/labels`);
   },
   create(workspaceId: string, body: CreateLabelInput) {
-    return api<{ label: Label }>(
-      `/api/workspaces/${encodeURIComponent(workspaceId)}/labels`,
-      { method: 'POST', json: body },
-    );
+    return api<{ label: Label }>(`/api/workspaces/${encodeURIComponent(workspaceId)}/labels`, {
+      method: 'POST',
+      json: body,
+    });
   },
   update(workspaceId: string, labelId: string, body: UpdateLabelInput) {
     return api<{ label: Label }>(

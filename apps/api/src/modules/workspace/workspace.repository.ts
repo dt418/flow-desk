@@ -2,8 +2,7 @@ import { prisma } from '../../shared/lib/prisma';
 import type { Prisma, Workspace } from '@flowdesk/db';
 
 export const workspaceRepo = {
-  findById: (id: string) =>
-    prisma.workspace.findFirst({ where: { id, deletedAt: null } }),
+  findById: (id: string) => prisma.workspace.findFirst({ where: { id, deletedAt: null } }),
 
   listForUser: (userId: string) =>
     prisma.workspace.findMany({

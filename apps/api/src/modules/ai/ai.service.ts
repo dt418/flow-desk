@@ -20,7 +20,11 @@ export type AutoScheduleInput = z.infer<typeof autoScheduleSchema>;
 
 type TaskWithDeps = Awaited<ReturnType<typeof repo.listOpenTasksForSchedule>>[number];
 
-export async function suggestAssignee(prisma: PrismaClient, userId: string, input: SuggestAssigneeInput) {
+export async function suggestAssignee(
+  prisma: PrismaClient,
+  userId: string,
+  input: SuggestAssigneeInput,
+) {
   await assertMembership(input.workspaceId, userId);
 
   let title = input.title;
@@ -98,9 +102,7 @@ export async function autoSchedule(prisma: PrismaClient, userId: string, input: 
   const day = 24 * 60 * 60 * 1000;
 
   for (const task of sorted) {
-    const blockerDates = task.blockers.map(
-      (d) => d.blockingTask.dueDate?.getTime() ?? 0,
-    );
+    const blockerDates = task.blockers.map((d) => d.blockingTask.dueDate?.getTime() ?? 0);
     const earliestStart = blockerDates.length > 0 ? Math.max(...blockerDates) + day : Date.now();
     const dueMs = task.dueDate ? task.dueDate.getTime() : earliestStart + 3 * day;
     const userLoad = capacity.get(task.assigneeId ?? 'unassigned') ?? 0;

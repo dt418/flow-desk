@@ -39,7 +39,9 @@ describe('workspace.service', () => {
     const member = await createUser(prisma, 'member@x');
     const w = await createWorkspace(prisma, owner.id);
     await addMember(prisma, w.id, member.id, 'MEMBER');
-    await expect(workspaceService.rename(w.id, 'NewName', member.id)).rejects.toThrow(ForbiddenError);
+    await expect(workspaceService.rename(w.id, 'NewName', member.id)).rejects.toThrow(
+      ForbiddenError,
+    );
     const renamed = await workspaceService.rename(w.id, 'NewName', owner.id);
     expect(renamed.name).toBe('NewName');
   });

@@ -7,16 +7,19 @@ All notable changes to FlowDesk.
 ### Session 013 (this commit)
 
 #### Fixed — realtime crash
+
 - `apps/web/src/lib/socket.ts`: socket client now reads `access_token` cookie and passes it in `auth.token` + `extraHeaders.Cookie`. Without this, the JWT middleware on the BE side had no token to verify and could let an unauth'd connection through.
 - `apps/api/src/modules/realtime/realtime.gateway.ts`: presence handler now rejects connections with no `userId` (logger.warn + emit `unauthorized` + `socket.disconnect(true)`) instead of throwing `TypeError: Cannot read properties of undefined (reading 'slice')` and crashing the api container.
 
 #### Changed — seed (realistic data)
+
 - `prisma/seed.ts` expanded from 5 users / 2 workspaces / 24 tasks to **15 users / 6 workspaces / 51 tasks / 60 subtasks / 14 deps / 199 comments / 120 notifications / 16 attachments / 26 labels**.
 - Mixes OWNER / ADMIN / MEMBER / GUEST roles across workspaces. Uses the new `TaskLabelAssignment` join table from F2 + dual-writes `Task.labelsDeprecated` for backward compat with F1 FE clients. Realistic status mix (BACKLOG / TODO / IN_PROGRESS / IN_REVIEW / DONE / BLOCKED) with overdue / today / soon / future due dates.
 - Fixed enum mismatches caught on first run: `VIEWER` → `GUEST`; `MENTION`/`DUE_SOON` → `TASK_MENTIONED`/`TASK_DUE_SOON`; `uploaderId`/`sizeBytes` → `uploadedById`/`size`; added required `Attachment.type`.
 - Removed `startedAt` field (not in current Task schema).
 
 #### Verified
+
 - `docker compose up -d --build api web` — api healthy, no crashes
 - `curl /api/health` → 200
 - `POST /api/auth/login demo@flow-desk.app` → 200, returns user

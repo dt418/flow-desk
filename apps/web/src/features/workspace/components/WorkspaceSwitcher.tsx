@@ -47,7 +47,8 @@ export function WorkspaceSwitcher({
 
   const list = workspaces.data?.data ?? [];
   const current =
-    list.find((w) => w.id === currentWorkspaceId) ?? (currentWorkspaceId ? null : list[0] ?? null);
+    list.find((w) => w.id === currentWorkspaceId) ??
+    (currentWorkspaceId ? null : (list[0] ?? null));
 
   const onSelect = (id: string) => {
     if (id === currentWorkspaceId) return;

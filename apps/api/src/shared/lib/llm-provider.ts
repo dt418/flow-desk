@@ -78,9 +78,15 @@ export class LLMProvider {
       } catch (err: unknown) {
         lastErr = err;
         const isAbort = err instanceof Error && err.name === 'AbortError';
-        const isRetryableLLM = err instanceof LLMError && (err.details as { upstreamStatus?: number } | undefined)?.upstreamStatus !== undefined && ((err.details as { upstreamStatus?: number }).upstreamStatus ?? 0) >= 500;
+        const isRetryableLLM =
+          err instanceof LLMError &&
+          (err.details as { upstreamStatus?: number } | undefined)?.upstreamStatus !== undefined &&
+          ((err.details as { upstreamStatus?: number }).upstreamStatus ?? 0) >= 500;
         if (attempt < MAX_ATTEMPTS && (isAbort || isRetryableLLM)) {
-          logger.warn({ attempt, err: err instanceof Error ? err.message : String(err) }, 'llm call retried');
+          logger.warn(
+            { attempt, err: err instanceof Error ? err.message : String(err) },
+            'llm call retried',
+          );
           await new Promise((r) => setTimeout(r, RETRY_BACKOFF_MS));
           continue;
         }

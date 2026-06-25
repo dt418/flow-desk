@@ -1,5 +1,4 @@
-// @ts-ignore - generated client uses ESM import.meta.url pattern
-import { Prisma } from '../../generated/client.js';
+import { Prisma } from '../generated/client';
 
 const SOFT_DELETE_MODELS = new Set<string>([
   'User',
@@ -22,19 +21,59 @@ export const softDeleteExtension = Prisma.defineExtension({
   name: 'softDelete',
   query: {
     $allModels: {
-      async findFirst({ model, args, query }: { model: string | undefined; args: Record<string, unknown>; query: (args: Record<string, unknown>) => unknown }) {
+      async findFirst({
+        model,
+        args,
+        query,
+      }: {
+        model: string | undefined;
+        args: Record<string, unknown>;
+        query: (args: Record<string, unknown>) => unknown;
+      }) {
         return query(injectDeletedAtNull(args ?? {}, model));
       },
-      async findMany({ model, args, query }: { model: string | undefined; args: Record<string, unknown>; query: (args: Record<string, unknown>) => unknown }) {
+      async findMany({
+        model,
+        args,
+        query,
+      }: {
+        model: string | undefined;
+        args: Record<string, unknown>;
+        query: (args: Record<string, unknown>) => unknown;
+      }) {
         return query(injectDeletedAtNull(args ?? {}, model));
       },
-      async count({ model, args, query }: { model: string | undefined; args: Record<string, unknown>; query: (args: Record<string, unknown>) => unknown }) {
+      async count({
+        model,
+        args,
+        query,
+      }: {
+        model: string | undefined;
+        args: Record<string, unknown>;
+        query: (args: Record<string, unknown>) => unknown;
+      }) {
         return query(injectDeletedAtNull(args ?? {}, model));
       },
-      async aggregate({ model, args, query }: { model: string | undefined; args: Record<string, unknown>; query: (args: Record<string, unknown>) => unknown }) {
+      async aggregate({
+        model,
+        args,
+        query,
+      }: {
+        model: string | undefined;
+        args: Record<string, unknown>;
+        query: (args: Record<string, unknown>) => unknown;
+      }) {
         return query(injectDeletedAtNull(args ?? {}, model));
       },
-      async groupBy({ model, args, query }: { model: string | undefined; args: Record<string, unknown>; query: (args: Record<string, unknown>) => unknown }) {
+      async groupBy({
+        model,
+        args,
+        query,
+      }: {
+        model: string | undefined;
+        args: Record<string, unknown>;
+        query: (args: Record<string, unknown>) => unknown;
+      }) {
         return query(injectDeletedAtNull(args ?? {}, model));
       },
     },

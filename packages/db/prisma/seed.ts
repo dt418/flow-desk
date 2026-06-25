@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { PrismaClient, type Prisma } from '../apps/api/generated/prisma/client';
+import { PrismaClient, type Prisma } from '../generated/client';
+
 import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient({
@@ -37,7 +38,8 @@ const WORKSPACES: Array<{
   {
     name: 'Demo Workspace',
     slug: 'demo',
-    description: 'Sample workspace for exploring FlowDesk — covers product, design, and engineering',
+    description:
+      'Sample workspace for exploring FlowDesk — covers product, design, and engineering',
     ownerIdx: 0,
     columns: ['Backlog', 'Todo', 'In Progress', 'In Review', 'Done'],
     members: [
@@ -152,7 +154,11 @@ const WORKSPACES: Array<{
   },
 ];
 
-const TASK_TITLES: Array<{ title: string; priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'; status: 'BACKLOG' | 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'DONE' | 'BLOCKED' }> = [
+const TASK_TITLES: Array<{
+  title: string;
+  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+  status: 'BACKLOG' | 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'DONE' | 'BLOCKED';
+}> = [
   { title: 'Design landing page', priority: 'HIGH', status: 'IN_PROGRESS' },
   { title: 'Implement auth flow', priority: 'URGENT', status: 'DONE' },
   { title: 'Setup CI/CD pipeline', priority: 'MEDIUM', status: 'IN_PROGRESS' },
@@ -202,7 +208,11 @@ const TASK_TITLES: Array<{ title: string; priority: 'LOW' | 'MEDIUM' | 'HIGH' | 
   { title: 'Reduce cold-start time on lambdas', priority: 'MEDIUM', status: 'BACKLOG' },
   { title: 'Add CSV import for bulk task creation', priority: 'MEDIUM', status: 'TODO' },
   { title: 'Implement comment threading', priority: 'LOW', status: 'BACKLOG' },
-  { title: 'Bug: notifications duplicated on reconnect', priority: 'URGENT', status: 'IN_PROGRESS' },
+  {
+    title: 'Bug: notifications duplicated on reconnect',
+    priority: 'URGENT',
+    status: 'IN_PROGRESS',
+  },
   { title: 'Refactor billing module', priority: 'MEDIUM', status: 'TODO' },
   { title: 'Add per-workspace data retention policy', priority: 'HIGH', status: 'IN_REVIEW' },
   { title: 'Write engineering blog: scaling websockets', priority: 'LOW', status: 'BACKLOG' },
@@ -238,12 +248,28 @@ const COMMENT_TEMPLATES = [
 ];
 
 const NOTIFICATION_TEMPLATES = [
-  { type: 'TASK_ASSIGNED', title: 'You were assigned a task', body: 'Open the task to view details' },
-  { type: 'COMMENT_REPLY', title: 'New comment on your task', body: 'A teammate replied to your comment' },
-  { type: 'TASK_MENTIONED', title: 'You were mentioned', body: 'Someone mentioned you in a comment' },
+  {
+    type: 'TASK_ASSIGNED',
+    title: 'You were assigned a task',
+    body: 'Open the task to view details',
+  },
+  {
+    type: 'COMMENT_REPLY',
+    title: 'New comment on your task',
+    body: 'A teammate replied to your comment',
+  },
+  {
+    type: 'TASK_MENTIONED',
+    title: 'You were mentioned',
+    body: 'Someone mentioned you in a comment',
+  },
   { type: 'TASK_DUE_SOON', title: 'Task due tomorrow', body: 'A task assigned to you is due soon' },
   { type: 'TASK_COMPLETED', title: 'Task marked done', body: 'A task you watch was completed' },
-  { type: 'WORKSPACE_INVITE', title: 'Added to a workspace', body: 'You have been added to a new workspace' },
+  {
+    type: 'WORKSPACE_INVITE',
+    title: 'Added to a workspace',
+    body: 'You have been added to a new workspace',
+  },
 ] as const;
 
 function pickFrom<T>(arr: readonly T[], idx: number): T {
@@ -343,7 +369,9 @@ async function main() {
         },
       });
     }
-    console.log(`  ✓ ${ws.name} (${ws.members.length} members, ${ws.columns.length} cols, ${ws.labels.length} labels)`);
+    console.log(
+      `  ✓ ${ws.name} (${ws.members.length} members, ${ws.columns.length} cols, ${ws.labels.length} labels)`,
+    );
   }
 
   // --- Tasks (distributed across workspaces, columns, statuses) ---
@@ -356,7 +384,14 @@ async function main() {
     BLOCKED: 'In Progress',
   };
 
-  const allTasks: Array<{ id: string; workspaceId: string; title: string; status: string; columnId: string; assigneeId: string | null }> = [];
+  const allTasks: Array<{
+    id: string;
+    workspaceId: string;
+    title: string;
+    status: string;
+    columnId: string;
+    assigneeId: string | null;
+  }> = [];
   let taskCounter = 0;
 
   for (const ws of allWorkspaces) {
@@ -383,9 +418,13 @@ async function main() {
       })();
 
       // Assign 0-2 labels to this task
-      const taskLabels = i % 2 === 0 && labels.length > 0
-        ? [pickFrom(labels, taskCounter).id, i % 4 === 0 && labels.length > 1 ? pickFrom(labels, taskCounter + 1).id : null].filter((x): x is string => Boolean(x))
-        : [];
+      const taskLabels =
+        i % 2 === 0 && labels.length > 0
+          ? [
+              pickFrom(labels, taskCounter).id,
+              i % 4 === 0 && labels.length > 1 ? pickFrom(labels, taskCounter + 1).id : null,
+            ].filter((x): x is string => Boolean(x))
+          : [];
       const labelsDeprecated = taskLabels
         .map((id) => labels.find((l) => l.id === id))
         .filter((l): l is NonNullable<typeof l> => Boolean(l))
@@ -482,7 +521,10 @@ async function main() {
         data: {
           taskId: t.id,
           authorId: author.id,
-          content: pickFrom(COMMENT_TEMPLATES, commentCount).replace('@user', `@${mentioned.name.split(' ')[0]}`),
+          content: pickFrom(COMMENT_TEMPLATES, commentCount).replace(
+            '@user',
+            `@${mentioned.name.split(' ')[0]}`,
+          ),
           mentionedUserIds: j % 2 === 0 ? [mentioned.id] : [],
         },
       });
@@ -497,7 +539,8 @@ async function main() {
     const userTasks = allTasks.filter((t) => t.assigneeId === u.id);
     for (let i = 0; i < 8; i++) {
       const tpl = pickFrom(NOTIFICATION_TEMPLATES, notifCount);
-      const ref = userTasks[i % Math.max(1, userTasks.length)] ?? allTasks[notifCount % allTasks.length]!;
+      const ref =
+        userTasks[i % Math.max(1, userTasks.length)] ?? allTasks[notifCount % allTasks.length]!;
       await prisma.notification.create({
         data: {
           userId: u.id,

@@ -2,7 +2,12 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { getTestPrisma } from '../setup/integration';
 import { cleanDatabase, createUser, createWorkspace, addMember } from '../setup/factories';
 import { memberService } from '../../src/modules/workspace/member.service';
-import { ConflictError, ForbiddenError, BadRequestError, NotFoundError } from '../../src/shared/errors';
+import {
+  ConflictError,
+  ForbiddenError,
+  BadRequestError,
+  NotFoundError,
+} from '../../src/shared/errors';
 
 describe('member.service', () => {
   let prisma: ReturnType<typeof getTestPrisma>;
@@ -16,7 +21,10 @@ describe('member.service', () => {
     const admin = await createUser(prisma, 'admin@x');
     const member = await createUser(prisma, 'member@x');
     const target = await createUser(prisma, 'target@x');
-    ownerId = owner.id; adminId = admin.id; memberId = member.id; targetId = target.id;
+    ownerId = owner.id;
+    adminId = admin.id;
+    memberId = member.id;
+    targetId = target.id;
 
     const w = await createWorkspace(prisma, owner.id);
     wid = w.id;
@@ -32,7 +40,9 @@ describe('member.service', () => {
 
   it('list requires membership', async () => {
     const outsider = await createUser(prisma, 'out@x');
-    await expect(memberService.list({ limit: 20 }, wid, outsider.id)).rejects.toThrow(BadRequestError);
+    await expect(memberService.list({ limit: 20 }, wid, outsider.id)).rejects.toThrow(
+      BadRequestError,
+    );
   });
 
   it('inviteByEmail requires OWNER or ADMIN', async () => {
@@ -57,14 +67,19 @@ describe('member.service', () => {
 
   it('inviteByEmail rejects duplicate', async () => {
     await expect(
-      memberService.inviteByEmail(wid, (await prisma.user.findUnique({ where: { id: targetId } }))!.email, 'MEMBER', ownerId),
+      memberService.inviteByEmail(
+        wid,
+        (await prisma.user.findUnique({ where: { id: targetId } }))!.email,
+        'MEMBER',
+        ownerId,
+      ),
     ).rejects.toThrow(ConflictError);
   });
 
   it('changeRole requires OWNER', async () => {
-    await expect(
-      memberService.changeRole(wid, memberId, 'ADMIN', adminId),
-    ).rejects.toThrow(ForbiddenError);
+    await expect(memberService.changeRole(wid, memberId, 'ADMIN', adminId)).rejects.toThrow(
+      ForbiddenError,
+    );
   });
 
   it('changeRole OWNER can promote', async () => {
@@ -73,9 +88,9 @@ describe('member.service', () => {
   });
 
   it('changeRole cannot demote last OWNER', async () => {
-    await expect(
-      memberService.changeRole(wid, ownerId, 'ADMIN', ownerId),
-    ).rejects.toThrow(ForbiddenError);
+    await expect(memberService.changeRole(wid, ownerId, 'ADMIN', ownerId)).rejects.toThrow(
+      ForbiddenError,
+    );
   });
 
   it('remove requires OWNER or ADMIN', async () => {

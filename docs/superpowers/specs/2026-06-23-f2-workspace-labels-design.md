@@ -5,32 +5,33 @@
 **Status:** Implemented — see drift note below
 
 > **Implementation drift (recorded for honesty):**
+>
 > 1. **Label color type**: spec said free hex (`/^#[0-9a-fA-F]{6}$/`); actual is a named-color enum (8 values). UI uses Radix `RadioGroup` instead of color picker + hex input. `LabelChip` maps name → hex via `LABEL_COLOR_HEX` lookup.
 > 2. **`Task.labelsDeprecated` storage**: spec said JSON array of `{name, color}`; actual is plain `String[]` (label names only). Dual-write in `task-label.service.ts` writes strings, not objects. Full deprecation (drop column) deferred per AGENTS.md additive-migrations rule.
 >
 > Shipped F2 source of truth: `feature_list.json` (entry `F2`) + `CHANGELOG.md`.
-**Track:** F2 (first of F2–F6 production polish)
-**Parent scope:** see `feature_list.json` → `scope-f2-f6`
+> **Track:** F2 (first of F2–F6 production polish)
+> **Parent scope:** see `feature_list.json` → `scope-f2-f6`
 
 ## Problem
 
 FlowDesk has 13 known production-readiness gaps identified during bug-hunt + feature audit:
 
-| # | Gap | Severity |
-|---|---|---|
-| 1 | Dashboard hardcodes `workspaces[0]`; no UI to create a workspace | Blocker for new users |
-| 2 | No workspace switcher; impossible to leave current workspace | High |
-| 3 | `TaskLabel` Prisma model exists but no API or UI to CRUD labels | High |
-| 4 | `Task.labels: String[]` is a free-text tag bag; no validation, no list view, no filtering | Medium |
-| 5 | No `/welcome` onboarding; new users see an empty board with no guidance | Medium |
-| 6 | Workspace limit unstated; risk of unbounded growth | Low |
-| 7 | Label colors are ad-hoc strings; no palette | Low |
-| 8 | Cross-workspace label assignment not guarded against | Medium (security) |
-| 9 | Role hierarchy not enforced on label write paths | Medium (security) |
-| 10 | No optimistic UI on label assignment → janky UX on slow networks | Low |
-| 11 | No realtime sync of label changes → stale boards | Medium |
-| 12 | Workspace creation has no rate limit → spam vector | Low |
-| 13 | Zero tests repo-wide → `pnpm test` is a vacuous echo | Critical (R-32 carry-forward) |
+| #   | Gap                                                                                       | Severity                      |
+| --- | ----------------------------------------------------------------------------------------- | ----------------------------- |
+| 1   | Dashboard hardcodes `workspaces[0]`; no UI to create a workspace                          | Blocker for new users         |
+| 2   | No workspace switcher; impossible to leave current workspace                              | High                          |
+| 3   | `TaskLabel` Prisma model exists but no API or UI to CRUD labels                           | High                          |
+| 4   | `Task.labels: String[]` is a free-text tag bag; no validation, no list view, no filtering | Medium                        |
+| 5   | No `/welcome` onboarding; new users see an empty board with no guidance                   | Medium                        |
+| 6   | Workspace limit unstated; risk of unbounded growth                                        | Low                           |
+| 7   | Label colors are ad-hoc strings; no palette                                               | Low                           |
+| 8   | Cross-workspace label assignment not guarded against                                      | Medium (security)             |
+| 9   | Role hierarchy not enforced on label write paths                                          | Medium (security)             |
+| 10  | No optimistic UI on label assignment → janky UX on slow networks                          | Low                           |
+| 11  | No realtime sync of label changes → stale boards                                          | Medium                        |
+| 12  | Workspace creation has no rate limit → spam vector                                        | Low                           |
+| 13  | Zero tests repo-wide → `pnpm test` is a vacuous echo                                      | Critical (R-32 carry-forward) |
 
 F2 closes 1–12 and lays the test infrastructure for the rest of F3–F6. F2 is the first of 5 polish tracks (F2–F6) — it unblocks onboarding, the most visible gap, before deeper work.
 
@@ -59,19 +60,19 @@ F2 closes 1–12 and lays the test infrastructure for the rest of F3–F6. F2 is
 
 ## Locked Design Decisions (Q1–Q11)
 
-| # | Question | Decision |
-|---|---|---|
-| Q1 | Scope of this round? | Full polish — 5 tracks (F2–F6) |
-| Q2 | Which track first? | F2 = create + switcher + TaskLabel CRUD + /welcome |
-| Q3 | Keep `Task.labels:String[]` or replace? | **Replace** — drop column, use `TaskLabelAssignment` |
-| Q4 | Onboarding placement? | Dedicated `/welcome` route, redirect from dashboard if `workspaces.length === 0` |
-| Q5 | Switcher location? | Both — top-bar dropdown AND sidebar list |
-| Q6 | Default workspace visibility? | PRIVATE |
-| Q7 | `/welcome` scope? | Full — workspace + invite stub + first board, all optional |
-| Q8 | TaskLabel ↔ Task relation? | Explicit `TaskLabelAssignment` M2M model |
-| Q9 | Migration strategy? | Additive 2-phase: phase 1 dual-write, phase 2 drop `Task.labels` |
-| Q10 | Label create/edit/delete permission? | OWNER/ADMIN only |
-| Q11 | Switcher scale? | Client-side search (cmdk) when >10 workspaces |
+| #   | Question                                | Decision                                                                         |
+| --- | --------------------------------------- | -------------------------------------------------------------------------------- |
+| Q1  | Scope of this round?                    | Full polish — 5 tracks (F2–F6)                                                   |
+| Q2  | Which track first?                      | F2 = create + switcher + TaskLabel CRUD + /welcome                               |
+| Q3  | Keep `Task.labels:String[]` or replace? | **Replace** — drop column, use `TaskLabelAssignment`                             |
+| Q4  | Onboarding placement?                   | Dedicated `/welcome` route, redirect from dashboard if `workspaces.length === 0` |
+| Q5  | Switcher location?                      | Both — top-bar dropdown AND sidebar list                                         |
+| Q6  | Default workspace visibility?           | PRIVATE                                                                          |
+| Q7  | `/welcome` scope?                       | Full — workspace + invite stub + first board, all optional                       |
+| Q8  | TaskLabel ↔ Task relation?              | Explicit `TaskLabelAssignment` M2M model                                         |
+| Q9  | Migration strategy?                     | Additive 2-phase: phase 1 dual-write, phase 2 drop `Task.labels`                 |
+| Q10 | Label create/edit/delete permission?    | OWNER/ADMIN only                                                                 |
+| Q11 | Switcher scale?                         | Client-side search (cmdk) when >10 workspaces                                    |
 
 ---
 
@@ -82,12 +83,14 @@ F2 closes 1–12 and lays the test infrastructure for the rest of F3–F6. F2 is
 **Location:** `apps/web/src/features/workspaces/components/CreateWorkspaceDialog.tsx`
 
 **Triggered by:**
+
 - "Create workspace" button on `dashboard.tsx` (top-right of empty state)
 - "Create your first workspace" CTA on `/welcome` step 1
 
 **Note:** Command palette (`Cmd+K`) integration is **out of scope** for F2 — deferred to F6 (command palette track).
 
 **Schema (Zod, on client + mirrored server-side):**
+
 ```ts
 const CreateWorkspaceSchema = z.object({
   name: z.string().trim().min(1).max(50),
@@ -97,6 +100,7 @@ const CreateWorkspaceSchema = z.object({
 ```
 
 **Behavior:**
+
 - Submit calls `POST /api/workspaces` (existing endpoint — needs visibility + description support, added in this PR)
 - On success: invalidate `['workspaces']` query key, close dialog, navigate to `/{newWorkspace.slug}`
 - On error: surface via `DomainError.code` mapped to friendly message table
@@ -107,6 +111,7 @@ const CreateWorkspaceSchema = z.object({
 **`workspace.schema.ts`** — extend `CreateWorkspaceSchema` with `visibility` (default `PRIVATE`) and optional `description`.
 
 **`workspace.service.ts`** — `create()`:
+
 - Insert Workspace + WorkspaceMember(OWNER) in a single transaction
 - Check user workspace count: if ≥ 10, throw `WorkspaceLimitReachedError`
 - Generate slug from name (kebab-case, dedup with numeric suffix if collision)
@@ -114,10 +119,10 @@ const CreateWorkspaceSchema = z.object({
 
 ### New errors
 
-| Code | HTTP | Cause |
-|---|---|---|
-| `WORKSPACE_LIMIT_REACHED` | 403 | User already owns 10 workspaces |
-| `WORKSPACE_NAME_TAKEN` | 409 | Slug collision after 100 numeric retries (effectively impossible) |
+| Code                      | HTTP | Cause                                                             |
+| ------------------------- | ---- | ----------------------------------------------------------------- |
+| `WORKSPACE_LIMIT_REACHED` | 403  | User already owns 10 workspaces                                   |
+| `WORKSPACE_NAME_TAKEN`    | 409  | Slug collision after 100 numeric retries (effectively impossible) |
 
 ---
 
@@ -126,12 +131,14 @@ const CreateWorkspaceSchema = z.object({
 ### Components
 
 **`WorkspaceSwitcherDropdown`** — `apps/web/src/features/workspaces/components/WorkspaceSwitcherDropdown.tsx`
+
 - Top-bar trigger, shows current workspace name + avatar
 - Opens cmdk command palette if `workspaces.length > 10`, otherwise simple list
 - Keyboard nav: `↑/↓/Enter/Esc`, type-to-filter
 - On select: navigate to `/{workspace.slug}`, invalidate non-global query caches
 
 **`WorkspaceSidebar`** — `apps/web/src/features/workspaces/components/WorkspaceSidebar.tsx`
+
 - Left sidebar on dashboard + board pages
 - Shows all workspaces grouped: "Owned" / "Member of"
 - "Create workspace" item at bottom
@@ -146,6 +153,7 @@ const view = workspaces.length > 10 ? 'cmdk' : 'list';
 ### Backend (no new endpoints)
 
 `GET /api/workspaces/me` already exists (returns user's workspaces). Extend response shape:
+
 ```ts
 {
   owned: Workspace[],
@@ -161,6 +169,7 @@ const view = workspaces.length > 10 ? 'cmdk' : 'list';
 ### Data model changes
 
 **New model** (additive, phase 1):
+
 ```prisma
 model TaskLabelAssignment {
   id          String   @id @default(cuid())
@@ -180,6 +189,7 @@ model TaskLabelAssignment {
 ```
 
 **Modify `Task`:**
+
 ```prisma
 model Task {
   // ... existing fields ...
@@ -189,6 +199,7 @@ model Task {
 ```
 
 **Modify `TaskLabel`** — add back-relation:
+
 ```prisma
 model TaskLabel {
   // ... existing fields ...
@@ -234,13 +245,13 @@ label/
 
 ### Routes
 
-| Method | Path | Scope | Auth |
-|---|---|---|---|
-| `GET`    | `/api/workspaces/:wid/labels`              | `read:label`   | any member |
-| `POST`   | `/api/workspaces/:wid/labels`              | `write:label`  | OWNER/ADMIN |
-| `PATCH`  | `/api/workspaces/:wid/labels/:labelId`     | `write:label`  | OWNER/ADMIN |
-| `DELETE` | `/api/workspaces/:wid/labels/:labelId`     | `write:label`  | OWNER/ADMIN |
-| `PUT`    | `/api/tasks/:tid/labels`                   | `write:assign` | any member |
+| Method   | Path                                   | Scope          | Auth        |
+| -------- | -------------------------------------- | -------------- | ----------- |
+| `GET`    | `/api/workspaces/:wid/labels`          | `read:label`   | any member  |
+| `POST`   | `/api/workspaces/:wid/labels`          | `write:label`  | OWNER/ADMIN |
+| `PATCH`  | `/api/workspaces/:wid/labels/:labelId` | `write:label`  | OWNER/ADMIN |
+| `DELETE` | `/api/workspaces/:wid/labels/:labelId` | `write:label`  | OWNER/ADMIN |
+| `PUT`    | `/api/tasks/:tid/labels`               | `write:assign` | any member  |
 
 ### Zod schemas (`label.schema.ts`)
 
@@ -265,6 +276,7 @@ const LabelAssignSchema = z.object({
 ### Service (`label.service.ts`)
 
 **`create(workspaceId, userId, input)`**
+
 - Assert user is OWNER/ADMIN of workspace
 - If `count(workspaceId) >= 100`, throw `LabelLimitReachedError`
 - Check name uniqueness within workspace (case-insensitive) → `LabelNameTakenError`
@@ -272,15 +284,18 @@ const LabelAssignSchema = z.object({
 - Return label
 
 **`update(workspaceId, labelId, userId, input)`**
+
 - Assert OWNER/ADMIN
 - Update fields, emit `label:updated`
 
 **`delete(workspaceId, labelId, userId)`**
+
 - Assert OWNER/ADMIN
 - Delete in transaction with `TaskLabelAssignment` cascade
 - Emit `label:deleted` with `{ labelId, affectedTaskIds }` so clients can clear local cache
 
 **`assignToTask(taskId, userId, labelIds)`**
+
 - Load task + column → `workspaceId`
 - Load all `labelIds` → assert each `label.workspaceId === workspaceId`
 - **Validate before write**: if any mismatch, throw `TASK_LABEL_CROSS_WORKSPACE` before any row is touched (no partial state possible)
@@ -297,10 +312,10 @@ const LabelAssignSchema = z.object({
 
 ### Rate limits
 
-| Scope | Limit | Key |
-|---|---|---|
-| `label:write` | 30/min | userId |
-| `label:assign` | 60/min | userId |
+| Scope              | Limit  | Key    |
+| ------------------ | ------ | ------ |
+| `label:write`      | 30/min | userId |
+| `label:assign`     | 60/min | userId |
 | `workspace:create` | 10/day | userId |
 
 ### Optimistic UI
@@ -311,13 +326,13 @@ const LabelAssignSchema = z.object({
 
 ### Realtime events
 
-| Event | Room | Payload |
-|---|---|---|
-| `label:created` | `workspace:{wid}` | `Label` |
-| `label:updated` | `workspace:{wid}` | `Label` |
-| `label:deleted` | `workspace:{wid}` | `{ labelId, affectedTaskIds }` |
-| `task:labels-changed` | `workspace:{wid}` | `{ taskId, labelIds }` |
-| `workspace:created` | `user:{userId}` | `Workspace` |
+| Event                 | Room              | Payload                        |
+| --------------------- | ----------------- | ------------------------------ |
+| `label:created`       | `workspace:{wid}` | `Label`                        |
+| `label:updated`       | `workspace:{wid}` | `Label`                        |
+| `label:deleted`       | `workspace:{wid}` | `{ labelId, affectedTaskIds }` |
+| `task:labels-changed` | `workspace:{wid}` | `{ taskId, labelIds }`         |
+| `workspace:created`   | `user:{userId}`   | `Workspace`                    |
 
 ### TanStack Query keys
 
@@ -358,6 +373,7 @@ labels/
 ### Redirect logic
 
 In `apps/web/src/features/workspaces/hooks.ts`:
+
 ```ts
 useOnboardingGuard() → if (workspaces.length === 0 && pathname !== '/welcome') navigate('/welcome');
 ```
@@ -367,17 +383,20 @@ Mounted at `App` root so any authenticated route triggers the guard.
 ### 3-step wizard (all steps skippable)
 
 **Step 1 — Workspace**
+
 - Pre-filled with default name suggestion (e.g., `{user.name}'s workspace`)
 - Visibility default: PRIVATE
 - "Create workspace" button
 - "Skip for now" link (only shown if user has another way in — but since workspaces.length===0 is the trigger, skip leaves them on /welcome indefinitely; consider auto-redirect to /workspaces/new)
 
 **Step 2 — Invite teammates** (UI stub)
+
 - Email input + "Send invite" button
 - On submit: logs warning `"F3: invite backend not implemented, email=${email}"`
 - Toast: "Invites coming soon — we'll let you know"
 
 **Step 3 — Create your first board**
+
 - Column names input (defaults: "To do", "In progress", "Done")
 - "Create board" button → calls existing `POST /api/workspaces/:wid/columns` for each
 - On success: navigate to `/{slug}`
@@ -394,11 +413,11 @@ Mounted at `App` root so any authenticated route triggers the guard.
 
 ### Test pyramid
 
-| Layer | Tool | Scope | Goal | Runtime |
-|---|---|---|---|---|
-| Unit | vitest | Zod schemas, hooks, reducers | Edge cases + invariants | < 5 s |
-| Integration | vitest + Prisma test DB | service + routes (real DB) | Cross-module, tx, RBAC | < 30 s |
-| E2E | Playwright | Critical user flows | Smoke + realtime | < 2 min |
+| Layer       | Tool                    | Scope                        | Goal                    | Runtime |
+| ----------- | ----------------------- | ---------------------------- | ----------------------- | ------- |
+| Unit        | vitest                  | Zod schemas, hooks, reducers | Edge cases + invariants | < 5 s   |
+| Integration | vitest + Prisma test DB | service + routes (real DB)   | Cross-module, tx, RBAC  | < 30 s  |
+| E2E         | Playwright              | Critical user flows          | Smoke + realtime        | < 2 min |
 
 ### Required infra (closes R-32 + RISK-F2-4)
 
@@ -412,9 +431,11 @@ Mounted at `App` root so any authenticated route triggers the guard.
 ### Unit tests
 
 **Backend (`apps/api/src/modules/label/__tests__/`):**
+
 - `label.schema.test.ts` — Zod validation (name trim 1–50, color enum, labelIds cuid[] max 50, visibility enum)
 
 **Frontend (`apps/web/src/features/labels/__tests__/` + `pages/__tests__/`):**
+
 - `LabelChip.test.tsx` — render variants, color contrast
 - `LabelPicker.test.tsx` — search, multi-select, 50-cap enforcement, disabled state
 - `LabelManagerDialog.test.tsx` — CRUD UI, role-gated buttons hidden for MEMBER/GUEST
@@ -427,6 +448,7 @@ Mounted at `App` root so any authenticated route triggers the guard.
 ### Integration tests (real Postgres)
 
 **`apps/api/src/modules/label/__tests__/label.service.test.ts`:**
+
 - `create()` — workspace-scoped uniqueness (case-insensitive), 100/workspace limit, OWNER/MEMBER 200, GUEST 403
 - `update()` — GUEST 403, OWNER/MEMBER 200, cross-workspace 400
 - `delete()` — cascades removes `TaskLabelAssignment` rows in tx
@@ -434,22 +456,24 @@ Mounted at `App` root so any authenticated route triggers the guard.
 - `assignToTask()` — partial state never observable (assert `count == expected` after rollback)
 
 **`apps/api/src/modules/label/__tests__/label.routes.test.ts`:**
+
 - HTTP layer, rate limit headers present, error JSON shape `{error: {code, message, details?}}`
 - 429 returns `Retry-After` header
 - 403 for GUEST on write paths
 
 **`apps/api/src/modules/workspace/__tests__/create.test.ts` (extend existing):**
+
 - 10-workspace limit throws `WorkspaceLimitReachedError`
 - Slug generation + collision suffix
 
 ### E2E tests (`apps/web/e2e/`)
 
-| Spec | Flow |
-|---|---|
-| `f2-workspace-create.spec.ts` | signup → /welcome → step 1 create workspace → step 3 create board → land on board |
-| `f2-label-crud.spec.ts` | OWNER create, MEMBER edit (denied), GUEST view-only, delete cascades to task |
-| `f2-switcher.spec.ts` | seed 11 workspaces, open switcher, type-search filter, select switches URL |
-| `f2-realtime.spec.ts` | 2 browser contexts (A, B) in same workspace; A creates label; B sees `label:created` < 2 s |
+| Spec                          | Flow                                                                                                |
+| ----------------------------- | --------------------------------------------------------------------------------------------------- |
+| `f2-workspace-create.spec.ts` | signup → /welcome → step 1 create workspace → step 3 create board → land on board                   |
+| `f2-label-crud.spec.ts`       | OWNER create, MEMBER edit (denied), GUEST view-only, delete cascades to task                        |
+| `f2-switcher.spec.ts`         | seed 11 workspaces, open switcher, type-search filter, select switches URL                          |
+| `f2-realtime.spec.ts`         | 2 browser contexts (A, B) in same workspace; A creates label; B sees `label:created` < 2 s          |
 | `f2-onboarding-guard.spec.ts` | new user → any private route → redirects to /welcome; after workspace created → no longer redirects |
 
 ### Verification checklist (Definition of Done — F2)
@@ -517,45 +541,45 @@ Mounted at `App` root so any authenticated route triggers the guard.
 
 11 AC traced to Q1–Q11, each testable:
 
-| AC | Source | Test |
-|---|---|---|
-| AC-1 | Q1 | Scope document `feature_list.json` lists exactly 5 tracks F2–F6, each with priority ≥ 30 |
-| AC-2 | Q2 | `CreateWorkspaceDialog`, `WorkspaceSwitcherDropdown`, `WorkspaceSidebar`, Label CRUD components, `/welcome` page all exist |
-| AC-3 | Q3 | `prisma/schema.prisma` has no `Task.labels: String[]`; instead `Task.labelsDeprecated: String[]` + `Task.labelAssignments: TaskLabelAssignment[]` |
-| AC-4 | Q4 | Visiting `/dashboard` while `workspaces.length === 0` redirects to `/welcome`; E2E spec `f2-onboarding-guard.spec.ts` passes |
-| AC-5 | Q5 | `WorkspaceSwitcherDropdown` (top-bar) and `WorkspaceSidebar` (left rail) both render workspace list |
-| AC-6 | Q6 | `CreateWorkspaceSchema.visibility` defaults to `PRIVATE`; integration test asserts |
-| AC-7 | Q7 | `/welcome` has 3 steps (workspace / invite stub / first board), each skippable; `welcome.test.tsx` covers |
-| AC-8 | Q8 | `TaskLabelAssignment` model exists with `@@unique([taskId, labelId])` and explicit `@relation` |
-| AC-9 | Q9 | `scripts/backfill-task-labels.ts` exists, idempotent, `--dry-run` works; `scripts/verify-f2-migration.ts` exits 0 on staging |
-| AC-10 | Q10 | `assertRole(['OWNER', 'ADMIN'])` on `POST/PATCH/DELETE /labels`; integration test asserts GUEST 403 |
-| AC-11 | Q11 | `WorkspaceSwitcherDropdown` switches to cmdk view when `workspaces.length > 10`; `WorkspaceSwitcherDropdown.test.tsx` covers |
+| AC    | Source | Test                                                                                                                                              |
+| ----- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| AC-1  | Q1     | Scope document `feature_list.json` lists exactly 5 tracks F2–F6, each with priority ≥ 30                                                          |
+| AC-2  | Q2     | `CreateWorkspaceDialog`, `WorkspaceSwitcherDropdown`, `WorkspaceSidebar`, Label CRUD components, `/welcome` page all exist                        |
+| AC-3  | Q3     | `prisma/schema.prisma` has no `Task.labels: String[]`; instead `Task.labelsDeprecated: String[]` + `Task.labelAssignments: TaskLabelAssignment[]` |
+| AC-4  | Q4     | Visiting `/dashboard` while `workspaces.length === 0` redirects to `/welcome`; E2E spec `f2-onboarding-guard.spec.ts` passes                      |
+| AC-5  | Q5     | `WorkspaceSwitcherDropdown` (top-bar) and `WorkspaceSidebar` (left rail) both render workspace list                                               |
+| AC-6  | Q6     | `CreateWorkspaceSchema.visibility` defaults to `PRIVATE`; integration test asserts                                                                |
+| AC-7  | Q7     | `/welcome` has 3 steps (workspace / invite stub / first board), each skippable; `welcome.test.tsx` covers                                         |
+| AC-8  | Q8     | `TaskLabelAssignment` model exists with `@@unique([taskId, labelId])` and explicit `@relation`                                                    |
+| AC-9  | Q9     | `scripts/backfill-task-labels.ts` exists, idempotent, `--dry-run` works; `scripts/verify-f2-migration.ts` exits 0 on staging                      |
+| AC-10 | Q10    | `assertRole(['OWNER', 'ADMIN'])` on `POST/PATCH/DELETE /labels`; integration test asserts GUEST 403                                               |
+| AC-11 | Q11    | `WorkspaceSwitcherDropdown` switches to cmdk view when `workspaces.length > 10`; `WorkspaceSwitcherDropdown.test.tsx` covers                      |
 
 ---
 
 ## Risks
 
-| ID | Risk | Likelihood | Impact | Mitigation |
-|---|---|---|---|---|
-| R-32 | Zero tests in repo (vacuous `pnpm test` echo) | — | High | Phase 1 of F2 ships vitest infra; coverage gate enforced |
-| R-35 | typecheck typecast workaround | Low | Low | Already resolved in 010b; spec confirms no new casts needed |
-| RISK-F2-1 | Invite backend deferred | Medium | Low | `/welcome` step 2 UI stub + log warning + F3 entry in `feature_list.json` |
-| RISK-F2-2 | Phase 2 column drop premature | Low | Medium | Phase 2 gated ≥ 1 sprint after phase 1 prod; explicit `verify-f2-migration.ts` smoke |
-| RISK-F2-3 | 100-label/workspace boundary untested at scale | Medium | Low | Integration test exercises 100-label insert + 101st rejected |
-| RISK-F2-4 | vitest infra missing (blocks DoD) | Low | High | First vertical slice of F2 = test infra (R-32 closure); DoD checklist gates PR |
-| RISK-F2-5 | Optimistic UI + realtime race → flicker | Medium | Low | Realtime event triggers query refetch, not local patch; rollback path tested |
-| RISK-F2-6 | `TaskLabelAssignment` index cardinality | Low | Low | Composite indexes on `(taskId)` and `(labelId)` already specified |
+| ID        | Risk                                           | Likelihood | Impact | Mitigation                                                                           |
+| --------- | ---------------------------------------------- | ---------- | ------ | ------------------------------------------------------------------------------------ |
+| R-32      | Zero tests in repo (vacuous `pnpm test` echo)  | —          | High   | Phase 1 of F2 ships vitest infra; coverage gate enforced                             |
+| R-35      | typecheck typecast workaround                  | Low        | Low    | Already resolved in 010b; spec confirms no new casts needed                          |
+| RISK-F2-1 | Invite backend deferred                        | Medium     | Low    | `/welcome` step 2 UI stub + log warning + F3 entry in `feature_list.json`            |
+| RISK-F2-2 | Phase 2 column drop premature                  | Low        | Medium | Phase 2 gated ≥ 1 sprint after phase 1 prod; explicit `verify-f2-migration.ts` smoke |
+| RISK-F2-3 | 100-label/workspace boundary untested at scale | Medium     | Low    | Integration test exercises 100-label insert + 101st rejected                         |
+| RISK-F2-4 | vitest infra missing (blocks DoD)              | Low        | High   | First vertical slice of F2 = test infra (R-32 closure); DoD checklist gates PR       |
+| RISK-F2-5 | Optimistic UI + realtime race → flicker        | Medium     | Low    | Realtime event triggers query refetch, not local patch; rollback path tested         |
+| RISK-F2-6 | `TaskLabelAssignment` index cardinality        | Low        | Low    | Composite indexes on `(taskId)` and `(labelId)` already specified                    |
 
 ---
 
 ## Out of Scope (tracked F3–F6)
 
-| Track | Scope (deferred from F2) |
-|---|---|
-| F3 | Workspace invitations (email, link), workspace archive, member roles UI |
-| F4 | Service / repository / schema layer split; centralized audit log; pagination on board take |
-| F5 | Realtime comments, attachment upload, drag-drop order persistence, dependency BFS optimization |
-| F6 | Bulk label operations, label templates, i18n extraction, accessibility audit (axe-core in CI) |
+| Track | Scope (deferred from F2)                                                                       |
+| ----- | ---------------------------------------------------------------------------------------------- |
+| F3    | Workspace invitations (email, link), workspace archive, member roles UI                        |
+| F4    | Service / repository / schema layer split; centralized audit log; pagination on board take     |
+| F5    | Realtime comments, attachment upload, drag-drop order persistence, dependency BFS optimization |
+| F6    | Bulk label operations, label templates, i18n extraction, accessibility audit (axe-core in CI)  |
 
 ---
 

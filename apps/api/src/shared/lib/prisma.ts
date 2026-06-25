@@ -5,9 +5,7 @@ export const env = parseBackendEnv(process.env);
 
 const globalForPrisma = globalThis as unknown as { prisma?: ReturnType<typeof createPrismaClient> };
 
-const basePrisma =
-  globalForPrisma.prisma ??
-  createPrismaClient(env.DATABASE_URL);
+const basePrisma = globalForPrisma.prisma ?? createPrismaClient(env.DATABASE_URL);
 
 if (env.NODE_ENV !== 'production') globalForPrisma.prisma = basePrisma;
 

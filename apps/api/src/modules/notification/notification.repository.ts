@@ -16,7 +16,11 @@ export function listForUser(
   });
 }
 
-export function countForUser(prisma: PrismaClient, userId: string, where: Prisma.NotificationWhereInput = {}) {
+export function countForUser(
+  prisma: PrismaClient,
+  userId: string,
+  where: Prisma.NotificationWhereInput = {},
+) {
   return prisma.notification.count({ where: { userId, ...where } });
 }
 

@@ -1,6 +1,13 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { getTestPrisma } from '../setup/integration';
-import { cleanDatabase, createUser, createWorkspace, addMember, createColumn, createTask } from '../setup/factories';
+import {
+  cleanDatabase,
+  createUser,
+  createWorkspace,
+  addMember,
+  createColumn,
+  createTask,
+} from '../setup/factories';
 import * as svc from '../../src/modules/comment/comment.service';
 import { prisma as db } from '../../src/shared/lib/prisma';
 import { BadRequestError, NotFoundError } from '../../src/shared/errors';
@@ -16,7 +23,9 @@ describe('comment.service', () => {
     const owner = await createUser(prisma, 'owner@test.com', 'alice');
     const member = await createUser(prisma, 'member@test.com', 'bob');
     const outsider = await createUser(prisma, 'outsider@test.com');
-    ownerId = owner.id; memberId = member.id; outsiderId = outsider.id;
+    ownerId = owner.id;
+    memberId = member.id;
+    outsiderId = outsider.id;
     const w = await createWorkspace(prisma, owner.id);
     wid = w.id;
     await addMember(prisma, wid, member.id, 'MEMBER');
@@ -35,20 +44,29 @@ describe('comment.service', () => {
     });
 
     it('pagination across pages', async () => {
-      for (let i = 0; i < 3; i++) await svc.createComment(db, ownerId, { taskId, content: `c${i}` });
+      for (let i = 0; i < 3; i++)
+        await svc.createComment(db, ownerId, { taskId, content: `c${i}` });
       const p1 = await svc.listComments(db, ownerId, { taskId, limit: 1 } as never);
       expect(p1.data).toHaveLength(1);
       expect(p1.nextCursor).not.toBeNull();
-      const p2 = await svc.listComments(db, ownerId, { taskId, limit: 1, cursor: p1.nextCursor! } as never);
+      const p2 = await svc.listComments(db, ownerId, {
+        taskId,
+        limit: 1,
+        cursor: p1.nextCursor!,
+      } as never);
       expect(p2.data).toHaveLength(1);
     });
 
     it('non-member rejected', async () => {
-      await expect(svc.listComments(db, outsiderId, { taskId, limit: 10 } as never)).rejects.toThrow(BadRequestError);
+      await expect(
+        svc.listComments(db, outsiderId, { taskId, limit: 10 } as never),
+      ).rejects.toThrow(BadRequestError);
     });
 
     it('missing task (404)', async () => {
-      await expect(svc.listComments(db, ownerId, { taskId: 'missing', limit: 10 } as never)).rejects.toThrow(NotFoundError);
+      await expect(
+        svc.listComments(db, ownerId, { taskId: 'missing', limit: 10 } as never),
+      ).rejects.toThrow(NotFoundError);
     });
   });
 
@@ -72,11 +90,15 @@ describe('comment.service', () => {
     });
 
     it('non-member rejected (400)', async () => {
-      await expect(svc.createComment(db, outsiderId, { taskId, content: 'nope' })).rejects.toThrow(BadRequestError);
+      await expect(svc.createComment(db, outsiderId, { taskId, content: 'nope' })).rejects.toThrow(
+        BadRequestError,
+      );
     });
 
     it('missing task (404)', async () => {
-      await expect(svc.createComment(db, ownerId, { taskId: 'missing', content: 'x' })).rejects.toThrow(NotFoundError);
+      await expect(
+        svc.createComment(db, ownerId, { taskId: 'missing', content: 'x' }),
+      ).rejects.toThrow(NotFoundError);
     });
   });
 
@@ -90,11 +112,15 @@ describe('comment.service', () => {
 
     it('non-author rejected', async () => {
       const c = await svc.createComment(db, ownerId, { taskId, content: 'orig' });
-      await expect(svc.updateComment(db, memberId, c.id, { content: 'hacked' })).rejects.toThrow(BadRequestError);
+      await expect(svc.updateComment(db, memberId, c.id, { content: 'hacked' })).rejects.toThrow(
+        BadRequestError,
+      );
     });
 
     it('missing (404)', async () => {
-      await expect(svc.updateComment(db, ownerId, 'missing', { content: 'x' })).rejects.toThrow(NotFoundError);
+      await expect(svc.updateComment(db, ownerId, 'missing', { content: 'x' })).rejects.toThrow(
+        NotFoundError,
+      );
     });
   });
 

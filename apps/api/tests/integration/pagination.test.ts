@@ -46,7 +46,9 @@ describe('R-30 cursor pagination', () => {
 
     it('returns null for invalid cursor', () => {
       expect(decodeCursor('!!!not-base64!!!')).toBeNull();
-      expect(decodeCursor(Buffer.from('no_underscore_here', 'utf8').toString('base64url'))).toBeNull();
+      expect(
+        decodeCursor(Buffer.from('no_underscore_here', 'utf8').toString('base64url')),
+      ).toBeNull();
       expect(decodeCursor(Buffer.from('_missingid', 'utf8').toString('base64url'))).toBeNull();
     });
   });
@@ -90,7 +92,9 @@ describe('R-30 cursor pagination', () => {
         const u = await createUser(prisma);
         await addMember(prisma, wid, u.id, 'MEMBER');
       }
-      const res = await app.request(`/api/workspaces/${wid}/members?limit=2`, { headers: { Cookie: cookie } });
+      const res = await app.request(`/api/workspaces/${wid}/members?limit=2`, {
+        headers: { Cookie: cookie },
+      });
       expect(res.status).toBe(200);
       const body = await res.json();
       expect(body.data.length).toBe(2);
@@ -105,7 +109,11 @@ describe('R-30 cursor pagination', () => {
       const first = await memberService.list({ limit: 2 }, wid, ownerId);
       expect(first.data).toHaveLength(2);
       expect(first.nextCursor).not.toBeNull();
-      const second = await memberService.list({ limit: 10, cursor: first.nextCursor! }, wid, ownerId);
+      const second = await memberService.list(
+        { limit: 10, cursor: first.nextCursor! },
+        wid,
+        ownerId,
+      );
       const ids = new Set([...first.data, ...second.data].map((m) => m.id));
       expect(ids.size).toBe(first.data.length + second.data.length);
     });
@@ -120,7 +128,10 @@ describe('R-30 cursor pagination', () => {
       const first = await taskService.list({ workspaceId: wid, limit: 2 } as never, ownerId);
       expect(first.data).toHaveLength(2);
       expect(first.nextCursor).not.toBeNull();
-      const second = await taskService.list({ workspaceId: wid, limit: 10, cursor: first.nextCursor! } as never, ownerId);
+      const second = await taskService.list(
+        { workspaceId: wid, limit: 10, cursor: first.nextCursor! } as never,
+        ownerId,
+      );
       const ids = new Set([...first.data, ...second.data].map((t) => t.id));
       expect(ids.size).toBe(first.data.length + second.data.length);
     });
@@ -211,9 +222,15 @@ describe('R-30 cursor pagination', () => {
 
   describe('GET /api/workspaces/:wid/board (cursor on outer column list)', () => {
     it('returns envelope with nextCursor when more columns than limit', async () => {
-      await prisma.column.create({ data: { workspaceId: wid, name: 'C1', position: 4, isDoneColumn: false } });
-      await prisma.column.create({ data: { workspaceId: wid, name: 'C2', position: 5, isDoneColumn: false } });
-      const res = await app.request(`/api/workspaces/${wid}/board?limit=2`, { headers: { Cookie: cookie } });
+      await prisma.column.create({
+        data: { workspaceId: wid, name: 'C1', position: 4, isDoneColumn: false },
+      });
+      await prisma.column.create({
+        data: { workspaceId: wid, name: 'C2', position: 5, isDoneColumn: false },
+      });
+      const res = await app.request(`/api/workspaces/${wid}/board?limit=2`, {
+        headers: { Cookie: cookie },
+      });
       expect(res.status).toBe(200);
       const body = await res.json();
       expect(body.columns).toBeDefined();

@@ -1,7 +1,12 @@
 import * as React from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { TaskLabelSelect } from './TaskLabelSelect';
@@ -54,7 +59,9 @@ function initials(name: string): string {
   return (parts[0][0]! + parts[parts.length - 1]![0]!).toUpperCase();
 }
 
-function relativeDate(value: string | null): { label: string; tone: 'overdue' | 'soon' | 'normal' } | null {
+function relativeDate(
+  value: string | null,
+): { label: string; tone: 'overdue' | 'soon' | 'normal' } | null {
   if (!value) return null;
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return null;
@@ -64,7 +71,8 @@ function relativeDate(value: string | null): { label: string; tone: 'overdue' | 
   if (days === 0) return { label: 'Today', tone: 'soon' };
   if (days === 1) return { label: 'Tomorrow', tone: 'soon' };
   if (days === -1) return { label: 'Yesterday', tone: 'overdue' };
-  if (days > 1 && days < 7) return { label: d.toLocaleDateString(undefined, { weekday: 'short' }), tone: 'normal' };
+  if (days > 1 && days < 7)
+    return { label: d.toLocaleDateString(undefined, { weekday: 'short' }), tone: 'normal' };
   if (days < 0) return { label: `${-days}d late`, tone: 'overdue' };
   return { label: `+${days}d`, tone: 'normal' };
 }
@@ -78,7 +86,15 @@ function PriorityDot({ priority }: { priority: TaskCardData['priority'] }) {
   );
 }
 
-export function TaskCard({ task, workspaceId, canEditLabels = true, className, onClick, onEdit, onDelete }: Props) {
+export function TaskCard({
+  task,
+  workspaceId,
+  canEditLabels = true,
+  className,
+  onClick,
+  onEdit,
+  onDelete,
+}: Props) {
   const due = relativeDate(task.dueDate);
 
   const onCardClick = (e: React.MouseEvent<HTMLElement>) => {

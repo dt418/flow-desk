@@ -11,8 +11,14 @@ export const taskLabelService = {
   async assign(workspaceId: string, taskId: string, labelId: string, userId: string) {
     await assertMembership(workspaceId, userId);
     const [task, label] = await Promise.all([
-      prisma.task.findFirst({ where: { id: taskId, deletedAt: null }, select: { id: true, labelsDeprecated: true, workspaceId: true } }),
-      prisma.taskLabel.findFirst({ where: { id: labelId, deletedAt: null, workspaceId }, select: { id: true, name: true, color: true } }),
+      prisma.task.findFirst({
+        where: { id: taskId, deletedAt: null },
+        select: { id: true, labelsDeprecated: true, workspaceId: true },
+      }),
+      prisma.taskLabel.findFirst({
+        where: { id: labelId, deletedAt: null, workspaceId },
+        select: { id: true, name: true, color: true },
+      }),
     ]);
     if (!task || task.workspaceId !== workspaceId) throw new NotFoundError('Task not found');
     if (!label) throw new NotFoundError('Label not found');
@@ -37,7 +43,10 @@ export const taskLabelService = {
   async unassign(workspaceId: string, taskId: string, labelId: string, userId: string) {
     await assertMembership(workspaceId, userId);
     const [task, label] = await Promise.all([
-      prisma.task.findFirst({ where: { id: taskId, deletedAt: null }, select: { id: true, labelsDeprecated: true, workspaceId: true } }),
+      prisma.task.findFirst({
+        where: { id: taskId, deletedAt: null },
+        select: { id: true, labelsDeprecated: true, workspaceId: true },
+      }),
       prisma.taskLabel.findFirst({ where: { id: labelId, workspaceId }, select: { name: true } }),
     ]);
     if (!task || task.workspaceId !== workspaceId) throw new NotFoundError('Task not found');
@@ -53,13 +62,21 @@ export const taskLabelService = {
     });
 
     await clearWorkspaceLabelsCache(workspaceId);
-    emitToWorkspace(workspaceId, 'task:labels-changed', { taskId, labelId, action: 'unassigned' as const, by: userId });
+    emitToWorkspace(workspaceId, 'task:labels-changed', {
+      taskId,
+      labelId,
+      action: 'unassigned' as const,
+      by: userId,
+    });
     return { ok: true };
   },
 
   async listForTask(workspaceId: string, taskId: string, userId: string) {
     await assertMembership(workspaceId, userId);
-    const task = await prisma.task.findFirst({ where: { id: taskId, workspaceId, deletedAt: null }, select: { id: true } });
+    const task = await prisma.task.findFirst({
+      where: { id: taskId, workspaceId, deletedAt: null },
+      select: { id: true },
+    });
     if (!task) throw new NotFoundError('Task not found');
     const rows = await taskLabelRepo.listForTask(taskId);
     return rows.map((r) => r.label);

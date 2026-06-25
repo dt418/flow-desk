@@ -1,5 +1,5 @@
+import { Prisma } from '../../../generated/prisma/client';
 import { prisma } from '../../shared/lib/prisma';
-import type { Prisma } from '@flowdesk/db';
 
 export const taskLabelRepo = {
   async listForTask(taskId: string) {

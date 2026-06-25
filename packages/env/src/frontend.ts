@@ -8,8 +8,6 @@ export const frontendSchema = z.object({
 
 export type FrontendEnv = z.infer<typeof frontendSchema>;
 
-export function parseFrontendEnv(
-  env: Record<string, unknown>,
-): FrontendEnv {
+export function parseFrontendEnv(env: Record<string, unknown>): FrontendEnv {
   return frontendSchema.parse(env);
 }

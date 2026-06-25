@@ -42,9 +42,16 @@ attachmentRouter.post('/', async (c) => {
 attachmentRouter.get('/:id/download', async (c) => {
   const auth = c.get('auth');
   const id = c.req.param('id')!;
-  const { attachment, fileStat, stream } = await svc.getDownloadAttachment(prisma, auth.user.id, id);
+  const { attachment, fileStat, stream } = await svc.getDownloadAttachment(
+    prisma,
+    auth.user.id,
+    id,
+  );
   c.header('Content-Type', attachment.mimeType);
   c.header('Content-Length', String(fileStat.size));
-  c.header('Content-Disposition', `attachment; filename="${encodeURIComponent(attachment.filename)}"`);
+  c.header(
+    'Content-Disposition',
+    `attachment; filename="${encodeURIComponent(attachment.filename)}"`,
+  );
   return c.body(stream as unknown as ReadableStream);
 });

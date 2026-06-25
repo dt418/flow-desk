@@ -5,7 +5,10 @@ import * as repo from '../../src/modules/label/label.repository';
 
 describe('label.repository', () => {
   let prisma: ReturnType<typeof getTestPrisma>;
-  beforeEach(async () => { prisma = getTestPrisma(); await cleanDatabase(prisma); });
+  beforeEach(async () => {
+    prisma = getTestPrisma();
+    await cleanDatabase(prisma);
+  });
 
   it('createLabel persists name+color+workspaceId', async () => {
     const u = await createUser(prisma);

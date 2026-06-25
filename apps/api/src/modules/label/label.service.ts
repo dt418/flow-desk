@@ -14,17 +14,28 @@ async function assertOwnerOrAdmin(prisma: PrismaClient, wid: string, userId: str
   return assertRole(wid, userId, ['OWNER', 'ADMIN']);
 }
 
-export async function createLabel(prisma: PrismaClient, userId: string, wid: string, input: CreateLabelInput) {
+export async function createLabel(
+  prisma: PrismaClient,
+  userId: string,
+  wid: string,
+  input: CreateLabelInput,
+) {
   await assertOwnerOrAdmin(prisma, wid, userId);
   const count = await repo.countByWorkspace(prisma, wid);
   if (count >= LABEL_LIMIT_PER_WORKSPACE) {
-    throw withCode(400, ErrorCode.LABEL_LIMIT_REACHED, 'Workspace label limit reached', { limit: LABEL_LIMIT_PER_WORKSPACE });
+    throw withCode(400, ErrorCode.LABEL_LIMIT_REACHED, 'Workspace label limit reached', {
+      limit: LABEL_LIMIT_PER_WORKSPACE,
+    });
   }
   const existing = await prisma.taskLabel.findUnique({
     where: { workspaceId_name: { workspaceId: wid, name: input.name } },
   });
   if (existing) throw withCode(409, ErrorCode.LABEL_NAME_TAKEN, 'Label name already taken');
-  const label = await repo.createLabel(prisma, { workspaceId: wid, name: input.name, color: input.color });
+  const label = await repo.createLabel(prisma, {
+    workspaceId: wid,
+    name: input.name,
+    color: input.color,
+  });
   emitToWorkspace(wid, 'label:created', { label });
   return label;
 }
@@ -34,7 +45,13 @@ export async function listLabels(prisma: PrismaClient, userId: string, wid: stri
   return repo.findByWorkspace(prisma, wid);
 }
 
-export async function updateLabel(prisma: PrismaClient, userId: string, wid: string, labelId: string, input: UpdateLabelInput) {
+export async function updateLabel(
+  prisma: PrismaClient,
+  userId: string,
+  wid: string,
+  labelId: string,
+  input: UpdateLabelInput,
+) {
   await assertOwnerOrAdmin(prisma, wid, userId);
   const existing = await repo.findById(prisma, labelId);
   if (!existing || existing.workspaceId !== wid) throw new NotFoundError('Label not found');
@@ -51,7 +68,12 @@ export async function updateLabel(prisma: PrismaClient, userId: string, wid: str
   return updated;
 }
 
-export async function deleteLabel(prisma: PrismaClient, userId: string, wid: string, labelId: string) {
+export async function deleteLabel(
+  prisma: PrismaClient,
+  userId: string,
+  wid: string,
+  labelId: string,
+) {
   await assertOwnerOrAdmin(prisma, wid, userId);
   const existing = await repo.findById(prisma, labelId);
   if (!existing || existing.workspaceId !== wid) throw new NotFoundError('Label not found');
@@ -90,9 +112,14 @@ export async function assignToTask(
   if (labels.length !== labelIds.length) throw new NotFoundError('One or more labels not found');
   const crossWs = labels.find((l) => l.workspaceId !== task.column.workspaceId);
   if (crossWs) {
-    throw withCode(400, ErrorCode.TASK_LABEL_CROSS_WORKSPACE, 'Labels must belong to the same workspace as the task', {
-      crossWorkspaceLabelId: crossWs.id,
-    });
+    throw withCode(
+      400,
+      ErrorCode.TASK_LABEL_CROSS_WORKSPACE,
+      'Labels must belong to the same workspace as the task',
+      {
+        crossWorkspaceLabelId: crossWs.id,
+      },
+    );
   }
 
   await prisma.$transaction(async (tx) => {

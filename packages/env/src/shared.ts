@@ -6,8 +6,6 @@ export const sharedSchema = z.object({
 
 export type SharedEnv = z.infer<typeof sharedSchema>;
 
-export function parseSharedEnv(
-  env: Record<string, string | undefined>,
-): SharedEnv {
+export function parseSharedEnv(env: Record<string, string | undefined>): SharedEnv {
   return sharedSchema.parse(env);
 }

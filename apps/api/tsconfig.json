@@ -24,6 +24,12 @@
       "@flowdesk/env/*": ["../../packages/env/src/*"]
     }
   },
-  "include": ["src/**/*", "generated/**/*", "../../packages/db/generated/**/*", "../../packages/db/src/**/*", "../../packages/env/src/**/*"],
+  "include": [
+    "src/**/*",
+    "generated/**/*",
+    "../../packages/db/generated/**/*",
+    "../../packages/db/src/**/*",
+    "../../packages/env/src/**/*"
+  ],
   "exclude": ["node_modules", "dist"]
 }
