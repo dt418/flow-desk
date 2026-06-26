@@ -1,4 +1,4 @@
-import { Prisma } from '../../../generated/prisma/client';
+import type { Prisma } from '@flowdesk/db';
 import { prisma } from '../../shared/lib/prisma';
 
 export const taskLabelRepo = {
