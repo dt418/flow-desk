@@ -1,3 +1,10 @@
+---
+title: FlowDesk Architecture
+description: FlowDesk architecture handbook
+toc: true
+number-sections: true
+---
+
 # FlowDesk Architecture
 
 Read once before touching modules. For onboarding, see `docs/DEV.md`. For product context, see `PRD.md`. Decisions are recorded in `ADR-*.md`. Operating rules: `AGENTS.md`. Risks: `RISKS.md`.
@@ -28,13 +35,15 @@ Two-way flow: every successful write on `Api` emits a socket event; subscribed b
 
 Every domain follows:
 
-    apps/api/src/modules/{feature}/
-      {feature}.routes.ts      # Hono router + zValidator + per-route rate limit
-      {feature}.service.ts     # business logic; orchestrates repo + cache + sockets
-      {feature}.repository.ts  # Prisma only; no logic
-      {feature}.schema.ts      # Zod schemas for I/O validation
-      {feature}.types.ts       # TS types/interfaces (not in @flowdesk/shared)
-      {feature}.test.ts        # colocated unit tests (where useful)
+```
+apps/api/src/modules/{feature}/
+  {feature}.routes.ts      # Hono router + zValidator + per-route rate limit
+  {feature}.service.ts     # business logic; orchestrates repo + cache + sockets
+  {feature}.repository.ts  # Prisma only; no logic
+  {feature}.schema.ts      # Zod schemas for I/O validation
+  {feature}.types.ts       # TS types/interfaces (not in @flowdesk/shared)
+  {feature}.test.ts        # colocated unit tests (where useful)
+```
 
 Rules:
 
@@ -43,24 +52,48 @@ Rules:
 - Repos are thin. They translate Zod-validated input → Prisma queries and return raw rows.
 - Schemas are reused on the FE (`packages/shared`). Do not duplicate types drift.
 
-Cross-cutting layer:
+Cross-cutting layer (`apps/api/src/shared/`):
 
-    apps/api/src/shared/
-      middleware/auth.ts / rate-limit.ts / error-handler.ts / request-id.ts
-      lib/prisma.ts / redis.ts / jwt.ts / socket.ts / llm-provider.ts
-          / logger.ts / rate-limit-policies.ts / prisma-extension.ts
-      errors/...               # typed error classes
+```
+apps/api/src/shared/
+  middleware/
+    auth.ts              # verify httpOnly JWT cookie → attach ctx.user
+    rate-limit.ts        # Redis sliding-window; reads policy from rate-limit-policies.ts
+    error-handler.ts     # maps typed errors → JSON { code, message }; logs 5xx
+    request-id.ts        # injects X-Request-ID header for tracing
 
-Rationale: layered separation matches the Golden Rule in `AGENTS.md`. See `ADR-006-security-middleware-pattern.md` for the middleware composition order.
+  lib/
+    prisma.ts            # singleton PrismaClient with prisma-extension applied
+    prisma-extension.ts  # soft-delete middleware + query logging
+    redis.ts             # singleton ioredis client; used by cache + rate-limit + presence
+    jwt.ts               # sign / verify access & refresh tokens (RS256)
+    socket.ts            # Socket.IO server init + connection auth middleware
+    llm-provider.ts      # OpenAI-compatible fetch wrapper; 30s timeout, 1 retry
+    logger.ts            # pino logger; JSON in prod, pretty in dev
+    rate-limit-policies.ts  # named policy map (auth:login, ai:*, writes:*)
+
+  errors/
+    index.ts             # barrel: AppError, NotFoundError, ForbiddenError, LLMError, …
+```
+
+Middleware composition order (see `ADR-006-security-middleware-pattern.md`):
+
+```
+requestId → logger → errorHandler → auth → assertMembership → rateLimiter → routeHandler
+```
+
+> **Rule:** nothing in `apps/api/src/modules/` imports from `shared/lib/` directly except via the service layer. Routes import middleware; services import lib singletons. This keeps unit tests fast — stub the lib, not the HTTP layer.
 
 ## Frontend Feature Anatomy
 
-    apps/web/src/features/{feature}/
-      components/              # feature UI
-      hooks/                   # TanStack Query wrappers
-      api.ts                   # type-safe client (Zod-validated)
-      types.ts                 # feature types
-      index.ts                 # public surface (only file imported elsewhere)
+```
+apps/web/src/features/{feature}/
+  components/              # feature UI
+  hooks/                   # TanStack Query wrappers
+  api.ts                   # type-safe client (Zod-validated)
+  types.ts                 # feature types
+  index.ts                 # public surface (only file imported elsewhere)
+```
 
 Cross-cutting:
 
@@ -141,23 +174,23 @@ flowchart LR
     B2[Browser B]
   end
   subgraph Namespaces
-    T[/tasks/]
-    N[/notifications/]
-    C[/collab/]
+    T["/tasks/"]
+    N["/notifications/"]
+    C["/collab/"]
   end
   subgraph Rooms
-    W[workspace:{wid}]
-    K[task:{tid}]
-    P[presence:{wid}]
+    W["workspace:{wid}"]
+    K["task:{tid}"]
+    P["presence:{wid}"]
   end
 
   B1 -- subscribe --> T
   B2 -- subscribe --> T
   T --> W
   T --> K
-  B1 -- presence:join --> T --> P
-  B1 -- subscribe notifications --> N
-  B1 -- cursor updates --> C
+  B1 -- "presence:join" --> T --> P
+  B1 -- "subscribe notifications" --> N
+  B1 -- "cursor updates" --> C
 ```
 
 Rules:
@@ -204,11 +237,13 @@ Convention: the service that mutates owns the invalidation. No global TTL bumps.
 
 ## Build + Deploy
 
-    pnpm stack:up                 # production-like compose up
-    pnpm stack:up-build           # idempotent image rebuild
-    pnpm stack:down
-    pnpm stack:logs
-    pnpm stack:ps
+```bash
+pnpm stack:up                 # production-like compose up
+pnpm stack:up-build           # idempotent image rebuild
+pnpm stack:down
+pnpm stack:logs
+pnpm stack:ps
+```
 
 Healthcheck: `GET /api/health` → 200. Seed: `pnpm db:seed`. Demo login: `demo@flow-desk.app` / `demo1234`.
 
