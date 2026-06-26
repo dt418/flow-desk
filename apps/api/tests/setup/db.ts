@@ -1,10 +1,26 @@
 import { resolve } from 'node:path';
+import { execSync } from 'node:child_process';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../../../../packages/db/generated/client';
 
+function detectDbPort(): number {
+  try {
+    const out = execSync(
+      'docker inspect flow-desk-postgres-1 --format "{{json .HostConfig.PortBindings}}"',
+      { encoding: 'utf8' },
+    ).trim();
+    const bindings = JSON.parse(out);
+    return parseInt(bindings['5432/tcp']?.[0]?.HostPort ?? '5432', 10);
+  } catch {
+    return 5432;
+  }
+}
+
+const DB_PORT = detectDbPort();
+
 export const TEST_DB_URL =
   process.env.TEST_DB_URL ??
-  'postgresql://flowdesk:flowdesk@localhost:5432/flowdesk_test?schema=public';
+  `postgresql://flowdesk:flowdesk@localhost:${DB_PORT}/flowdesk_test?schema=public`;
 const WORKSPACE_ROOT = resolve(__dirname, '../../../..');
 
 export function createTestPrisma() {
