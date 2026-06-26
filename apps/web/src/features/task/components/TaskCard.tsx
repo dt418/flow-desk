@@ -99,6 +99,7 @@ export function TaskCard({
 
   const onCardClick = (e: React.MouseEvent<HTMLElement>) => {
     const target = e.target as HTMLElement;
+    if (target.closest('[data-no-drag]')) return;
     if (target.closest('[data-task-label-trigger]')) return;
     if (target.closest('[data-task-kebab]')) return;
     if (target.closest('button, [role="button"], a, input, select, textarea')) return;
@@ -114,6 +115,7 @@ export function TaskCard({
         if (!onClick) return;
         if (e.key === 'Enter' || e.key === ' ') {
           const target = e.target as HTMLElement;
+          if (target.closest('[data-no-drag]')) return;
           if (target.closest('[data-task-label-trigger]')) return;
           if (target.closest('[data-task-kebab]')) return;
           if (target.closest('button, [role="button"], a, input, select, textarea')) return;
@@ -145,8 +147,10 @@ export function TaskCard({
             <button
               type="button"
               data-task-kebab
+              data-no-drag
               className="absolute right-7 top-1.5 rounded p-1 opacity-0 transition-opacity hover:bg-[var(--bg-2)] group-hover:opacity-100"
               onClick={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
               aria-label="Task actions"
             >
               <MoreHorizontal className="h-4 w-4 text-[var(--fg-2)]" />
@@ -173,7 +177,7 @@ export function TaskCard({
       )}
       <div className="line-clamp-2 pr-6 text-[13px] font-medium leading-snug">{task.title}</div>
 
-      <div data-task-label-trigger className="mt-2">
+      <div data-task-label-trigger data-no-drag className="mt-2">
         <TaskLabelSelect
           workspaceId={workspaceId}
           taskId={task.id}

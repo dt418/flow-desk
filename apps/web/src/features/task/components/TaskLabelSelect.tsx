@@ -58,6 +58,7 @@ export function TaskLabelSelect({
       )}
       role={canEdit ? 'button' : undefined}
       tabIndex={canEdit ? 0 : -1}
+      data-no-drag={canEdit ? '' : undefined}
       aria-label={canEdit ? 'Edit labels' : 'Labels'}
       onKeyDown={(e) => {
         if (!canEdit) return;

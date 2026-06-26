@@ -219,12 +219,19 @@ export function KanbanCard({ id, columnId, index, children, className }: KanbanC
   });
   const { activeId, activeColumnId } = React.useContext(KanbanContext);
   const isOtherDragging = activeId !== null && activeId !== id;
+
+  const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if ((e.target as HTMLElement | null)?.closest('[data-no-drag]')) {
+      e.stopPropagation();
+      return;
+    }
+    listeners?.onPointerDown?.(e);
+  };
+
   return (
     <div
       ref={setNodeRef}
       data-kanban-id={id}
-      {...attributes}
-      {...listeners}
       className={cn(
         'cursor-grab select-none touch-none',
         isDragging && 'opacity-30',
@@ -232,7 +239,9 @@ export function KanbanCard({ id, columnId, index, children, className }: KanbanC
         className,
       )}
     >
-      {children}
+      <div {...attributes} onPointerDown={onPointerDown}>
+        {children}
+      </div>
     </div>
   );
 }
