@@ -18,3 +18,4 @@ prisma/migrations/dev.db*
 .worktrees/
 apps/api/generated/
 .agents
+test-results/

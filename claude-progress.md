@@ -10,6 +10,7 @@
 - **Prisma**: **7.8.0** (migrated from 5.22 in session 014; new `prisma-client` generator + `prisma.config.ts` + `PrismaPg` adapter; custom output at `apps/api/generated/prisma/`)
 - **pnpm**: 11.8.0 (migrated from 9.12 in session 013; hoist settings moved to `pnpm-workspace.yaml`)
 - **Node**: 22-alpine (migrated from 20 in session 013)
+- **Carry-forward risk (session 015)**: R-39 — e2e suite non-loadable under Playwright CJS-loader (Prisma 7 generated client uses `import.meta`). Scope to fix: move `playwright.config.ts` into `e2e/`, add `e2e/package.json` with `"type":"module"`, or convert fixtures to compiled CJS. Touches infra, not feature work.
 - **Current blocker**: none
 - **Key risks** (carry-forward): R-24 (ai-001 latency UX) — only material risk remaining
 - **Resolved in F2 (session 011)**: R-33 (split-brain selects — Radix primitives added)
@@ -20,6 +21,30 @@
 - **Security note**: `LLM_API_KEY` (sk-80c6f26e1...) was pasted in chat once during session 006. Recommend rotating the key at the provider. Key is in `.env`/`.env.local` (gitignored). Pre-commit hook blocks future leaks.
 
 ## Session Log
+
+### Session 015 — Kanban dnd-pointer-stop bug fix + E2E spec
+
+- **Date**: 2026-06-27
+- **Goal**: Fix kanban card swipe-eating kebab/label interactions (drag-drop on `article` swallows kebab clicks; "New task" flow + label widget both unavailable). Add regression spec.
+- **Diagnosis**: `useDraggable`'s `listeners` were spread on the entire `KanbanCard` outer div, so any pointerdown on the wrapped `TaskCard` activated dnd-kit. Edit/Delete (kebab) and label popover were inert because drag took precedence and the kebab item never received its target click.
+- **Fix** (`bbe6ee3`):
+  - `apps/web/src/components/ui/kanban.tsx:215-247` — Refactored `KanbanCard`: outer div now only carries `setNodeRef`; inner wrapper gets `attributes` + a custom `onPointerDown` that bails on `closest('[data-no-drag]')`. Default behavior unchanged for the rest of the card surface.
+  - `apps/web/src/features/task/components/TaskCard.tsx:144-180` — Kebab button now `data-no-drag` with `onPointerDown={(e) => e.stopPropagation()}` (avoids Radix's pointer-handler collision); label-trigger wrapper also `data-no-drag`. Click + keyboard nav exclude `[data-no-drag]` as well as `[data-task-label-trigger]` / `[data-task-kebab]` / native buttons/inputs.
+  - `apps/web/src/features/task/components/TaskLabelSelect.tsx:58` — Read-only variant marks trigger `data-no-drag` so the label chip can never initiate a drag.
+  - `e2e/board-card-actions.spec.ts` — 1 regression: login demo-flow user → `/board/{ws}` → create card → hover/kebab-click Edit → assert dialog count === 1, opacity > 0.9 (no DragOverlay clone) → Escape → kebab-click Delete → toast present, dialog count === 0.
+- **Verification run**:
+  - `pnpm typecheck` → exit 0, no errors across web/api/shared
+  - Repo state: docker compose healthy (postgres/redis up 5h); web/api respond 200/200
+  - **E2E not run** — `pnpm exec playwright test --list` raises `SyntaxError: Cannot use 'import.meta' outside a module` at `packages/db/src/client.ts:1`. Root cause: Playwright loads TS via CJS by default; Prisma 7's generated client (`apps/api/generated/...` and `packages/db/generated/...`) uses `import.meta` and is ESM-only. Same interop problem the seed script hit in session 014 (resolved there via `--format=esm --banner`). Out of scope for this hot-fix — captured as **R-39**.
+- **Files or artifacts updated**:
+  - `apps/web/src/components/ui/kanban.tsx` (+12/-3)
+  - `apps/web/src/features/task/components/TaskCard.tsx` (+5/-1)
+  - `apps/web/src/features/task/components/TaskLabelSelect.tsx` (+1)
+  - `e2e/board-card-actions.spec.ts` (new, 52)
+  - `claude-progress.md` (this session block + R-39 carry-forward)
+- **Risks resolved**: this session closes the kanban-click-eating bug (was untriaged — no risk-id assigned).
+- **Risks remaining**: R-24, R-39 (newly added)
+- **Next best step**: Address R-39 (`e2e/package.json` + `"type":"module"` + relocate `playwright.config.ts`) when starting a follow-up verification track. Until then, R-39 stays the binding constraint on E2E for any new commit that touches `e2e/fixtures.ts` or `packages/db/src/client.ts`. Don't touch those files in feature work without coordinating.
 
 ### Session 014 — Prisma 5 → 7 migration + docker build fix
 
