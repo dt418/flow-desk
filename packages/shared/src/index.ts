@@ -4,6 +4,7 @@ export * from './auth';
 export * from './workspace';
 export * from './task';
 export * from './comment';
+export * from './chat';
 export * from './notification';
 export * from './attachment';
 export * from './label';
