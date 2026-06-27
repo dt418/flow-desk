@@ -75,6 +75,8 @@ model User {
   notifications    Notification[]
   attachments      Attachment[]
   refreshTokens    RefreshToken[]
+  chatMessages     ChatMessage[]
+  notificationPreferences UserNotificationPreference[]
 
   @@index([email])
   @@index([deletedAt])
@@ -96,6 +98,9 @@ model Workspace {
   columns Column[]
   tasks   Task[]
   labels  TaskLabel[]
+  channels ChatChannel[]                        @relation("WorkspaceChannels")
+  notificationSetting WorkspaceNotificationSetting?
+  userNotificationPreferences UserNotificationPreference[]
 
   @@index([slug])
   @@index([ownerId])
@@ -228,6 +233,7 @@ model Comment {
   parentCommentId  String?
   content          String
   mentionedUserIds String[] @default([])
+  isChat           Boolean  @default(false)
   editedAt         DateTime?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
@@ -288,4 +294,85 @@ model RefreshToken {
 
   @@index([userId])
   @@index([expiresAt])
+}
+
+model ChatChannel {
+  id          String   @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation("WorkspaceChannels", fields: [workspaceId], references: [id])
+  name        String
+  description String?
+  isPrivate   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+  messages    ChatMessage[]      @relation("ChannelMessages")
+  @@unique([workspaceId, name])
+  @@index([workspaceId])
+}
+
+model ChatMessage {
+  id              String       @id @default(cuid())
+  channelId       String
+  channel         ChatChannel  @relation("ChannelMessages", fields: [channelId], references: [id])
+  authorId        String
+  author          User         @relation(fields: [authorId], references: [id])
+  content         String
+  mentionedUserIds String[]
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  deletedAt       DateTime?
+  @@index([channelId, createdAt])
+  @@index([authorId])
+}
+
+model WorkspaceNotificationSetting {
+  id                   String    @id @default(cuid())
+  workspaceId          String    @unique
+  workspace            Workspace @relation(fields: [workspaceId], references: [id])
+  taskAssignedEmail    Boolean   @default(true)
+  taskMentionedEmail   Boolean   @default(true)
+  taskDueReminderEmail Boolean   @default(true)
+  taskDueReminderHours Int       @default(24)
+  commentReplyEmail    Boolean   @default(true)
+  commentMentionEmail  Boolean   @default(true)
+  dailyDigest          Boolean   @default(false)
+  weeklyDigest         Boolean   @default(true)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+}
+
+model UserNotificationPreference {
+  id                   String    @id @default(cuid())
+  userId               String
+  user                 User      @relation(fields: [userId], references: [id])
+  workspaceId          String?
+  workspace            Workspace? @relation(fields: [workspaceId], references: [id])
+  taskAssignedEmail    Boolean?
+  taskMentionedEmail   Boolean?
+  taskDueReminderEmail Boolean?
+  taskDueReminderHours Int?
+  dailyDigest          Boolean?
+  weeklyDigest         Boolean?
+  emailDelayMinutes    Int       @default(0)
+  @@unique([userId, workspaceId])
+  @@index([userId])
+}
+
+model EmailJob {
+  id          String   @id @default(cuid())
+  userId      String
+  type        String
+  payload     Json
+  status      String   @default("pending")
+  attempts    Int      @default(0)
+  maxAttempts Int      @default(3)
+  scheduledAt DateTime @default(now())
+  completedAt DateTime?
+  failedAt    DateTime?
+  error       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  @@index([userId, status])
+  @@index([scheduledAt])
 }
