@@ -12,6 +12,8 @@ export default defineConfig({
     'src/attachment.ts',
     'src/common.ts',
     'src/pagination.ts',
+    'src/chat.ts',
+    'src/notification-preferences.ts',
   ],
   format: ['cjs', 'esm'],
   dts: true,
