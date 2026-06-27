@@ -15,6 +15,14 @@ const envSchema = z.object({
   GOOGLE_CLIENT_ID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),
   GOOGLE_REDIRECT_URI: z.string().url().optional(),
+  EMAIL_PROVIDER: z.enum(['nodemailer', 'resend']).default('nodemailer'),
+  EMAIL_FROM: z.string().default('FlowDesk <noreply@flowdesk.local>'),
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.coerce.number().int().min(1).max(65_535).optional(),
+  SMTP_SECURE: z.coerce.boolean().default(false),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASSWORD: z.string().optional(),
+  RESEND_API_KEY: z.string().optional(),
   LLM_BASE_URL: z.string().url().default('https://api.openai.com/v1'),
   LLM_API_KEY: z.string().default('sk-placeholder'),
   LLM_MODEL: z.string().default('gpt-4o-mini'),
@@ -47,3 +55,16 @@ if (!parsed.success) {
 }
 
 export const env = parsed.data;
+
+if (env.EMAIL_PROVIDER === 'resend' && !env.RESEND_API_KEY) {
+  // eslint-disable-next-line no-console
+  console.warn(
+    '[env] EMAIL_PROVIDER=resend but RESEND_API_KEY is not set — Resend send() calls will fail.',
+  );
+}
+if (env.EMAIL_PROVIDER === 'nodemailer' && !env.SMTP_HOST) {
+  // eslint-disable-next-line no-console
+  console.warn(
+    '[env] EMAIL_PROVIDER=nodemailer but SMTP_HOST is not set — SMTP send() calls will fail.',
+  );
+}
