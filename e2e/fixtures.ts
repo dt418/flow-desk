@@ -1,9 +1,53 @@
 import { test as base, type Page, type BrowserContext } from '@playwright/test';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../packages/db/generated/client';
+import { PrismaPg } from '@prisma/adapter-pg';
 import bcrypt from 'bcryptjs';
-import { createUser, createWorkspace, cleanDatabase } from '../apps/api/tests/setup/factories';
 
-const prisma = new PrismaClient();
+const DATABASE_URL = process.env.DATABASE_URL ?? 'postgresql://flowdesk:flowdesk@localhost:5432/flowdesk?schema=public';
+const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: DATABASE_URL }) });
+
+let idCounter = 0;
+function uniq(prefix: string): string {
+  idCounter += 1;
+  return `${prefix}-${Date.now()}-${idCounter}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+async function cleanDatabase(p: PrismaClient): Promise<void> {
+  await p.$transaction(async (tx) => {
+    await tx.$executeRawUnsafe(`SET session_replication_role = 'replica'`);
+    const tables = await tx.$queryRaw<Array<{ tablename: string }>>`
+      SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename NOT LIKE '\\_%'
+    `;
+    for (const { tablename } of tables) {
+      await tx.$executeRawUnsafe(`DELETE FROM "${tablename}"`);
+    }
+    await tx.$executeRawUnsafe(`SET session_replication_role = 'origin'`);
+  }, { timeout: 30000 });
+}
+
+async function createUser(p: PrismaClient, email: string, name: string): Promise<{ id: string; email: string; name: string }> {
+  const user = await p.user.create({ data: { email, name } });
+  return { id: user.id, email: user.email, name: user.name };
+}
+
+async function createWorkspace(p: PrismaClient, ownerId: string, name: string): Promise<{ id: string; name: string; ownerId: string }> {
+  const slug = `ws-${uniq('s')}`.toLowerCase();
+  const ws = await p.workspace.create({
+    data: {
+      name, slug, ownerId,
+      members: { create: { userId: ownerId, role: 'OWNER' } },
+      columns: {
+        create: [
+          { name: 'Backlog', position: 0, isDoneColumn: false },
+          { name: 'Todo', position: 1, isDoneColumn: false },
+          { name: 'In Progress', position: 2, isDoneColumn: false },
+          { name: 'Done', position: 3, isDoneColumn: true },
+        ],
+      },
+    },
+  });
+  return { id: ws.id, name: ws.name, ownerId: ws.ownerId };
+}
 
 export interface SeededUser {
   id: string;
@@ -58,7 +102,7 @@ export async function loginViaUI(page: Page, email: string, password: string) {
   await page.getByLabel('Email').fill(email);
   await page.getByLabel('Password').fill(password);
   await page.getByRole('button', { name: /sign in/i }).click();
-  await page.waitForURL(/\/(w|dashboard)/, { timeout: 10_000 });
+  await page.waitForURL(/\/$|\/(w\/|dashboard)/, { timeout: 15_000 });
 }
 
 export async function apiLogin(email: string, password: string): Promise<string> {

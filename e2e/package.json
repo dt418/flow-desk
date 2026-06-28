@@ -1,0 +1,11 @@
+{
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "@flowdesk/db": "workspace:*",
+    "@playwright/test": "^1.61.0",
+    "@prisma/adapter-pg": "^7.8.0",
+    "bcryptjs": "^3.0.3",
+    "pg": "^8.22.0"
+  }
+}
