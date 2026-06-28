@@ -22,6 +22,41 @@
 
 ## Session Log
 
+### Session 016 — Chat, Notifications & Email backend
+
+- **Date**: 2026-06-28
+- **Worktree**: `/home/thanh/f7-chat-email` on branch `f7-chat-email`
+- **Goal**: Implement chat channels/messages, email notification system (providers, templates, queue, workers, scheduler)
+- **Completed**:
+  - Phase 1.1: Prisma schema — 5 models (ChatChannel, ChatMessage, EmailJob, WorkspaceNotificationSetting, UserNotificationPreference) + Comment.isChat + edges. Migration applied, client generated.
+  - Phase 1.2: `packages/shared/src/chat.ts` — Zod schemas for channel/message CRUD, scope enum, list queries. 21 tests.
+  - Phase 1.3: `packages/shared/src/notification-preferences.ts` — digestCadence, notification channels, workspace defaults, user overrides, EmailJob queries. 25 tests.
+  - Phase 1.4: tsup entries for chat + notification-preferences; rebuilt dist.
+  - Phase 2.1: `apps/api/src/shared/lib/email-provider.ts` — EmailProvider interface + NodemailerEmailProvider + ResendEmailProvider + factory. env.ts extended. 9 tests.
+  - Phase 2.2: `apps/api/src/shared/lib/email-templates/` — renderTaskAssignedEmail, renderTaskDueReminderEmail, renderDigestEmail. 22 tests.
+  - Phase 3.1: BullMQ queue, instant processor, standalone entry, `worker:email` script. 5 tests.
+  - Phase 3.2: delayed processor, schedule-delayed (DB record + enqueue with delay + cancel). 10 tests.
+  - Phase 3.3: send processor (combined INSTANT/DELAYED/DUE_REMINDER), digest processor, scheduler (due-reminder check + digest check). 18 tests (all workers).
+- **Verification run**:
+  - `tsc --noEmit` → exit 0 (no errors)
+  - `vitest run --config vitest.config.ts` → 49/49 tests pass (6 files: email-provider, email-templates, email-worker, send, delayed, scheduler)
+- **Commits** (5 in worktree):
+  - `f434bc1` feat(shared): chat schemas (Channel + Message, 21 tests)
+  - `43625a9` feat(shared): notification-preference schemas (25 tests)
+  - `e24367f` feat(shared): add chat, notification-preferences to tsup entries
+  - `daf3bac` feat(api): email-provider (nodemailer + resend) + env config (9 tests)
+  - `0c8a5c3` feat(api): email templates (assigned, due-reminder, digest) (22 tests)
+  - `9e90cc5` feat(api): email worker queue + instant processor (5 tests)
+  - `41865ad` feat(api): delayed processor + schedule-delayed (10 tests)
+  - `bc141bb` feat(api): digest processor + scheduler (due reminders + periodic digest) (18 tests)
+- **Key deviations from plan**:
+  - Prisma schema uses `assigneeId`/`dueDate`/`dailyDigest`/`weeklyDigest` booleans (NOT `digestCadence` enum or `digestHour`).
+  - Vite vitest config uses `vitest.config.ts` (not `vitest.workspace.ts`).
+  - `rtk` wrapper intercepts pnpm/git with hooks; use direct binaries (`/usr/bin/git`, `./node_modules/.bin/vitest`).
+  - `msgpackr-extract` build must be `pnpm approve-builds` approved before pre-commit hooks pass.
+  - BullMQ 5.15.0 used (not 5.16+).
+- **Next scope**: Phase 4.1 — Chat channel API (repository, service, routes, Zod validation).
+
 ### Session 015 — Kanban dnd-pointer-stop bug fix + E2E spec
 
 - **Date**: 2026-06-27
