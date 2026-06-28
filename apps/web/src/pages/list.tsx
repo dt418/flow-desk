@@ -1,4 +1,4 @@
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import type { ColumnDef } from '@tanstack/react-table';
 import { useMemo, useState } from 'react';
@@ -19,9 +19,10 @@ interface TaskRow {
   id: string;
   title: string;
   status: string;
-  priority: string;
+  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
   columnId: string;
   position: number;
+  version: number;
   assignee: { id: string; name: string; email?: string; avatarUrl: string | null } | null;
   dueDate: string | null;
   labels: string[];
@@ -142,10 +143,10 @@ export function ListPage() {
   const [newModalOpen, setNewModalOpen] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const deleteTask = useDeleteTask(workspaceId);
-  const { data: membersData } = useMembers(workspaceId);
-  const { data: wsColumnsData } = useColumns(workspaceId);
-  const members = Array.isArray(membersData) ? membersData : membersData?.data ?? [];
-  const wsColumns = Array.isArray(wsColumnsData) ? wsColumnsData : wsColumnsData?.data ?? [];
+  const { data: membersData } = useMembers(workspaceId) as { data: Array<{ id: string; name: string; email: string }> | { data: Array<{ id: string; name: string; email: string }> } | undefined };
+  const { data: wsColumnsData } = useColumns(workspaceId) as { data: Array<{ id: string; name: string }> | { data: Array<{ id: string; name: string }> } | undefined };
+  const members = Array.isArray(membersData) ? membersData : (membersData as { data: Array<{ id: string; name: string; email: string }> } | undefined)?.data ?? [];
+  const wsColumns = Array.isArray(wsColumnsData) ? wsColumnsData : (wsColumnsData as { data: Array<{ id: string; name: string }> } | undefined)?.data ?? [];
 
   const handleEdit = (taskId: string) => {
     setSelectedTaskId(taskId);
