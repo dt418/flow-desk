@@ -5,7 +5,7 @@ import bcrypt from 'bcryptjs';
 
 function e2eDbUrl(): string {
   const port = process.env.DB_PORT ?? '5432';
-  return process.env.TEST_DB_URL ?? `postgresql://flowdesk:flowdesk@127.0.0.1:${port}/flowdesk_test?schema=public`;
+  return process.env.DATABASE_URL ?? `postgresql://flowdesk:flowdesk@127.0.0.1:${port}/flowdesk?schema=public`;
 }
 
 const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: e2eDbUrl() }) });
