@@ -6,9 +6,12 @@ import type {
   CreateColumnInput,
   UpdateColumnInput,
 } from '@flow-desk/shared/workspace';
-import type { WorkspaceDetail, MemberRow, Column } from './types';
+import type { WorkspaceDetail, MemberRow, Column, WorkspaceListEntry } from './types';
 
 export const workspaceApi = {
+  list() {
+    return api<{ data: WorkspaceListEntry[]; nextCursor: string | null }>('/api/workspaces');
+  },
   get(workspaceId: string) {
     return api<{ workspace: WorkspaceDetail }>(
       `/api/workspaces/${encodeURIComponent(workspaceId)}`,

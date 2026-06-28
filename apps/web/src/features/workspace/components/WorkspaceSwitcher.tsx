@@ -1,7 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ChevronDown, Check, Plus } from 'lucide-react';
-import { api } from '@/lib/api';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,16 +12,10 @@ import {
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import { useWorkspaceRole } from '../hooks';
+import { useWorkspaceRole, workspaceKeys } from '../hooks';
+import { workspaceApi } from '../api';
 import { initials } from './role';
-
-interface WorkspaceSummary {
-  id: string;
-  name: string;
-  slug: string;
-  role: 'OWNER' | 'ADMIN' | 'MEMBER' | 'GUEST';
-  _count?: { members: number; tasks: number };
-}
+import type { WorkspaceListEntry } from '../types';
 
 interface Props {
   currentWorkspaceId?: string;
@@ -41,8 +34,8 @@ export function WorkspaceSwitcher({
   const currentRole = useWorkspaceRole(currentWorkspaceId ?? '');
 
   const workspaces = useQuery({
-    queryKey: ['workspaces'],
-    queryFn: () => api<{ data: WorkspaceSummary[]; nextCursor: string | null }>('/api/workspaces'),
+    queryKey: workspaceKeys.all,
+    queryFn: () => workspaceApi.list(),
   });
 
   const list = workspaces.data?.data ?? [];

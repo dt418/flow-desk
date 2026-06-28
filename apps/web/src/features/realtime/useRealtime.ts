@@ -28,7 +28,9 @@ export function useRealtime(workspaceId: string, taskId?: string) {
 
     const invalidateBoard = () =>
       qc.invalidateQueries({ queryKey: realtimeKeys.board(workspaceId) });
-    const events = [
+    const invalidateLabels = () =>
+      qc.invalidateQueries({ queryKey: ['labels', workspaceId] });
+    const taskEvents = [
       'task:created',
       'task:updated',
       'task:deleted',
@@ -37,11 +39,21 @@ export function useRealtime(workspaceId: string, taskId?: string) {
       'task:subtask:created',
       'task:dependency:added',
     ];
-    const handlers = events.map((evt) => {
+    const handlers: Array<readonly [string, () => void]> = taskEvents.map((evt) => {
       const handler = () => invalidateBoard();
       socket.on(evt, handler);
       return [evt, handler] as const;
     });
+
+    const labelEvents = ['label:created', 'label:updated', 'label:deleted'] as const;
+    for (const evt of labelEvents) {
+      const handler = () => invalidateLabels();
+      socket.on(evt, handler);
+      handlers.push([evt, handler] as const);
+    }
+
+    socket.on('task:labels-changed', invalidateBoard);
+    handlers.push(['task:labels-changed', invalidateBoard] as const);
 
     return () => {
       leaveRoom(socket, workspaceRoom);

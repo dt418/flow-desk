@@ -10,6 +10,14 @@ export interface WorkspaceDetail extends Workspace {
   columns?: Column[];
 }
 
+export interface WorkspaceListEntry {
+  id: string;
+  name: string;
+  slug: string;
+  role: UserRole;
+  _count?: { members: number; tasks: number };
+}
+
 export interface MemberRow extends WorkspaceMember {
   user: {
     id: string;
