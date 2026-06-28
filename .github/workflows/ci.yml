@@ -23,7 +23,10 @@ jobs:
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @flow-desk/shared build
-      - run: pnpm --filter @flowdesk/db db:generate
+      - name: Generate prisma client
+        env:
+          DATABASE_URL: postgresql://placeholder:placeholder@localhost:5432/placeholder
+        run: pnpm --filter @flowdesk/db db:generate
       - run: pnpm typecheck
       - run: pnpm lint
       - run: pnpm --filter @flow-desk/web build
