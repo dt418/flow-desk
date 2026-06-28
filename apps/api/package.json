@@ -21,7 +21,8 @@
     "db:studio": "bash ../../scripts/prisma-exec.sh studio",
     "db:push": "bash ../../scripts/prisma-exec.sh db push",
     "db:push-skip-generate": "bash ../../scripts/prisma-exec.sh db push --skip-generate",
-    "db:reset": "bash ../../scripts/prisma-exec.sh db push --force-reset --accept-data-loss --skip-generate"
+    "db:reset": "bash ../../scripts/prisma-exec.sh db push --force-reset --accept-data-loss --skip-generate",
+    "worker:email": "tsx src/workers/email/email-worker.ts"
   },
   "dependencies": {
     "@flow-desk/shared": "workspace:*",
@@ -38,11 +39,14 @@
     "hono": "^4.5.10",
     "ioredis": "^5.4.1",
     "jsonwebtoken": "^9.0.2",
+    "nodemailer": "^9.0.1",
     "pg": "^8.13.0",
     "pino": "^9.4.0",
     "pino-pretty": "^11.2.2",
     "rate-limiter-flexible": "^5.0.4",
+    "resend": "^6.16.0",
     "socket.io": "^4.8.0",
+    "bullmq": "^5.15.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
@@ -50,6 +54,7 @@
     "@types/cors": "^2.8.17",
     "@types/jsonwebtoken": "^9.0.7",
     "@types/node": "^22.7.4",
+    "@types/nodemailer": "^8.0.1",
     "@types/pg": "^8.11.10",
     "@types/supertest": "^6.0.2",
     "@vitest/coverage-v8": "^2.1.0",

@@ -47,8 +47,6 @@ test.describe('Board card actions (drag/drop conflict with Edit/Delete) @bugfix'
     // Delete fires toast — no DragOverlay ghost.
     const toasts = page.locator('[data-sonner-toast]');
     await expect(toasts.first()).toBeVisible({ timeout: 5_000 });
-    // After delete, empty state may show Create-your-first-task which opens a modal;
-    // just verify the edit modal is gone (delete worked).
     await expect(page.getByText(/task deleted/i)).toBeVisible({ timeout: 5_000 });
   });
 });

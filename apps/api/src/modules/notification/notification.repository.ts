@@ -41,3 +41,16 @@ export function markAllRead(prisma: PrismaClient, userId: string) {
     data: { readAt: new Date() },
   });
 }
+
+export function createNotification(
+  prisma: PrismaClient,
+  input: {
+    userId: string;
+    type: 'TASK_ASSIGNED';
+    title: string;
+    body: string;
+    data: Prisma.InputJsonValue;
+  },
+) {
+  return prisma.notification.create({ data: input });
+}

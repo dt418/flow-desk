@@ -102,7 +102,8 @@ export function TaskCard({
     if (target.closest('[data-no-drag]')) return;
     if (target.closest('[data-task-label-trigger]')) return;
     if (target.closest('[data-task-kebab]')) return;
-    if (target.closest('button, [role="button"], a, input, select, textarea')) return;
+    if (target.closest('button, a, input, select, textarea')) return;
+    if (target.closest('[role="button"]') && target.closest('[role="button"]') !== e.currentTarget) return;
     onClick?.(task.id);
   };
 
@@ -118,7 +119,8 @@ export function TaskCard({
           if (target.closest('[data-no-drag]')) return;
           if (target.closest('[data-task-label-trigger]')) return;
           if (target.closest('[data-task-kebab]')) return;
-          if (target.closest('button, [role="button"], a, input, select, textarea')) return;
+          if (target.closest('button, a, input, select, textarea')) return;
+          if (target.closest('[role="button"]') && target.closest('[role="button"]') !== e.currentTarget) return;
           e.preventDefault();
           onClick(task.id);
         }

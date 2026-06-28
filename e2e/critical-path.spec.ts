@@ -1,7 +1,18 @@
 import { test, expect, loginViaUI, apiLogin } from './fixtures';
 
 test.describe('Critical path @smoke', () => {
-  test('login → workspace → create task → drag → add label', async ({ page, seedUser }) => {
+  test('login → workspace → create task → add label', async ({ page, seedUser, apiContext }) => {
+    const cookie = await apiLogin(seedUser.email, seedUser.password);
+
+    await fetch(
+      `${apiContext.baseURL}/api/workspaces/${seedUser.workspaceId}/labels`,
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', cookie },
+        body: JSON.stringify({ name: 'urgent', color: 'red' }),
+      },
+    );
+
     await loginViaUI(page, seedUser.email, seedUser.password);
     await page.goto(`/board/${seedUser.workspaceId}`);
     await expect(page.getByRole('heading', { name: /board/i })).toBeVisible();

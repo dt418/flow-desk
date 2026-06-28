@@ -57,10 +57,20 @@
       "import": "./dist/common.mjs",
       "require": "./dist/common.js"
     },
+    "./chat": {
+      "types": "./dist/chat.d.ts",
+      "import": "./dist/chat.mjs",
+      "require": "./dist/chat.js"
+    },
     "./label": {
       "types": "./dist/label.d.ts",
       "import": "./dist/label.mjs",
       "require": "./dist/label.js"
+    },
+    "./notification-preferences": {
+      "types": "./dist/notification-preferences.d.ts",
+      "import": "./dist/notification-preferences.mjs",
+      "require": "./dist/notification-preferences.js"
     }
   },
   "scripts": {
@@ -68,7 +78,8 @@
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
     "lint": "echo 'shared: lint placeholder'",
-    "test": "echo 'shared: no tests yet'",
+    "test": "pnpm exec vitest run",
+    "test:watch": "pnpm exec vitest",
     "clean": "rm -rf dist"
   },
   "dependencies": {
@@ -77,6 +88,7 @@
   "devDependencies": {
     "@types/node": "^22.7.4",
     "tsup": "^8.3.5",
-    "typescript": "^5.6.2"
+    "typescript": "^5.6.2",
+    "vitest": "^2.1.0"
   }
 }

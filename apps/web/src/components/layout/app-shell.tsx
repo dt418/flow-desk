@@ -72,6 +72,9 @@ export function AppShell() {
               <NavLink to={`/list/${w.id}`} className={navSubItem}>
                 List view
               </NavLink>
+              <NavLink to={`/workspaces/${w.id}/chat`} className={navSubItem}>
+                Chat
+              </NavLink>
               <NavLink to={`/workspaces/${w.id}/settings`} className={navSubItem}>
                 Settings
               </NavLink>

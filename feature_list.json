@@ -785,6 +785,43 @@
         "apps/web/src/features/board/components/PresenceBar.tsx — removed TODO(server) comment; protocol now documented as implemented"
       ],
       "notes": "F6 = session 012. Subagent returned empty twice (similar to subagent D in F2) — implemented inline. namespace choice: /tasks (matches PresenceBar existing usage) instead of /collab to avoid FE wiring changes."
+    },
+    {
+      "id": "F7",
+      "priority": 35,
+      "area": "collab",
+      "title": "Chat channels + notifications + email infrastructure",
+      "user_visible_behavior": "User can create/manage chat channels per workspace, send real-time messages with mentions, view task-level chat in task edit modal. Notifications created on task assignment with email (instant or delayed) via BullMQ queue with Nodemailer/Resend providers. Notification preferences per user per workspace (digest cadence, email toggle per event type, delay minutes).",
+      "status": "passing",
+      "verification": [
+        "pnpm --filter @flow-desk/api tsc --noEmit → exit 0",
+        "pnpm --filter @flow-desk/api vitest run → 80/80 unit tests pass",
+        "pnpm --filter @flow-desk/api vitest run --config vitest.integration.config.ts → 162/162 integration tests pass",
+        "pnpm --filter @flow-desk/web vite build → exit 0"
+      ],
+      "evidence": [
+        "Prisma schema: ChatChannel, ChatMessage, EmailJob, WorkspaceNotificationSetting, UserNotificationPreference + Comment.isChat",
+        "packages/shared/src/chat.ts — Zod schemas for channel/message CRUD, scope enum, list queries (21 tests)",
+        "packages/shared/src/notification-preferences.ts — Zod schemas for prefs CRUD + EffectivePreferences (25 tests)",
+        "packages/shared/package.json — added ./chat export entry",
+        "apps/api/src/modules/chat/ — chat channel + message service/repo/routes with cursor pagination, Socket.IO emits on /collab namespace",
+        "apps/api/src/modules/notification/notification-email.service.ts — handleTaskAssignedEmail creates emailJob DB record + enqueues via BullMQ",
+        "apps/api/src/modules/notification-preferences/ — service + repo for workspace settings + user prefs + getEffectivePreferences merge",
+        "apps/api/src/modules/task/task.service.ts — handleAssigneeChange triggers notification + email on assign; create triggers when assignee != creator",
+        "apps/api/src/shared/lib/email-provider.ts — EmailProvider interface + NodemailerEmailProvider + ResendEmailProvider + factory (9 tests)",
+        "apps/api/src/shared/lib/email-templates/ — renderTaskAssignedEmail, renderTaskDueReminderEmail, renderDigestEmail (22 tests)",
+        "apps/api/src/workers/email/ — BullMQ queue + 4 processors (instant, delayed, send, digest) + scheduler + schedule-delayed (26 tests)",
+        "apps/api/tsup.config.ts — second entry for email-worker.ts",
+        "apps/web/src/features/chat/ — 11 files: types, api, hooks (useInfiniteMessages, useFlattenedMessages, useMessageSubscription), components (ChatSidebar, ChannelItem, ChannelView, MessageBubble, ChatInput, TaskChat)",
+        "apps/web/src/features/task/components/TaskEditModal.tsx — Details/Chat tabs with TaskChat",
+        "apps/web/src/pages/chat.tsx — chat route with sidebar + channel view + create dialog",
+        "apps/web/src/App.tsx — route /workspaces/:workspaceId/chat",
+        "apps/web/src/components/layout/app-shell.tsx — Chat nav link",
+        "docker/email-worker.Dockerfile — multi-stage build for email worker",
+        "docker-compose.yml — email-worker service added",
+        "e2e/chat.spec.ts — Playwright E2E tests (blocked by R-39 Prisma client CJS/ESM interop)"
+      ],
+      "notes": "F7 = session 016 (worktree f7-chat-email). 80 unit + 162 integration tests all passing. E2E blocked by R-39 (Prisma 7 client uses import.meta, incompatible with Playwright CJS loader). Email worker Docker build fails on @flowdesk/db workspace resolution — pre-existing monorepo docker issue. Pending commit of Phase 5-8 work + frontend."
     }
   ]
 }

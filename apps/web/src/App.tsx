@@ -12,6 +12,7 @@ import { BoardPage } from '@/pages/board';
 import { ListPage } from '@/pages/list';
 import { WorkspaceSettingsPage } from '@/pages/workspace-settings';
 import { LabelManagerPage } from '@/features/label';
+import { ChatPage } from '@/pages/chat';
 
 export function App() {
   const { theme } = useTheme();
@@ -50,6 +51,7 @@ export function App() {
         <Route path="/list/:workspaceId" element={<ListPage />} />
         <Route path="/workspaces/:workspaceId/settings" element={<WorkspaceSettingsPage />} />
         <Route path="/workspaces/:workspaceId/labels" element={<LabelManagerRoute />} />
+        <Route path="/workspaces/:workspaceId/chat" element={<ChatPage />} />
       </Route>
       <Route path="*" element={<Navigate to={user ? '/' : '/login'} />} />
     </Routes>

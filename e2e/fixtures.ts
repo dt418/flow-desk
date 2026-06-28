@@ -3,8 +3,12 @@ import { PrismaClient } from '../packages/db/generated/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import bcrypt from 'bcryptjs';
 
-const DATABASE_URL = process.env.DATABASE_URL ?? 'postgresql://flowdesk:flowdesk@localhost:5432/flowdesk?schema=public';
-const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: DATABASE_URL }) });
+function e2eDbUrl(): string {
+  const port = process.env.DB_PORT ?? '5432';
+  return process.env.TEST_DB_URL ?? `postgresql://flowdesk:flowdesk@127.0.0.1:${port}/flowdesk_test?schema=public`;
+}
+
+const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: e2eDbUrl() }) });
 
 let idCounter = 0;
 function uniq(prefix: string): string {
@@ -62,7 +66,19 @@ export const test = base.extend<{
   seedUser: SeededUser;
   loginAs: (email: string, password: string) => Promise<void>;
   apiContext: { baseURL: string };
+  hideDevtools: void;
 }>({
+  hideDevtools: [
+    async ({ page }, use) => {
+      await page.addInitScript(() => {
+        const style = document.createElement('style');
+        style.textContent = '.tsqd-parent-container { display: none !important }';
+        document.head.appendChild(style);
+      });
+      await use();
+    },
+    { auto: true },
+  ],
   db: [
     async ({}, use) => {
       await cleanDatabase(prisma);
@@ -97,12 +113,19 @@ export const test = base.extend<{
 export { expect } from '@playwright/test';
 export type { Page, BrowserContext };
 
+export async function closeDevtools(page: Page) {
+  const btn = page.locator('button[title*="Tanstack"]').first();
+  if (await btn.isVisible({ timeout: 500 }).catch(() => false)) {
+    await btn.click();
+  }
+}
+
 export async function loginViaUI(page: Page, email: string, password: string) {
   await page.goto('/login');
   await page.getByLabel('Email').fill(email);
   await page.getByLabel('Password').fill(password);
   await page.getByRole('button', { name: /sign in/i }).click();
-  await page.waitForURL(/\/$|\/(w\/|dashboard)/, { timeout: 15_000 });
+  await page.waitForURL(/\/$|\/(board|dashboard)/, { timeout: 15_000 });
 }
 
 export async function apiLogin(email: string, password: string): Promise<string> {

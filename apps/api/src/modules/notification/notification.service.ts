@@ -1,3 +1,4 @@
+import type { Prisma } from '@flowdesk/db';
 import type { prisma } from '../../shared/lib/prisma';
 type PrismaClient = typeof prisma;
 import type { ListNotificationsQuery, MarkReadInput } from '@flow-desk/shared/notification';
@@ -47,4 +48,25 @@ export async function markRead(prisma: PrismaClient, userId: string, body: MarkR
 export async function markAllRead(prisma: PrismaClient, userId: string) {
   const result = await repo.markAllRead(prisma, userId);
   return { updated: result.count };
+}
+
+export async function createTaskAssignmentNotification(
+  prisma: PrismaClient,
+  input: {
+    taskId: string;
+    taskTitle: string;
+    workspaceId: string;
+    assigneeId: string;
+    assignedById: string;
+    workspaceName: string;
+  },
+) {
+  const notification = await repo.createNotification(prisma, {
+    userId: input.assigneeId,
+    type: 'TASK_ASSIGNED',
+    title: `You were assigned: ${input.taskTitle}`,
+    body: `in ${input.workspaceName}`,
+    data: { taskId: input.taskId, assignedById: input.assignedById },
+  });
+  return notification;
 }

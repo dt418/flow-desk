@@ -13,7 +13,6 @@ test.describe('Realtime label sync @realtime', () => {
     await page.goto(`/board/${seedUser.workspaceId}`);
     await page.getByRole('heading', { name: /board/i }).waitFor({ state: 'visible', timeout: 15_000 });
 
-    // Create label via API
     const res = await fetch(
       `${process.env.API_BASE_URL ?? 'http://localhost:3000'}/api/workspaces/${seedUser.workspaceId}/labels`,
       {
@@ -27,7 +26,6 @@ test.describe('Realtime label sync @realtime', () => {
       throw new Error(`Label create failed: ${res.status} ${body}`);
     }
 
-    // Navigate back to board — label should be accessible
     await page.goto(`/workspaces/${seedUser.workspaceId}/labels`);
     await expect(page.getByText('Urgent')).toBeVisible({ timeout: 5_000 });
 
