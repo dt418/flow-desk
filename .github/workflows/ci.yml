@@ -1,0 +1,84 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  NODE_VERSION: '22'
+  PNPM_VERSION: '11'
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @flow-desk/shared build
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - run: pnpm --filter @flow-desk/web build
+
+  integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: flowdesk
+          POSTGRES_PASSWORD: flowdesk
+          POSTGRES_DB: flowdesk
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready -U flowdesk
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd redis-cli ping
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @flow-desk/shared build
+      - run: pnpm --filter @flowdesk/db db:generate
+        env:
+          DATABASE_URL: postgresql://flowdesk:flowdesk@localhost:5432/flowdesk?schema=public
+      - name: Create test database + push schema
+        run: |
+          PGPASSWORD=flowdesk psql -h localhost -U flowdesk -d postgres -c "CREATE DATABASE flowdesk_test;" || true
+          DATABASE_URL=postgresql://flowdesk:flowdesk@localhost:5432/flowdesk_test?schema=public \
+            pnpm exec prisma db push --accept-data-loss --schema=packages/db/prisma/schema.prisma
+      - run: pnpm --filter @flow-desk/api test:integration
+        env:
+          DATABASE_URL: postgresql://flowdesk:flowdesk@localhost:5432/flowdesk_test?schema=public
+          REDIS_URL: redis://localhost:6379
+          NODE_ENV: test
+          JWT_SECRET: ci-test-secret-32-chars-minimum-for-jwt!!
+          LLM_API_KEY: sk-placeholder
+          SKIP_RATE_LIMIT: '1'
