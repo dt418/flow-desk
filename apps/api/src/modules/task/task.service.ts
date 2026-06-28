@@ -13,10 +13,12 @@ import {
   type CreateSubtaskInput,
   type CreateDependencyInput,
 } from '@flow-desk/shared/task';
-import { emitToTask, emitToWorkspace } from '../../shared/lib/socket-events';
+import { emitToTask, emitToWorkspace, emitToUser } from '../../shared/lib/socket-events';
 import { logger } from '../../shared/lib/logger';
 import { BadRequestError, ConflictError, NotFoundError } from '../../shared/errors';
 import * as repo from './task.repository';
+import { createTaskAssignmentNotification } from '../notification/notification.service';
+import { handleTaskAssignedEmail } from '../notification/notification-email.service';
 
 export const listTasksQuerySchema = CursorPaginationQuery.extend({
   workspaceId: cuidSchema,
@@ -140,6 +142,8 @@ export const taskService = {
       throw new ConflictError('Task was updated by another user', { current: existing });
     }
 
+    const previousAssigneeId = existing.assigneeId;
+
     const task = await repo.update(prisma, id, {
       ...body,
       ...(body.dueDate ? { dueDate: new Date(body.dueDate) } : {}),
@@ -153,6 +157,7 @@ export const taskService = {
       event: 'task:updated',
       taskId: task.id,
     });
+    await handleAssigneeChange(userId, previousAssigneeId, task);
     return task;
   },
 
@@ -375,3 +380,56 @@ export const taskService = {
     await repo.deleteDependency(prisma, id);
   },
 };
+
+async function handleAssigneeChange(
+  userId: string,
+  previousAssigneeId: string | null,
+  task: { id: string; title: string; workspaceId: string; assigneeId: string | null; dueDate: Date | null },
+) {
+  if (!previousAssigneeId && !task.assigneeId) return;
+  if (previousAssigneeId === task.assigneeId) return;
+  if (!task.assigneeId) return;
+
+  const [workspace, assignee, assigner] = await Promise.all([
+    prisma.workspace.findUnique({ where: { id: task.workspaceId }, select: { name: true } }),
+    prisma.user.findUnique({ where: { id: task.assigneeId }, select: { id: true, name: true, email: true } }),
+    prisma.user.findUnique({ where: { id: userId }, select: { name: true } }),
+  ]);
+  if (!workspace || !assignee || !assigner) return;
+
+  try {
+    const notification = await createTaskAssignmentNotification(prisma, {
+      taskId: task.id,
+      taskTitle: task.title,
+      workspaceId: task.workspaceId,
+      assigneeId: task.assigneeId,
+      assignedById: userId,
+      workspaceName: workspace.name,
+    });
+    safeEmit(() => emitToUser(task.assigneeId!, 'notification:new', { notification }), {
+      event: 'notification:new',
+      taskId: task.id,
+    });
+  } catch (err) {
+    logger.warn({ err, taskId: task.id }, 'failed to create assignment notification');
+  }
+
+  try {
+    const appUrl = process.env.APP_URL ?? 'http://localhost:3000';
+    const dueAt = task.dueDate?.toISOString() ?? null;
+    await handleTaskAssignedEmail(prisma, {
+      assigneeId: task.assigneeId,
+      assigneeName: assignee.name,
+      assigneeEmail: assignee.email,
+      assignerName: assigner.name,
+      taskId: task.id,
+      taskTitle: task.title,
+      taskUrl: `${appUrl}/tasks/${task.id}`,
+      workspaceId: task.workspaceId,
+      workspaceName: workspace.name,
+      dueAt,
+    });
+  } catch (err) {
+    logger.warn({ err, taskId: task.id }, 'failed to enqueue assignment email');
+  }
+}
