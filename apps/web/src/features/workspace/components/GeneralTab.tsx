@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
 import { useUpdateWorkspace, useWorkspace } from '../hooks';
@@ -8,6 +8,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { ApiError } from '@/lib/api';
 
 const generalSchema = z.object({
@@ -29,6 +36,7 @@ export function GeneralTab({ workspaceId }: Props) {
     register,
     handleSubmit,
     reset,
+    control,
     formState: { errors, isSubmitting, isDirty },
   } = useForm<GeneralInput>({
     resolver: zodResolver(generalSchema),
@@ -96,15 +104,22 @@ export function GeneralTab({ workspaceId }: Props) {
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="ws-vis">Visibility</Label>
-        <select
-          id="ws-vis"
-          {...register('visibility')}
-          className="flex h-9 w-full rounded-md border border-[var(--border)] bg-[var(--bg-2)] px-3 text-[13px] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-emerald-500/60"
-        >
-          <option value="PRIVATE">Private — invite only</option>
-          <option value="PUBLIC">Public — discoverable by slug</option>
-        </select>
+        <Label>Visibility</Label>
+        <Controller
+          name="visibility"
+          control={control}
+          render={({ field }) => (
+            <Select value={field.value} onValueChange={field.onChange}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="PRIVATE">Private — invite only</SelectItem>
+                <SelectItem value="PUBLIC">Public — discoverable by slug</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
+        />
         <p className="caption">
           Slug <span className="font-mono">/{ws.data?.slug}</span> is permanent.
         </p>

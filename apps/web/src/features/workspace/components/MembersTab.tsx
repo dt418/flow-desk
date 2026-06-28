@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
 import { Mail, Trash2, UserPlus } from 'lucide-react';
@@ -18,6 +18,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { ApiError } from '@/lib/api';
 import type { MemberRow } from '../types';
 import type { UserRole } from '@flow-desk/shared/user';
@@ -47,6 +54,7 @@ export function MembersTab({ workspaceId }: Props) {
     register,
     handleSubmit,
     reset,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<InviteInput>({
     resolver: zodResolver(inviteSchema),
@@ -108,16 +116,23 @@ export function MembersTab({ workspaceId }: Props) {
             {errors.email && <p className="text-[11px] text-red-500">{errors.email.message}</p>}
           </div>
           <div className="w-full space-y-1.5 sm:w-32">
-            <Label htmlFor="invite-role">Role</Label>
-            <select
-              id="invite-role"
-              {...register('role')}
-              className="flex h-9 w-full rounded-md border border-[var(--border)] bg-[var(--bg-2)] px-2 text-[13px]"
-            >
-              <option value="ADMIN">Admin</option>
-              <option value="MEMBER">Member</option>
-              <option value="GUEST">Guest</option>
-            </select>
+            <Label>Role</Label>
+            <Controller
+              name="role"
+              control={control}
+              render={({ field }) => (
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ADMIN">Admin</SelectItem>
+                    <SelectItem value="MEMBER">Member</SelectItem>
+                    <SelectItem value="GUEST">Guest</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            />
           </div>
           <Button
             type="submit"
@@ -182,19 +197,21 @@ export function MembersTab({ workspaceId }: Props) {
                     <td className="px-3 py-2.5 text-[var(--fg-2)]">{m.user.email}</td>
                     <td className="px-3 py-2.5">
                       {canChange && !isSelf ? (
-                        <select
+                        <Select
                           value={m.role}
-                          onChange={(e) => onRoleChange(m, e.target.value as UserRole)}
-                          className={cn(
-                            'h-7 rounded border border-[var(--border)] bg-[var(--bg-2)] px-2 text-[12px]',
-                          )}
+                          onValueChange={(v) => onRoleChange(m, v as UserRole)}
                         >
-                          {ROLE_OPTIONS.map((r) => (
-                            <option key={r} value={r}>
-                              {r}
-                            </option>
-                          ))}
-                        </select>
+                          <SelectTrigger className="h-7 w-28 border border-[var(--border)] bg-[var(--bg-2)] text-[12px]">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {ROLE_OPTIONS.map((r) => (
+                              <SelectItem key={r} value={r}>
+                                {r}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       ) : (
                         <RoleBadge role={m.role} />
                       )}
