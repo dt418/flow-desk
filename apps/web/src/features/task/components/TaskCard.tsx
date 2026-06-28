@@ -14,6 +14,7 @@ import { TaskLabelSelect } from './TaskLabelSelect';
 export interface TaskCardData {
   id: string;
   title: string;
+  description?: string;
   status: string;
   priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
   columnId: string;

@@ -109,7 +109,7 @@ export function TaskEditModal({
     if (open) {
       reset({
         title: initial?.title ?? '',
-        description: '',
+        description: initial?.description ?? '',
         priority: initial?.priority ?? 'MEDIUM',
         columnId: initial?.columnId ?? defaultColumnId ?? columns[0]?.id ?? '',
         assigneeId: initial?.assignee?.id ?? '',
@@ -117,6 +117,7 @@ export function TaskEditModal({
         status: (initial?.status as FormInput['status']) ?? 'TODO',
       });
       setTab('details');
+      setAiSuggestions(null);
     }
   }, [open, initial, defaultColumnId, columns, reset]);
 
