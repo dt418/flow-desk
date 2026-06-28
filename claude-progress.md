@@ -36,7 +36,10 @@
   - Phase 2.2: `apps/api/src/shared/lib/email-templates/` — renderTaskAssignedEmail, renderTaskDueReminderEmail, renderDigestEmail. 22 tests.
   - Phase 3.1: BullMQ queue, instant processor, standalone entry, `worker:email` script. 5 tests.
   - Phase 3.2: delayed processor, schedule-delayed (DB record + enqueue with delay + cancel). 10 tests.
-  - Phase 3.3: send processor (combined INSTANT/DELAYED/DUE_REMINDER), digest processor, scheduler (due-reminder check + digest check). 18 tests (all workers).
+  - Phase 3.3: send processor (combined INSTANT/DELAYED/DUE_REMINDER), digest processor, scheduler (due-reminder check + digest check). 18 tests.
+  - Phase 4.1: Chat channel API — repository, service, routes, Zod validation. 13 tests.
+  - Phase 4.2: Chat message API — CRUD with cursor pagination, Socket.IO emits on workspace room. 9 tests.
+  - Phase 4.3: Task-level chat via Comment.isChat flag — comment create/list accept isChat, task GET /:id/chat endpoint.
 - **Verification run**:
   - `tsc --noEmit` → exit 0 (no errors)
   - `vitest run --config vitest.config.ts` → 49/49 tests pass (6 files: email-provider, email-templates, email-worker, send, delayed, scheduler)
@@ -49,13 +52,15 @@
   - `9e90cc5` feat(api): email worker queue + instant processor (5 tests)
   - `41865ad` feat(api): delayed processor + schedule-delayed (10 tests)
   - `bc141bb` feat(api): digest processor + scheduler (due reminders + periodic digest) (18 tests)
+  - `66aabe5` feat(api): chat channel API (CRUD + list with latest message) (13 tests)
+  - `d07fe5e` feat(api): chat message API + task-level chat via Comment.isChat (9 tests)
 - **Key deviations from plan**:
   - Prisma schema uses `assigneeId`/`dueDate`/`dailyDigest`/`weeklyDigest` booleans (NOT `digestCadence` enum or `digestHour`).
   - Vite vitest config uses `vitest.config.ts` (not `vitest.workspace.ts`).
   - `rtk` wrapper intercepts pnpm/git with hooks; use direct binaries (`/usr/bin/git`, `./node_modules/.bin/vitest`).
   - `msgpackr-extract` build must be `pnpm approve-builds` approved before pre-commit hooks pass.
   - BullMQ 5.15.0 used (not 5.16+).
-- **Next scope**: Phase 4.1 — Chat channel API (repository, service, routes, Zod validation).
+- **Next scope**: Phase 5.1 — Notification Preferences API.
 
 ### Session 015 — Kanban dnd-pointer-stop bug fix + E2E spec
 
@@ -79,6 +84,7 @@
   - `claude-progress.md` (this session block + R-39 carry-forward)
 - **Risks resolved**: this session closes the kanban-click-eating bug (was untriaged — no risk-id assigned).
 - **Risks remaining**: R-24, R-39 (newly added)
+- **Worktree active**: `/home/thanh/f7-chat-email` on `f7-chat-email` — Chat/Notifications/Email backend (Phase 1-4 complete, 71 unit tests, 10 commits). See Session 016 below.
 - **Next best step**: Address R-39 (`e2e/package.json` + `"type":"module"` + relocate `playwright.config.ts`) when starting a follow-up verification track. Until then, R-39 stays the binding constraint on E2E for any new commit that touches `e2e/fixtures.ts` or `packages/db/src/client.ts`. Don't touch those files in feature work without coordinating.
 
 ### Session 014 — Prisma 5 → 7 migration + docker build fix

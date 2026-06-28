@@ -61,6 +61,11 @@
       "types": "./dist/label.d.ts",
       "import": "./dist/label.mjs",
       "require": "./dist/label.js"
+    },
+    "./notification-preferences": {
+      "types": "./dist/notification-preferences.d.ts",
+      "import": "./dist/notification-preferences.mjs",
+      "require": "./dist/notification-preferences.js"
     }
   },
   "scripts": {

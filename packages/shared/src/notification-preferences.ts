@@ -1,80 +1,46 @@
 import { z } from 'zod';
 import { cuidSchema } from './common';
 import { CursorPaginationQuery } from './pagination';
-import { notificationTypeSchema } from './notification';
 
-export const digestCadenceSchema = z.enum(['NONE', 'DAILY', 'WEEKLY']);
-export type DigestCadence = z.infer<typeof digestCadenceSchema>;
-
-export const notificationChannelsSchema = z.object({
-  inApp: z.boolean(),
-  email: z.boolean(),
-  push: z.boolean().default(false),
+export const updateWorkspaceNotificationSettingSchema = z.object({
+  taskAssignedEmail: z.boolean().optional(),
+  taskMentionedEmail: z.boolean().optional(),
+  taskDueReminderEmail: z.boolean().optional(),
+  taskDueReminderHours: z.number().int().min(1).max(168).optional(),
+  commentReplyEmail: z.boolean().optional(),
+  commentMentionEmail: z.boolean().optional(),
+  dailyDigest: z.boolean().optional(),
+  weeklyDigest: z.boolean().optional(),
 });
-export type NotificationChannels = z.infer<typeof notificationChannelsSchema>;
+export type UpdateWorkspaceNotificationSetting = z.infer<typeof updateWorkspaceNotificationSettingSchema>;
 
-export const notificationPreferencesSchema = z.object({
-  types: z.record(notificationTypeSchema, notificationChannelsSchema),
+export const updateUserNotificationPreferenceSchema = z.object({
+  workspaceId: z.string().nullable().optional(),
+  taskAssignedEmail: z.boolean().nullable().optional(),
+  taskMentionedEmail: z.boolean().nullable().optional(),
+  taskDueReminderEmail: z.boolean().nullable().optional(),
+  taskDueReminderHours: z.number().int().min(1).max(168).nullable().optional(),
+  dailyDigest: z.boolean().nullable().optional(),
+  weeklyDigest: z.boolean().nullable().optional(),
+  emailDelayMinutes: z.number().int().min(0).max(60).optional(),
 });
-export type NotificationPreferences = z.infer<typeof notificationPreferencesSchema>;
+export type UpdateUserNotificationPreference = z.infer<typeof updateUserNotificationPreferenceSchema>;
 
-export const updateWorkspaceDefaultSchema = z.object({
-  defaults: notificationPreferencesSchema,
-  digestCadence: digestCadenceSchema,
-  digestHour: z.number().int().min(0).max(23),
-});
-export type UpdateWorkspaceDefaultInput = z.infer<typeof updateWorkspaceDefaultSchema>;
-
-export const workspaceNotificationSettingViewSchema = z.object({
-  workspaceId: cuidSchema,
-  defaults: notificationPreferencesSchema,
-  digestCadence: digestCadenceSchema,
-  digestHour: z.number().int().min(0).max(23),
-  updatedAt: z.string(),
-});
-export type WorkspaceNotificationSettingView = z.infer<typeof workspaceNotificationSettingViewSchema>;
-
-export const upsertUserPreferenceSchema = z.object({
-  workspaceId: cuidSchema,
-  override: notificationPreferencesSchema.nullable(),
-});
-export type UpsertUserPreferenceInput = z.infer<typeof upsertUserPreferenceSchema>;
-
-export const userNotificationPreferenceViewSchema = z.object({
-  workspaceId: cuidSchema,
-  userId: cuidSchema,
-  override: notificationPreferencesSchema.nullable(),
-  updatedAt: z.string(),
-});
-export type UserNotificationPreferenceView = z.infer<typeof userNotificationPreferenceViewSchema>;
-
-export const effectivePreferencesViewSchema = z.object({
-  workspaceId: cuidSchema,
-  userId: cuidSchema,
-  effective: notificationPreferencesSchema,
-  source: z.record(notificationTypeSchema, z.enum(['USER', 'WORKSPACE'])),
-});
-export type EffectivePreferencesView = z.infer<typeof effectivePreferencesViewSchema>;
+export interface EffectivePreferences {
+  taskAssignedEmail: boolean;
+  taskMentionedEmail: boolean;
+  taskDueReminderEmail: boolean;
+  taskDueReminderHours: number;
+  commentReplyEmail: boolean;
+  commentMentionEmail: boolean;
+  dailyDigest: boolean;
+  weeklyDigest: boolean;
+  emailDelayMinutes: number;
+}
 
 export const listEmailJobsQuerySchema = CursorPaginationQuery.extend({
-  status: z.enum(['PENDING', 'PROCESSING', 'SENT', 'FAILED', 'CANCELLED']).optional(),
+  status: z.enum(['pending', 'processing', 'completed', 'failed']).optional(),
   type: z.enum(['INSTANT', 'DELAYED', 'DIGEST', 'DUE_REMINDER']).optional(),
   userId: cuidSchema.optional(),
 });
 export type ListEmailJobsQuery = z.infer<typeof listEmailJobsQuerySchema>;
-
-export const emailJobViewSchema = z.object({
-  id: cuidSchema,
-  userId: cuidSchema,
-  type: z.enum(['INSTANT', 'DELAYED', 'DIGEST', 'DUE_REMINDER']),
-  status: z.enum(['PENDING', 'PROCESSING', 'SENT', 'FAILED', 'CANCELLED']),
-  to: z.string().email(),
-  subject: z.string(),
-  attempt: z.number().int().min(0),
-  scheduledAt: z.string(),
-  sentAt: z.string().nullable(),
-  error: z.string().nullable(),
-  createdAt: z.string(),
-  updatedAt: z.string(),
-});
-export type EmailJobView = z.infer<typeof emailJobViewSchema>;
