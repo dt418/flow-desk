@@ -1,14 +1,19 @@
-import { useParams, Link } from 'react-router-dom';
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { useParams } from 'react-router-dom';
+import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import type { ColumnDef } from '@tanstack/react-table';
 import { useMemo, useState } from 'react';
-import { ChevronDown } from 'lucide-react';
-import { api } from '@/lib/api';
+import { ChevronDown, Plus, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { api, ApiError } from '@/lib/api';
 import { DataTable } from '@/components/ui/data-table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn, formatDate } from '@/lib/utils';
+import { useDeleteTask } from '@/features/task';
+import { useMembers, useColumns } from '@/features/workspace';
+import { TaskEditModal, NewTaskModal } from '@/features/task/components/TaskEditModal';
 
 interface TaskRow {
   id: string;
@@ -130,8 +135,32 @@ function NativeSelect({
 
 export function ListPage() {
   const { workspaceId = '' } = useParams();
+  const qc = useQueryClient();
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
   const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>('ALL');
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [newModalOpen, setNewModalOpen] = useState(false);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const deleteTask = useDeleteTask(workspaceId);
+  const { data: membersData } = useMembers(workspaceId);
+  const { data: wsColumnsData } = useColumns(workspaceId);
+  const members = Array.isArray(membersData) ? membersData : membersData?.data ?? [];
+  const wsColumns = Array.isArray(wsColumnsData) ? wsColumnsData : wsColumnsData?.data ?? [];
+
+  const handleEdit = (taskId: string) => {
+    setSelectedTaskId(taskId);
+    setEditModalOpen(true);
+  };
+
+  const handleDelete = (taskId: string) => {
+    deleteTask.mutate(taskId, {
+      onSuccess: () => {
+        toast('Task deleted', { duration: 3000 });
+        qc.invalidateQueries({ queryKey: ['tasks', workspaceId] });
+      },
+      onError: (err) => toast.error(err instanceof ApiError ? err.message : 'Failed to delete task'),
+    });
+  };
 
   const data = useInfiniteQuery<ListPageResponse, Error>({
     queryKey: ['tasks', workspaceId],
@@ -171,12 +200,13 @@ export function ListPage() {
         accessorKey: 'title',
         header: 'Title',
         cell: ({ row }) => (
-          <Link
-            to={`/board/${workspaceId}`}
-            className="font-medium text-[var(--fg)] hover:text-emerald-600"
+          <button
+            type="button"
+            onClick={() => handleEdit(row.original.id)}
+            className="cursor-pointer font-medium text-[var(--fg)] hover:text-emerald-600"
           >
             {row.original.title}
-          </Link>
+          </button>
         ),
       },
       {
@@ -244,8 +274,22 @@ export function ListPage() {
           </span>
         ),
       },
+      {
+        id: 'actions',
+        header: '',
+        cell: ({ row }) => (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); handleDelete(row.original.id); }}
+            className="cursor-pointer rounded p-1 text-[var(--fg-3)] opacity-0 transition-opacity hover:bg-red-500/10 hover:text-red-500 group-hover/row:opacity-100"
+            title="Delete task"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        ),
+      },
     ],
-    [workspaceId],
+    [workspaceId, members, wsColumns],
   );
 
   const statusOptions: ReadonlyArray<readonly [string, string]> = STATUS_OPTIONS.map((s) => [
@@ -259,12 +303,22 @@ export function ListPage() {
 
   return (
     <div className="flex h-full flex-col gap-4 p-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h2 className="text-[15px] font-semibold tracking-tight">Tasks</h2>
-          <span className="caption">{filtered.length} shown</span>
-        </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <h2 className="text-[15px] font-semibold tracking-tight">Tasks</h2>
+            <span className="caption">{filtered.length} shown</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setNewModalOpen(true)}
+              className="h-8 gap-1 text-[12px]"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              New task
+            </Button>
           <NativeSelect
             ariaLabel="Status filter"
             value={statusFilter}
@@ -324,6 +378,25 @@ export function ListPage() {
             </div>
           ) : null}
         </>
+      )}
+
+      <NewTaskModal
+        open={newModalOpen}
+        onClose={() => { setNewModalOpen(false); qc.invalidateQueries({ queryKey: ['tasks', workspaceId] }); }}
+        workspaceId={workspaceId}
+        columns={wsColumns}
+        members={members}
+        defaultColumnId={wsColumns[0]?.id}
+      />
+      {selectedTaskId && (
+        <TaskEditModal
+          open={editModalOpen}
+          onClose={() => { setEditModalOpen(false); setSelectedTaskId(null); qc.invalidateQueries({ queryKey: ['tasks', workspaceId] }); }}
+          workspaceId={workspaceId}
+          columns={wsColumns}
+          members={members}
+          initial={data.data?.pages.flatMap(p => p.data ?? []).find(t => t.id === selectedTaskId) ?? null}
+        />
       )}
     </div>
   );
