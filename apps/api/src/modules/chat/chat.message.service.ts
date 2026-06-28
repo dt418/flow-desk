@@ -62,14 +62,27 @@ export async function sendMessage(
   if (!channel || channel.deletedAt) throw new NotFoundError('Channel not found');
   await assertMembership(channel.workspaceId, userId);
 
+  const requestedMentions = body.mentionedUserIds.filter((id) => id !== userId);
+  let mentionedUserIds: string[] = [];
+  if (requestedMentions.length > 0) {
+    const members = await prisma.workspaceMember.findMany({
+      where: {
+        workspaceId: channel.workspaceId,
+        userId: { in: requestedMentions },
+      },
+      select: { userId: true },
+    });
+    mentionedUserIds = members.map((m) => m.userId);
+  }
+
   const message = await repo.create(prisma, {
     channelId,
     authorId: userId,
     content: body.content,
-    mentionedUserIds: body.mentionedUserIds,
+    mentionedUserIds,
   });
 
-  const recipientIds = body.mentionedUserIds.filter((id) => id !== userId);
+  const recipientIds = mentionedUserIds;
   if (recipientIds.length > 0) {
     await commentRepo.createManyNotifications(
       prisma,

@@ -239,7 +239,15 @@ workspaceRouter.patch(
   '/:workspaceId/columns/:columnId',
   requireWorkspaceRole(['OWNER', 'ADMIN']),
   async (c) => {
+    const workspaceId = c.req.param('workspaceId')!;
     const columnId = c.req.param('columnId')!;
+    const existing = await prisma.column.findUnique({
+      where: { id: columnId },
+      select: { workspaceId: true },
+    });
+    if (!existing || existing.workspaceId !== workspaceId) {
+      throw new NotFoundError('Column');
+    }
     const body = updateColumnSchema.parse(await c.req.json());
     const column = await prisma.column.update({ where: { id: columnId }, data: body });
     return c.json({ column });
@@ -250,7 +258,15 @@ workspaceRouter.delete(
   '/:workspaceId/columns/:columnId',
   requireWorkspaceRole(['OWNER', 'ADMIN']),
   async (c) => {
+    const workspaceId = c.req.param('workspaceId')!;
     const columnId = c.req.param('columnId')!;
+    const existing = await prisma.column.findUnique({
+      where: { id: columnId },
+      select: { workspaceId: true },
+    });
+    if (!existing || existing.workspaceId !== workspaceId) {
+      throw new NotFoundError('Column');
+    }
     await prisma.column.delete({ where: { id: columnId } });
     return c.json({ ok: true });
   },

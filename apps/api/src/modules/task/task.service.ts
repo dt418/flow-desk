@@ -105,6 +105,15 @@ export const taskService = {
 
   async create(userId: string, body: CreateTaskInput) {
     await assertMembership(body.workspaceId, userId);
+    if (body.columnId) {
+      const column = await prisma.column.findUnique({
+        where: { id: body.columnId },
+        select: { workspaceId: true },
+      });
+      if (!column || column.workspaceId !== body.workspaceId) {
+        throw new BadRequestError('Column does not belong to this workspace');
+      }
+    }
     const last = await repo.lastPositionInColumn(prisma, body.columnId);
     const task = await repo.create(prisma, {
       workspaceId: body.workspaceId,
@@ -312,6 +321,15 @@ export const taskService = {
     const parent = await repo.findActiveById(prisma, parentId);
     if (!parent) throw new NotFoundError('Parent task not found');
     await assertMembership(parent.workspaceId, userId);
+    if (body.columnId) {
+      const column = await prisma.column.findUnique({
+        where: { id: body.columnId },
+        select: { workspaceId: true },
+      });
+      if (!column || column.workspaceId !== parent.workspaceId) {
+        throw new BadRequestError('Column does not belong to this workspace');
+      }
+    }
 
     const subtask = await repo.create(prisma, {
       workspaceId: parent.workspaceId,

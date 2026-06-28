@@ -14,6 +14,7 @@ import { taskService, listTasksQuerySchema } from './task.service';
 import { prisma } from '../../shared/lib/prisma';
 import { assertMembership } from '../../shared/lib/access';
 import * as commentSvc from '../comment/comment.service';
+import { NotFoundError } from '../../shared/errors';
 
 export const taskRouter = new Hono();
 taskRouter.use('*', requireAuth());
@@ -102,6 +103,16 @@ taskRouter.post('/dependencies', async (c) => {
 });
 
 taskRouter.delete('/dependencies/:id', async (c) => {
-  await taskService.deleteDependency(c.req.param('id')!);
+  const auth = c.get('auth');
+  const depId = c.req.param('id')!;
+  const dep = await prisma.taskDependency.findUnique({
+    where: { id: depId },
+    select: { blockingTask: { select: { id: true, workspaceId: true, deletedAt: true } } },
+  });
+  if (!dep || !dep.blockingTask || dep.blockingTask.deletedAt) {
+    throw new NotFoundError('Task dependency');
+  }
+  await assertMembership(dep.blockingTask.workspaceId, auth.user.id);
+  await taskService.deleteDependency(depId);
   return c.json({ ok: true });
 });
