@@ -11,6 +11,9 @@ import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
 import { requireAuth } from '../../shared/middleware/auth';
 import { taskService, listTasksQuerySchema } from './task.service';
+import { prisma } from '../../shared/lib/prisma';
+import { assertMembership } from '../../shared/lib/access';
+import * as commentSvc from '../comment/comment.service';
 
 export const taskRouter = new Hono();
 taskRouter.use('*', requireAuth());
@@ -52,6 +55,17 @@ taskRouter.patch('/:id', async (c) => {
   const id = c.req.param('id')!;
   const body = updateTaskSchema.parse(await c.req.json());
   return c.json({ task: await taskService.update(auth.user.id, id, body) });
+});
+
+taskRouter.get('/:id/chat', async (c) => {
+  const auth = c.get('auth');
+  const id = c.req.param('id')!;
+  const task = await taskService.get(auth.user.id, id);
+  await assertMembership(task.workspaceId, auth.user.id);
+  const limit = Math.min(parseInt(c.req.query('limit') ?? '50'), 100);
+  const chatQuery = { taskId: id, limit, cursor: c.req.query('cursor') ?? undefined };
+  const chatResult = await commentSvc.listComments(prisma, auth.user.id, chatQuery as any, true);
+  return c.json({ data: chatResult.data, nextCursor: chatResult.nextCursor });
 });
 
 taskRouter.delete('/:id', async (c) => {

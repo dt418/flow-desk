@@ -37,7 +37,12 @@ function extractMentions(content: string, members: Array<{ user: { id: string; n
   return out;
 }
 
-export async function listComments(prisma: PrismaClient, userId: string, query: ListCommentsQuery) {
+export async function listComments(
+  prisma: PrismaClient,
+  userId: string,
+  query: ListCommentsQuery,
+  isChat?: boolean,
+) {
   const task = await prisma.task.findFirst({
     where: { id: query.taskId, deletedAt: null },
     select: { workspaceId: true },
@@ -55,7 +60,12 @@ export async function listComments(prisma: PrismaClient, userId: string, query: 
       }
     : undefined;
   const items = await prisma.comment.findMany({
-    where: { taskId: query.taskId, parentCommentId: null, ...(cursorWhere ?? {}) },
+    where: {
+      taskId: query.taskId,
+      parentCommentId: null,
+      ...(isChat !== undefined ? { isChat } : {}),
+      ...(cursorWhere ?? {}),
+    },
     orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
     take: query.limit + 1,
     include: {
@@ -73,7 +83,7 @@ export async function listComments(prisma: PrismaClient, userId: string, query: 
 export async function createComment(
   prisma: PrismaClient,
   userId: string,
-  body: CreateCommentInput,
+  body: CreateCommentInput & { isChat?: boolean },
 ) {
   const task = await prisma.task.findFirst({ where: { id: body.taskId, deletedAt: null } });
   if (!task) throw new NotFoundError('Task not found');
@@ -89,6 +99,7 @@ export async function createComment(
     parentCommentId: body.parentCommentId ?? null,
     content: body.content,
     mentionedUserIds,
+    ...(body.isChat !== undefined ? { isChat: body.isChat } : {}),
   });
 
   const recipientIds = mentionedUserIds.filter((id) => id !== userId);

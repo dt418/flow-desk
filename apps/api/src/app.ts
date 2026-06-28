@@ -17,6 +17,7 @@ import { labelRouter } from './modules/label';
 import { taskLabelRouter } from './modules/task/task-label.routes';
 import { boardRouter } from './modules/board/board.routes';
 import { chatRouter } from './modules/chat/chat.routes';
+import { chatMessageRouter } from './modules/chat/chat.message.routes';
 
 const WRITE_METHODS = new Set(['POST', 'PATCH', 'PUT', 'DELETE']);
 const writeRateLimit = rateLimit({ scope: 'writes', windowSec: 60, max: 60, keyBy: 'user' });
@@ -56,6 +57,7 @@ export function buildApp(): Hono {
   app.route('/api/workspaces/:wid/labels', labelRouter);
   app.route('/api/workspaces/:wid/tasks/:tid/labels', taskLabelRouter);
   app.route('/api/workspaces/:wid/channels', chatRouter);
+  app.route('/api/workspaces/:wid/channels/:channelId/messages', chatMessageRouter);
 
   app.onError(errorHandler);
   app.notFound((c) => c.json({ message: 'Not Found' }, 404));

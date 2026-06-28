@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { z } from 'zod';
 import {
   createCommentSchema,
   updateCommentSchema,
@@ -12,6 +13,10 @@ import * as svc from './comment.service';
 export const commentRouter = new Hono();
 commentRouter.use('*', requireAuth());
 
+const isChatQuery = z.object({
+  chat: z.coerce.boolean().optional(),
+});
+
 commentRouter.get(
   '/',
   zValidator('query', listCommentsQuerySchema, (result, c) => {
@@ -23,14 +28,18 @@ commentRouter.get(
   async (c) => {
     const auth = c.get('auth');
     const query = c.req.valid('query');
-    const result = await svc.listComments(prisma, auth.user.id, query);
+    const rawQuery = c.req.query('chat');
+    const chatFilter = rawQuery === 'true' ? true : rawQuery === 'false' ? false : undefined;
+    const result = await svc.listComments(prisma, auth.user.id, query, chatFilter);
     return c.json({ data: result.data, nextCursor: result.nextCursor });
   },
 );
 
 commentRouter.post('/', async (c) => {
   const auth = c.get('auth');
-  const body = createCommentSchema.parse(await c.req.json());
+  const body = createCommentSchema.extend({
+    isChat: z.boolean().optional(),
+  }).parse(await c.req.json());
   const comment = await svc.createComment(prisma, auth.user.id, body);
   return c.json({ comment }, 201);
 });
