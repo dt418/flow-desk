@@ -23,6 +23,7 @@ jobs:
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @flow-desk/shared build
+      - run: pnpm --filter @flowdesk/db db:generate
       - run: pnpm typecheck
       - run: pnpm lint
       - run: pnpm --filter @flow-desk/web build
@@ -49,7 +50,7 @@ jobs:
         ports:
           - 6379:6379
         options: >-
-          --health-cmd redis-cli ping
+          --health-cmd "sh -c 'redis-cli ping'"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
