@@ -48,12 +48,8 @@ export async function getEffectivePreferences(
       globalPref?.taskDueReminderHours ??
       workspaceSetting?.taskDueReminderHours ??
       DEFAULTS.taskDueReminderHours,
-    commentReplyEmail:
-      workspaceSetting?.commentReplyEmail ??
-      DEFAULTS.commentReplyEmail,
-    commentMentionEmail:
-      workspaceSetting?.commentMentionEmail ??
-      DEFAULTS.commentMentionEmail,
+    commentReplyEmail: workspaceSetting?.commentReplyEmail ?? DEFAULTS.commentReplyEmail,
+    commentMentionEmail: workspaceSetting?.commentMentionEmail ?? DEFAULTS.commentMentionEmail,
     dailyDigest:
       userPref?.dailyDigest ??
       globalPref?.dailyDigest ??
@@ -65,9 +61,7 @@ export async function getEffectivePreferences(
       workspaceSetting?.weeklyDigest ??
       DEFAULTS.weeklyDigest,
     emailDelayMinutes:
-      userPref?.emailDelayMinutes ??
-      globalPref?.emailDelayMinutes ??
-      DEFAULTS.emailDelayMinutes,
+      userPref?.emailDelayMinutes ?? globalPref?.emailDelayMinutes ?? DEFAULTS.emailDelayMinutes,
   };
 }
 

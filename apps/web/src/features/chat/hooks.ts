@@ -13,8 +13,7 @@ import { toast } from 'sonner';
 
 export const chatKeys = {
   channels: (wid: string) => ['channels', wid] as const,
-  messages: (wid: string, channelId: string) =>
-    ['channels', wid, 'messages', channelId] as const,
+  messages: (wid: string, channelId: string) => ['channels', wid, 'messages', channelId] as const,
 };
 
 export function useChannels(wid: string) {
@@ -73,7 +72,11 @@ export function useSendMessage(wid: string, channelId: string) {
     onSuccess: (data) => {
       qc.setQueryData(
         chatKeys.messages(wid, channelId),
-        (old: { pages: Array<{ data: ChatMessageWithAuthor[]; nextCursor: string | null }> } | undefined) => {
+        (
+          old:
+            | { pages: Array<{ data: ChatMessageWithAuthor[]; nextCursor: string | null }> }
+            | undefined,
+        ) => {
           if (!old) return old;
           const pages = [...old.pages];
           if (pages.length > 0) {
@@ -137,7 +140,11 @@ export function useChatRealtime(wid: string, activeChannelId: string | null) {
       if (payload.channelId !== activeChannelId) return;
       qc.setQueryData(
         chatKeys.messages(wid, activeChannelId),
-        (old: { pages: Array<{ data: ChatMessageWithAuthor[]; nextCursor: string | null }> } | undefined) => {
+        (
+          old:
+            | { pages: Array<{ data: ChatMessageWithAuthor[]; nextCursor: string | null }> }
+            | undefined,
+        ) => {
           if (!old) return old;
           const pages = [...old.pages];
           if (pages.length > 0) {
@@ -154,15 +161,17 @@ export function useChatRealtime(wid: string, activeChannelId: string | null) {
       if (payload.channelId !== activeChannelId) return;
       qc.setQueryData(
         chatKeys.messages(wid, activeChannelId),
-        (old: { pages: Array<{ data: ChatMessageWithAuthor[]; nextCursor: string | null }> } | undefined) => {
+        (
+          old:
+            | { pages: Array<{ data: ChatMessageWithAuthor[]; nextCursor: string | null }> }
+            | undefined,
+        ) => {
           if (!old) return old;
           return {
             ...old,
             pages: old.pages.map((page) => ({
               ...page,
-              data: page.data.map((m) =>
-                m.id === payload.message.id ? payload.message : m,
-              ),
+              data: page.data.map((m) => (m.id === payload.message.id ? payload.message : m)),
             })),
           };
         },
@@ -173,7 +182,11 @@ export function useChatRealtime(wid: string, activeChannelId: string | null) {
       if (payload.channelId !== activeChannelId) return;
       qc.setQueryData(
         chatKeys.messages(wid, activeChannelId),
-        (old: { pages: Array<{ data: ChatMessageWithAuthor[]; nextCursor: string | null }> } | undefined) => {
+        (
+          old:
+            | { pages: Array<{ data: ChatMessageWithAuthor[]; nextCursor: string | null }> }
+            | undefined,
+        ) => {
           if (!old) return old;
           return {
             ...old,

@@ -76,27 +76,17 @@ export function ChannelView({
 
         {!loading && messages.length === 0 && (
           <div className="flex h-full items-center justify-center">
-            <p className="text-sm text-[var(--fg-3)]">
-              No messages yet. Start a conversation!
-            </p>
+            <p className="text-sm text-[var(--fg-3)]">No messages yet. Start a conversation!</p>
           </div>
         )}
 
         {messages.map((msg) => (
-          <MessageBubble
-            key={msg.id}
-            message={msg}
-            isOwn={msg.authorId === currentUserId}
-          />
+          <MessageBubble key={msg.id} message={msg} isOwn={msg.authorId === currentUserId} />
         ))}
         <div ref={bottomRef} />
       </div>
 
-      <ChatInput
-        onSend={onSend}
-        disabled={sending}
-        placeholder={`Message #${channel.name}`}
-      />
+      <ChatInput onSend={onSend} disabled={sending} placeholder={`Message #${channel.name}`} />
     </div>
   );
 }

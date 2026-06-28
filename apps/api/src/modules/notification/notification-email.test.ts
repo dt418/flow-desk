@@ -8,7 +8,11 @@ const mockEnqueueEmail = vi.fn();
 
 const mockPrisma = {
   workspaceNotificationSetting: { findUnique: mockFindUnique, upsert: mockUpsert },
-  userNotificationPreference: { findUnique: mockFindFirst, findFirst: mockFindFirst, upsert: mockUpsert },
+  userNotificationPreference: {
+    findUnique: mockFindFirst,
+    findFirst: mockFindFirst,
+    upsert: mockUpsert,
+  },
   emailJob: { create: mockEmailJobCreate },
 };
 
@@ -18,7 +22,14 @@ vi.mock('../../shared/lib/prisma', () => ({
 }));
 
 vi.mock('../../shared/lib/logger', () => ({
-  logger: { info: vi.fn(), error: vi.fn(), warn: vi.fn(), debug: vi.fn(), trace: vi.fn(), fatal: vi.fn() },
+  logger: {
+    info: vi.fn(),
+    error: vi.fn(),
+    warn: vi.fn(),
+    debug: vi.fn(),
+    trace: vi.fn(),
+    fatal: vi.fn(),
+  },
 }));
 
 vi.mock('../../workers/email/queue', () => ({

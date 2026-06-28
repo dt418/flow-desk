@@ -29,10 +29,10 @@ describe('updateWorkspaceNotificationSettingSchema', () => {
 
   it('rejects taskDueReminderHours outside 1..168', () => {
     expect(() =>
-      updateWorkspaceNotificationSettingSchema.parse({ taskDueReminderHours: 0 })
+      updateWorkspaceNotificationSettingSchema.parse({ taskDueReminderHours: 0 }),
     ).toThrow();
     expect(() =>
-      updateWorkspaceNotificationSettingSchema.parse({ taskDueReminderHours: 169 })
+      updateWorkspaceNotificationSettingSchema.parse({ taskDueReminderHours: 169 }),
     ).toThrow();
   });
 
@@ -59,9 +59,7 @@ describe('updateUserNotificationPreferenceSchema', () => {
   });
 
   it('rejects emailDelayMinutes over 60', () => {
-    expect(() =>
-      updateUserNotificationPreferenceSchema.parse({ emailDelayMinutes: 61 })
-    ).toThrow();
+    expect(() => updateUserNotificationPreferenceSchema.parse({ emailDelayMinutes: 61 })).toThrow();
   });
 });
 
@@ -86,8 +84,6 @@ describe('listEmailJobsQuerySchema', () => {
   });
 
   it('rejects invalid status', () => {
-    expect(() =>
-      listEmailJobsQuerySchema.parse({ status: 'UNKNOWN' })
-    ).toThrow();
+    expect(() => listEmailJobsQuerySchema.parse({ status: 'UNKNOWN' })).toThrow();
   });
 });

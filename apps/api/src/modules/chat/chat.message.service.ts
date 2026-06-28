@@ -1,12 +1,17 @@
 import type { prisma } from '../../shared/lib/prisma';
 type PrismaClient = typeof prisma;
-import type { CreateChatMessageInput, UpdateChatMessageInput, ListChatMessagesQuery } from './chat.message.schema';
+import type {
+  CreateChatMessageInput,
+  UpdateChatMessageInput,
+  ListChatMessagesQuery,
+} from './chat.message.schema';
 import { BadRequestError, NotFoundError } from '../../shared/errors';
 import { assertMembership } from '../../shared/lib/access';
-import { emitToRoom } from '../../shared/lib/socket-events';
+import { emitToRoom, emitToUser } from '../../shared/lib/socket-events';
 import { logger } from '../../shared/lib/logger';
 import { decodeCursor, encodeCursor } from '@flow-desk/shared/pagination';
 import * as channelRepo from './chat.repository';
+import * as commentRepo from '../comment/comment.repository';
 import * as repo from './chat.message.repository';
 
 function safeEmit(fn: () => void, ctx: Record<string, unknown>): void {
@@ -64,26 +69,60 @@ export async function sendMessage(
     mentionedUserIds: body.mentionedUserIds,
   });
 
-  safeEmit(
-    () => emitToRoom('/collab', `workspace:${channel.workspaceId}`, 'message:new', {
-      channelId,
-      message: {
-        id: message.id,
-        channelId: message.channelId,
-        authorId: message.authorId,
-        content: message.content,
-        mentionedUserIds: message.mentionedUserIds,
-        createdAt: message.createdAt.toISOString(),
-        updatedAt: message.updatedAt.toISOString(),
-        editedAt: null,
-        author: {
-          id: message.author.id,
-          name: message.author.name,
-          email: message.author.email,
-          avatarUrl: message.author.avatarUrl,
+  const recipientIds = body.mentionedUserIds.filter((id) => id !== userId);
+  if (recipientIds.length > 0) {
+    await commentRepo.createManyNotifications(
+      prisma,
+      recipientIds.map((rid) => ({
+        userId: rid,
+        type: 'COMMENT_REPLY' as const,
+        title: `You were mentioned in #${channel.name}`,
+        body: body.content.slice(0, 200),
+        data: {
+          channelId,
+          messageId: message.id,
+          workspaceId: channel.workspaceId,
+          authorId: userId,
         },
-      },
-    }),
+      })),
+    );
+
+    const notifications = await commentRepo.findNotificationsSince(
+      prisma,
+      recipientIds,
+      'COMMENT_REPLY',
+      message.createdAt,
+    );
+    for (const notif of notifications) {
+      safeEmit(() => emitToUser(notif.userId, 'notification:new', { notification: notif }), {
+        event: 'notification:new',
+        notificationId: notif.id,
+        userId: notif.userId,
+      });
+    }
+  }
+
+  safeEmit(
+    () =>
+      emitToRoom('/collab', `workspace:${channel.workspaceId}`, 'message:new', {
+        channelId,
+        message: {
+          id: message.id,
+          channelId: message.channelId,
+          authorId: message.authorId,
+          content: message.content,
+          mentionedUserIds: message.mentionedUserIds,
+          createdAt: message.createdAt.toISOString(),
+          updatedAt: message.updatedAt.toISOString(),
+          editedAt: null,
+          author: {
+            id: message.author.id,
+            name: message.author.name,
+            email: message.author.email,
+            avatarUrl: message.author.avatarUrl,
+          },
+        },
+      }),
     { event: 'message:new', channelId },
   );
 
@@ -112,25 +151,26 @@ export async function updateMessage(
   const message = await repo.updateContent(prisma, messageId, body.content);
 
   safeEmit(
-    () => emitToRoom('/collab', `workspace:${channel.workspaceId}`, 'message:updated', {
-      channelId,
-      message: {
-        id: message.id,
-        channelId: message.channelId,
-        authorId: message.authorId,
-        content: message.content,
-        mentionedUserIds: message.mentionedUserIds,
-        createdAt: message.createdAt.toISOString(),
-        updatedAt: message.updatedAt.toISOString(),
-        editedAt: message.updatedAt.toISOString(),
-        author: {
-          id: message.author.id,
-          name: message.author.name,
-          email: message.author.email,
-          avatarUrl: message.author.avatarUrl,
+    () =>
+      emitToRoom('/collab', `workspace:${channel.workspaceId}`, 'message:updated', {
+        channelId,
+        message: {
+          id: message.id,
+          channelId: message.channelId,
+          authorId: message.authorId,
+          content: message.content,
+          mentionedUserIds: message.mentionedUserIds,
+          createdAt: message.createdAt.toISOString(),
+          updatedAt: message.updatedAt.toISOString(),
+          editedAt: message.updatedAt.toISOString(),
+          author: {
+            id: message.author.id,
+            name: message.author.name,
+            email: message.author.email,
+            avatarUrl: message.author.avatarUrl,
+          },
         },
-      },
-    }),
+      }),
     { event: 'message:updated', channelId, messageId },
   );
 
@@ -158,10 +198,11 @@ export async function deleteMessage(
   await repo.softDelete(prisma, messageId);
 
   safeEmit(
-    () => emitToRoom('/collab', `workspace:${channel.workspaceId}`, 'message:deleted', {
-      channelId,
-      messageId,
-    }),
+    () =>
+      emitToRoom('/collab', `workspace:${channel.workspaceId}`, 'message:deleted', {
+        channelId,
+        messageId,
+      }),
     { event: 'message:deleted', channelId, messageId },
   );
 }

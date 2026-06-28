@@ -387,7 +387,13 @@ export const taskService = {
 async function handleAssigneeChange(
   userId: string,
   previousAssigneeId: string | null,
-  task: { id: string; title: string; workspaceId: string; assigneeId: string | null; dueDate: Date | null },
+  task: {
+    id: string;
+    title: string;
+    workspaceId: string;
+    assigneeId: string | null;
+    dueDate: Date | null;
+  },
 ) {
   if (!previousAssigneeId && !task.assigneeId) return;
   if (previousAssigneeId === task.assigneeId) return;
@@ -395,7 +401,10 @@ async function handleAssigneeChange(
 
   const [workspace, assignee, assigner] = await Promise.all([
     prisma.workspace.findUnique({ where: { id: task.workspaceId }, select: { name: true } }),
-    prisma.user.findUnique({ where: { id: task.assigneeId }, select: { id: true, name: true, email: true } }),
+    prisma.user.findUnique({
+      where: { id: task.assigneeId },
+      select: { id: true, name: true, email: true },
+    }),
     prisma.user.findUnique({ where: { id: userId }, select: { name: true } }),
   ]);
   if (!workspace || !assignee || !assigner) return;

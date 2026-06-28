@@ -143,10 +143,25 @@ export function ListPage() {
   const [newModalOpen, setNewModalOpen] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const deleteTask = useDeleteTask(workspaceId);
-  const { data: membersData } = useMembers(workspaceId) as { data: Array<{ id: string; name: string; email: string }> | { data: Array<{ id: string; name: string; email: string }> } | undefined };
-  const { data: wsColumnsData } = useColumns(workspaceId) as { data: Array<{ id: string; name: string }> | { data: Array<{ id: string; name: string }> } | undefined };
-  const members = Array.isArray(membersData) ? membersData : (membersData as { data: Array<{ id: string; name: string; email: string }> } | undefined)?.data ?? [];
-  const wsColumns = Array.isArray(wsColumnsData) ? wsColumnsData : (wsColumnsData as { data: Array<{ id: string; name: string }> } | undefined)?.data ?? [];
+  const { data: membersData } = useMembers(workspaceId) as {
+    data:
+      | Array<{ id: string; name: string; email: string }>
+      | { data: Array<{ id: string; name: string; email: string }> }
+      | undefined;
+  };
+  const { data: wsColumnsData } = useColumns(workspaceId) as {
+    data:
+      | Array<{ id: string; name: string }>
+      | { data: Array<{ id: string; name: string }> }
+      | undefined;
+  };
+  const members = Array.isArray(membersData)
+    ? membersData
+    : ((membersData as { data: Array<{ id: string; name: string; email: string }> } | undefined)
+        ?.data ?? []);
+  const wsColumns = Array.isArray(wsColumnsData)
+    ? wsColumnsData
+    : ((wsColumnsData as { data: Array<{ id: string; name: string }> } | undefined)?.data ?? []);
 
   const handleEdit = (taskId: string) => {
     setSelectedTaskId(taskId);
@@ -159,7 +174,8 @@ export function ListPage() {
         toast('Task deleted', { duration: 3000 });
         qc.invalidateQueries({ queryKey: ['tasks', workspaceId] });
       },
-      onError: (err) => toast.error(err instanceof ApiError ? err.message : 'Failed to delete task'),
+      onError: (err) =>
+        toast.error(err instanceof ApiError ? err.message : 'Failed to delete task'),
     });
   };
 
@@ -281,7 +297,10 @@ export function ListPage() {
         cell: ({ row }) => (
           <button
             type="button"
-            onClick={(e) => { e.stopPropagation(); handleDelete(row.original.id); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDelete(row.original.id);
+            }}
             className="cursor-pointer rounded p-1 text-[var(--fg-3)] opacity-0 transition-opacity hover:bg-red-500/10 hover:text-red-500 group-hover/row:opacity-100"
             title="Delete task"
           >
@@ -304,22 +323,22 @@ export function ListPage() {
 
   return (
     <div className="flex h-full flex-col gap-4 p-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <h2 className="text-[15px] font-semibold tracking-tight">Tasks</h2>
-            <span className="caption">{filtered.length} shown</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => setNewModalOpen(true)}
-              className="h-8 gap-1 text-[12px]"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              New task
-            </Button>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <h2 className="text-[15px] font-semibold tracking-tight">Tasks</h2>
+          <span className="caption">{filtered.length} shown</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setNewModalOpen(true)}
+            className="h-8 gap-1 text-[12px]"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            New task
+          </Button>
           <NativeSelect
             ariaLabel="Status filter"
             value={statusFilter}
@@ -383,7 +402,10 @@ export function ListPage() {
 
       <NewTaskModal
         open={newModalOpen}
-        onClose={() => { setNewModalOpen(false); qc.invalidateQueries({ queryKey: ['tasks', workspaceId] }); }}
+        onClose={() => {
+          setNewModalOpen(false);
+          qc.invalidateQueries({ queryKey: ['tasks', workspaceId] });
+        }}
         workspaceId={workspaceId}
         columns={wsColumns}
         members={members}
@@ -392,11 +414,18 @@ export function ListPage() {
       {selectedTaskId && (
         <TaskEditModal
           open={editModalOpen}
-          onClose={() => { setEditModalOpen(false); setSelectedTaskId(null); qc.invalidateQueries({ queryKey: ['tasks', workspaceId] }); }}
+          onClose={() => {
+            setEditModalOpen(false);
+            setSelectedTaskId(null);
+            qc.invalidateQueries({ queryKey: ['tasks', workspaceId] });
+          }}
           workspaceId={workspaceId}
           columns={wsColumns}
           members={members}
-          initial={data.data?.pages.flatMap(p => p.data ?? []).find(t => t.id === selectedTaskId) ?? null}
+          initial={
+            data.data?.pages.flatMap((p) => p.data ?? []).find((t) => t.id === selectedTaskId) ??
+            null
+          }
         />
       )}
     </div>

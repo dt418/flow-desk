@@ -5,11 +5,7 @@ import { BadRequestError, NotFoundError, ConflictError } from '../../shared/erro
 import { assertMembership } from '../../shared/lib/access';
 import * as repo from './chat.repository';
 
-export async function listChannels(
-  prisma: PrismaClient,
-  userId: string,
-  workspaceId: string,
-) {
+export async function listChannels(prisma: PrismaClient, userId: string, workspaceId: string) {
   await assertMembership(workspaceId, userId);
   const channels = await repo.findByWorkspace(prisma, workspaceId);
   return channels.map((ch) => ({

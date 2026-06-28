@@ -35,7 +35,9 @@ export async function handleTaskAssignedEmail(
 
   const delayMs = prefs.emailDelayMinutes > 0 ? prefs.emailDelayMinutes * 60 * 1000 : undefined;
 
-  const jobId = delayMs ? `delayed-${input.assigneeId}-${Date.now()}` : `instant-${input.assigneeId}-${Date.now()}`;
+  const jobId = delayMs
+    ? `delayed-${input.assigneeId}-${Date.now()}`
+    : `instant-${input.assigneeId}-${Date.now()}`;
 
   await prisma.emailJob.create({
     data: {

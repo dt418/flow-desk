@@ -18,7 +18,14 @@ const mockPrisma = {
 };
 
 vi.mock('../../shared/lib/logger', () => ({
-  logger: { info: vi.fn(), error: vi.fn(), warn: vi.fn(), debug: vi.fn(), trace: vi.fn(), fatal: vi.fn() },
+  logger: {
+    info: vi.fn(),
+    error: vi.fn(),
+    warn: vi.fn(),
+    debug: vi.fn(),
+    trace: vi.fn(),
+    fatal: vi.fn(),
+  },
 }));
 
 vi.mock('../../shared/lib/env', () => ({
@@ -44,9 +51,7 @@ const mockChannel = {
   createdAt: now,
   updatedAt: now,
   deletedAt: null,
-  messages: [
-    { id: 'msg-1', authorId: 'user-1', content: 'hello', createdAt: now },
-  ],
+  messages: [{ id: 'msg-1', authorId: 'user-1', content: 'hello', createdAt: now }],
 };
 
 const mockChannelNoMessages = { ...mockChannel, messages: [] };

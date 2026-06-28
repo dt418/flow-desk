@@ -79,13 +79,13 @@ describe('email-provider', () => {
       const { buildEmailProvider } = await loadProviderModule('nodemailer');
       const provider = buildEmailProvider();
 
-      await expect(
-        provider.send({ to: 'x@y.com', subject: 's', html: 'h' }),
-      ).rejects.toMatchObject({
-        status: 502,
-        code: 'EMAIL_UPSTREAM',
-        message: expect.stringContaining('smtp'),
-      });
+      await expect(provider.send({ to: 'x@y.com', subject: 's', html: 'h' })).rejects.toMatchObject(
+        {
+          status: 502,
+          code: 'EMAIL_UPSTREAM',
+          message: expect.stringContaining('smtp'),
+        },
+      );
     });
   });
 
@@ -140,13 +140,13 @@ describe('email-provider', () => {
       const { buildEmailProvider } = await loadProviderModule('resend');
       const provider = buildEmailProvider();
 
-      await expect(
-        provider.send({ to: 'x@y.com', subject: 's', html: 'h' }),
-      ).rejects.toMatchObject({
-        status: 502,
-        code: 'EMAIL_UPSTREAM',
-        message: expect.stringContaining('resend'),
-      });
+      await expect(provider.send({ to: 'x@y.com', subject: 's', html: 'h' })).rejects.toMatchObject(
+        {
+          status: 502,
+          code: 'EMAIL_UPSTREAM',
+          message: expect.stringContaining('resend'),
+        },
+      );
     });
   });
 

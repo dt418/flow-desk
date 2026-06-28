@@ -19,8 +19,7 @@ function timeAgo(dateStr: string): string {
 
 export function ChannelItem({ channel, active, onClick }: ChannelItemProps) {
   const preview = channel.latestMessage?.content ?? 'No messages';
-  const previewClamped =
-    preview.length > 60 ? `${preview.slice(0, 60)}…` : preview;
+  const previewClamped = preview.length > 60 ? `${preview.slice(0, 60)}…` : preview;
 
   return (
     <button
@@ -33,10 +32,7 @@ export function ChannelItem({ channel, active, onClick }: ChannelItemProps) {
     >
       <div className="flex items-center justify-between">
         <span
-          className={cn(
-            'text-sm font-medium',
-            active ? 'text-emerald-500' : 'text-[var(--fg)]',
-          )}
+          className={cn('text-sm font-medium', active ? 'text-emerald-500' : 'text-[var(--fg)]')}
         >
           # {channel.name}
         </span>

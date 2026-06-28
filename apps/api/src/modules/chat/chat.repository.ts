@@ -32,20 +32,27 @@ export function findUniqueRaw(prisma: PrismaClient, id: string) {
   });
 }
 
-export function create(prisma: PrismaClient, data: {
-  workspaceId: string;
-  name: string;
-  description?: string | null;
-  isPrivate: boolean;
-}) {
+export function create(
+  prisma: PrismaClient,
+  data: {
+    workspaceId: string;
+    name: string;
+    description?: string | null;
+    isPrivate: boolean;
+  },
+) {
   return prisma.chatChannel.create({ data });
 }
 
-export function update(prisma: PrismaClient, id: string, data: {
-  name?: string;
-  description?: string | null;
-  isPrivate?: boolean;
-}) {
+export function update(
+  prisma: PrismaClient,
+  id: string,
+  data: {
+    name?: string;
+    description?: string | null;
+    isPrivate?: boolean;
+  },
+) {
   return prisma.chatChannel.update({ where: { id }, data });
 }
 

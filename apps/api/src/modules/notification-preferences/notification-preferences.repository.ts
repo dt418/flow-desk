@@ -44,7 +44,9 @@ export async function upsertUserPreference(
     if (existing) {
       return prisma.userNotificationPreference.update({ where: { id: existing.id }, data: rest });
     }
-    return prisma.userNotificationPreference.create({ data: { userId, workspaceId: null, ...rest } });
+    return prisma.userNotificationPreference.create({
+      data: { userId, workspaceId: null, ...rest },
+    });
   }
   return prisma.userNotificationPreference.upsert({
     where: { userId_workspaceId: { userId, workspaceId: wsId } },

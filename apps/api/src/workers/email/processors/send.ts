@@ -26,7 +26,10 @@ export function createSendEmailWorker() {
           },
         });
 
-        logger.info({ jobId: job.id, messageId: result.messageId, type: job.data.type }, 'email sent');
+        logger.info(
+          { jobId: job.id, messageId: result.messageId, type: job.data.type },
+          'email sent',
+        );
       } catch (err) {
         logger.error({ err, jobId: job.id, type: job.data.type }, 'email send failed');
 

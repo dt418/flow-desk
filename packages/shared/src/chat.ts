@@ -10,7 +10,11 @@ export type ChannelScope = z.infer<typeof channelScopeSchema>;
 export const createChannelSchema = z
   .object({
     workspaceId: cuidSchema,
-    name: z.string().min(2).max(80).regex(/^[\w-]+$/), // allow letters, digits, _, -
+    name: z
+      .string()
+      .min(2)
+      .max(80)
+      .regex(/^[\w-]+$/), // allow letters, digits, _, -
     description: z.string().max(500).optional(),
     isPrivate: z.boolean().default(false),
     scope: channelScopeSchema.default('WORKSPACE'),
@@ -24,15 +28,18 @@ export type CreateChannelInput = z.infer<typeof createChannelSchema>;
 
 export const updateChannelSchema = z
   .object({
-    name: z.string().min(2).max(80).regex(/^[\w-]+$/).optional(),
+    name: z
+      .string()
+      .min(2)
+      .max(80)
+      .regex(/^[\w-]+$/)
+      .optional(),
     description: z.string().max(500).optional(),
     isPrivate: z.boolean().optional(),
   })
-  .refine(
-    (v) =>
-      v.name !== undefined || v.description !== undefined || v.isPrivate !== undefined,
-    { message: 'At least one field must be provided' }
-  );
+  .refine((v) => v.name !== undefined || v.description !== undefined || v.isPrivate !== undefined, {
+    message: 'At least one field must be provided',
+  });
 export type UpdateChannelInput = z.infer<typeof updateChannelSchema>;
 
 // Outputs

@@ -30,10 +30,7 @@ export function createEmailQueue() {
 
 export const emailQueue = createEmailQueue();
 
-export async function enqueueEmail(
-  data: EmailJobData,
-  opts?: { delay?: number; jobId?: string },
-) {
+export async function enqueueEmail(data: EmailJobData, opts?: { delay?: number; jobId?: string }) {
   return emailQueue.add('send', data, {
     delay: opts?.delay,
     jobId: opts?.jobId,

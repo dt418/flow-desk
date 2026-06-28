@@ -46,7 +46,13 @@ export function ChatPage() {
     const name = channelName.trim();
     if (!name) return;
     createChannel.mutate(
-      { workspaceId, name, isPrivate: false, scope: 'WORKSPACE', description: channelDesc.trim() || undefined },
+      {
+        workspaceId,
+        name,
+        isPrivate: false,
+        scope: 'WORKSPACE',
+        description: channelDesc.trim() || undefined,
+      },
       {
         onSuccess: () => {
           setCreateOpen(false);

@@ -43,25 +43,17 @@ chatMessageRouter.post(
   },
 );
 
-chatMessageRouter.patch(
-  '/:messageId',
-  zValidator('param', messageParamsSchema),
-  async (c) => {
-    const auth = c.get('auth');
-    const { channelId, messageId } = c.req.valid('param');
-    const body = updateChatMessageSchema.parse(await c.req.json());
-    const message = await svc.updateMessage(prisma, auth.user.id, channelId, messageId, body);
-    return c.json({ data: message });
-  },
-);
+chatMessageRouter.patch('/:messageId', zValidator('param', messageParamsSchema), async (c) => {
+  const auth = c.get('auth');
+  const { channelId, messageId } = c.req.valid('param');
+  const body = updateChatMessageSchema.parse(await c.req.json());
+  const message = await svc.updateMessage(prisma, auth.user.id, channelId, messageId, body);
+  return c.json({ data: message });
+});
 
-chatMessageRouter.delete(
-  '/:messageId',
-  zValidator('param', messageParamsSchema),
-  async (c) => {
-    const auth = c.get('auth');
-    const { channelId, messageId } = c.req.valid('param');
-    await svc.deleteMessage(prisma, auth.user.id, channelId, messageId);
-    return c.json({ ok: true });
-  },
-);
+chatMessageRouter.delete('/:messageId', zValidator('param', messageParamsSchema), async (c) => {
+  const auth = c.get('auth');
+  const { channelId, messageId } = c.req.valid('param');
+  await svc.deleteMessage(prisma, auth.user.id, channelId, messageId);
+  return c.json({ ok: true });
+});

@@ -26,11 +26,13 @@
 ### Task 1.1: Prisma — Add Chat + NotificationPreference + EmailJob models
 
 **Files:**
+
 - Modify: `packages/db/prisma/schema.prisma`
 
 **Changes:**
 
 Add after `model Notification {`:
+
 ```prisma
 model ChatChannel {
   id          String   @id @default(cuid())
@@ -115,22 +117,26 @@ model EmailJob {
 ```
 
 Add to `Workspace` model:
+
 ```prisma
 channels        ChatChannel @relation("WorkspaceChannels")
 notificationSetting WorkspaceNotificationSetting?
 ```
 
 Add to `WorkspaceMember` model:
+
 ```prisma
 notificationSetting UserNotificationPreference[]
 ```
 
 Add `Comment` model:
+
 ```prisma
 isChat Boolean @default(false)
 ```
 
 **Step: Run migration**
+
 ```bash
 ./scripts/prisma-exec.sh migrate dev --name chat-email-preferences
 ```
@@ -140,9 +146,11 @@ isChat Boolean @default(false)
 ### Task 1.2: Shared — Chat schemas
 
 **Files:**
+
 - Create: `packages/shared/src/chat.ts`
 
 **Content:**
+
 ```typescript
 import { z } from 'zod';
 
@@ -191,6 +199,7 @@ export type SendMessageInput = z.infer<typeof SendMessageSchema>;
 ```
 
 **Step: Add export to `packages/shared/src/index.ts`**
+
 ```typescript
 export * from './chat';
 ```
@@ -200,9 +209,11 @@ export * from './chat';
 ### Task 1.3: Shared — Notification preferences schemas
 
 **Files:**
+
 - Create: `packages/shared/src/notification-preferences.ts`
 
 **Content:**
+
 ```typescript
 import { z } from 'zod';
 
@@ -259,9 +270,13 @@ export const UpdateUserNotificationPreferenceSchema = z.object({
 });
 
 export type WorkspaceNotificationSetting = z.infer<typeof WorkspaceNotificationSettingSchema>;
-export type UpdateWorkspaceNotificationSetting = z.infer<typeof UpdateWorkspaceNotificationSettingSchema>;
+export type UpdateWorkspaceNotificationSetting = z.infer<
+  typeof UpdateWorkspaceNotificationSettingSchema
+>;
 export type UserNotificationPreference = z.infer<typeof UserNotificationPreferenceSchema>;
-export type UpdateUserNotificationPreference = z.infer<typeof UpdateUserNotificationPreferenceSchema>;
+export type UpdateUserNotificationPreference = z.infer<
+  typeof UpdateUserNotificationPreferenceSchema
+>;
 
 export interface EffectivePreferences {
   taskAssignedEmail: boolean;
@@ -277,11 +292,13 @@ export interface EffectivePreferences {
 ```
 
 **Step: Add export to `packages/shared/src/index.ts`**
+
 ```typescript
 export * from './notification-preferences';
 ```
 
 **Step: Build shared package**
+
 ```bash
 cd packages/shared && pnpm build
 ```
@@ -293,6 +310,7 @@ cd packages/shared && pnpm build
 ### Task 2.1: Email Provider Interface + Implementations
 
 **Files:**
+
 - Create: `apps/api/src/modules/email/email.provider.ts`
 - Create: `apps/api/src/modules/email/email.nodemailer.ts`
 - Create: `apps/api/src/modules/email/email.resend.ts`
@@ -300,6 +318,7 @@ cd packages/shared && pnpm build
 - Create: `apps/api/src/modules/email/index.ts`
 
 **Content — `email.provider.ts`:**
+
 ```typescript
 export interface EmailTemplate {
   subject: string;
@@ -314,6 +333,7 @@ export interface EmailProvider {
 ```
 
 **Content — `email.nodemailer.ts`:**
+
 ```typescript
 import nodemailer from 'nodemailer';
 import type { EmailProvider, EmailTemplate } from './email.provider';
@@ -361,6 +381,7 @@ export class NodemailerProvider implements EmailProvider {
 ```
 
 **Content — `email.resend.ts`:**
+
 ```typescript
 import { Resend } from 'resend';
 import type { EmailProvider, EmailTemplate } from './email.provider';
@@ -400,6 +421,7 @@ export class ResendProvider implements EmailProvider {
 ```
 
 **Content — `email.service.ts`:**
+
 ```typescript
 import type { EmailProvider } from './email.provider';
 import { NodemailerProvider } from './email.nodemailer';
@@ -432,7 +454,10 @@ export async function sendEmail(to: string, subject: string, body: string): Prom
   }
 }
 
-export async function sendEmailTemplate(to: string, template: { subject: string; html: string; text: string }): Promise<void> {
+export async function sendEmailTemplate(
+  to: string,
+  template: { subject: string; html: string; text: string },
+): Promise<void> {
   try {
     await getEmailProvider().sendTemplate(to, template);
   } catch (err) {
@@ -442,6 +467,7 @@ export async function sendEmailTemplate(to: string, template: { subject: string;
 ```
 
 **Step: Install dependencies**
+
 ```bash
 cd apps/api && pnpm add nodemailer && pnpm add -D @types/nodemailer && pnpm add resend
 ```
@@ -451,11 +477,13 @@ cd apps/api && pnpm add nodemailer && pnpm add -D @types/nodemailer && pnpm add 
 ### Task 2.2: Email Templates
 
 **Files:**
+
 - Create: `apps/api/src/modules/email/templates/task-assigned.ts`
 - Create: `apps/api/src/modules/email/templates/task-due-reminder.ts`
 - Create: `apps/api/src/modules/email/templates/digest.ts`
 
 **Content — `task-assigned.ts`:**
+
 ```typescript
 import type { EmailTemplate } from '../email.provider';
 
@@ -475,6 +503,7 @@ export function taskAssignedTemplate(
 ```
 
 **Content — `task-due-reminder.ts`:**
+
 ```typescript
 import type { EmailTemplate } from '../email.provider';
 
@@ -494,6 +523,7 @@ export function taskDueReminderTemplate(
 ```
 
 **Content — `digest.ts`:**
+
 ```typescript
 import type { EmailTemplate } from '../email.provider';
 
@@ -529,6 +559,7 @@ export function digestTemplate(
 ### Task 3.1: Email Worker — Queue Setup + Instant Processor
 
 **Files:**
+
 - Create: `apps/email-worker/package.json`
 - Create: `apps/email-worker/tsconfig.json`
 - Create: `apps/email-worker/src/index.ts`
@@ -538,6 +569,7 @@ export function digestTemplate(
 - Create: `apps/email-worker/src/lib/email-provider.ts`
 
 **Content — `package.json`:**
+
 ```json
 {
   "name": "@flow-desk/email-worker",
@@ -567,6 +599,7 @@ export function digestTemplate(
 ```
 
 **Content — `src/lib/redis.ts`:**
+
 ```typescript
 import Redis from 'ioredis';
 
@@ -581,6 +614,7 @@ export const redis = new Redis({
 ```
 
 **Content — `src/lib/prisma.ts`:**
+
 ```typescript
 import { PrismaClient } from '@prisma/client';
 
@@ -588,6 +622,7 @@ export const prisma = new PrismaClient();
 ```
 
 **Content — `src/lib/email-provider.ts`:**
+
 ```typescript
 import type { EmailProvider } from '@flow-desk/shared'; // re-export interface
 
@@ -600,6 +635,7 @@ export interface EmailTemplate {
 ```
 
 **Content — `src/queues/index.ts`:**
+
 ```typescript
 import { Queue, Worker, JobsOptions } from 'bullmq';
 import { redis } from '../lib/redis';
@@ -628,6 +664,7 @@ export const reminderQueue = new Queue('email:reminder', {
 ```
 
 **Content — `src/processors/instant.processor.ts`:**
+
 ```typescript
 import { Job } from 'bullmq';
 import { prisma } from '../lib/prisma';
@@ -705,6 +742,7 @@ export async function processInstant(job: Job<InstantJobData>) {
 ```
 
 **Content — `src/index.ts`:**
+
 ```typescript
 import { Worker } from 'bullmq';
 import { redis } from './lib/redis';
@@ -713,18 +751,34 @@ import { processInstant } from './processors/instant.processor';
 
 const PORT = parseInt(process.env.EMAIL_WORKER_PORT ?? '3002');
 
-new Worker('email:instant', processInstant, { connection: redis, concurrency: 5 }).on('failed', (job, err) => {
-  console.error(`[email:instant] job ${job?.id} failed:`, err.message);
-});
+new Worker('email:instant', processInstant, { connection: redis, concurrency: 5 }).on(
+  'failed',
+  (job, err) => {
+    console.error(`[email:instant] job ${job?.id} failed:`, err.message);
+  },
+);
 
 // Delayed + reminder workers stub — fill in Tasks 3.2+3.3
-new Worker('email:delayed', async (job) => { /* TODO */ }, { connection: redis, concurrency: 2 });
-new Worker('email:reminder', async (job) => { /* TODO */ }, { connection: redis, concurrency: 2 });
+new Worker(
+  'email:delayed',
+  async (job) => {
+    /* TODO */
+  },
+  { connection: redis, concurrency: 2 },
+);
+new Worker(
+  'email:reminder',
+  async (job) => {
+    /* TODO */
+  },
+  { connection: redis, concurrency: 2 },
+);
 
 console.log(`[email-worker] listening on port ${PORT}`);
 ```
 
 **Step: Add to workspace `pnpm-workspace.yaml` if not already**
+
 ```yaml
 packages:
   - 'apps/email-worker'
@@ -735,11 +789,13 @@ packages:
 ### Task 3.2: Email Worker — Delayed Processor
 
 **Files:**
+
 - Modify: `apps/email-worker/src/queues/index.ts` — add `scheduleDelayed` helper
 - Modify: `apps/email-worker/src/index.ts` — wire delayed processor
 - Create: `apps/email-worker/src/processors/delayed.processor.ts`
 
 **Step: Add `scheduleDelayed` to queues/index.ts**
+
 ```typescript
 import { Queue, Worker } from 'bullmq';
 import { redis } from '../lib/redis';
@@ -762,6 +818,7 @@ export async function scheduleDelayed(
 ```
 
 **Step: Create `delayed.processor.ts`**
+
 ```typescript
 import { Job } from 'bullmq';
 import { processInstant } from './instant.processor';
@@ -788,11 +845,13 @@ export async function processDelayed(job: Job<DelayedJobData>) {
 ### Task 3.3: Email Worker — Reminder + Digest Processor
 
 **Files:**
+
 - Create: `apps/email-worker/src/processors/reminder.processor.ts`
 - Create: `apps/email-worker/src/processors/digest.processor.ts`
 - Modify: `apps/email-worker/src/index.ts` — add digest cron
 
 **Content — `reminder.processor.ts`:**
+
 ```typescript
 import { Job } from 'bullmq';
 import { prisma } from '../lib/prisma';
@@ -827,7 +886,13 @@ export async function processReminder(job: Job<ReminderJobData>) {
   });
 
   try {
-    const template = taskDueReminderTemplate(email.split('@')[0], taskTitle, workspaceName, dueDate, taskUrl);
+    const template = taskDueReminderTemplate(
+      email.split('@')[0],
+      taskTitle,
+      workspaceName,
+      dueDate,
+      taskUrl,
+    );
     await sendTemplate(email, template);
     await prisma.emailJob.updateMany({
       where: { userId, type: 'REMINDER', status: 'processing' },
@@ -844,6 +909,7 @@ export async function processReminder(job: Job<ReminderJobData>) {
 ```
 
 **Content — `digest.processor.ts`:**
+
 ```typescript
 import { prisma } from '../lib/prisma';
 import { digestTemplate } from '../templates/digest';
@@ -867,9 +933,10 @@ export async function runDigest(digestType: 'daily' | 'weekly') {
     const wantsDigest = digestType === 'daily' ? prefs.dailyDigest : prefs.weeklyDigest;
     if (!wantsDigest) continue;
 
-    const since = digestType === 'daily'
-      ? new Date(Date.now() - 24 * 60 * 60 * 1000)
-      : new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const since =
+      digestType === 'daily'
+        ? new Date(Date.now() - 24 * 60 * 60 * 1000)
+        : new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
     const notifications = await prisma.notification.findMany({
       where: { userId: user.id, createdAt: { gte: since }, readAt: null },
@@ -893,7 +960,13 @@ export async function runDigest(digestType: 'daily' | 'weekly') {
     try {
       await sendTemplate(user.email, template);
       await prisma.emailJob.create({
-        data: { userId: user.id, type: digestType.toUpperCase() + '_DIGEST', payload: { count: notifications.length }, status: 'completed', completedAt: new Date() },
+        data: {
+          userId: user.id,
+          type: digestType.toUpperCase() + '_DIGEST',
+          payload: { count: notifications.length },
+          status: 'completed',
+          completedAt: new Date(),
+        },
       });
     } catch (err) {
       console.error(`[digest] failed for user ${user.id}:`, err);
@@ -913,6 +986,7 @@ async function getEffectivePrefs(userId: string) {
 ```
 
 **Modify `src/index.ts`** — add digest cron:
+
 ```typescript
 import { Worker } from 'bullmq';
 import cron from 'node-cron';
@@ -932,6 +1006,7 @@ cron.schedule('0 8 * * 1', () => runDigest('weekly'));
 ### Task 4.1: Chat Channel API
 
 **Files:**
+
 - Create: `apps/api/src/modules/chat/chat.channel.repository.ts`
 - Create: `apps/api/src/modules/chat/chat.channel.service.ts`
 - Create: `apps/api/src/modules/chat/chat.channel.routes.ts`
@@ -940,6 +1015,7 @@ cron.schedule('0 8 * * 1', () => runDigest('weekly'));
 - Create: `apps/api/src/modules/chat/index.ts`
 
 **Content — `chat.channel.repository.ts`:**
+
 ```typescript
 import type { PrismaClient } from '../../shared/lib/prisma';
 
@@ -975,6 +1051,7 @@ export async function deleteChannel(prisma: PrismaClient, id: string) {
 ```
 
 **Content — `chat.channel.service.ts`:**
+
 ```typescript
 import type { PrismaClient } from '../../shared/lib/prisma';
 import * as repo from './chat.channel.repository';
@@ -1013,6 +1090,7 @@ export async function deleteChannel(prisma: PrismaClient, id: string) {
 ```
 
 **Content — `chat.channel.schema.ts`:**
+
 ```typescript
 import { z } from 'zod';
 import { CreateChannelSchema, UpdateChannelSchema } from '@flow-desk/shared/chat';
@@ -1021,6 +1099,7 @@ export { CreateChannelSchema, UpdateChannelSchema };
 ```
 
 **Content — `chat.channel.routes.ts`:**
+
 ```typescript
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
@@ -1083,6 +1162,7 @@ export default channels;
 ### Task 4.2: Chat Message API
 
 **Files:**
+
 - Create: `apps/api/src/modules/chat/chat.message.repository.ts`
 - Create: `apps/api/src/modules/chat/chat.message.service.ts`
 - Create: `apps/api/src/modules/chat/chat.message.routes.ts`
@@ -1093,6 +1173,7 @@ export default channels;
 - Modify: `apps/api/src/app.ts` — register channel + message routers
 
 **Content — `chat.message.repository.ts`:**
+
 ```typescript
 import type { PrismaClient } from '../../shared/lib/prisma';
 
@@ -1119,6 +1200,7 @@ export async function createMessage(
 ```
 
 **Content — `chat.message.service.ts`:**
+
 ```typescript
 import type { PrismaClient } from '../../shared/lib/prisma';
 import * as repo from './chat.message.repository';
@@ -1153,6 +1235,7 @@ function extractMentions(content: string): string[] {
 ```
 
 **Content — `chat.message.routes.ts`:**
+
 ```typescript
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
@@ -1211,16 +1294,19 @@ export default messages;
 ### Task 4.3: Task-level Chat
 
 **Files:**
+
 - Modify: `apps/api/src/modules/comment/comment.routes.ts` — add `isChat` param to create
 - Modify: `apps/api/src/modules/comment/comment.service.ts` — filter by `isChat`
 - Modify: `apps/api/src/modules/task/task.routes.ts` — add chat tab endpoint
 
 **Step: Modify comment routes** — on POST, accept optional `isChat: boolean` in body:
+
 ```typescript
 const bodySchema = CreateCommentSchema.extend({ isChat: z.boolean().optional() });
 ```
 
 **Step: Add `getTaskChat` endpoint** in task.routes.ts:
+
 ```typescript
 taskChat.get('/:id/chat', async (c) => {
   const user = c.get('auth');
@@ -1239,6 +1325,7 @@ taskChat.get('/:id/chat', async (c) => {
 ### Task 5.1: Notification Preferences API
 
 **Files:**
+
 - Create: `apps/api/src/modules/notification-preferences/notification-preferences.repository.ts`
 - Create: `apps/api/src/modules/notification-preferences/notification-preferences.service.ts`
 - Create: `apps/api/src/modules/notification-preferences/notification-preferences.routes.ts`
@@ -1246,6 +1333,7 @@ taskChat.get('/:id/chat', async (c) => {
 - Create: `apps/api/src/modules/notification-preferences/index.ts`
 
 **Content — `notification-preferences.service.ts`:**
+
 ```typescript
 import type { PrismaClient } from '../../shared/lib/prisma';
 import type { EffectivePreferences } from '@flow-desk/shared/notification-preferences';
@@ -1268,21 +1356,58 @@ export async function getEffectivePreferences(
   workspaceId: string,
 ): Promise<EffectivePreferences> {
   const [userPref, globalPref, workspaceSetting] = await Promise.all([
-    prisma.userNotificationPreference.findUnique({ where: { userId_workspaceId: { userId, workspaceId } } }),
-    prisma.userNotificationPreference.findUnique({ where: { userId_workspaceId: { userId, workspaceId: null } } }),
+    prisma.userNotificationPreference.findUnique({
+      where: { userId_workspaceId: { userId, workspaceId } },
+    }),
+    prisma.userNotificationPreference.findUnique({
+      where: { userId_workspaceId: { userId, workspaceId: null } },
+    }),
     prisma.workspaceNotificationSetting.findUnique({ where: { workspaceId } }),
   ]);
 
   return {
-    taskAssignedEmail: userPref?.taskAssignedEmail ?? globalPref?.taskAssignedEmail ?? workspaceSetting?.taskAssignedEmail ?? DEFAULTS.taskAssignedEmail,
-    taskMentionedEmail: userPref?.taskMentionedEmail ?? globalPref?.taskMentionedEmail ?? workspaceSetting?.taskMentionedEmail ?? DEFAULTS.taskMentionedEmail,
-    taskDueReminderEmail: userPref?.taskDueReminderEmail ?? globalPref?.taskDueReminderEmail ?? workspaceSetting?.taskDueReminderEmail ?? DEFAULTS.taskDueReminderEmail,
-    taskDueReminderHours: userPref?.taskDueReminderHours ?? globalPref?.taskDueReminderHours ?? workspaceSetting?.taskDueReminderHours ?? DEFAULTS.taskDueReminderHours,
-    commentReplyEmail: userPref?.commentReplyEmail ?? globalPref?.commentReplyEmail ?? workspaceSetting?.commentReplyEmail ?? DEFAULTS.commentReplyEmail,
-    commentMentionEmail: userPref?.commentMentionEmail ?? globalPref?.commentMentionEmail ?? workspaceSetting?.commentMentionEmail ?? DEFAULTS.commentMentionEmail,
-    dailyDigest: userPref?.dailyDigest ?? globalPref?.dailyDigest ?? workspaceSetting?.dailyDigest ?? DEFAULTS.dailyDigest,
-    weeklyDigest: userPref?.weeklyDigest ?? globalPref?.weeklyDigest ?? workspaceSetting?.weeklyDigest ?? DEFAULTS.weeklyDigest,
-    emailDelayMinutes: userPref?.emailDelayMinutes ?? globalPref?.emailDelayMinutes ?? DEFAULTS.emailDelayMinutes,
+    taskAssignedEmail:
+      userPref?.taskAssignedEmail ??
+      globalPref?.taskAssignedEmail ??
+      workspaceSetting?.taskAssignedEmail ??
+      DEFAULTS.taskAssignedEmail,
+    taskMentionedEmail:
+      userPref?.taskMentionedEmail ??
+      globalPref?.taskMentionedEmail ??
+      workspaceSetting?.taskMentionedEmail ??
+      DEFAULTS.taskMentionedEmail,
+    taskDueReminderEmail:
+      userPref?.taskDueReminderEmail ??
+      globalPref?.taskDueReminderEmail ??
+      workspaceSetting?.taskDueReminderEmail ??
+      DEFAULTS.taskDueReminderEmail,
+    taskDueReminderHours:
+      userPref?.taskDueReminderHours ??
+      globalPref?.taskDueReminderHours ??
+      workspaceSetting?.taskDueReminderHours ??
+      DEFAULTS.taskDueReminderHours,
+    commentReplyEmail:
+      userPref?.commentReplyEmail ??
+      globalPref?.commentReplyEmail ??
+      workspaceSetting?.commentReplyEmail ??
+      DEFAULTS.commentReplyEmail,
+    commentMentionEmail:
+      userPref?.commentMentionEmail ??
+      globalPref?.commentMentionEmail ??
+      workspaceSetting?.commentMentionEmail ??
+      DEFAULTS.commentMentionEmail,
+    dailyDigest:
+      userPref?.dailyDigest ??
+      globalPref?.dailyDigest ??
+      workspaceSetting?.dailyDigest ??
+      DEFAULTS.dailyDigest,
+    weeklyDigest:
+      userPref?.weeklyDigest ??
+      globalPref?.weeklyDigest ??
+      workspaceSetting?.weeklyDigest ??
+      DEFAULTS.weeklyDigest,
+    emailDelayMinutes:
+      userPref?.emailDelayMinutes ?? globalPref?.emailDelayMinutes ?? DEFAULTS.emailDelayMinutes,
   };
 }
 
@@ -1321,6 +1446,7 @@ export async function updateWorkspaceSetting(
 ```
 
 **Content — `notification-preferences.routes.ts`:**
+
 ```typescript
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
@@ -1329,7 +1455,10 @@ import { requireAuth } from '../../shared/middleware/auth';
 import { requireWorkspaceRole } from '../../shared/middleware/workspace-auth';
 import { assertMembership } from '../../shared/lib/access';
 import * as service from './notification-preferences.service';
-import { UpdateWorkspaceNotificationSettingSchema, UpdateUserNotificationPreferenceSchema } from '@flow-desk/shared/notification-preferences';
+import {
+  UpdateWorkspaceNotificationSettingSchema,
+  UpdateUserNotificationPreferenceSchema,
+} from '@flow-desk/shared/notification-preferences';
 
 const prefs = new Hono<{ Variables: Variables }>();
 prefs.use('/*', requireAuth());
@@ -1343,22 +1472,39 @@ prefs.get('/:workspaceId/settings', async (c) => {
   return c.json({ data: setting });
 });
 
-prefs.patch('/:workspaceId/settings', requireWorkspaceRole(['OWNER', 'ADMIN']), zValidator('json', UpdateWorkspaceNotificationSettingSchema), async (c) => {
-  const user = c.get('auth');
-  const workspaceId = c.req.param('workspaceId');
-  const body = c.req.valid('json');
-  const setting = await service.updateWorkspaceSetting(c.get('prisma'), workspaceId, body);
-  return c.json({ data: setting });
-});
+prefs.patch(
+  '/:workspaceId/settings',
+  requireWorkspaceRole(['OWNER', 'ADMIN']),
+  zValidator('json', UpdateWorkspaceNotificationSettingSchema),
+  async (c) => {
+    const user = c.get('auth');
+    const workspaceId = c.req.param('workspaceId');
+    const body = c.req.valid('json');
+    const setting = await service.updateWorkspaceSetting(c.get('prisma'), workspaceId, body);
+    return c.json({ data: setting });
+  },
+);
 
 // User preferences
 prefs.get('/', async (c) => {
   const user = c.get('auth');
   const workspaceId = c.req.query('workspaceId');
-  const effective = await service.getEffectivePreferences(c.get('prisma'), user.id, workspaceId ?? '');
+  const effective = await service.getEffectivePreferences(
+    c.get('prisma'),
+    user.id,
+    workspaceId ?? '',
+  );
   const prefs = workspaceId
-    ? await c.get('prisma').userNotificationPreference.findUnique({ where: { userId_workspaceId: { userId: user.id, workspaceId } } })
-    : await c.get('prisma').userNotificationPreference.findUnique({ where: { userId_workspaceId: { userId: user.id, workspaceId: null } } });
+    ? await c
+        .get('prisma')
+        .userNotificationPreference.findUnique({
+          where: { userId_workspaceId: { userId: user.id, workspaceId } },
+        })
+    : await c
+        .get('prisma')
+        .userNotificationPreference.findUnique({
+          where: { userId_workspaceId: { userId: user.id, workspaceId: null } },
+        });
   return c.json({ data: { effective, current: prefs } });
 });
 
@@ -1377,15 +1523,24 @@ export default prefs;
 ### Task 5.2: Task Assignment → Notification + Email
 
 **Files:**
+
 - Modify: `apps/api/src/modules/notification/notification.service.ts` — add `createTaskAssignmentNotification`
 - Modify: `apps/api/src/modules/task/task.service.ts` — trigger notification + email on assign
 - Create: `apps/api/src/modules/notification/notification-email.service.ts`
 
 **Step: Add to `notification.service.ts`:**
+
 ```typescript
 export async function createTaskAssignmentNotification(
   prisma: PrismaClient,
-  data: { taskId: string; taskTitle: string; workspaceId: string; assigneeId: string; assignedById: string; workspaceName: string },
+  data: {
+    taskId: string;
+    taskTitle: string;
+    workspaceId: string;
+    assigneeId: string;
+    assignedById: string;
+    workspaceName: string;
+  },
 ) {
   const notification = await prisma.notification.create({
     data: {
@@ -1401,6 +1556,7 @@ export async function createTaskAssignmentNotification(
 ```
 
 **Step: Modify `task.service.ts`** — in `updateTask`, when `assigneeId` changes:
+
 ```typescript
 // After successful update where assigneeId changed:
 if (previousAssigneeId !== updatedTask.assigneeId && updatedTask.assigneeId) {
@@ -1418,19 +1574,32 @@ if (previousAssigneeId !== updatedTask.assigneeId && updatedTask.assigneeId) {
 
     // Emit realtime to assignee
     safeEmit('notifications', `notification:new`, { notification });
-    safeEmit('tasks', `task:assigned`, { taskId: updatedTask.id, assigneeId: updatedTask.assigneeId });
+    safeEmit('tasks', `task:assigned`, {
+      taskId: updatedTask.id,
+      assigneeId: updatedTask.assigneeId,
+    });
 
     // Enqueue email job
-    const prefs = await notificationPreferencesService.getEffectivePreferences(prisma, assignee.id, updatedTask.workspaceId);
+    const prefs = await notificationPreferencesService.getEffectivePreferences(
+      prisma,
+      assignee.id,
+      updatedTask.workspaceId,
+    );
     if (prefs.taskAssignedEmail) {
       if (prefs.emailDelayMinutes > 0) {
-        await scheduleDelayed(assignee.id, assignee.email, 'TASK_ASSIGNED', {
-          assigneeName: assignee.name,
-          taskTitle: updatedTask.title,
-          workspaceName: workspace.name,
-          taskUrl: `${process.env.APP_URL}/tasks/${updatedTask.id}`,
-          assignedByName: authUser.name,
-        }, prefs.emailDelayMinutes * 60 * 1000);
+        await scheduleDelayed(
+          assignee.id,
+          assignee.email,
+          'TASK_ASSIGNED',
+          {
+            assigneeName: assignee.name,
+            taskTitle: updatedTask.title,
+            workspaceName: workspace.name,
+            taskUrl: `${process.env.APP_URL}/tasks/${updatedTask.id}`,
+            assignedByName: authUser.name,
+          },
+          prefs.emailDelayMinutes * 60 * 1000,
+        );
       } else {
         await instantQueue.add('task-assigned', {
           userId: assignee.id,
@@ -1457,6 +1626,7 @@ if (previousAssigneeId !== updatedTask.assigneeId && updatedTask.assigneeId) {
 ### Task 6.1: Chat Frontend Components
 
 **Files:**
+
 - Create: `apps/web/src/features/chat/types.ts`
 - Create: `apps/web/src/features/chat/api.ts`
 - Create: `apps/web/src/features/chat/hooks/useChannels.ts`
@@ -1472,12 +1642,14 @@ if (previousAssigneeId !== updatedTask.assigneeId && updatedTask.assigneeId) {
 - Create: `apps/web/src/features/chat/components/TaskChat.tsx`
 
 **Step: Add to `ChatSidebar.tsx`** — left sidebar with:
+
 - Workspace channel list
 - `#general` channel auto-created
 - Create channel button
 - Selected channel highlight
 
 **Step: Socket.IO** — `useRealtimeChat.ts`:
+
 ```typescript
 import { useEffect } from 'react';
 import { useNamespacedSocket } from '@/lib/socket';
@@ -1501,6 +1673,7 @@ export function useRealtimeChat(channelId: string | null, onMessage: (msg: unkno
 ### Task 6.2: Notification Preferences UI
 
 **Files:**
+
 - Create: `apps/web/src/features/notification-preferences/types.ts`
 - Create: `apps/web/src/features/notification-preferences/api.ts`
 - Create: `apps/web/src/features/notification-preferences/hooks/useNotificationPreferences.ts`
@@ -1516,10 +1689,12 @@ export function useRealtimeChat(channelId: string | null, onMessage: (msg: unkno
 ### Task 7.1: Email Worker in Docker Compose
 
 **Files:**
+
 - Modify: `docker-compose.yml` — add `email-worker` service
 - Create: `docker/email-worker.Dockerfile`
 
 **Content — `docker/email-worker.Dockerfile`:**
+
 ```dockerfile
 FROM node:20-alpine AS base
 WORKDIR /app
@@ -1541,6 +1716,7 @@ CMD ["node", "index.cjs"]
 ```
 
 **Modify `docker-compose.yml`**:
+
 ```yaml
 email-worker:
   build:
@@ -1568,6 +1744,7 @@ email-worker:
 ### Task 8.1: API Integration Tests
 
 **Files:**
+
 - Create: `apps/api/tests/integration/chat-channel.test.ts`
 - Create: `apps/api/tests/integration/chat-message.test.ts`
 - Create: `apps/api/tests/integration/notification-preferences.test.ts`
@@ -1579,16 +1756,16 @@ email-worker:
 
 ## Summary: Phases
 
-| Phase | Tasks | Scope |
-|-------|-------|-------|
-| 1 | 1.1–1.3 | Prisma schema + shared schemas |
-| 2 | 2.1–2.2 | Email provider + templates |
-| 3 | 3.1–3.3 | Email worker (BullMQ) |
-| 4 | 4.1–4.3 | Chat channels + messages + task chat |
-| 5 | 5.1–5.2 | Notification preferences + assignment trigger |
-| 6 | 6.1–6.2 | Frontend chat + preferences UI |
-| 7 | 7.1 | Docker Compose email-worker |
-| 8 | 8.1 | Integration tests |
+| Phase | Tasks   | Scope                                         |
+| ----- | ------- | --------------------------------------------- |
+| 1     | 1.1–1.3 | Prisma schema + shared schemas                |
+| 2     | 2.1–2.2 | Email provider + templates                    |
+| 3     | 3.1–3.3 | Email worker (BullMQ)                         |
+| 4     | 4.1–4.3 | Chat channels + messages + task chat          |
+| 5     | 5.1–5.2 | Notification preferences + assignment trigger |
+| 6     | 6.1–6.2 | Frontend chat + preferences UI                |
+| 7     | 7.1     | Docker Compose email-worker                   |
+| 8     | 8.1     | Integration tests                             |
 
 **Total: 18 tasks across 8 phases.**
 
@@ -1615,4 +1792,3 @@ email-worker:
 - **Digest timezone:** User timezone stored in User model or derived from? → Defer, use UTC for v1
 - **Private channels:** Members tracked how? → Skip v1 (all workspace members can see all channels)
 - **Task URL:** `APP_URL` env var needed → add to docker-compose env
-

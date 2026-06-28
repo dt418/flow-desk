@@ -5,7 +5,10 @@ import bcrypt from 'bcryptjs';
 
 function e2eDbUrl(): string {
   const port = process.env.DB_PORT ?? '5432';
-  return process.env.DATABASE_URL ?? `postgresql://flowdesk:flowdesk@127.0.0.1:${port}/flowdesk?schema=public`;
+  return (
+    process.env.DATABASE_URL ??
+    `postgresql://flowdesk:flowdesk@127.0.0.1:${port}/flowdesk?schema=public`
+  );
 }
 
 const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: e2eDbUrl() }) });
@@ -17,28 +20,41 @@ function uniq(prefix: string): string {
 }
 
 async function cleanDatabase(p: PrismaClient): Promise<void> {
-  await p.$transaction(async (tx) => {
-    await tx.$executeRawUnsafe(`SET session_replication_role = 'replica'`);
-    const tables = await tx.$queryRaw<Array<{ tablename: string }>>`
+  await p.$transaction(
+    async (tx) => {
+      await tx.$executeRawUnsafe(`SET session_replication_role = 'replica'`);
+      const tables = await tx.$queryRaw<Array<{ tablename: string }>>`
       SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename NOT LIKE '\\_%'
     `;
-    for (const { tablename } of tables) {
-      await tx.$executeRawUnsafe(`DELETE FROM "${tablename}"`);
-    }
-    await tx.$executeRawUnsafe(`SET session_replication_role = 'origin'`);
-  }, { timeout: 30000 });
+      for (const { tablename } of tables) {
+        await tx.$executeRawUnsafe(`DELETE FROM "${tablename}"`);
+      }
+      await tx.$executeRawUnsafe(`SET session_replication_role = 'origin'`);
+    },
+    { timeout: 30000 },
+  );
 }
 
-async function createUser(p: PrismaClient, email: string, name: string): Promise<{ id: string; email: string; name: string }> {
+async function createUser(
+  p: PrismaClient,
+  email: string,
+  name: string,
+): Promise<{ id: string; email: string; name: string }> {
   const user = await p.user.create({ data: { email, name } });
   return { id: user.id, email: user.email, name: user.name };
 }
 
-async function createWorkspace(p: PrismaClient, ownerId: string, name: string): Promise<{ id: string; name: string; ownerId: string }> {
+async function createWorkspace(
+  p: PrismaClient,
+  ownerId: string,
+  name: string,
+): Promise<{ id: string; name: string; ownerId: string }> {
   const slug = `ws-${uniq('s')}`.toLowerCase();
   const ws = await p.workspace.create({
     data: {
-      name, slug, ownerId,
+      name,
+      slug,
+      ownerId,
       members: { create: { userId: ownerId, role: 'OWNER' } },
       columns: {
         create: [

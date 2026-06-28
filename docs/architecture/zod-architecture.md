@@ -152,7 +152,7 @@ export const updateTaskSchemaV1 = z.object({ title: nameSchema });
 export const updateTaskSchemaV2 = z.object({ title: nameSchema.optional() });
 ```
 
-When a field's *type* changes (not optionality), bump the versioned handler and ship a migration in `feature_list.json`. Avoid silent coercion unless the source is untrusted-by-design (numbers from query strings, ISO dates).
+When a field's _type_ changes (not optionality), bump the versioned handler and ship a migration in `feature_list.json`. Avoid silent coercion unless the source is untrusted-by-design (numbers from query strings, ISO dates).
 
 ### Coerce at boundaries only
 

@@ -21,12 +21,15 @@ export function findUnique(prisma: PrismaClient, id: string) {
   return prisma.chatMessage.findUnique({ where: { id } });
 }
 
-export function create(prisma: PrismaClient, data: {
-  channelId: string;
-  authorId: string;
-  content: string;
-  mentionedUserIds: string[];
-}) {
+export function create(
+  prisma: PrismaClient,
+  data: {
+    channelId: string;
+    authorId: string;
+    content: string;
+    mentionedUserIds: string[];
+  },
+) {
   return prisma.chatMessage.create({
     data,
     include: {

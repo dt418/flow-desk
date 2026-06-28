@@ -3,10 +3,30 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
-import { Sparkles, Loader2, Calendar, Flag, User, Columns3, CircleDot } from 'lucide-react';
+import {
+  Sparkles,
+  Loader2,
+  Calendar,
+  Flag,
+  User,
+  Columns3,
+  CircleDot,
+  GitBranch,
+  Eye,
+  EyeOff,
+  X as XIcon,
+} from 'lucide-react';
+import { marked } from 'marked';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+  TooltipProvider,
+} from '@/components/ui/tooltip';
 import {
   Dialog,
   DialogContent,
@@ -49,6 +69,7 @@ export interface ColumnOption {
 export interface MemberOption {
   id: string;
   name: string;
+  avatarUrl?: string | null;
 }
 
 interface Props {
@@ -77,13 +98,43 @@ const STATUS_TONE: Record<string, string> = {
   BLOCKED: 'bg-red-500',
 };
 
+function MemberAvatar({ name, avatarUrl, size = 6 }: { name: string; avatarUrl?: string | null; size?: 6 | 8 }) {
+  const dim = size === 6 ? 'h-6 w-6' : 'h-8 w-8';
+  return (
+    <Avatar className={`${dim} rounded-full bg-slate-200`}>
+      {avatarUrl ? <AvatarImage src={avatarUrl} alt={name} /> : null}
+      <AvatarFallback className="text-[10px] font-medium text-slate-600">
+        {name.charAt(0).toUpperCase()}
+      </AvatarFallback>
+    </Avatar>
+  );
+}
+
+function toDateInputValue(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+const QUICK_DATE_OFFSETS: { label: string; days: number | null }[] = [
+  { label: 'Today', days: 0 },
+  { label: 'Tomorrow', days: 1 },
+  { label: 'Next week', days: 7 },
+];
+
 function FieldDivider() {
   return <div className="border-t border-[var(--border)]" />;
 }
 
 function SectionLabel({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <p className={cn('text-[11px] font-medium uppercase tracking-wider text-[var(--fg-3)]', className)}>
+    <p
+      className={cn(
+        'text-[11px] font-medium uppercase tracking-wider text-[var(--fg-3)]',
+        className,
+      )}
+    >
       {children}
     </p>
   );
@@ -103,7 +154,10 @@ export function TaskEditModal({
   const suggestAssignee = useSuggestAssignee(workspaceId);
   const isEdit = Boolean(initial);
   const [tab, setTab] = React.useState<'details' | 'chat'>('details');
-  const [aiSuggestions, setAiSuggestions] = React.useState<SuggestAssigneeSuggestion[] | null>(null);
+  const [aiSuggestions, setAiSuggestions] = React.useState<SuggestAssigneeSuggestion[] | null>(
+    null,
+  );
+  const [previewDescription, setPreviewDescription] = React.useState(false);
 
   const abortRef = React.useRef<AbortController | null>(null);
   React.useEffect(() => () => abortRef.current?.abort(), []);
@@ -146,6 +200,7 @@ export function TaskEditModal({
   }, [open, initial, defaultColumnId, columns, reset]);
 
   const watchTitle = watch('title');
+  const watchDescription = watch('description') ?? '';
 
   const handleSuggest = () => {
     abortRef.current = new AbortController();
@@ -206,6 +261,18 @@ export function TaskEditModal({
     }
   };
 
+  const handleFormKeyDown = (e: React.KeyboardEvent<HTMLFormElement>) => {
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
+      on_submit();
+    }
+  };
+
+  const isMac = React.useMemo(
+    () => typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform),
+    [],
+  );
+
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent
@@ -252,7 +319,7 @@ export function TaskEditModal({
         </DialogDescription>
 
         {tab === 'details' && (
-          <form onSubmit={on_submit} className="flex min-h-0 flex-1 flex-col">
+          <form onSubmit={on_submit} onKeyDown={handleFormKeyDown} className="flex min-h-0 flex-1 flex-col">
             <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-5">
               {/* Title — highest priority */}
               <Input
@@ -269,13 +336,44 @@ export function TaskEditModal({
               )}
 
               {/* Description */}
-              <textarea
-                {...register('description')}
-                rows={2}
-                placeholder="Add a description…"
-                aria-label="Task description"
-                className="w-full resize-y rounded-md border border-transparent bg-transparent px-0 text-[13px] leading-relaxed text-[var(--fg-2)] placeholder:text-[var(--fg-3)] outline-none transition-colors focus-visible:border-[var(--border)] focus-visible:bg-[var(--bg-2)] focus-visible:px-3 focus-visible:py-2"
-              />
+              {previewDescription ? (
+                <div className="min-h-[44px] rounded-md border border-[var(--border)] bg-[var(--bg-2)] px-3 py-2 text-[13px] leading-relaxed text-[var(--fg-2)]">
+                  {watchDescription.trim() ? (
+                    <div
+                      className="prose prose-sm prose-invert max-w-none [&_a]:text-emerald-400 [&_code]:rounded [&_code]:bg-[var(--bg-3)] [&_code]:px-1 [&_h1]:mb-1 [&_h2]:mb-1 [&_h3]:mb-1 [&_p]:mb-1.5 [&_ul]:mb-1.5"
+                      dangerouslySetInnerHTML={{
+                        __html: marked.parse(watchDescription, { async: false }) as string,
+                      }}
+                    />
+                  ) : (
+                    <span className="text-[var(--fg-3)]">No description</span>
+                  )}
+                </div>
+              ) : (
+                <textarea
+                  {...register('description')}
+                  rows={2}
+                  placeholder="Add a description…"
+                  aria-label="Task description"
+                  className="w-full resize-y rounded-md border border-transparent bg-transparent px-0 text-[13px] leading-relaxed text-[var(--fg-2)] placeholder:text-[var(--fg-3)] outline-none transition-colors focus-visible:border-[var(--border)] focus-visible:bg-[var(--bg-2)] focus-visible:px-3 focus-visible:py-2"
+                />
+              )}
+              <button
+                type="button"
+                onClick={() => setPreviewDescription((v) => !v)}
+                className="mt-1 inline-flex items-center gap-1 text-[11px] text-[var(--fg-3)] transition-colors hover:text-[var(--fg-2)]"
+                aria-label={previewDescription ? 'Edit description' : 'Preview description'}
+              >
+                {previewDescription ? (
+                  <>
+                    <EyeOff className="h-3 w-3" /> Edit
+                  </>
+                ) : (
+                  <>
+                    <Eye className="h-3 w-3" /> Preview
+                  </>
+                )}
+              </button>
 
               <FieldDivider />
 
@@ -317,7 +415,16 @@ export function TaskEditModal({
                           <SelectValue placeholder="Pick status" />
                         </SelectTrigger>
                         <SelectContent>
-                          {(['BACKLOG', 'TODO', 'IN_PROGRESS', 'IN_REVIEW', 'DONE', 'BLOCKED'] as const).map((s) => (
+                          {(
+                            [
+                              'BACKLOG',
+                              'TODO',
+                              'IN_PROGRESS',
+                              'IN_REVIEW',
+                              'DONE',
+                              'BLOCKED',
+                            ] as const
+                          ).map((s) => (
                             <SelectItem key={s} value={s}>
                               <span className="flex items-center gap-2">
                                 <span className={cn('h-2 w-2 rounded-full', STATUS_TONE[s])} />
@@ -389,21 +496,36 @@ export function TaskEditModal({
                   <Controller
                     name="assigneeId"
                     control={control}
-                    render={({ field }) => (
-                      <Select value={field.value ?? ''} onValueChange={field.onChange}>
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Unassigned" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="">Unassigned</SelectItem>
-                          {members.map((m) => (
-                            <SelectItem key={m.id} value={m.id}>
-                              {m.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
+                    render={({ field }) => {
+                      const selected = members.find((m) => m.id === field.value);
+                      return (
+                        <Select value={field.value ?? ''} onValueChange={field.onChange}>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Unassigned">
+                              {selected ? (
+                                <span className="flex items-center gap-2">
+                                  <MemberAvatar name={selected.name} avatarUrl={selected.avatarUrl} />
+                                  <span>{selected.name}</span>
+                                </span>
+                              ) : (
+                                <span className="text-[var(--fg-3)]">Unassigned</span>
+                              )}
+                            </SelectValue>
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="">Unassigned</SelectItem>
+                            {members.map((m) => (
+                              <SelectItem key={m.id} value={m.id}>
+                                <span className="flex items-center gap-2">
+                                  <MemberAvatar name={m.name} avatarUrl={m.avatarUrl} />
+                                  <span>{m.name}</span>
+                                </span>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      );
+                    }}
                   />
                   {aiSuggestions && (
                     <div className="space-y-1 pt-1">
@@ -430,7 +552,9 @@ export function TaskEditModal({
                         );
                       })}
                       {suggestAssignee.data?.fallback && (
-                        <p className="text-[11px] text-[var(--warning)]">Rule-based (AI unavailable)</p>
+                        <p className="text-[11px] text-[var(--warning)]">
+                          Rule-based (AI unavailable)
+                        </p>
                       )}
                     </div>
                   )}
@@ -439,11 +563,57 @@ export function TaskEditModal({
                   <SectionLabel className="flex items-center gap-1.5">
                     <Calendar className="h-3 w-3" /> Due date
                   </SectionLabel>
-                  <Input type="date" {...register('dueDate')} aria-label="Due date" />
+                  <Controller
+                    name="dueDate"
+                    control={control}
+                    render={({ field }) => (
+                      <div className="space-y-1.5">
+                        <Input
+                          type="date"
+                          value={field.value ?? ''}
+                          onChange={(e) => field.onChange(e.target.value)}
+                          aria-label="Due date"
+                          className="w-full"
+                        />
+                        <div className="flex flex-wrap items-center gap-1">
+                          {QUICK_DATE_OFFSETS.map((q) => {
+                            const d = new Date();
+                            d.setDate(d.getDate() + (q.days ?? 0));
+                            const value = toDateInputValue(d);
+                            const active = field.value === value;
+                            return (
+                              <button
+                                key={q.label}
+                                type="button"
+                                onClick={() => field.onChange(value)}
+                                className={cn(
+                                  'rounded-md border px-2 py-0.5 text-[11px] font-medium transition-colors',
+                                  active
+                                    ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-500'
+                                    : 'border-[var(--border)] bg-[var(--bg-2)] text-[var(--fg-2)] hover:border-[var(--fg-3)] hover:text-[var(--fg)]',
+                                )}
+                              >
+                                {q.label}
+                              </button>
+                            );
+                          })}
+                          {field.value && (
+                            <button
+                              type="button"
+                              onClick={() => field.onChange('')}
+                              className="inline-flex items-center gap-1 rounded-md border border-[var(--border)] bg-transparent px-2 py-0.5 text-[11px] font-medium text-[var(--fg-3)] transition-colors hover:border-[var(--fg-3)] hover:text-[var(--fg)]"
+                            >
+                              <XIcon className="h-3 w-3" /> Clear
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  />
                 </div>
               </div>
             </div>
-
+            
             {/* Footer — sticky, always visible */}
             <div className="flex items-center justify-end gap-2 border-t border-[var(--border)] px-5 py-3">
               <Button
@@ -454,19 +624,35 @@ export function TaskEditModal({
               >
                 Cancel
               </Button>
-              <Button
-                type="submit"
-                disabled={isSubmitting}
-                className="h-9 bg-emerald-500 px-4 text-[12px] text-white hover:bg-emerald-600"
-              >
-                {isSubmitting
-                  ? isEdit
-                    ? 'Saving…'
-                    : 'Creating…'
-                  : isEdit
-                    ? 'Save'
-                    : 'Create task'}
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="h-9 bg-emerald-500 px-4 text-[12px] text-white hover:bg-emerald-600"
+                  >
+                    {isSubmitting
+                      ? isEdit
+                        ? 'Saving…'
+                        : 'Creating…'
+                      : isEdit
+                        ? 'Save'
+                        : 'Create task'}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top" sideOffset={6}>
+                  <span className="flex items-center gap-1.5">
+                    <kbd className="rounded border border-[var(--border)] bg-[var(--bg-3)] px-1 font-mono text-[10px] text-[var(--fg-2)]">
+                      {isMac ? '⌘' : 'Ctrl'}
+                    </kbd>
+                    <span className="text-[var(--fg-3)]">+</span>
+                    <kbd className="rounded border border-[var(--border)] bg-[var(--bg-3)] px-1 font-mono text-[10px] text-[var(--fg-2)]">
+                      ↵
+                    </kbd>
+                    <span className="text-[var(--fg-2)]">to submit</span>
+                  </span>
+                </TooltipContent>
+              </Tooltip>
             </div>
           </form>
         )}

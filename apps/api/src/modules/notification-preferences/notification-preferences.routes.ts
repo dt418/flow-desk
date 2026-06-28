@@ -25,7 +25,8 @@ prefsRouter.patch(
   '/:workspaceId/settings',
   requireWorkspaceRole(['OWNER', 'ADMIN']),
   zValidator('json', updateWorkspaceNotificationSettingSchema, (result, c) => {
-    if (!result.success) return c.json({ code: 'INVALID_BODY', details: result.error.flatten() }, 400);
+    if (!result.success)
+      return c.json({ code: 'INVALID_BODY', details: result.error.flatten() }, 400);
     return undefined;
   }),
   async (c) => {
@@ -52,7 +53,8 @@ prefsRouter.get('/', async (c) => {
 prefsRouter.patch(
   '/',
   zValidator('json', updateUserNotificationPreferenceSchema, (result, c) => {
-    if (!result.success) return c.json({ code: 'INVALID_BODY', details: result.error.flatten() }, 400);
+    if (!result.success)
+      return c.json({ code: 'INVALID_BODY', details: result.error.flatten() }, 400);
     return undefined;
   }),
   async (c) => {

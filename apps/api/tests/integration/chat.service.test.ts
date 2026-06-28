@@ -1,11 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { getTestPrisma } from '../setup/integration';
-import {
-  cleanDatabase,
-  createUser,
-  createWorkspace,
-  addMember,
-} from '../setup/factories';
+import { cleanDatabase, createUser, createWorkspace, addMember } from '../setup/factories';
 import * as channelSvc from '../../src/modules/chat/chat.service';
 import * as messageSvc from '../../src/modules/chat/chat.message.service';
 import { prisma as db } from '../../src/shared/lib/prisma';
@@ -106,9 +101,7 @@ describe('chat integration', () => {
         scope: 'WORKSPACE',
       });
       await channelSvc.deleteChannel(db, ownerId, wid, ch.id);
-      await expect(
-        channelSvc.getChannel(db, ownerId, wid, ch.id),
-      ).rejects.toThrow(NotFoundError);
+      await expect(channelSvc.getChannel(db, ownerId, wid, ch.id)).rejects.toThrow(NotFoundError);
     });
   });
 
@@ -226,6 +219,42 @@ describe('chat integration', () => {
       expect(result.data[0]!.author.id).toBe(ownerId);
       expect(result.data[0]!.author.name).toBe('Owner');
       expect(result.data[0]!.author.email).toBe('owner@test.com');
+    });
+
+    it('mentioned user receives a notification row', async () => {
+      await messageSvc.sendMessage(db, ownerId, channelId, {
+        content: 'Hey @Member look at this',
+        mentionedUserIds: [memberId],
+      });
+
+      const notifs = await db.notification.findMany({
+        where: { userId: memberId, type: 'COMMENT_REPLY' },
+      });
+      expect(notifs).toHaveLength(1);
+      expect(notifs[0]!.title).toBe('You were mentioned in #general');
+      expect(notifs[0]!.body).toBe('Hey @Member look at this');
+      expect(notifs[0]!.data).toMatchObject({
+        channelId,
+        messageId: expect.any(String) as string,
+        workspaceId: wid,
+        authorId: ownerId,
+      });
+    });
+
+    it('self-mention does not create a notification', async () => {
+      await messageSvc.sendMessage(db, ownerId, channelId, {
+        content: 'talking to myself',
+        mentionedUserIds: [ownerId, memberId],
+      });
+
+      const ownerNotifs = await db.notification.findMany({
+        where: { userId: ownerId, type: 'COMMENT_REPLY' },
+      });
+      const memberNotifs = await db.notification.findMany({
+        where: { userId: memberId, type: 'COMMENT_REPLY' },
+      });
+      expect(ownerNotifs).toHaveLength(0);
+      expect(memberNotifs).toHaveLength(1);
     });
   });
 });

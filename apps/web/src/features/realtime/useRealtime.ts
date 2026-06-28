@@ -28,8 +28,7 @@ export function useRealtime(workspaceId: string, taskId?: string) {
 
     const invalidateBoard = () =>
       qc.invalidateQueries({ queryKey: realtimeKeys.board(workspaceId) });
-    const invalidateLabels = () =>
-      qc.invalidateQueries({ queryKey: ['labels', workspaceId] });
+    const invalidateLabels = () => qc.invalidateQueries({ queryKey: ['labels', workspaceId] });
     const taskEvents = [
       'task:created',
       'task:updated',

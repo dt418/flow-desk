@@ -8,12 +8,12 @@ Add three flat Markdown docs so users running FlowDesk and new engineers joining
 
 Three new files plus a small `README.md` pointer update. Nothing else.
 
-| File                 | Audience        | Purpose                                                          |
-| -------------------- | --------------- | ---------------------------------------------------------------- |
-| `docs/USER.md`       | End users       | First-run, every UI feature, troubleshooting                    |
-| `docs/DEV.md`        | New devs        | Day-0 → first merged PR                                          |
-| `docs/ARCHITECTURE.md` | All devs      | Read once before editing modules                                 |
-| `README.md`          | Everyone        | Existing "Repo layout" section gets three new doc pointers       |
+| File                   | Audience  | Purpose                                                    |
+| ---------------------- | --------- | ---------------------------------------------------------- |
+| `docs/USER.md`         | End users | First-run, every UI feature, troubleshooting               |
+| `docs/DEV.md`          | New devs  | Day-0 → first merged PR                                    |
+| `docs/ARCHITECTURE.md` | All devs  | Read once before editing modules                           |
+| `README.md`            | Everyone  | Existing "Repo layout" section gets three new doc pointers |
 
 The three top-level root Markdown files (`PRD.md`, `AGENTS.md`, `RISKS.md`, `TASKS.md`, `ACCEPTANCE.md`, `ADR-*`, `CHANGELOG.md`, `claude-progress.md`, `feature_list.json`, `session-handoff.md`) stay unchanged. The new docs reference them; they do not replace them.
 

@@ -12,10 +12,7 @@ export {
   useChatRealtime,
   useFlattenedMessages,
 } from './hooks';
-export {
-  ChatSidebar,
-  ChannelItem,
-} from './components/ChatSidebar';
+export { ChatSidebar, ChannelItem } from './components/ChatSidebar';
 export { ChannelView } from './components/ChannelView';
 export { MessageBubble } from './components/MessageBubble';
 export { ChatInput } from './components/ChatInput';

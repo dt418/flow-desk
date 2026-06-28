@@ -48,8 +48,7 @@ export function TaskChat({ taskId }: TaskChatProps) {
 
   const { data, isLoading } = useQuery({
     queryKey,
-    queryFn: () =>
-      api<{ data: ChatComment[] }>(`/api/tasks/${encodeURIComponent(taskId)}/chat`),
+    queryFn: () => api<{ data: ChatComment[] }>(`/api/tasks/${encodeURIComponent(taskId)}/chat`),
     enabled: Boolean(taskId),
   });
 
@@ -112,9 +111,7 @@ export function TaskChat({ taskId }: TaskChatProps) {
             {msg.authorId !== user?.id && (
               <Avatar className="mt-0.5 h-6 w-6 shrink-0">
                 <AvatarImage src={msg.author.avatarUrl ?? undefined} />
-                <AvatarFallback className="text-[9px]">
-                  {initials(msg.author.name)}
-                </AvatarFallback>
+                <AvatarFallback className="text-[9px]">{initials(msg.author.name)}</AvatarFallback>
               </Avatar>
             )}
             <div
@@ -125,13 +122,9 @@ export function TaskChat({ taskId }: TaskChatProps) {
                   : 'bg-[var(--bg-3)] text-[var(--fg)]',
               )}
             >
-              <p className="text-[10px] font-medium text-[var(--fg-2)]">
-                {msg.author.name}
-              </p>
+              <p className="text-[10px] font-medium text-[var(--fg-2)]">{msg.author.name}</p>
               <p className="whitespace-pre-wrap break-words">{msg.content}</p>
-              <p className="mt-0.5 text-right text-[9px] opacity-60">
-                {formatTime(msg.createdAt)}
-              </p>
+              <p className="mt-0.5 text-right text-[9px] opacity-60">{formatTime(msg.createdAt)}</p>
             </div>
           </div>
         ))}

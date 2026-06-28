@@ -17,10 +17,10 @@ export const chatApi = {
   },
 
   createChannel(wid: string, body: CreateChannelInput) {
-    return api<{ data: ChannelView }>(
-      `/api/workspaces/${encodeURIComponent(wid)}/channels`,
-      { method: 'POST', json: body },
-    );
+    return api<{ data: ChannelView }>(`/api/workspaces/${encodeURIComponent(wid)}/channels`, {
+      method: 'POST',
+      json: body,
+    });
   },
 
   updateChannel(wid: string, id: string, body: UpdateChannelInput) {

@@ -24,7 +24,9 @@ test.describe('Critical path @smoke', () => {
     if (srcBox && dstBox) {
       await page.mouse.move(srcBox.x + srcBox.width / 2, srcBox.y + srcBox.height / 2);
       await page.mouse.down();
-      await page.mouse.move(dstBox.x + dstBox.width / 2, dstBox.y + dstBox.height / 2, { steps: 10 });
+      await page.mouse.move(dstBox.x + dstBox.width / 2, dstBox.y + dstBox.height / 2, {
+        steps: 10,
+      });
       await page.mouse.up();
     }
     await expect(secondColumn.getByText('Ship F2')).toBeVisible({ timeout: 5_000 });

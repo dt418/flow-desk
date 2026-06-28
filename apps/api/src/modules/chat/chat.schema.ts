@@ -14,10 +14,9 @@ export const updateChannelSchema = z
     description: z.string().max(500).optional(),
     isPrivate: z.boolean().optional(),
   })
-  .refine(
-    (v) => v.name !== undefined || v.description !== undefined || v.isPrivate !== undefined,
-    { message: 'At least one field must be provided' },
-  );
+  .refine((v) => v.name !== undefined || v.description !== undefined || v.isPrivate !== undefined, {
+    message: 'At least one field must be provided',
+  });
 export type UpdateChannelInput = z.infer<typeof updateChannelSchema>;
 
 export const channelParamSchema = z.object({

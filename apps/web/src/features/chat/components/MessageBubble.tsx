@@ -36,9 +36,7 @@ export function MessageBubble({ message, isOwn }: MessageBubbleProps) {
       {!isOwn && (
         <Avatar className="mt-0.5 h-7 w-7 shrink-0">
           <AvatarImage src={message.author.avatarUrl ?? undefined} />
-          <AvatarFallback className="text-[10px]">
-            {initials(message.author.name)}
-          </AvatarFallback>
+          <AvatarFallback className="text-[10px]">{initials(message.author.name)}</AvatarFallback>
         </Avatar>
       )}
       <div className={`flex max-w-[70%] flex-col ${isOwn ? 'items-end' : ''}`}>
@@ -49,9 +47,7 @@ export function MessageBubble({ message, isOwn }: MessageBubbleProps) {
         )}
         <div
           className={`rounded-2xl px-3 py-1.5 text-sm ${
-            isOwn
-              ? 'bg-emerald-500 text-white'
-              : 'bg-[var(--bg-3)] text-[var(--fg)]'
+            isOwn ? 'bg-emerald-500 text-white' : 'bg-[var(--bg-3)] text-[var(--fg)]'
           }`}
         >
           {message.content}

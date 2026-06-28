@@ -23,21 +23,23 @@
 
 ## File Map
 
-| File                                  | Responsibility                                                                                          |
-| ------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `docs/USER.md`                        | End-user help: install, every UI feature, troubleshooting                                              |
-| `docs/DEV.md`                         | Dev onboarding: setup, conventions, daily loop, hooks, workflow                                         |
-| `docs/ARCHITECTURE.md`                | Cross-cutting architecture: module layout, end-to-end flows, auth, realtime, caching, AI layer, deploy  |
-| `README.md`                           | Three new pointers added under existing `## Repo layout` block                                         |
+| File                   | Responsibility                                                                                         |
+| ---------------------- | ------------------------------------------------------------------------------------------------------ |
+| `docs/USER.md`         | End-user help: install, every UI feature, troubleshooting                                              |
+| `docs/DEV.md`          | Dev onboarding: setup, conventions, daily loop, hooks, workflow                                        |
+| `docs/ARCHITECTURE.md` | Cross-cutting architecture: module layout, end-to-end flows, auth, realtime, caching, AI layer, deploy |
+| `README.md`            | Three new pointers added under existing `## Repo layout` block                                         |
 
 ---
 
 ## Task 1: `docs/USER.md`
 
 **Files:**
+
 - Create: `docs/USER.md`
 
 **Interfaces:**
+
 - Consumes: nothing
 - Produces: a complete user-facing guide; must cross-link `README.md`, `PRD.md`, `RISKS.md`
 
@@ -96,10 +98,10 @@ Workspace settings → **Members** tab → **Invite**. Email field; role select.
 
 ### Roles
 
-| Role   | Can do                                                       |
-| ------ | ------------------------------------------------------------ |
+| Role   | Can do                                                        |
+| ------ | ------------------------------------------------------------- |
 | Owner  | Everything, including delete workspace and transfer ownership |
-| Admin  | Manage members, labels, settings; cannot delete workspace    |
+| Admin  | Manage members, labels, settings; cannot delete workspace     |
 | Member | Create / edit tasks, comments, attachments; manage own tasks  |
 | Guest  | Read-only on tasks; can comment if commentable                |
 
@@ -116,10 +118,11 @@ Add:
 Create a task: board → `+ New Task` → fill title, status, priority, due, assignee, labels, description → save. Editing follows the same modal pattern.
 
 ### Status workflow
-
 ```
+
 BACKLOG → TODO → IN_PROGRESS → IN_REVIEW → DONE
-                            ↘ BLOCKED → IN_PROGRESS
+↘ BLOCKED → IN_PROGRESS
+
 ```
 
 Drag a card on the Kanban board to change status. Other connected users see the move via realtime.
@@ -226,14 +229,14 @@ Add:
 
 ## Troubleshooting
 
-| Symptom                                  | Fix                                                                                  |
-| ---------------------------------------- | ------------------------------------------------------------------------------------ |
-| Cannot log in                             | Reset password via `pnpm db:seed` for demo or run a fresh `POST /api/auth/register`. |
-| AI features unresponsive                 | Check `LLM_BASE_URL`, `LLM_API_KEY` in `.env`. Restart api: `pnpm stack:up-build`. |
-| Attachment upload stuck                  | Check max size (`MAX_UPLOAD_SIZE`) and free disk in the api container.               |
-| Realtime updates delayed / dropped       | Verify redis is up (`pnpm stack:ps`). Disconnect/reconnect by refreshing the page.  |
-| Can't see a workspace                    | Ask an Owner or Admin to invite you via the Members tab.                            |
-| Workspace switcher is empty              | Your account has no membership. Create or be invited to one.                         |
+| Symptom                            | Fix                                                                                  |
+| ---------------------------------- | ------------------------------------------------------------------------------------ |
+| Cannot log in                      | Reset password via `pnpm db:seed` for demo or run a fresh `POST /api/auth/register`. |
+| AI features unresponsive           | Check `LLM_BASE_URL`, `LLM_API_KEY` in `.env`. Restart api: `pnpm stack:up-build`.   |
+| Attachment upload stuck            | Check max size (`MAX_UPLOAD_SIZE`) and free disk in the api container.               |
+| Realtime updates delayed / dropped | Verify redis is up (`pnpm stack:ps`). Disconnect/reconnect by refreshing the page.   |
+| Can't see a workspace              | Ask an Owner or Admin to invite you via the Members tab.                             |
+| Workspace switcher is empty        | Your account has no membership. Create or be invited to one.                         |
 
 If nothing here matches, capture the request id from the API response (`X-Request-Id` header) when filing a bug — see `RISKS.md`.
 ```
@@ -261,9 +264,11 @@ git commit -m "docs(user): end-user guide"
 ## Task 2: `docs/DEV.md`
 
 **Files:**
+
 - Create: `docs/DEV.md`
 
 **Interfaces:**
+
 - Consumes: nothing
 - Produces: complete onboarding doc; must cross-link `README.md`, `AGENTS.md`, `claude-progress.md`, `feature_list.json`, `CHANGELOG.md`, `ADR-*`, `RISKS.md`, `session-handoff.md`, `docs/ARCHITECTURE.md`
 
@@ -277,19 +282,18 @@ Open `docs/DEV.md`. Write:
 For new engineers joining the team. Read once, then keep open as a reference. The full architecture tour is `docs/ARCHITECTURE.md`. Operating instructions for coding agents are in `AGENTS.md`.
 
 ## Repo Map
-
 ```
-apps/web/         # React 18 + Vite + TypeScript + Tailwind v4 + shadcn/ui
-apps/api/         # Hono + Node 22 + TypeScript + Prisma 7 + Socket.IO
-packages/shared/  # Zod schemas + types shared by web and api
-packages/db/      # Generated Prisma client (gitignored output lives at apps/api/generated)
-prisma/           # schema.prisma + prisma.config.ts + seed.ts + migrations
-docker/           # Dockerfiles + nginx config
-scripts/          # dev-local.sh, docker-up.sh, prisma-exec.sh, lefthook installers
-docs/             # PRD.md, ADR-*.md, TASKS.md, ACCEPTANCE.md, RISKS.md,
-                  # CHANGELOG.md, claude-progress.md, session-handoff.md,
-                  # USER.md, DEV.md, ARCHITECTURE.md, superpowers/specs+plans/
-e2e/              # Playwright E2E (browser-based)
+
+apps/web/ # React 18 + Vite + TypeScript + Tailwind v4 + shadcn/ui
+apps/api/ # Hono + Node 22 + TypeScript + Prisma 7 + Socket.IO
+packages/shared/ # Zod schemas + types shared by web and api
+packages/db/ # Generated Prisma client (gitignored output lives at apps/api/generated)
+prisma/ # schema.prisma + prisma.config.ts + seed.ts + migrations
+docker/ # Dockerfiles + nginx config
+scripts/ # dev-local.sh, docker-up.sh, prisma-exec.sh, lefthook installers
+docs/ # PRD.md, ADR-\*.md, TASKS.md, ACCEPTANCE.md, RISKS.md, # CHANGELOG.md, claude-progress.md, session-handoff.md, # USER.md, DEV.md, ARCHITECTURE.md, superpowers/specs+plans/
+e2e/ # Playwright E2E (browser-based)
+
 ```
 
 Forging session notes live in `claude-progress.md`. Compact handoffs in `session-handoff.md`. Architecture decisions log: each `ADR-*.md`. Feature state source of truth: `feature_list.json`.
@@ -306,7 +310,7 @@ Layered architecture. Two halves:
 
 Add:
 
-```markdown
+````markdown
 ## Setup
 
 ```bash
@@ -322,6 +326,7 @@ pnpm db:seed                    # 15 users / 6 workspaces / 51 tasks / 199 comme
 curl http://localhost:3000/api/health
 open http://localhost:5173      # login: demo@flow-desk.app / demo1234
 ```
+````
 
 For local dev without docker (host-side postgres + redis bound to `localhost`):
 
@@ -339,7 +344,8 @@ pnpm db:studio                  # http://localhost:5555
 pnpm db:reset                   # DESTRUCTIVE — drops + re-pushes schema
 pnpm prisma db push --skip-generate   # arbitrary prisma args via wrapper
 ```
-```
+
+````
 
 - [ ] **Step 3: Daily loop + module layout**
 
@@ -356,7 +362,7 @@ pnpm stack:dev                  # up postgres + redis + api
 # ... edit files on host ...
 pnpm stack:dev-down             # stop the dev stack
 pnpm stack:up                   # back to compiled image (no watch)
-```
+````
 
 Watch chain: edit `packages/shared/src/**` → `tsup --watch` rebuilds `packages/shared/dist` → api's `tsx watch` (started with `--include='../../packages/shared/dist/**/*.js'`) restarts.
 
@@ -386,7 +392,8 @@ Frontend. `apps/web/src/features/{feature}/`:
 - `index.ts` — public surface; only this file is imported by other features.
 
 App shell primitives live in `apps/web/src/components/ui/` (shadcn-derived). Pages are thin route-level shells; they live in `apps/web/src/pages/`.
-```
+
+````
 
 - [ ] **Step 4: Conventions**
 
@@ -403,13 +410,13 @@ Add:
 - **Logging** — structured JSON (`logger` in `apps/api/src/shared/lib/logger.ts`) with `requestId` / `userId` / `duration`.
 - **No `any`** — see `AGENTS.md` anti-patterns.
 - **No business logic in routes or repos** — see `AGENTS.md` anti-patterns.
-```
+````
 
 - [ ] **Step 5: Realtime + DB + testing + hooks**
 
 Add:
 
-```markdown
+````markdown
 ## Realtime
 
 Socket.IO namespaces: `/tasks`, `/notifications`, `/collab`. Auth middleware on `connection`. Rooms by resource: `workspace:{id}` and `task:{id}`. Memory-leak guard: `socket.leave()` in `disconnect`. The implementation spread:
@@ -435,6 +442,7 @@ Backend integration tests:
 pnpm --filter @flow-desk/api test:integration
 # 142 tests, ~30s
 ```
+````
 
 Test structure: `apps/api/tests/integration/{feature}.test.ts`. Each module gets its own file. Tests use the soft-delete extension unchanged.
 
@@ -458,7 +466,8 @@ pnpm --filter @flow-desk/web build
 - Offline equivalents: `pnpm check:secrets`, `pnpm --filter @flow-desk/<pkg> typecheck`, `pnpm verify`.
 
 See `lefthook.yml` for full config. Bypass (last resort): `git commit --no-verify` / `git push --no-verify`. Never bypass the secret scan.
-```
+
+````
 
 - [ ] **Step 6: Workflow + pitfalls + last block**
 
@@ -486,7 +495,7 @@ Done = implementation done + verification ran + evidence recorded + `./init.sh` 
 - Long-running feature branches accumulate symlinks; `pnpm install --no-frozen-lockfile` clears them.
 - `runkit` missing? Use `./scripts/docker-up.sh` — it auto-overrides conflicting host ports.
 - `view transitions` and prisma-ESM require Node 22; older toolchains fail silently.
-```
+````
 
 - [ ] **Step 7: Final pass — verify length, headings, links**
 
@@ -511,9 +520,11 @@ git commit -m "docs(dev): developer onboarding"
 ## Task 3: `docs/ARCHITECTURE.md`
 
 **Files:**
+
 - Create: `docs/ARCHITECTURE.md`
 
 **Interfaces:**
+
 - Consumes: nothing
 - Produces: architecture tour with two mermaid diagrams (system overview, realtime namespace/rooms); must cross-link `AGENTS.md`, `ADR-*`, `docs/DEV.md`, `docs/USER.md`, `README.md`
 
@@ -521,7 +532,7 @@ git commit -m "docs(dev): developer onboarding"
 
 Open `docs/ARCHITECTURE.md`. Write:
 
-```markdown
+````markdown
 # FlowDesk Architecture
 
 Read once before touching modules. For onboarding, see `docs/DEV.md`. For product context, see `PRD.md`. Decisions are recorded in `ADR-*.md`. Operating rules: `AGENTS.md`. Risks: `RISKS.md`.
@@ -545,9 +556,11 @@ flowchart LR
   Socket -- emit on commit --> Browser
   Browser -- rejoins rooms --> Socket
 ```
+````
 
 Two-way flow: every successful write on `Api` emits a socket event; subscribed browsers patch local state. No polling; no fire-and-forget broadcasts (R-31 mitigation).
-```
+
+````
 
 - [ ] **Step 2: Backend module anatomy**
 
@@ -558,14 +571,16 @@ Add:
 
 Every domain follows:
 
-```
+````
+
 apps/api/src/modules/{feature}/
-  {feature}.routes.ts      # Hono router + zValidator + per-route rate limit
-  {feature}.service.ts     # business logic; orchestrates repo + cache + sockets
-  {feature}.repository.ts  # Prisma only; no logic
-  {feature}.schema.ts      # Zod schemas for I/O validation
-  {feature}.types.ts       # TS types/interfaces (not in @flowdesk/shared)
-  {feature}.test.ts        # colocated unit tests (where useful)
+{feature}.routes.ts # Hono router + zValidator + per-route rate limit
+{feature}.service.ts # business logic; orchestrates repo + cache + sockets
+{feature}.repository.ts # Prisma only; no logic
+{feature}.schema.ts # Zod schemas for I/O validation
+{feature}.types.ts # TS types/interfaces (not in @flowdesk/shared)
+{feature}.test.ts # colocated unit tests (where useful)
+
 ```
 
 Rules:
@@ -578,11 +593,13 @@ Rules:
 Cross-cutting layer:
 
 ```
+
 apps/api/src/shared/
-  middleware/auth.ts / rate-limit.ts / error-handler.ts / request-id.ts
-  lib/prisma.ts / redis.ts / jwt.ts / socket.ts / llm-provider.ts
-      / logger.ts / rate-limit-policies.ts / prisma-extension.ts
-  errors/...               # typed error classes
+middleware/auth.ts / rate-limit.ts / error-handler.ts / request-id.ts
+lib/prisma.ts / redis.ts / jwt.ts / socket.ts / llm-provider.ts
+/ logger.ts / rate-limit-policies.ts / prisma-extension.ts
+errors/... # typed error classes
+
 ```
 
 Rationale: layered separation matches the Golden Rule in `AGENTS.md`. See `ADR-006-security-middleware-pattern.md` for the middleware composition order.
@@ -594,14 +611,15 @@ Add:
 
 ```markdown
 ## Frontend Feature Anatomy
-
 ```
+
 apps/web/src/features/{feature}/
-  components/              # feature UI
-  hooks/                   # TanStack Query wrappers
-  api.ts                   # type-safe client (Zod-validated)
-  types.ts                 # feature types
-  index.ts                 # public surface (only file imported elsewhere)
+components/ # feature UI
+hooks/ # TanStack Query wrappers
+api.ts # type-safe client (Zod-validated)
+types.ts # feature types
+index.ts # public surface (only file imported elsewhere)
+
 ```
 
 Cross-cutting:
@@ -672,13 +690,13 @@ Reference: `ADR-003-auth-jwt-cookie.md`, `ADR-006-security-middleware-pattern.md
 - **`assertMembership(workspaceId, userId)`** middleware on every attachment, comment, task, dependency, and AI mutation. Cross-workspace → 401.
 - **Rate limits (Redis sliding-window via `rate-limit.ts`):**
 
-| Bucket              | Window | Max  | Scope     |
-| ------------------- | ------ | ---- | --------- |
-| `auth:register`     | 1h     | 3    | per IP    |
-| `auth:login`        | 1min   | 5    | per IP    |
-| `auth:refresh`      | 1min   | 30   | per IP    |
-| AI routes           | 1min   | 5    | per user  |
-| `/api/*` writes     | 1min   | 60   | per user  |
+| Bucket          | Window | Max | Scope    |
+| --------------- | ------ | --- | -------- |
+| `auth:register` | 1h     | 3   | per IP   |
+| `auth:login`    | 1min   | 5   | per IP   |
+| `auth:refresh`  | 1min   | 30  | per IP   |
+| AI routes       | 1min   | 5   | per user |
+| `/api/*` writes | 1min   | 60  | per user |
 
 Every response sets `X-RateLimit-*`; `429` includes `Retry-After`. Suite config: `apps/api/src/shared/lib/rate-limit-policies.ts`.
 
@@ -689,7 +707,7 @@ Every response sets `X-RateLimit-*`; `429` includes `Retry-After`. Suite config:
 
 Add:
 
-```markdown
+````markdown
 ## Realtime
 
 Reference: `ADR-004-realtime-socketio.md`.
@@ -719,6 +737,7 @@ flowchart LR
   B1 -- subscribe notifications --> N
   B1 -- cursor updates --> C
 ```
+````
 
 Rules:
 
@@ -727,7 +746,8 @@ Rules:
 - `socket.leave()` in `disconnect` to avoid room leaks.
 - **Presence gateway:** `apps/api/src/modules/realtime/realtime.gateway.ts`. Backed by Redis hash `presence:{wid}`, 30s TTL, 10s sweeper. Broadcast on every change.
 - Client reconnect: exponential backoff 1s → 30s, randomization 0.5, timeout 20s.
-```
+
+````
 
 - [ ] **Step 7: Data model snapshot**
 
@@ -749,13 +769,13 @@ Models in `prisma/schema.prisma`. Every model carries `id` (cuid), `createdAt`, 
 - **Notification** — `recipientId` + `kind` (`TASK_MENTIONED`, `TASK_DUE_SOON`, …)+ payload.
 
 See `prisma/schema.prisma` for the source of truth.
-```
+````
 
 - [ ] **Step 8: Caching + AI + Deploy**
 
 Add:
 
-```markdown
+````markdown
 ## Caching
 
 Per-resource Redis keys with explicit TTL:
@@ -783,9 +803,11 @@ pnpm stack:down
 pnpm stack:logs
 pnpm stack:ps
 ```
+````
 
 Healthcheck: `GET /api/health` → 200. Seed: `pnpm db:seed`. Demo login: `demo@flow-desk.app` / `demo1234`.
-```
+
+````
 
 - [ ] **Step 9: Sharp edges + cross-refs**
 
@@ -813,16 +835,16 @@ Add:
 - `claude-progress.md` — session log
 - `feature_list.json` — feature state
 - `CHANGELOG.md` — public change log
-```
+````
 
 - [ ] **Step 10: Final pass**
 
 Run:
 
-```bash
+````bash
 wc -l docs/ARCHITECTURE.md
 grep -nE '^```mermaid' docs/ARCHITECTURE.md
-```
+````
 
 Expected: ≥ 2 `mermaid` blocks, ≈ 200–260 lines, headings only H1/H2/H3.
 
@@ -838,9 +860,11 @@ git commit -m "docs(arch): system + module architecture deep-dive"
 ## Task 4: Update `README.md` to point at the three docs
 
 **Files:**
+
 - Modify: `README.md:115-126` (the "Repo layout" block under `## Repo layout`)
 
 **Interfaces:**
+
 - Consumes: existing `## Repo layout` block in `README.md`
 - Produces: extended layout block listing the three new docs
 
@@ -858,7 +882,9 @@ Expected:
 ## Repo layout
 
 ```
-apps/web/        # React + Vite
+
+apps/web/ # React + Vite
+
 ```
 
 - [ ] **Step 2: Add three lines right before the code fence closing line**
@@ -866,39 +892,43 @@ apps/web/        # React + Vite
 Use `edit` with the following old/new pair so the insertion is exact and idempotent:
 
 ```
+
 old:
-apps/web/        # React + Vite
-apps/api/        # Hono + Prisma
+apps/web/ # React + Vite
+apps/api/ # Hono + Prisma
 packages/shared/ # Zod schemas + types
-prisma/          # schema.prisma + seed.ts
-docker/          # Dockerfiles + nginx config
-scripts/         # dev-local.sh (no Docker) + docker-up.sh (smart compose)
-PRD.md           # Product requirements
-ADR-*.md         # Architecture decisions (001..006)
-TASKS.md         # Sprint backlog
-ACCEPTANCE.md    # Testable acceptance criteria
-RISKS.md         # Risk register
-AGENTS.md        # Agent operating instructions
+prisma/ # schema.prisma + seed.ts
+docker/ # Dockerfiles + nginx config
+scripts/ # dev-local.sh (no Docker) + docker-up.sh (smart compose)
+PRD.md # Product requirements
+ADR-\*.md # Architecture decisions (001..006)
+TASKS.md # Sprint backlog
+ACCEPTANCE.md # Testable acceptance criteria
+RISKS.md # Risk register
+AGENTS.md # Agent operating instructions
+
 ```
 
 ```
+
 new:
-docs/USER.md         # End-user guide (install + features + how-to)
-docs/DEV.md          # Developer onboarding
+docs/USER.md # End-user guide (install + features + how-to)
+docs/DEV.md # Developer onboarding
 docs/ARCHITECTURE.md # Architecture deep-dive (read once before editing a module)
-apps/web/        # React + Vite
-apps/api/        # Hono + Prisma
+apps/web/ # React + Vite
+apps/api/ # Hono + Prisma
 packages/shared/ # Zod schemas + types
-prisma/          # schema.prisma + seed.ts
-docker/          # Dockerfiles + nginx config
-scripts/         # dev-local.sh (no Docker) + docker-up.sh (smart compose)
-PRD.md           # Product requirements
-ADR-*.md         # Architecture decisions (001..006)
-TASKS.md         # Sprint backlog
-ACCEPTANCE.md    # Testable acceptance criteria
-RISKS.md         # Risk register
-AGENTS.md        # Agent operating instructions
-```
+prisma/ # schema.prisma + seed.ts
+docker/ # Dockerfiles + nginx config
+scripts/ # dev-local.sh (no Docker) + docker-up.sh (smart compose)
+PRD.md # Product requirements
+ADR-\*.md # Architecture decisions (001..006)
+TASKS.md # Sprint backlog
+ACCEPTANCE.md # Testable acceptance criteria
+RISKS.md # Risk register
+AGENTS.md # Agent operating instructions
+
+````
 
 - [ ] **Step 3: Verify the diff is exactly three lines**
 
@@ -906,7 +936,7 @@ Run:
 
 ```bash
 git diff README.md
-```
+````
 
 Expected: only the three-line addition at the `## Repo layout` block; no other lines touched.
 

@@ -21,9 +21,11 @@ export function truncate(s: string, n: number): string {
 export function formatDueLine(dueAt: string | null): string {
   if (dueAt === null) return 'No due date';
   const d = new Date(dueAt);
-  return new Intl.DateTimeFormat('en-US', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-    timeZone: 'UTC',
-  }).format(d) + ' UTC';
+  return (
+    new Intl.DateTimeFormat('en-US', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+      timeZone: 'UTC',
+    }).format(d) + ' UTC'
+  );
 }

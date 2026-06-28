@@ -1,16 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import {
-  formatDueLine,
-  htmlEscape,
-  truncate,
-} from './_helpers';
+import { formatDueLine, htmlEscape, truncate } from './_helpers';
 import { renderDigestEmail } from './digest';
 import { renderTaskAssignedEmail } from './task-assigned';
 import { renderTaskDueReminderEmail } from './task-due-reminder';
 
 describe('htmlEscape', () => {
   it('escapes & < > " and apostrophe', () => {
-    expect(htmlEscape(`<a href="x">&'</a>`)).toBe('&lt;a href=&quot;x&quot;&gt;&amp;&#39;&lt;/a&gt;');
+    expect(htmlEscape(`<a href="x">&'</a>`)).toBe(
+      '&lt;a href=&quot;x&quot;&gt;&amp;&#39;&lt;/a&gt;',
+    );
   });
 
   it('leaves safe strings untouched', () => {
@@ -123,14 +121,17 @@ describe('renderTaskDueReminderEmail', () => {
 });
 
 describe('renderDigestEmail', () => {
-  const item = (n: number, partial: Partial<{
-    taskId: string;
-    taskTitle: string;
-    taskUrl: string;
-    workspaceName: string;
-    dueAt: string | null;
-    priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
-  }> = {}) => ({
+  const item = (
+    n: number,
+    partial: Partial<{
+      taskId: string;
+      taskTitle: string;
+      taskUrl: string;
+      workspaceName: string;
+      dueAt: string | null;
+      priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+    }> = {},
+  ) => ({
     taskId: partial.taskId ?? `t_${n}`,
     taskTitle: partial.taskTitle ?? `Task ${n}`,
     taskUrl: partial.taskUrl ?? `https://app.flowdesk.test/tasks/t_${n}`,

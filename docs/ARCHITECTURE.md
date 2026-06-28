@@ -151,13 +151,13 @@ Reference: `ADR-003-auth-jwt-cookie.md`, `ADR-006-security-middleware-pattern.md
 - **`assertMembership(workspaceId, userId)`** middleware on every attachment, comment, task, dependency, and AI mutation. Cross-workspace → 401.
 - **Rate limits (Redis sliding-window via `rate-limit.ts`):**
 
-| Bucket              | Window | Max  | Scope     |
-| ------------------- | ------ | ---- | --------- |
-| `auth:register`     | 1h     | 3    | per IP    |
-| `auth:login`        | 1min   | 5    | per IP    |
-| `auth:refresh`      | 1min   | 30   | per IP    |
-| AI routes           | 1min   | 5    | per user  |
-| `/api/*` writes     | 1min   | 60   | per user  |
+| Bucket          | Window | Max | Scope    |
+| --------------- | ------ | --- | -------- |
+| `auth:register` | 1h     | 3   | per IP   |
+| `auth:login`    | 1min   | 5   | per IP   |
+| `auth:refresh`  | 1min   | 30  | per IP   |
+| AI routes       | 1min   | 5   | per user |
+| `/api/*` writes | 1min   | 60  | per user |
 
 Every response sets `X-RateLimit-*`; `429` includes `Retry-After`. Suite config: `apps/api/src/shared/lib/rate-limit-policies.ts`.
 

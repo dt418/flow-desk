@@ -107,9 +107,7 @@ describe('notification → email flow', () => {
   });
 
   it('creates EmailJob record when email is enqueued', async () => {
-    const jobSpy = vi.spyOn(emailQueue, 'add').mockImplementation(
-      async () => ({} as never),
-    );
+    const jobSpy = vi.spyOn(emailQueue, 'add').mockImplementation(async () => ({}) as never);
 
     await taskService.update(ownerId, taskId, {
       assigneeId,

@@ -9,7 +9,10 @@ test.describe('Board card actions (drag/drop conflict with Edit/Delete) @bugfix'
     await page.goto(`/board/${seedUser.workspaceId}`);
 
     // Seed a task so we can target the kebab directly.
-    await page.getByRole('button', { name: /new task/i }).first().click();
+    await page
+      .getByRole('button', { name: /new task/i })
+      .first()
+      .click();
     await page.getByLabel('Title').fill('Kebab click target');
     await page.getByRole('button', { name: /create task/i }).click();
 

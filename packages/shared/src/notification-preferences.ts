@@ -12,7 +12,9 @@ export const updateWorkspaceNotificationSettingSchema = z.object({
   dailyDigest: z.boolean().optional(),
   weeklyDigest: z.boolean().optional(),
 });
-export type UpdateWorkspaceNotificationSetting = z.infer<typeof updateWorkspaceNotificationSettingSchema>;
+export type UpdateWorkspaceNotificationSetting = z.infer<
+  typeof updateWorkspaceNotificationSettingSchema
+>;
 
 export const updateUserNotificationPreferenceSchema = z.object({
   workspaceId: z.string().nullable().optional(),
@@ -24,7 +26,9 @@ export const updateUserNotificationPreferenceSchema = z.object({
   weeklyDigest: z.boolean().nullable().optional(),
   emailDelayMinutes: z.number().int().min(0).max(60).optional(),
 });
-export type UpdateUserNotificationPreference = z.infer<typeof updateUserNotificationPreferenceSchema>;
+export type UpdateUserNotificationPreference = z.infer<
+  typeof updateUserNotificationPreferenceSchema
+>;
 
 export interface EffectivePreferences {
   taskAssignedEmail: boolean;

@@ -11,7 +11,14 @@ vi.mock('bullmq', () => ({
 }));
 
 vi.mock('../../shared/lib/logger', () => ({
-  logger: { info: vi.fn(), error: vi.fn(), warn: vi.fn(), debug: vi.fn(), trace: vi.fn(), fatal: vi.fn() },
+  logger: {
+    info: vi.fn(),
+    error: vi.fn(),
+    warn: vi.fn(),
+    debug: vi.fn(),
+    trace: vi.fn(),
+    fatal: vi.fn(),
+  },
 }));
 
 vi.mock('../../shared/lib/env', () => ({
@@ -71,11 +78,20 @@ describe('scheduler', () => {
   it('checkDueReminders enqueues reminder for due task', async () => {
     const { checkDueReminders } = await import('./scheduler');
     mockFindTasks.mockResolvedValue([
-      { id: 'task-1', title: 'Test Task', dueDate: new Date(Date.now() + 3600000), assigneeId: 'user-1', workspaceId: 'ws-1' },
+      {
+        id: 'task-1',
+        title: 'Test Task',
+        dueDate: new Date(Date.now() + 3600000),
+        assigneeId: 'user-1',
+        workspaceId: 'ws-1',
+      },
     ]);
     await checkDueReminders();
     expect(mockFindEmailJob).toHaveBeenCalled();
-    expect(mockFindUser).toHaveBeenCalledWith({ where: { id: 'user-1' }, select: expect.any(Object) });
+    expect(mockFindUser).toHaveBeenCalledWith({
+      where: { id: 'user-1' },
+      select: expect.any(Object),
+    });
   });
 
   it('checkDigests handles no settings', async () => {

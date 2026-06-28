@@ -37,9 +37,11 @@ commentRouter.get(
 
 commentRouter.post('/', async (c) => {
   const auth = c.get('auth');
-  const body = createCommentSchema.extend({
-    isChat: z.boolean().optional(),
-  }).parse(await c.req.json());
+  const body = createCommentSchema
+    .extend({
+      isChat: z.boolean().optional(),
+    })
+    .parse(await c.req.json());
   const comment = await svc.createComment(prisma, auth.user.id, body);
   return c.json({ comment }, 201);
 });

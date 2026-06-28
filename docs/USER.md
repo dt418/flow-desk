@@ -42,10 +42,10 @@ Workspace settings → **Members** tab → **Invite**. Email field; role select.
 
 ### Roles
 
-| Role   | Can do                                                       |
-| ------ | ------------------------------------------------------------ |
+| Role   | Can do                                                        |
+| ------ | ------------------------------------------------------------- |
 | Owner  | Everything, including delete workspace and transfer ownership |
-| Admin  | Manage members, labels, settings; cannot delete workspace    |
+| Admin  | Manage members, labels, settings; cannot delete workspace     |
 | Member | Create / edit tasks, comments, attachments; manage own tasks  |
 | Guest  | Read-only on tasks; can comment if commentable                |
 
@@ -136,13 +136,13 @@ Caveats: the local LLM proxy used in dev is slow (R-24, ~18–27s per call). The
 
 ## Troubleshooting
 
-| Symptom                                  | Fix                                                                                  |
-| ---------------------------------------- | ------------------------------------------------------------------------------------ |
-| Cannot log in                             | Reset password via `pnpm db:seed` for demo or run a fresh `POST /api/auth/register`. |
-| AI features unresponsive                 | Check `LLM_BASE_URL`, `LLM_API_KEY` in `.env`. Restart api: `pnpm stack:up-build`. |
-| Attachment upload stuck                  | Check max size (`MAX_UPLOAD_SIZE`) and free disk in the api container.               |
-| Realtime updates delayed / dropped       | Verify redis is up (`pnpm stack:ps`). Disconnect/reconnect by refreshing the page.  |
-| Can't see a workspace                    | Ask an Owner or Admin to invite you via the Members tab.                            |
-| Workspace switcher is empty              | Your account has no membership. Create or be invited to one.                         |
+| Symptom                            | Fix                                                                                  |
+| ---------------------------------- | ------------------------------------------------------------------------------------ |
+| Cannot log in                      | Reset password via `pnpm db:seed` for demo or run a fresh `POST /api/auth/register`. |
+| AI features unresponsive           | Check `LLM_BASE_URL`, `LLM_API_KEY` in `.env`. Restart api: `pnpm stack:up-build`.   |
+| Attachment upload stuck            | Check max size (`MAX_UPLOAD_SIZE`) and free disk in the api container.               |
+| Realtime updates delayed / dropped | Verify redis is up (`pnpm stack:ps`). Disconnect/reconnect by refreshing the page.   |
+| Can't see a workspace              | Ask an Owner or Admin to invite you via the Members tab.                             |
+| Workspace switcher is empty        | Your account has no membership. Create or be invited to one.                         |
 
 If nothing here matches, capture the request id from the API response (`X-Request-Id` header) when filing a bug — see `RISKS.md`.

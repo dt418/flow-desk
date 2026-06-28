@@ -49,23 +49,24 @@ export function renderDigestEmail(input: DigestInput): EmailContent {
   textParts.push('', `View the full dashboard: ${input.digestUrl}`, '', '— FlowDesk');
   const text = textParts.join('\n');
 
-  const rows: string = input.items.length === 0
-    ? '<tr><td style="padding:16px 0;font-size:14px;color:#6b7280;">No tasks are due. Enjoy the quiet.</td></tr>'
-    : input.items
-        .map((it) => {
-          const safeTitle = htmlEscape(it.taskTitle);
-          const safeUrl = htmlEscape(it.taskUrl);
-          const safeWorkspace = htmlEscape(it.workspaceName);
-          const due = formatDueLine(it.dueAt);
-          const dueSafe = htmlEscape(due);
-          return `<tr>
+  const rows: string =
+    input.items.length === 0
+      ? '<tr><td style="padding:16px 0;font-size:14px;color:#6b7280;">No tasks are due. Enjoy the quiet.</td></tr>'
+      : input.items
+          .map((it) => {
+            const safeTitle = htmlEscape(it.taskTitle);
+            const safeUrl = htmlEscape(it.taskUrl);
+            const safeWorkspace = htmlEscape(it.workspaceName);
+            const due = formatDueLine(it.dueAt);
+            const dueSafe = htmlEscape(due);
+            return `<tr>
   <td style="padding:12px 0;border-bottom:1px solid #e5e7eb;">
     <div style="font-size:14px;color:#6b7280;">${safeWorkspace} · ${it.priority} · ${dueSafe}</div>
     <div style="margin-top:4px;font-size:15px;"><a href="${safeUrl}" style="color:#2563eb;text-decoration:none;font-weight:600;">${safeTitle}</a></div>
   </td>
 </tr>`;
-        })
-        .join('');
+          })
+          .join('');
 
   const html = `<!doctype html>
 <html lang="en">

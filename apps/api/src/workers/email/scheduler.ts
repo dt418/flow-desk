@@ -78,10 +78,7 @@ export async function checkDigests() {
 
   const settings = await prisma.workspaceNotificationSetting.findMany({
     where: {
-      OR: [
-        { dailyDigest: true },
-        { weeklyDigest: true },
-      ],
+      OR: [{ dailyDigest: true }, { weeklyDigest: true }],
     },
     select: {
       workspaceId: true,
@@ -93,9 +90,7 @@ export async function checkDigests() {
   for (const ws of settings) {
     const cadence = ws.weeklyDigest ? 'WEEKLY' : 'DAILY';
 
-    const cooldownStart = new Date(
-      now.getTime() - (cadence === 'WEEKLY' ? 7 : 1) * 24 * 3600_000,
-    );
+    const cooldownStart = new Date(now.getTime() - (cadence === 'WEEKLY' ? 7 : 1) * 24 * 3600_000);
 
     const recentDigests = await prisma.emailJob.findFirst({
       where: {

@@ -52,10 +52,10 @@ describe('createChannelSchema', () => {
 
   it('rejects name with invalid characters', () => {
     expect(() =>
-      createChannelSchema.parse({ ...validWorkspaceChannel, name: 'has space' })
+      createChannelSchema.parse({ ...validWorkspaceChannel, name: 'has space' }),
     ).toThrow();
     expect(() =>
-      createChannelSchema.parse({ ...validWorkspaceChannel, name: 'has!bang' })
+      createChannelSchema.parse({ ...validWorkspaceChannel, name: 'has!bang' }),
     ).toThrow();
   });
 
@@ -75,7 +75,7 @@ describe('createChannelSchema', () => {
 
   it('rejects workspaceId that is too short to be a cuid', () => {
     expect(() =>
-      createChannelSchema.parse({ ...validWorkspaceChannel, workspaceId: SHORT_ID })
+      createChannelSchema.parse({ ...validWorkspaceChannel, workspaceId: SHORT_ID }),
     ).toThrow();
   });
 });
@@ -83,9 +83,7 @@ describe('createChannelSchema', () => {
 describe('updateChannelSchema', () => {
   it('allows partial patches', () => {
     expect(() => updateChannelSchema.parse({ name: 'renamed' })).not.toThrow();
-    expect(() =>
-      updateChannelSchema.parse({ isPrivate: true })
-    ).not.toThrow();
+    expect(() => updateChannelSchema.parse({ isPrivate: true })).not.toThrow();
   });
 
   it('rejects empty patches', () => {
@@ -95,9 +93,7 @@ describe('updateChannelSchema', () => {
 
 describe('createChatMessageSchema', () => {
   it('requires non-empty content', () => {
-    expect(() =>
-      createChatMessageSchema.parse({ channelId: VALID_CUID, content: '' })
-    ).toThrow();
+    expect(() => createChatMessageSchema.parse({ channelId: VALID_CUID, content: '' })).toThrow();
   });
 
   it('accepts up to 20 mentions', () => {
@@ -117,7 +113,7 @@ describe('createChatMessageSchema', () => {
         channelId: VALID_CUID,
         content: 'hi',
         mentionedUserIds: mentions,
-      })
+      }),
     ).toThrow();
   });
 
@@ -137,9 +133,7 @@ describe('updateChatMessageSchema', () => {
   });
 
   it('accepts valid content', () => {
-    expect(() =>
-      updateChatMessageSchema.parse({ content: 'edited' })
-    ).not.toThrow();
+    expect(() => updateChatMessageSchema.parse({ content: 'edited' })).not.toThrow();
   });
 });
 
@@ -149,14 +143,12 @@ describe('listChannelsQuerySchema', () => {
   });
 
   it('allows optional scope', () => {
-    expect(() =>
-      listChannelsQuerySchema.parse({ workspaceId: VALID_CUID })
-    ).not.toThrow();
+    expect(() => listChannelsQuerySchema.parse({ workspaceId: VALID_CUID })).not.toThrow();
     expect(() =>
       listChannelsQuerySchema.parse({
         workspaceId: VALID_CUID,
         scope: 'TASK',
-      })
+      }),
     ).not.toThrow();
   });
 });
@@ -167,8 +159,6 @@ describe('listChatMessagesQuerySchema', () => {
   });
 
   it('accepts channelId with optional cursor/limit', () => {
-    expect(() =>
-      listChatMessagesQuerySchema.parse({ channelId: VALID_CUID })
-    ).not.toThrow();
+    expect(() => listChatMessagesQuerySchema.parse({ channelId: VALID_CUID })).not.toThrow();
   });
 });
