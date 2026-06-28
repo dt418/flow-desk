@@ -14,6 +14,8 @@ jobs:
   quality:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      DATABASE_URL: postgresql://placeholder:placeholder@localhost:5432/placeholder
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -24,8 +26,6 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @flow-desk/shared build
       - name: Generate prisma client
-        env:
-          DATABASE_URL: postgresql://placeholder:placeholder@localhost:5432/placeholder
         run: pnpm --filter @flowdesk/db db:generate
       - run: pnpm typecheck
       - run: pnpm lint
@@ -34,6 +34,8 @@ jobs:
   integration:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      DATABASE_URL: postgresql://flowdesk:flowdesk@localhost:5432/flowdesk_test?schema=public
     services:
       postgres:
         image: postgres:16-alpine
@@ -69,8 +71,6 @@ jobs:
       - run: pnpm --filter @flowdesk/db db:generate
 
       - name: Create flowdesk_test database + push schema
-        env:
-          DATABASE_URL: postgresql://flowdesk:flowdesk@localhost:5432/flowdesk_test?schema=public
         run: |
           PGPASSWORD=flowdesk psql -h localhost -U flowdesk -d postgres -c "CREATE DATABASE flowdesk_test;"
           pnpm exec prisma db push --accept-data-loss --schema=packages/db/prisma/schema.prisma
