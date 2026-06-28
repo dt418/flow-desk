@@ -30,7 +30,7 @@ export async function suggestAssignee(
   let title = input.title;
   let description = input.description;
   if (input.taskId) {
-    const task = await repo.findTask(prisma, input.taskId);
+    const task = await repo.findTask(prisma, input.taskId, input.workspaceId);
     if (!task) throw new NotFoundError('Task not found');
     title = title ?? task.title;
     description = description ?? task.description ?? undefined;

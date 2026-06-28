@@ -12,8 +12,20 @@ export function listMembers(prisma: PrismaClient, workspaceId: string) {
   });
 }
 
-export function findTask(prisma: PrismaClient, id: string) {
-  return prisma.task.findUnique({ where: { id, deletedAt: null } });
+export function findTask(prisma: PrismaClient, id: string, workspaceId?: string) {
+  return prisma.task
+    .findUnique({
+      where: { id, deletedAt: null },
+      include: {
+        assignee: { select: { id: true, name: true, avatarUrl: true } },
+      },
+    })
+    .then((task) => {
+      if (!task || (workspaceId !== undefined && task.workspaceId !== workspaceId)) {
+        return null;
+      }
+      return task;
+    });
 }
 
 export function groupWorkload(prisma: PrismaClient, workspaceId: string) {
