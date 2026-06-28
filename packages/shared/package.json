@@ -57,6 +57,11 @@
       "import": "./dist/common.mjs",
       "require": "./dist/common.js"
     },
+    "./chat": {
+      "types": "./dist/chat.d.ts",
+      "import": "./dist/chat.mjs",
+      "require": "./dist/chat.js"
+    },
     "./label": {
       "types": "./dist/label.d.ts",
       "import": "./dist/label.mjs",

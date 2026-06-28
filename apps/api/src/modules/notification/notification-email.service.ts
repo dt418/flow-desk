@@ -2,6 +2,7 @@ import type { prisma } from '../../shared/lib/prisma';
 import { getEffectivePreferences } from '../notification-preferences/notification-preferences.service';
 import { enqueueEmail } from '../../workers/email/queue';
 import { renderTaskAssignedEmail } from '../../shared/lib/email-templates/task-assigned';
+import type { Prisma } from '@flowdesk/db';
 type PrismaClient = typeof prisma;
 
 export async function handleTaskAssignedEmail(
@@ -34,6 +35,23 @@ export async function handleTaskAssignedEmail(
 
   const delayMs = prefs.emailDelayMinutes > 0 ? prefs.emailDelayMinutes * 60 * 1000 : undefined;
 
+  const jobId = delayMs ? `delayed-${input.assigneeId}-${Date.now()}` : `instant-${input.assigneeId}-${Date.now()}`;
+
+  await prisma.emailJob.create({
+    data: {
+      id: jobId,
+      userId: input.assigneeId,
+      type: delayMs ? 'DELAYED' : 'INSTANT',
+      payload: {
+        taskId: input.taskId,
+        workspaceId: input.workspaceId,
+        notificationType: 'TASK_ASSIGNED',
+      } as unknown as Prisma.JsonObject,
+      status: delayMs ? 'PENDING' : 'SENT',
+      ...(delayMs ? { scheduledAt: new Date(Date.now() + delayMs) } : {}),
+    },
+  });
+
   await enqueueEmail(
     {
       userId: input.assigneeId,
@@ -48,6 +66,6 @@ export async function handleTaskAssignedEmail(
         notificationType: 'TASK_ASSIGNED',
       },
     },
-    { delay: delayMs },
+    { delay: delayMs, jobId },
   );
 }

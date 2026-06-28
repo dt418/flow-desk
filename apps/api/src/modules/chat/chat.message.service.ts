@@ -28,16 +28,9 @@ export async function listMessages(
   await assertMembership(channel.workspaceId, userId);
 
   const decoded = query.cursor ? decodeCursor(query.cursor) : null;
-  const skip = decoded ? 1 : 0;
-  const cursorCondition = decoded
-    ? { OR: [
-        { createdAt: { lt: decoded.createdAt } },
-        { createdAt: decoded.createdAt, id: { lt: decoded.id } },
-      ] }
-    : undefined;
 
   const rawItems = await prisma.chatMessage.findMany({
-    where: { channelId, deletedAt: null, ...(cursorCondition ?? {}) },
+    where: { channelId, deletedAt: null },
     orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
     take: query.limit + 1,
     ...(decoded ? { skip: 1, cursor: { id: decoded.id, createdAt: decoded.createdAt } } : {}),

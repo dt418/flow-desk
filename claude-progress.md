@@ -5,8 +5,8 @@
 - **Repository root**: `/home/thanh/flow-desk`
 - **Standard startup path**: `./init.sh` (pnpm install + shared build + git hook install) then `docker compose up -d`
 - **Standard verification path**: `pnpm --filter @flow-desk/shared build` + curl API endpoints + `bash scripts/prisma-exec.sh <args>` for prisma
-- **Highest priority unfinished feature**: none (33 features passing — F2 + F3-F6 all green)
-- **Active branch**: `main` in `/home/thanh/flow-desk`
+- **Highest priority unfinished feature**: F7 Chat/Notifications/Email (passing — 80 unit + 162 integration tests, E2E blocked by R-39)
+- **Active branch**: `f7-chat-email` in `/home/thanh/f7-chat-email` (worktree)
 - **Prisma**: **7.8.0** (migrated from 5.22 in session 014; new `prisma-client` generator + `prisma.config.ts` + `PrismaPg` adapter; custom output at `apps/api/generated/prisma/`)
 - **pnpm**: 11.8.0 (migrated from 9.12 in session 013; hoist settings moved to `pnpm-workspace.yaml`)
 - **Node**: 22-alpine (migrated from 20 in session 013)
@@ -60,7 +60,26 @@
   - `rtk` wrapper intercepts pnpm/git with hooks; use direct binaries (`/usr/bin/git`, `./node_modules/.bin/vitest`).
   - `msgpackr-extract` build must be `pnpm approve-builds` approved before pre-commit hooks pass.
   - BullMQ 5.15.0 used (not 5.16+).
-- **Next scope**: Phase 5.1 — Notification Preferences API.
+- **Phase 5.1-5.3** (Notification Preferences): workspace settings + user prefs + getEffectivePreferences merge. Zod schemas in shared. 5 unit tests.
+- **Phase 5.4-5.5** (Task Assignment Trigger + Email Enqueue): notification created via createTaskAssignmentNotification in handleAssigneeChange; email enqueued via handleTaskAssignedEmail → getEffectivePreferences → enqueueEmail → BullMQ. Added jobId tracking.
+- **Phase 6** (Frontend Chat UI): 11 files in `apps/web/src/features/chat/` — types, api, hooks (useFlattenedMessages, useInfiniteMessages, useMessageSubscription + optimistic send), components (ChatSidebar, ChannelItem, ChannelView, MessageBubble, ChatInput, TaskChat). Socket.IO `/collab` realtime. TanStack Query infinite scroll.
+- **Phase 6.5** (TaskChat in Modal): TaskEditModal gains Details/Chat tabs, imports TaskChat component via `features/chat/index.ts`.
+- **Phase 7** (Email Worker Docker): `docker/email-worker.Dockerfile` + `email-worker` service in `docker-compose.yml`. `apps/api/tsup.config.ts` has second entry for `email-worker.ts`.
+- **Phase 8** (Integration Tests): `chat.service.test.ts` (channel + message, 11 tests) + `notification-email-flow.test.ts` (5 tests).
+- **Fixes during verification**:
+  - Cursor pagination: removed redundant `cursorCondition` from where clause, relied on Prisma native cursor + skip. 5ms delay between messages to avoid timestamp collision.
+  - `task.service.update/create`: swapped `taskSvc.*` → `taskService.*` in tests, dropped spurious `db` first arg.
+  - `taskService.create` now triggers `handleAssigneeChange` when assignee differs from creator.
+  - `handleTaskAssignedEmail` now creates `emailJob` DB record (INSTANT→SENT, DELAYED→PENDING) + passes `jobId` to BullMQ for job dedup.
+  - Unit test mocks updated: `emailJob.create` added to notification-email test with assertions.
+- **Verification run**:
+  - `tsc --noEmit` across all 5 packages → clean
+  - `vitest run` (unit) → 80/80 tests pass (11 files)
+  - `vitest run --config vitest.integration.config.ts` → 162/162 tests pass (16 files)
+  - `vite build` → 701 KB bundle, built in 4.62s
+- **E2E not run** — `@prisma/client` module not generated in worktree (`.prisma/client/default` missing). Same R-39 CJS/ESM interop issue documented in session 015. Requires infra fix outside F7 scope.
+- **Commits** (pending): Phase 5-8 work, 4 core files + tests + frontend.
+- **Next scope**: Finalize F7 commits, then ship.
 
 ### Session 015 — Kanban dnd-pointer-stop bug fix + E2E spec
 

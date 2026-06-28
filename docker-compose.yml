@@ -73,6 +73,39 @@ services:
       retries: 3
       start_period: 20s
 
+  email-worker:
+    build:
+      context: .
+      dockerfile: docker/email-worker.Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-flowdesk}:${POSTGRES_PASSWORD:-flowdesk}@postgres:5432/${POSTGRES_DB:-flowdesk}?schema=public
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:-change-me-to-a-32-char-random-string-please}
+      JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-15m}
+      JWT_REFRESH_TTL: ${JWT_REFRESH_TTL:-7d}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:3000}
+      EMAIL_PROVIDER: ${EMAIL_PROVIDER:-nodemailer}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-noreply@flowdesk.app}
+      DEFAULT_FROM_NAME: ${DEFAULT_FROM_NAME:-FlowDesk}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      LLM_BASE_URL: ${LLM_BASE_URL:-https://api.openai.com/v1}
+      LLM_API_KEY: ${LLM_API_KEY:-sk-placeholder}
+      LLM_MODEL: ${LLM_MODEL:-gpt-4o-mini}
+      LLM_MAX_TOKENS: ${LLM_MAX_TOKENS:-2048}
+      LLM_TEMPERATURE: ${LLM_TEMPERATURE:-0.7}
+
   web:
     build:
       context: .

@@ -123,6 +123,9 @@ export const taskService = {
       event: 'task:created',
       taskId: task.id,
     });
+    if (task.assigneeId && task.assigneeId !== userId) {
+      await handleAssigneeChange(userId, null, task);
+    }
     return task;
   },
 

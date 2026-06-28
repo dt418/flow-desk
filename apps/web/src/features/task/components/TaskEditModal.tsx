@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { ApiError } from '@/lib/api';
 import { useCreateTask, useUpdateTask } from '../hooks';
 import type { TaskCardData } from './TaskCard';
+import { TaskChat } from '@/features/chat/components/TaskChat';
 
 const formSchema = z.object({
   title: z.string().min(1, 'Title is required').max(100, 'Title is too long'),
@@ -55,6 +56,7 @@ export function TaskEditModal({
   const firstInputRef = React.useRef<HTMLInputElement | null>(null);
   const dialogRef = React.useRef<HTMLDivElement | null>(null);
   const isEdit = Boolean(initial);
+  const [tab, setTab] = React.useState<'details' | 'chat'>('details');
 
   const {
     register,
@@ -85,6 +87,7 @@ export function TaskEditModal({
         dueDate: initial?.dueDate ? initial.dueDate.slice(0, 10) : '',
         status: (initial?.status as FormInput['status']) ?? 'TODO',
       });
+      setTab('details');
     }
   }, [open, initial, defaultColumnId, columns, reset]);
 
@@ -158,8 +161,8 @@ export function TaskEditModal({
       aria-modal="true"
       aria-labelledby="task-edit-title"
     >
-      <div className="w-full max-w-md rounded-xl border border-[var(--border)] bg-[var(--bg)] p-5 shadow-xl">
-        <div className="mb-4 flex items-center justify-between">
+      <div className="flex h-[80vh] w-full max-w-2xl flex-col rounded-xl border border-[var(--border)] bg-[var(--bg)] shadow-xl">
+        <div className="flex items-center justify-between border-b border-[var(--border)] px-5 py-3">
           <h3 id="task-edit-title" className="text-[14px] font-semibold tracking-tight">
             {isEdit ? 'Edit task' : 'New task'}
           </h3>
@@ -172,121 +175,157 @@ export function TaskEditModal({
             Esc
           </button>
         </div>
-        <form onSubmit={onSubmit} className="space-y-3">
-          <div className="space-y-1.5">
-            <Label htmlFor="task-title">Title</Label>
-            <Input
-              id="task-title"
-              {...register('title')}
-              ref={(el) => {
-                register('title').ref(el);
-                firstInputRef.current = el;
-              }}
-              placeholder="What needs to happen?"
-              aria-invalid={Boolean(errors.title)}
-            />
-            {errors.title && <p className="text-[11px] text-red-500">{errors.title.message}</p>}
-          </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="task-desc">Description</Label>
-            <textarea
-              id="task-desc"
-              {...register('description')}
-              rows={3}
-              placeholder="Optional"
-              className="flex w-full rounded-md border border-[var(--border)] bg-[var(--bg-2)] px-3 py-2 text-[13px] placeholder:text-[var(--fg-3)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-emerald-500/60"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="task-column">Column</Label>
-              <select
-                id="task-column"
-                {...register('columnId')}
-                className="flex h-9 w-full rounded-md border border-[var(--border)] bg-[var(--bg-2)] px-3 text-[13px] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-emerald-500/60"
-              >
-                {columns.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="task-status">Status</Label>
-              <select
-                id="task-status"
-                {...register('status')}
-                className="flex h-9 w-full rounded-md border border-[var(--border)] bg-[var(--bg-2)] px-3 text-[13px] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-emerald-500/60"
-              >
-                <option value="BACKLOG">Backlog</option>
-                <option value="TODO">Todo</option>
-                <option value="IN_PROGRESS">In Progress</option>
-                <option value="IN_REVIEW">In Review</option>
-                <option value="DONE">Done</option>
-                <option value="BLOCKED">Blocked</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="task-priority">Priority</Label>
-              <select
-                id="task-priority"
-                {...register('priority')}
-                className="flex h-9 w-full rounded-md border border-[var(--border)] bg-[var(--bg-2)] px-3 text-[13px] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-emerald-500/60"
-              >
-                <option value="LOW">Low</option>
-                <option value="MEDIUM">Medium</option>
-                <option value="HIGH">High</option>
-                <option value="URGENT">Urgent</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="task-assignee">Assignee</Label>
-              <select
-                id="task-assignee"
-                {...register('assigneeId')}
-                className="flex h-9 w-full rounded-md border border-[var(--border)] bg-[var(--bg-2)] px-3 text-[13px] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-emerald-500/60"
-              >
-                <option value="">Unassigned</option>
-                {members.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="task-due">Due date</Label>
-              <Input id="task-due" type="date" {...register('dueDate')} />
-            </div>
-          </div>
-
-          <div className="mt-2 flex items-center justify-end gap-2">
-            <Button
+        {isEdit && (
+          <div className="flex border-b border-[var(--border)] px-5">
+            <button
               type="button"
-              variant="ghost"
-              onClick={onClose}
-              className="h-9 px-3 text-[12px]"
+              onClick={() => setTab('details')}
+              className={`px-4 py-2 text-sm font-medium ${
+                tab === 'details'
+                  ? 'border-b-2 border-emerald-500 text-emerald-500'
+                  : 'text-[var(--fg-2)] hover:text-[var(--fg)]'
+              }`}
             >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              className="h-9 bg-emerald-500 px-4 text-[12px] text-white hover:bg-emerald-600"
+              Details
+            </button>
+            <button
+              type="button"
+              onClick={() => setTab('chat')}
+              className={`px-4 py-2 text-sm font-medium ${
+                tab === 'chat'
+                  ? 'border-b-2 border-emerald-500 text-emerald-500'
+                  : 'text-[var(--fg-2)] hover:text-[var(--fg)]'
+              }`}
             >
-              {isSubmitting ? (isEdit ? 'Saving…' : 'Creating…') : isEdit ? 'Save' : 'Create task'}
-            </Button>
+              Chat
+            </button>
           </div>
-        </form>
+        )}
+
+        {tab === 'details' && (
+          <form onSubmit={onSubmit} className="flex-1 space-y-3 overflow-y-auto p-5">
+            <div className="space-y-1.5">
+              <Label htmlFor="task-title">Title</Label>
+              <Input
+                id="task-title"
+                {...register('title')}
+                ref={(el) => {
+                  register('title').ref(el);
+                  firstInputRef.current = el;
+                }}
+                placeholder="What needs to happen?"
+                aria-invalid={Boolean(errors.title)}
+              />
+              {errors.title && <p className="text-[11px] text-red-500">{errors.title.message}</p>}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="task-desc">Description</Label>
+              <textarea
+                id="task-desc"
+                {...register('description')}
+                rows={3}
+                placeholder="Optional"
+                className="flex w-full rounded-md border border-[var(--border)] bg-[var(--bg-2)] px-3 py-2 text-[13px] placeholder:text-[var(--fg-3)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-emerald-500/60"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="task-column">Column</Label>
+                <select
+                  id="task-column"
+                  {...register('columnId')}
+                  className="flex h-9 w-full rounded-md border border-[var(--border)] bg-[var(--bg-2)] px-3 text-[13px] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-emerald-500/60"
+                >
+                  {columns.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="task-status">Status</Label>
+                <select
+                  id="task-status"
+                  {...register('status')}
+                  className="flex h-9 w-full rounded-md border border-[var(--border)] bg-[var(--bg-2)] px-3 text-[13px] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-emerald-500/60"
+                >
+                  <option value="BACKLOG">Backlog</option>
+                  <option value="TODO">Todo</option>
+                  <option value="IN_PROGRESS">In Progress</option>
+                  <option value="IN_REVIEW">In Review</option>
+                  <option value="DONE">Done</option>
+                  <option value="BLOCKED">Blocked</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="task-priority">Priority</Label>
+                <select
+                  id="task-priority"
+                  {...register('priority')}
+                  className="flex h-9 w-full rounded-md border border-[var(--border)] bg-[var(--bg-2)] px-3 text-[13px] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-emerald-500/60"
+                >
+                  <option value="LOW">Low</option>
+                  <option value="MEDIUM">Medium</option>
+                  <option value="HIGH">High</option>
+                  <option value="URGENT">Urgent</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="task-assignee">Assignee</Label>
+                <select
+                  id="task-assignee"
+                  {...register('assigneeId')}
+                  className="flex h-9 w-full rounded-md border border-[var(--border)] bg-[var(--bg-2)] px-3 text-[13px] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-emerald-500/60"
+                >
+                  <option value="">Unassigned</option>
+                  {members.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="task-due">Due date</Label>
+                <Input id="task-due" type="date" {...register('dueDate')} />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={onClose}
+                className="h-9 px-3 text-[12px]"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                className="h-9 bg-emerald-500 px-4 text-[12px] text-white hover:bg-emerald-600"
+              >
+                {isSubmitting ? (isEdit ? 'Saving…' : 'Creating…') : isEdit ? 'Save' : 'Create task'}
+              </Button>
+            </div>
+          </form>
+        )}
+
+        {tab === 'chat' && initial && (
+          <div className="flex-1 overflow-hidden">
+            <TaskChat taskId={initial.id} />
+          </div>
+        )}
       </div>
     </div>
   );
