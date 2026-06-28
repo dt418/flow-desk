@@ -67,16 +67,17 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @flow-desk/shared build
       - run: pnpm --filter @flowdesk/db db:generate
-        env:
-          DATABASE_URL: postgresql://flowdesk:flowdesk@localhost:5432/flowdesk?schema=public
-      - name: Create test database + push schema
-        run: |
-          PGPASSWORD=flowdesk psql -h localhost -U flowdesk -d postgres -c "CREATE DATABASE flowdesk_test;" || true
-          DATABASE_URL=postgresql://flowdesk:flowdesk@localhost:5432/flowdesk_test?schema=public \
-            pnpm exec prisma db push --accept-data-loss --schema=packages/db/prisma/schema.prisma
-      - run: pnpm --filter @flow-desk/api test:integration
+
+      - name: Create flowdesk_test database + push schema
         env:
           DATABASE_URL: postgresql://flowdesk:flowdesk@localhost:5432/flowdesk_test?schema=public
+        run: |
+          PGPASSWORD=flowdesk psql -h localhost -U flowdesk -d postgres -c "CREATE DATABASE flowdesk_test;"
+          pnpm exec prisma db push --accept-data-loss --schema=packages/db/prisma/schema.prisma
+
+      - name: Run integration tests
+        run: pnpm --filter @flow-desk/api test:integration
+        env:
           REDIS_URL: redis://localhost:6379
           NODE_ENV: test
           JWT_SECRET: ci-test-secret-32-chars-minimum-for-jwt!!
