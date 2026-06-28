@@ -1,11 +1,14 @@
 import { logger } from '../../shared/lib/logger';
-import { instantEmailWorker } from './processors/instant';
+import { sendEmailWorker } from './processors/send';
+import { startScheduler } from './scheduler';
 
-logger.info('Starting email worker (instant processor)');
+logger.info('Starting email worker');
+
+startScheduler();
 
 async function shutdown(signal: string) {
   logger.info({ signal }, 'Shutting down email worker');
-  await instantEmailWorker.close();
+  await sendEmailWorker.close();
   process.exit(0);
 }
 

@@ -3,6 +3,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 const mockQueueAdd = vi.fn().mockResolvedValue({ id: 'job-1' });
 const mockWorkerOn = vi.fn();
 const mockWorkerClose = vi.fn().mockResolvedValue(undefined);
+const mockEmailJobCreate = vi.fn();
+const mockEmailJobUpdateMany = vi.fn();
 
 vi.mock('bullmq', () => ({
   Queue: vi.fn(() => ({ add: mockQueueAdd })),
@@ -14,7 +16,7 @@ vi.mock('../../../shared/lib/env', () => ({
 }));
 
 vi.mock('../../../shared/lib/logger', () => ({
-  logger: { info: vi.fn(), error: vi.fn(), warn: vi.fn(), debug: vi.fn() },
+  logger: { info: vi.fn(), error: vi.fn(), warn: vi.fn(), debug: vi.fn(), trace: vi.fn(), fatal: vi.fn() },
 }));
 
 vi.mock('../../../shared/lib/email-provider', () => ({
@@ -22,7 +24,23 @@ vi.mock('../../../shared/lib/email-provider', () => ({
 }));
 
 vi.mock('../../../shared/lib/prisma', () => ({
-  prisma: { emailJob: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) } },
+  prisma: {
+    emailJob: {
+      updateMany: mockEmailJobUpdateMany.mockResolvedValue({ count: 1 }),
+      create: mockEmailJobCreate.mockResolvedValue({ id: 'ej-1' }),
+    },
+  },
+  env: { REDIS_URL: 'redis://localhost:6379', LOG_LEVEL: 'info', NODE_ENV: 'test' },
+}));
+
+vi.mock('../../shared/lib/prisma', () => ({
+  prisma: {
+    emailJob: {
+      updateMany: mockEmailJobUpdateMany.mockResolvedValue({ count: 1 }),
+      create: mockEmailJobCreate.mockResolvedValue({ id: 'ej-1' }),
+    },
+  },
+  env: { REDIS_URL: 'redis://localhost:6379', LOG_LEVEL: 'info', NODE_ENV: 'test' },
 }));
 
 import { Queue, Worker } from 'bullmq';
@@ -92,6 +110,63 @@ describe('email worker', () => {
       const { instantEmailWorker } = await import('./processors/instant');
       await instantEmailWorker.close();
       expect(mockWorkerClose).toHaveBeenCalled();
+    });
+  });
+
+  describe('scheduleDelayed', () => {
+    beforeEach(() => {
+      vi.clearAllMocks();
+    });
+
+    it('creates EmailJob in DB then enqueues with delay', async () => {
+      const { scheduleDelayed } = await import('./schedule-delayed');
+      await scheduleDelayed(
+        'user-1',
+        'test@example.com',
+        { subject: 'Delayed', html: '<p>Hi</p>' },
+        5000,
+      );
+      expect(mockEmailJobCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            userId: 'user-1',
+            type: 'DELAYED',
+            status: 'PENDING',
+          }),
+        }),
+      );
+      expect(mockQueueAdd).toHaveBeenCalledWith(
+        'send',
+        expect.objectContaining({ type: 'DELAYED' }),
+        expect.objectContaining({ delay: 5000 }),
+      );
+    });
+
+    it('uses jobId prefix for delayed jobs', async () => {
+      const { scheduleDelayed } = await import('./schedule-delayed');
+      await scheduleDelayed(
+        'user-1',
+        'test@example.com',
+        { subject: 'Delayed', html: '<p>Hi</p>' },
+        5000,
+      );
+      const createCall = mockEmailJobCreate.mock.calls[0]![0];
+      const jobId = (createCall.data as { id: string }).id;
+      expect(jobId.startsWith('delayed-user-1-')).toBe(true);
+    });
+
+    it('cancelDelayed updates status to CANCELLED', async () => {
+      const { cancelDelayed } = await import('./schedule-delayed');
+      await cancelDelayed('user-1', 'delayed-user-1-123');
+      expect(mockEmailJobUpdateMany).toHaveBeenCalledWith({
+        where: {
+          id: 'delayed-user-1-123',
+          userId: 'user-1',
+          type: 'DELAYED',
+          status: 'PENDING',
+        },
+        data: { status: 'CANCELLED' },
+      });
     });
   });
 });
