@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { z } from 'zod';
 
 const envSchema = z.object({
@@ -56,15 +57,11 @@ if (!parsed.success) {
 
 export const env = parsed.data;
 
-if (env.EMAIL_PROVIDER === 'resend' && !env.RESEND_API_KEY) {
-  // eslint-disable-next-line no-console
-  console.warn(
-    '[env] EMAIL_PROVIDER=resend but RESEND_API_KEY is not set — Resend send() calls will fail.',
-  );
-}
-if (env.EMAIL_PROVIDER === 'nodemailer' && !env.SMTP_HOST) {
-  // eslint-disable-next-line no-console
-  console.warn(
-    '[env] EMAIL_PROVIDER=nodemailer but SMTP_HOST is not set — SMTP send() calls will fail.',
-  );
+if (env.NODE_ENV === 'production') {
+  if (env.EMAIL_PROVIDER === 'resend' && !env.RESEND_API_KEY) {
+    console.warn('[env] EMAIL_PROVIDER=resend but RESEND_API_KEY is not set — Resend send() calls will fail.');
+  }
+  if (env.EMAIL_PROVIDER === 'nodemailer' && !env.SMTP_HOST) {
+    console.warn('[env] EMAIL_PROVIDER=nodemailer but SMTP_HOST is not set — SMTP send() calls will fail.');
+  }
 }
