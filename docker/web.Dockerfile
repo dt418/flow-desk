@@ -5,9 +5,9 @@ WORKDIR /app
 FROM base AS deps
 COPY .npmrc ./
 COPY pnpm-workspace.yaml package.json ./
-COPY apps/api/package.json apps/api/
 COPY apps/web/package.json apps/web/
 COPY packages/shared/package.json packages/shared/
+COPY packages/env/package.json packages/env/
 RUN pnpm install --no-frozen-lockfile
 
 FROM base AS shared
@@ -17,11 +17,18 @@ COPY packages/shared packages/shared
 RUN pnpm install --no-frozen-lockfile
 RUN pnpm --filter @flow-desk/shared build
 
+FROM base AS env-build
+COPY .npmrc ./
+COPY pnpm-workspace.yaml package.json ./
+COPY packages/env packages/env
+RUN pnpm install --no-frozen-lockfile
+
 FROM base AS web-build
 COPY .npmrc ./
 COPY pnpm-workspace.yaml package.json ./
 COPY --from=deps /app/node_modules node_modules
 COPY --from=shared /app/packages/shared packages/shared
+COPY --from=env-build /app/packages/env packages/env
 COPY apps/web apps/web
 RUN pnpm install --no-frozen-lockfile
 RUN pnpm --filter @flow-desk/web build
