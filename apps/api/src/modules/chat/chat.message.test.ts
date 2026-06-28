@@ -108,7 +108,7 @@ describe('chat message service', () => {
       mockFindMessages.mockResolvedValue([]);
       const { listMessages } = await import('./chat.message.service');
       const result = await listMessages(mockPrisma as any, 'user-1', 'ch-1', {
-        channelId: 'ch-1', limit: 50,
+        limit: 50,
       } as any);
       expect(result.data).toEqual([]);
       expect(result.nextCursor).toBeNull();

@@ -13,7 +13,6 @@ export const updateChatMessageSchema = z.object({
 export type UpdateChatMessageInput = z.infer<typeof updateChatMessageSchema>;
 
 export const listChatMessagesQuerySchema = z.object({
-  channelId: cuidSchema,
   cursor: z.string().optional(),
   limit: z.coerce.number().int().min(1).max(100).default(50),
 });

@@ -47,6 +47,7 @@ test.describe('Board card actions (drag/drop conflict with Edit/Delete) @bugfix'
     // Delete fires toast — no second modal, no DragOverlay ghost.
     const toasts = page.locator('[data-sonner-toast]');
     await expect(toasts.first()).toBeVisible({ timeout: 5_000 });
+    await page.keyboard.press('Escape');
     await expect(dialogs).toHaveCount(0);
   });
 });

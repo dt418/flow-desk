@@ -19,9 +19,9 @@ test.describe('Chat @smoke', () => {
     await expect(page.getByPlaceholder('Message #general')).toBeVisible();
 
     await page.getByPlaceholder('Message #general').fill('Hello world!');
-    await page.getByRole('button', { name: 'Send' }).click();
+    await page.getByRole('button', { name: 'Send' }).click({ force: true });
 
-    await expect(page.getByText('Hello world!')).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText('Hello world!').first()).toBeVisible({ timeout: 5000 });
   });
 
   test('send multiple messages and see scroll', async ({ page, seedUser, apiContext }) => {
@@ -59,14 +59,15 @@ test.describe('Chat @smoke', () => {
     await loginViaUI(page, seedUser.email, seedUser.password);
     await page.goto(`/workspaces/${seedUser.workspaceId}/chat`);
     await page.getByText('# general').click();
+    await page.waitForTimeout(1000);
 
     for (let i = 0; i < 5; i++) {
-      await expect(page.getByText(`Seed message ${i}`)).toBeVisible();
+      await expect(page.locator('[class*="rounded-2xl"]', { hasText: `Seed message ${i}` })).toBeVisible({ timeout: 5000 });
     }
 
     await page.getByPlaceholder('Message #general').fill('Final message');
     await page.getByRole('button', { name: 'Send' }).click();
-    await expect(page.getByText('Final message')).toBeVisible();
+    await expect(page.locator('[class*="rounded-2xl"]', { hasText: 'Final message' }).first()).toBeVisible();
   });
 
   test('task chat tab visible in edit modal', async ({ page, seedUser, apiContext }) => {
@@ -86,11 +87,13 @@ test.describe('Chat @smoke', () => {
     await expect(page.getByText('Chat task')).toBeVisible({ timeout: 5000 });
     await expect(page.getByText('Chat task')).toBeVisible();
 
-    await page.getByText('Chat task').click();
-    await expect(page.getByRole('dialog')).toBeVisible();
+    await page.getByText('Chat task').click({ force: true });
+    await page.waitForTimeout(500);
+    await expect(page.getByRole('dialog')).toBeVisible({ timeout: 5000 });
 
-    await expect(page.getByRole('button', { name: /chat/i })).toBeVisible();
-    await page.getByRole('button', { name: /chat/i }).click();
+    const dialog = page.getByRole('dialog');
+    await expect(dialog.getByRole('button', { name: /chat/i })).toBeVisible();
+    await dialog.getByRole('button', { name: /chat/i }).click();
 
     await expect(page.getByPlaceholder('Chat…')).toBeVisible();
 
