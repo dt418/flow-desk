@@ -822,6 +822,155 @@
         "e2e/chat.spec.ts — Playwright E2E tests (blocked by R-39 Prisma client CJS/ESM interop)"
       ],
       "notes": "F7 = session 016 (worktree f7-chat-email). 80 unit + 162 integration tests all passing. E2E blocked by R-39 (Prisma 7 client uses import.meta, incompatible with Playwright CJS loader). Email worker Docker build fails on @flowdesk/db workspace resolution — pre-existing monorepo docker issue. Pending commit of Phase 5-8 work + frontend."
+    },
+    {
+      "id": "AUD-001",
+      "priority": 100,
+      "area": "security",
+      "title": "Fix stored XSS in task description rendering (S1)",
+      "user_visible_behavior": "Task descriptions rendered as sanitized HTML — script tags and onerror handlers stripped, safe markdown preserved.",
+      "status": "passing",
+      "verification": [
+        "pnpm --filter @flow-desk/web typecheck → exit 0",
+        "pnpm --filter @flow-desk/web build → exit 0",
+        "rg 'marked\\.parse.*dangerouslySetInnerHTML' apps/web/src/ → 0 matches",
+        "rg 'renderMarkdownToHtml' apps/web/src/ → ≥2 matches"
+      ],
+      "evidence": [
+        "apps/web/src/lib/sanitize.ts (NEW) — renderMarkdownToHtml(): marked.parse + DOMPurify.sanitize with ALLOWED_TAGS + ALLOWED_ATTR",
+        "apps/web/src/features/task/components/TaskEditModal.tsx — swapped marked.parse for renderMarkdownToHtml in dangerouslySetInnerHTML",
+        "apps/web/package.json — added dompurify ^3.4.11",
+        "Merged: commit 7f41414 (merge of 914dd33)"
+      ],
+      "notes": "Plan 001 from /improve audit. S1 finding. Commit 764615b baseline."
+    },
+    {
+      "id": "AUD-002",
+      "priority": 99,
+      "area": "security",
+      "title": "Fix cross-workspace IDOR vulnerabilities (S3, S4, S8, S9, S18)",
+      "user_visible_behavior": "Workspace-scoped resources (columns, task dependencies, chat mentions, AI task lookup) verify ownership before mutation/read. Cross-workspace access rejected.",
+      "status": "passing",
+      "verification": [
+        "pnpm --filter @flow-desk/api typecheck → exit 0",
+        "pnpm --filter @flow-desk/api vitest run → 80/80 pass",
+        "pnpm --filter @flow-desk/api vitest run --config vitest.integration.config.ts → 174/174 pass (incl. 10 new IDOR tests)",
+        "rg 'existing.workspaceId !== workspaceId' apps/api/src/modules/workspace/workspace.routes.ts → 2 matches",
+        "rg 'findTask.*workspaceId' apps/api/src/modules/ai/ai.repository.ts → match"
+      ],
+      "evidence": [
+        "apps/api/src/modules/workspace/workspace.routes.ts — column update/delete ownership check (S3)",
+        "apps/api/src/modules/task/task.routes.ts — dependency delete assertMembership + workspace check (S4)",
+        "apps/api/src/modules/task/task.service.ts — create/createSubtask verify column belongs to workspace (S18)",
+        "apps/api/src/modules/chat/chat.message.service.ts — mention filtering to workspace members (S8)",
+        "apps/api/src/modules/ai/ai.repository.ts + ai.service.ts — findTask workspace filter (S9)",
+        "apps/api/tests/integration/idor-cross-workspace.test.ts (NEW) — 10 IDOR tests",
+        "Merged: commit 229f6bb (merge of 19c7a3d)"
+      ],
+      "notes": "Plan 002 from /improve audit. Commit 764615b baseline."
+    },
+    {
+      "id": "AUD-003",
+      "priority": 98,
+      "area": "security",
+      "title": "Fix refresh token rotation + OAuth unverified-email takeover (S5, S6)",
+      "user_visible_behavior": "Refresh token flow works (users stay logged in beyond 15min). OAuth login rejects unverified Google emails.",
+      "status": "not_started",
+      "verification": [
+        "pnpm --filter @flow-desk/api typecheck → exit 0",
+        "pnpm --filter @flow-desk/api vitest run → all pass",
+        "pnpm --filter @flow-desk/api vitest run --config vitest.integration.config.ts → all pass",
+        "rg 'id: refresh' apps/api/src/modules/auth/auth.routes.ts → 0 matches",
+        "rg 'verified_email' apps/api/src/modules/auth/auth.routes.ts → ≥1 match"
+      ],
+      "evidence": [],
+      "notes": "Plan 003 from /improve audit. S5: refreshToken.create stores JWT string as id but refresh lookup uses UUID from JWT payload → always misses. S6: OAuth callback doesn't check profile.verified_email → attacker creates Google account with victim's email."
+    },
+    {
+      "id": "AUD-004",
+      "priority": 97,
+      "area": "security",
+      "title": "Fix WebSocket IDOR + socket event name mismatch (S7, C2)",
+      "user_visible_behavior": "Realtime updates only reach workspace members. Client socket event names match server → board/list realtime functional.",
+      "status": "not_started",
+      "verification": [
+        "pnpm --filter @flow-desk/api typecheck → exit 0",
+        "pnpm --filter @flow-desk/web typecheck → exit 0",
+        "pnpm --filter @flow-desk/web build → exit 0",
+        "rg \"emit.*'join'\" apps/web/src/features/realtime/useRealtime.ts → 0 matches",
+        "rg 'workspaceMember.findUnique' apps/api/src/shared/lib/socket.ts → ≥1 match"
+      ],
+      "evidence": [],
+      "notes": "Plan 004. S7: join-workspace/join-task handlers no membership check. C2: client emits 'join' but server listens for 'join-workspace' → realtime rooms never joined. Depends on AUD-002 (assertMembership pattern)."
+    },
+    {
+      "id": "AUD-005",
+      "priority": 96,
+      "area": "correctness",
+      "title": "Fix soft-delete extension completeness (C1)",
+      "user_visible_behavior": "Soft-deleted records not returned by any Prisma query method including findUnique. ChatChannel/ChatMessage covered by extension.",
+      "status": "not_started",
+      "verification": [
+        "pnpm --filter @flow-desk/api typecheck → exit 0",
+        "pnpm --filter @flow-desk/api vitest run --config vitest.integration.config.ts soft-delete → all pass",
+        "rg 'ChatChannel' apps/api/src/shared/lib/prisma-extension.ts → ≥1 match",
+        "rg 'findUnique' apps/api/src/shared/lib/prisma-extension.ts → ≥1 match"
+      ],
+      "evidence": [],
+      "notes": "Plan 005. C1: extension covers findFirst/findMany/count/aggregate/groupBy but NOT findUnique. ChatChannel + ChatMessage have deletedAt but missing from SOFT_DELETE_MODELS."
+    },
+    {
+      "id": "AUD-006",
+      "priority": 95,
+      "area": "security",
+      "title": "Harden JWT secret + rate limiting + env defaults (S2, S10, S11, S16, S17)",
+      "user_visible_behavior": "Production refuses to start with default JWT_SECRET. Rate limits cannot be disabled in production. XFF spoofing blocked. Docker ports bound to localhost.",
+      "status": "not_started",
+      "verification": [
+        "pnpm --filter @flow-desk/api typecheck → exit 0",
+        "pnpm --filter @flow-desk/api vitest run → all pass",
+        "rg 'change-me-to-a-32-char-random-string' docker-compose.yml → 0 matches",
+        "rg 'KNOWN_DEFAULTS' apps/api/src/shared/lib/env.ts → ≥1 match",
+        "rg 'TRUST_PROXY_HOPS' apps/api/src/shared/lib/env.ts → ≥1 match",
+        "rg 'WORKSPACE_INVITE' apps/api/src/modules/workspace/workspace.routes.ts → ≥1 match",
+        "rg '127.0.0.1' docker-compose.yml → ≥2 matches"
+      ],
+      "evidence": [],
+      "notes": "Plan 006. S2: JWT_SECRET public default. S10: SKIP_RATE_LIMIT no production guard. S11: XFF spoofing. S16: WORKSPACE_INVITE rate limit never applied. S17: ports exposed + default password."
+    },
+    {
+      "id": "AUD-007",
+      "priority": 94,
+      "area": "correctness",
+      "title": "Fix digest EmailJob state machine + listTasks cursor pagination (C3, C4)",
+      "user_visible_behavior": "Digest emails tracked with EmailJob records (no duplicates, status updates correctly). Task list pagination works across all sort fields.",
+      "status": "not_started",
+      "verification": [
+        "pnpm --filter @flow-desk/api typecheck → exit 0",
+        "pnpm --filter @flow-desk/api vitest run → all pass",
+        "pnpm --filter @flow-desk/api vitest run --config vitest.integration.config.ts → all pass",
+        "rg 'emailJobId' apps/api/src/workers/email/scheduler.ts → ≥1 match",
+        "rg 'emailJobId' apps/api/src/workers/email/processors/digest.ts → ≥1 match"
+      ],
+      "evidence": [],
+      "notes": "Plan 007. C3: DIGEST path never creates EmailJob → cooldown broken + status stuck PENDING. C4: listTasks cursor always uses createdAt but orderBy uses primarySortField → skipped/duped rows."
+    },
+    {
+      "id": "AUD-008",
+      "priority": 93,
+      "area": "performance",
+      "title": "Fix Redis KEYS blocking + graceful shutdown + rate-limit atomicity (P1, P3, P5)",
+      "user_visible_behavior": "Presence sweeper uses non-blocking SCAN. API + email worker close cleanly on SIGTERM. Rate-limit INCR+EXPIRE atomic.",
+      "status": "not_started",
+      "verification": [
+        "pnpm --filter @flow-desk/api typecheck → exit 0",
+        "pnpm --filter @flow-desk/api vitest run → all pass",
+        "rg 'redis.keys' apps/api/src/modules/realtime/realtime.gateway.ts → 0 matches",
+        "rg 'SIGTERM|SIGINT' apps/api/src/index.ts → ≥2 matches",
+        "rg 'eval|RATE_LIMIT_SCRIPT' apps/api/src/shared/middleware/rate-limit.ts → ≥1 match"
+      ],
+      "evidence": [],
+      "notes": "Plan 008. P1: redis.keys blocking O(n) every 10s. P3: no SIGTERM handler, resources not closed. P5: INCR+EXPIRE non-atomic → permanent block if process dies between."
     }
   ]
 }
