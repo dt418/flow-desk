@@ -3,10 +3,18 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
-import { Sparkles, Loader2 } from 'lucide-react';
+import { Sparkles, Loader2, Calendar, Flag, User, Columns3, CircleDot } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import {
   Select,
   SelectContent,
@@ -20,6 +28,7 @@ import type { TaskCardData } from './TaskCard';
 import { TaskChat } from '@/features/chat/components/TaskChat';
 import { useSuggestAssignee } from '@/features/ai';
 import type { SuggestAssigneeSuggestion } from '@/features/ai';
+import { cn } from '@/lib/utils';
 
 const formSchema = z.object({
   title: z.string().min(1, 'Title is required').max(100, 'Title is too long'),
@@ -52,6 +61,34 @@ interface Props {
   initial?: TaskCardData | null;
 }
 
+const PRIORITY_TONE: Record<string, string> = {
+  LOW: 'bg-slate-400',
+  MEDIUM: 'bg-blue-500',
+  HIGH: 'bg-amber-500',
+  URGENT: 'bg-red-500',
+};
+
+const STATUS_TONE: Record<string, string> = {
+  BACKLOG: 'bg-slate-400',
+  TODO: 'bg-slate-500',
+  IN_PROGRESS: 'bg-blue-500',
+  IN_REVIEW: 'bg-amber-500',
+  DONE: 'bg-emerald-500',
+  BLOCKED: 'bg-red-500',
+};
+
+function FieldDivider() {
+  return <div className="border-t border-[var(--border)]" />;
+}
+
+function SectionLabel({ children, className }: { children: React.ReactNode; className?: string }) {
+  return (
+    <p className={cn('text-[11px] font-medium uppercase tracking-wider text-[var(--fg-3)]', className)}>
+      {children}
+    </p>
+  );
+}
+
 export function TaskEditModal({
   open,
   onClose,
@@ -64,8 +101,6 @@ export function TaskEditModal({
   const create = useCreateTask(workspaceId);
   const update = useUpdateTask(workspaceId);
   const suggestAssignee = useSuggestAssignee(workspaceId);
-  const firstInputRef = React.useRef<HTMLInputElement | null>(null);
-  const dialogRef = React.useRef<HTMLDivElement | null>(null);
   const isEdit = Boolean(initial);
   const [tab, setTab] = React.useState<'details' | 'chat'>('details');
   const [aiSuggestions, setAiSuggestions] = React.useState<SuggestAssigneeSuggestion[] | null>(null);
@@ -73,30 +108,19 @@ export function TaskEditModal({
   const abortRef = React.useRef<AbortController | null>(null);
   React.useEffect(() => () => abortRef.current?.abort(), []);
 
-  const handleSuggest = () => {
-    abortRef.current = new AbortController();
-    setAiSuggestions(null);
-    suggestAssignee.mutate(
-      { taskId: initial?.id, title: watchTitle || initial?.title, signal: abortRef.current.signal },
-      {
-        onSuccess: (data) => setAiSuggestions(data.suggestions),
-        onError: () => toast.error('AI suggestion failed'),
-      },
-    );
-  };
-
   const {
     register,
     handleSubmit,
     reset,
     control,
     watch,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<FormInput>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: initial?.title ?? '',
-      description: '',
+      description: initial?.description ?? '',
       priority: initial?.priority ?? 'MEDIUM',
       columnId: initial?.columnId ?? defaultColumnId ?? columns[0]?.id ?? '',
       assigneeId: initial?.assignee?.id ?? '',
@@ -121,30 +145,21 @@ export function TaskEditModal({
     }
   }, [open, initial, defaultColumnId, columns, reset]);
 
-  React.useEffect(() => {
-    if (!open) return;
-    const t = setTimeout(() => firstInputRef.current?.focus(), 0);
-    return () => clearTimeout(t);
-  }, [open]);
-
-  React.useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [open, onClose]);
-
-  if (!open) return null;
-
   const watchTitle = watch('title');
 
-  const onBackdrop = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.target === dialogRef.current) onClose();
+  const handleSuggest = () => {
+    abortRef.current = new AbortController();
+    setAiSuggestions(null);
+    suggestAssignee.mutate(
+      { taskId: initial?.id, title: watchTitle || initial?.title, signal: abortRef.current.signal },
+      {
+        onSuccess: (data) => setAiSuggestions(data.suggestions),
+        onError: () => toast.error('AI suggestion failed'),
+      },
+    );
   };
 
-  const onSubmit = handleSubmit(async (values) => {
+  const on_submit = handleSubmit(async (values) => {
     try {
       const dueDate = values.dueDate
         ? new Date(`${values.dueDate}T00:00:00.000Z`).toISOString()
@@ -184,134 +199,144 @@ export function TaskEditModal({
     }
   });
 
-  return (
-    <div
-      ref={dialogRef}
-      onMouseDown={onBackdrop}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="task-edit-title"
-    >
-      <div className="flex h-[80vh] w-full max-w-2xl flex-col rounded-xl border border-[var(--border)] bg-[var(--bg)] shadow-xl">
-        <div className="flex items-center justify-between border-b border-[var(--border)] px-5 py-3">
-          <h3 id="task-edit-title" className="text-[14px] font-semibold tracking-tight">
-            {isEdit ? 'Edit task' : 'New task'}
-          </h3>
-          <button
-            type="button"
-            onClick={onClose}
-            className="caption rounded px-1.5 py-0.5 hover:bg-[var(--bg-2)]"
-            aria-label="Close"
-          >
-            Esc
-          </button>
-        </div>
+  const handleTitleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      on_submit();
+    }
+  };
 
-        {isEdit && (
-          <div className="flex border-b border-[var(--border)] px-5">
-            <button
-              type="button"
-              onClick={() => setTab('details')}
-              className={`px-4 py-2 text-sm font-medium ${
-                tab === 'details'
-                  ? 'border-b-2 border-emerald-500 text-emerald-500'
-                  : 'text-[var(--fg-2)] hover:text-[var(--fg)]'
-              }`}
-            >
-              Details
-            </button>
-            <button
-              type="button"
-              onClick={() => setTab('chat')}
-              className={`px-4 py-2 text-sm font-medium ${
-                tab === 'chat'
-                  ? 'border-b-2 border-emerald-500 text-emerald-500'
-                  : 'text-[var(--fg-2)] hover:text-[var(--fg)]'
-              }`}
-            >
-              Chat
-            </button>
-          </div>
-        )}
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent
+        showCloseButton={false}
+        className="flex max-h-[85vh] w-full flex-col gap-0 rounded-xl p-0 sm:max-w-2xl"
+        aria-describedby="task-edit-desc"
+      >
+        {/* Header */}
+        <DialogHeader className="flex-row items-center justify-between border-b border-[var(--border)] px-5 py-3">
+          <DialogTitle className="text-sm font-semibold tracking-tight">
+            {isEdit ? 'Edit task' : 'New task'}
+          </DialogTitle>
+          {isEdit && (
+            <div className="flex items-center gap-1 text-[12px]">
+              <button
+                type="button"
+                onClick={() => setTab('details')}
+                className={cn(
+                  'rounded-md px-2.5 py-1 font-medium transition-colors',
+                  tab === 'details'
+                    ? 'bg-[var(--bg-3)] text-[var(--fg)]'
+                    : 'text-[var(--fg-3)] hover:text-[var(--fg)]',
+                )}
+              >
+                Details
+              </button>
+              <button
+                type="button"
+                onClick={() => setTab('chat')}
+                className={cn(
+                  'rounded-md px-2.5 py-1 font-medium transition-colors',
+                  tab === 'chat'
+                    ? 'bg-[var(--bg-3)] text-[var(--fg)]'
+                    : 'text-[var(--fg-3)] hover:text-[var(--fg)]',
+                )}
+              >
+                Chat
+              </button>
+            </div>
+          )}
+        </DialogHeader>
+        <DialogDescription id="task-edit-desc" className="sr-only">
+          {isEdit ? 'Edit task details' : 'Create a new task'}
+        </DialogDescription>
 
         {tab === 'details' && (
-          <form onSubmit={onSubmit} className="flex-1 space-y-3 overflow-y-auto p-5">
-            <div className="space-y-1.5">
-              <Label htmlFor="task-title">Title</Label>
+          <form onSubmit={on_submit} className="flex min-h-0 flex-1 flex-col">
+            <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-5">
+              {/* Title — highest priority */}
               <Input
-                id="task-title"
                 {...register('title')}
-                ref={(el) => {
-                  register('title').ref(el);
-                  firstInputRef.current = el;
-                }}
+                autoFocus
+                onKeyDown={handleTitleKeyDown}
                 placeholder="What needs to happen?"
+                aria-label="Task title"
                 aria-invalid={Boolean(errors.title)}
+                className="h-11 border-transparent bg-transparent px-0 text-base font-medium shadow-none focus-visible:border-transparent focus-visible:ring-0"
               />
-              {errors.title && <p className="text-[11px] text-red-500">{errors.title.message}</p>}
-            </div>
+              {errors.title && (
+                <p className="-mt-2 text-[11px] text-red-500">{errors.title.message}</p>
+              )}
 
-            <div className="space-y-1.5">
-              <Label htmlFor="task-desc">Description</Label>
+              {/* Description */}
               <textarea
-                id="task-desc"
                 {...register('description')}
-                rows={3}
-                placeholder="Optional"
-                className="flex w-full rounded-md border border-[var(--border)] bg-[var(--bg-2)] px-3 py-2 text-[13px] placeholder:text-[var(--fg-3)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-emerald-500/60"
+                rows={2}
+                placeholder="Add a description…"
+                aria-label="Task description"
+                className="w-full resize-y rounded-md border border-transparent bg-transparent px-0 text-[13px] leading-relaxed text-[var(--fg-2)] placeholder:text-[var(--fg-3)] outline-none transition-colors focus-visible:border-[var(--border)] focus-visible:bg-[var(--bg-2)] focus-visible:px-3 focus-visible:py-2"
               />
-            </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>Column</Label>
-                <Controller
-                  name="columnId"
-                  control={control}
-                  render={({ field }) => (
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Pick a column" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {columns.map((c) => (
-                          <SelectItem key={c.id} value={c.id}>
-                            {c.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Status</Label>
-                <Controller
-                  name="status"
-                  control={control}
-                  render={({ field }) => (
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Pick status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="BACKLOG">Backlog</SelectItem>
-                        <SelectItem value="TODO">Todo</SelectItem>
-                        <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
-                        <SelectItem value="IN_REVIEW">In Review</SelectItem>
-                        <SelectItem value="DONE">Done</SelectItem>
-                        <SelectItem value="BLOCKED">Blocked</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-              </div>
-            </div>
+              <FieldDivider />
 
-            <div className="grid grid-cols-2 gap-3">
+              {/* Column + Status */}
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <SectionLabel className="flex items-center gap-1.5">
+                    <Columns3 className="h-3 w-3" /> Column
+                  </SectionLabel>
+                  <Controller
+                    name="columnId"
+                    control={control}
+                    render={({ field }) => (
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Pick a column" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {columns.map((c) => (
+                            <SelectItem key={c.id} value={c.id}>
+                              {c.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <SectionLabel className="flex items-center gap-1.5">
+                    <CircleDot className="h-3 w-3" /> Status
+                  </SectionLabel>
+                  <Controller
+                    name="status"
+                    control={control}
+                    render={({ field }) => (
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Pick status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {(['BACKLOG', 'TODO', 'IN_PROGRESS', 'IN_REVIEW', 'DONE', 'BLOCKED'] as const).map((s) => (
+                            <SelectItem key={s} value={s}>
+                              <span className="flex items-center gap-2">
+                                <span className={cn('h-2 w-2 rounded-full', STATUS_TONE[s])} />
+                                {s.replace('_', ' ')}
+                              </span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                </div>
+              </div>
+
+              {/* Priority */}
               <div className="space-y-1.5">
-                <Label>Priority</Label>
+                <SectionLabel className="flex items-center gap-1.5">
+                  <Flag className="h-3 w-3" /> Priority
+                </SectionLabel>
                 <Controller
                   name="priority"
                   control={control}
@@ -321,88 +346,106 @@ export function TaskEditModal({
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="LOW">Low</SelectItem>
-                        <SelectItem value="MEDIUM">Medium</SelectItem>
-                        <SelectItem value="HIGH">High</SelectItem>
-                        <SelectItem value="URGENT">Urgent</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <Label>Assignee</Label>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleSuggest}
-                    disabled={suggestAssignee.isPending}
-                    className="h-auto gap-1 px-1.5 py-0.5 text-[11px] text-emerald-500 hover:text-emerald-400"
-                    title="AI-suggest assignee based on workload"
-                  >
-                    {suggestAssignee.isPending ? (
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                    ) : (
-                      <Sparkles className="h-3 w-3" />
-                    )}
-                    {suggestAssignee.isPending ? 'Thinking…' : 'Suggest'}
-                  </Button>
-                </div>
-                <Controller
-                  name="assigneeId"
-                  control={control}
-                  render={({ field }) => (
-                    <Select value={field.value ?? ''} onValueChange={field.onChange}>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Unassigned" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="">Unassigned</SelectItem>
-                        {members.map((m) => (
-                          <SelectItem key={m.id} value={m.id}>
-                            {m.name}
+                        {(['LOW', 'MEDIUM', 'HIGH', 'URGENT'] as const).map((p) => (
+                          <SelectItem key={p} value={p}>
+                            <span className="flex items-center gap-2">
+                              <span className={cn('h-2 w-2 rounded-full', PRIORITY_TONE[p])} />
+                              {p.charAt(0) + p.slice(1).toLowerCase()}
+                            </span>
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   )}
                 />
-                {aiSuggestions && (
-                  <div className="space-y-1 pt-1">
-                    {aiSuggestions.map((s) => {
-                      const member = members.find((m) => m.id === s.userId);
-                      return (
-                        <div
-                          key={s.userId}
-                          className="flex items-center justify-between rounded-md border border-[var(--border)] bg-[var(--bg-2)] px-2 py-1.5"
-                        >
-                          <span className="text-[13px] font-medium text-[var(--fg)]">
-                            {member?.name ?? s.userId.slice(0, 8)}
-                          </span>
-                          <span className="max-w-[180px] truncate text-[11px] text-[var(--fg-3)]">
-                            {s.reason}
-                          </span>
-                        </div>
-                      );
-                    })}
-                    {suggestAssignee.data?.fallback && (
-                      <p className="text-[11px] text-[var(--warning)]">Rule-based (AI unavailable)</p>
-                    )}
-                  </div>
-                )}
               </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="task-due">Due date</Label>
-                <Input id="task-due" type="date" {...register('dueDate')} />
+
+              <FieldDivider />
+
+              {/* Assignee + Due Date */}
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <SectionLabel className="flex items-center gap-1.5">
+                      <User className="h-3 w-3" /> Assignee
+                    </SectionLabel>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="xs"
+                      onClick={handleSuggest}
+                      disabled={suggestAssignee.isPending || members.length === 0}
+                      className="gap-1 text-[11px] text-emerald-500 hover:text-emerald-400"
+                      title="AI-suggest assignee based on workload"
+                    >
+                      {suggestAssignee.isPending ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <Sparkles className="h-3 w-3" />
+                      )}
+                      {suggestAssignee.isPending ? 'Thinking…' : 'Suggest'}
+                    </Button>
+                  </div>
+                  <Controller
+                    name="assigneeId"
+                    control={control}
+                    render={({ field }) => (
+                      <Select value={field.value ?? ''} onValueChange={field.onChange}>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Unassigned" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">Unassigned</SelectItem>
+                          {members.map((m) => (
+                            <SelectItem key={m.id} value={m.id}>
+                              {m.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                  {aiSuggestions && (
+                    <div className="space-y-1 pt-1">
+                      {aiSuggestions.map((s) => {
+                        const member = members.find((m) => m.id === s.userId);
+                        return (
+                          <button
+                            key={s.userId}
+                            type="button"
+                            onClick={() => {
+                              setValue('assigneeId', s.userId, { shouldValidate: true });
+                              setAiSuggestions(null);
+                            }}
+                            className="flex w-full items-center justify-between rounded-md border border-[var(--border)] bg-[var(--bg-2)] px-2 py-1.5 text-left transition-colors hover:border-emerald-500/40 hover:bg-emerald-500/5"
+                            title={`Assign to ${member?.name ?? 'this user'}`}
+                          >
+                            <span className="text-[12px] font-medium text-[var(--fg)]">
+                              {member?.name ?? s.userId.slice(0, 8)}
+                            </span>
+                            <span className="max-w-[160px] truncate text-[11px] text-[var(--fg-3)]">
+                              {s.reason}
+                            </span>
+                          </button>
+                        );
+                      })}
+                      {suggestAssignee.data?.fallback && (
+                        <p className="text-[11px] text-[var(--warning)]">Rule-based (AI unavailable)</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <div className="space-y-1.5">
+                  <SectionLabel className="flex items-center gap-1.5">
+                    <Calendar className="h-3 w-3" /> Due date
+                  </SectionLabel>
+                  <Input type="date" {...register('dueDate')} aria-label="Due date" />
+                </div>
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-2">
+            {/* Footer — sticky, always visible */}
+            <div className="flex items-center justify-end gap-2 border-t border-[var(--border)] px-5 py-3">
               <Button
                 type="button"
                 variant="ghost"
@@ -416,19 +459,25 @@ export function TaskEditModal({
                 disabled={isSubmitting}
                 className="h-9 bg-emerald-500 px-4 text-[12px] text-white hover:bg-emerald-600"
               >
-                {isSubmitting ? (isEdit ? 'Saving…' : 'Creating…') : isEdit ? 'Save' : 'Create task'}
+                {isSubmitting
+                  ? isEdit
+                    ? 'Saving…'
+                    : 'Creating…'
+                  : isEdit
+                    ? 'Save'
+                    : 'Create task'}
               </Button>
             </div>
           </form>
         )}
 
         {tab === 'chat' && initial && (
-          <div className="flex-1 overflow-hidden">
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
             <TaskChat taskId={initial.id} />
           </div>
         )}
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
