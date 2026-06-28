@@ -16,7 +16,6 @@ import {
   EyeOff,
   X as XIcon,
 } from 'lucide-react';
-import { marked } from 'marked';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -43,6 +42,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { ApiError } from '@/lib/api';
+import { renderMarkdownToHtml } from '@/lib/sanitize';
 import { useCreateTask, useUpdateTask } from '../hooks';
 import type { TaskCardData } from './TaskCard';
 import { TaskChat } from '@/features/chat/components/TaskChat';
@@ -342,7 +342,7 @@ export function TaskEditModal({
                     <div
                       className="prose prose-sm prose-invert max-w-none [&_a]:text-emerald-400 [&_code]:rounded [&_code]:bg-[var(--bg-3)] [&_code]:px-1 [&_h1]:mb-1 [&_h2]:mb-1 [&_h3]:mb-1 [&_p]:mb-1.5 [&_ul]:mb-1.5"
                       dangerouslySetInnerHTML={{
-                        __html: marked.parse(watchDescription, { async: false }) as string,
+                        __html: renderMarkdownToHtml(watchDescription),
                       }}
                     />
                   ) : (
