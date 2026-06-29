@@ -7,7 +7,7 @@ Effort: `quick` (correctness + security focus, expanded to include perf/tests ba
 
 1. [001-fix-stored-xss-task-description](001-fix-stored-xss-task-description.md) — Stored XSS via `marked` without sanitization — Status: **DONE** (merge 7f41414)
 2. [002-fix-cross-workspace-idor](002-fix-cross-workspace-idor.md) — Cross-workspace IDOR: column, dependency, chat mention, AI task read — Status: **DONE** (merge 229f6bb)
-3. [003-fix-refresh-token-and-oauth](003-fix-refresh-token-and-oauth.md) — Refresh token DB mismatch + OAuth unverified-email takeover — Status: TODO
+3. [003-fix-refresh-token-and-oauth](003-fix-refresh-token-and-oauth.md) — Refresh token DB mismatch + OAuth unverified-email takeover — Status: **DONE** (merge 2519068)
 4. [004-fix-websocket-idor-and-event-mismatch](004-fix-websocket-idor-and-event-mismatch.md) — WebSocket room join no authz + client/server event name mismatch — Status: TODO
 5. [005-fix-soft-delete-extension](005-fix-soft-delete-extension.md) — Soft-delete extension misses `findUnique` + ChatChannel/ChatMessage — Status: TODO
 6. [006-harden-jwt-secret-and-rate-limiting](006-harden-jwt-secret-and-rate-limiting.md) — JWT_SECRET default, SKIP_RATE_LIMIT, XFF spoofing, port exposure — Status: TODO
@@ -25,7 +25,7 @@ Effort: `quick` (correctness + security focus, expanded to include perf/tests ba
 |------|---------|--------|----------|----------|
 | 001 | S1 | DONE | cavecrew-builder | 7f41414 |
 | 002 | S3, S4, S8, S9, S18 | DONE | general | 229f6bb |
-| 003 | S5, S6 | TODO | — | — |
+| 003 | S5, S6 | DONE | — | 2519068 |
 | 004 | S7, C2 | TODO | — | — |
 | 005 | C1 | TODO | — | — |
 | 006 | S2, S10, S11, S16, S17 | TODO | — | — |

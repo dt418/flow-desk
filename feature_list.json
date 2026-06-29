@@ -875,16 +875,20 @@
       "area": "security",
       "title": "Fix refresh token rotation + OAuth unverified-email takeover (S5, S6)",
       "user_visible_behavior": "Refresh token flow works (users stay logged in beyond 15min). OAuth login rejects unverified Google emails.",
-      "status": "not_started",
+      "status": "passing",
       "verification": [
         "pnpm --filter @flow-desk/api typecheck → exit 0",
         "pnpm --filter @flow-desk/api vitest run → all pass",
-        "pnpm --filter @flow-desk/api vitest run --config vitest.integration.config.ts → all pass",
+        "pnpm --filter @flow-desk/api vitest run --config vitest.integration.config.ts → all pass (18 files / 180 tests)",
         "rg 'id: refresh' apps/api/src/modules/auth/auth.routes.ts → 0 matches",
-        "rg 'verified_email' apps/api/src/modules/auth/auth.routes.ts → ≥1 match"
+        "rg 'verified_email' apps/api/src/modules/auth/auth.routes.ts → 2 matches"
       ],
-      "evidence": [],
-      "notes": "Plan 003 from /improve audit. S5: refreshToken.create stores JWT string as id but refresh lookup uses UUID from JWT payload → always misses. S6: OAuth callback doesn't check profile.verified_email → attacker creates Google account with victim's email."
+      "evidence": [
+        "apps/api/src/modules/auth/auth.routes.ts — 4 refresh token sites fixed (register:66, login:96, refresh-rotation:140, OAuth callback:267): id: tokenId (UUID) instead of id: refresh (JWT string)",
+        "apps/api/src/modules/auth/auth.routes.ts:237 — verified_email check added before account merge: throw BadRequestError if !profile.verified_email",
+        "apps/api/tests/integration/auth.service.test.ts — 6 integration tests: tokenId storage, successful refresh, revoked rejection, expired rejection, OAuth verified_email gate, unverified rejection"
+      ],
+      "notes": "Plan 003 from /improve audit. Merged commit 2519068 (worktree commit c970b44). Executor found 4th token-creation site (refresh-rotation endpoint) — plan said 'typically 3'. All gates pass."
     },
     {
       "id": "AUD-004",
