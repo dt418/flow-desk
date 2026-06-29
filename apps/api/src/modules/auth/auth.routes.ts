@@ -10,7 +10,7 @@ import { env } from '../../shared/lib/prisma';
 import { logger } from '../../shared/lib/logger';
 import { requireAuth } from '../../shared/middleware/auth';
 import { rateLimit } from '../../shared/middleware/rate-limit';
-import { ConflictError, UnauthorizedError } from '../../shared/errors';
+import { BadRequestError, ConflictError, UnauthorizedError } from '../../shared/errors';
 
 export const authRouter = new Hono();
 
@@ -59,10 +59,11 @@ authRouter.post(
     });
 
     const access = signAccessToken({ userId: user.id, email: user.email });
-    const refresh = signRefreshToken({ userId: user.id, tokenId: crypto.randomUUID() });
+    const tokenId = crypto.randomUUID();
+    const refresh = signRefreshToken({ userId: user.id, tokenId });
     await prisma.refreshToken.create({
       data: {
-        id: refresh,
+        id: tokenId,
         userId: user.id,
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       },
@@ -88,10 +89,11 @@ authRouter.post(
     if (!ok) throw new UnauthorizedError('Invalid credentials');
 
     const access = signAccessToken({ userId: user.id, email: user.email });
-    const refresh = signRefreshToken({ userId: user.id, tokenId: crypto.randomUUID() });
+    const tokenId = crypto.randomUUID();
+    const refresh = signRefreshToken({ userId: user.id, tokenId });
     await prisma.refreshToken.create({
       data: {
-        id: refresh,
+        id: tokenId,
         userId: user.id,
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       },
@@ -134,10 +136,11 @@ authRouter.post(
     });
 
     const access = signAccessToken({ userId: user.id, email: user.email });
-    const newRefresh = signRefreshToken({ userId: user.id, tokenId: crypto.randomUUID() });
+    const newTokenId = crypto.randomUUID();
+    const newRefresh = signRefreshToken({ userId: user.id, tokenId: newTokenId });
     await prisma.refreshToken.create({
       data: {
-        id: newRefresh,
+        id: newTokenId,
         userId: user.id,
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       },
@@ -224,7 +227,18 @@ authRouter.get('/google/callback', async (c) => {
     headers: { Authorization: `Bearer ${access_token}` },
   });
   if (!profileRes.ok) throw new UnauthorizedError('Failed to fetch Google profile');
-  const profile = (await profileRes.json()) as { email: string; name: string; picture?: string };
+  const profile = (await profileRes.json()) as {
+    email: string;
+    name: string;
+    picture?: string;
+    verified_email?: boolean;
+  };
+
+  if (!profile.verified_email) {
+    throw new BadRequestError(
+      'Google email is not verified. Please verify your email with Google first.',
+    );
+  }
 
   let user = await prisma.user.findUnique({ where: { email: profile.email } });
   if (!user) {
@@ -246,10 +260,11 @@ authRouter.get('/google/callback', async (c) => {
   }
 
   const access = signAccessToken({ userId: user.id, email: user.email });
-  const refresh = signRefreshToken({ userId: user.id, tokenId: crypto.randomUUID() });
+  const tokenId = crypto.randomUUID();
+  const refresh = signRefreshToken({ userId: user.id, tokenId });
   await prisma.refreshToken.create({
     data: {
-      id: refresh,
+      id: tokenId,
       userId: user.id,
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     },
