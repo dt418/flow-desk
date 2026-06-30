@@ -896,7 +896,7 @@
       "area": "security",
       "title": "Fix WebSocket IDOR + socket event name mismatch (S7, C2)",
       "user_visible_behavior": "Realtime updates only reach workspace members. Client socket event names match server → board/list realtime functional.",
-      "status": "not_started",
+      "status": "completed",
       "verification": [
         "pnpm --filter @flow-desk/api typecheck → exit 0",
         "pnpm --filter @flow-desk/web typecheck → exit 0",
@@ -904,7 +904,15 @@
         "rg \"emit.*'join'\" apps/web/src/features/realtime/useRealtime.ts → 0 matches",
         "rg 'workspaceMember.findUnique' apps/api/src/shared/lib/socket.ts → ≥1 match"
       ],
-      "evidence": [],
+      "evidence": [
+        "apps/web/src/features/realtime/useRealtime.ts:12-26 — replaced joinRoom/leaveRoom with joinWorkspace/leaveWorkspace + joinTask/leaveTask, emit 'join-workspace'/'join-task' with {workspaceId}/{taskId}",
+        "apps/api/src/shared/lib/socket.ts:56-104 — join-workspace/join-task handlers verify workspaceMember.findUnique(workspaceId_userId) before socket.join(room); join-task also checks task.workspaceId",
+        "apps/api/src/modules/realtime/realtime.gateway.ts:94-113 — presence:join handler verifies workspaceMember.findUnique(workspaceId_userId) before socket.join + upsertPresence",
+        "pnpm --filter @flow-desk/api test → 180/180 pass",
+        "rg \"emit.*'join'\" apps/web/src/features/realtime/useRealtime.ts → 0 matches",
+        "rg 'workspaceMember.findUnique' apps/api/src/shared/lib/socket.ts → 2 matches",
+        "rg 'workspaceMember.findUnique' apps/api/src/modules/realtime/realtime.gateway.ts → 1 match"
+      ],
       "notes": "Plan 004. S7: join-workspace/join-task handlers no membership check. C2: client emits 'join' but server listens for 'join-workspace' → realtime rooms never joined. Depends on AUD-002 (assertMembership pattern)."
     },
     {

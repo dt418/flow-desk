@@ -94,6 +94,17 @@ export function attachPresenceHandlers(
     socket.on('presence:join', async (payload: { workspaceId?: string }) => {
       const workspaceId = payload?.workspaceId;
       if (typeof workspaceId !== 'string' || !workspaceId) return;
+      const { prisma } = await import('../../shared/lib/prisma');
+      const member = await prisma.workspaceMember.findUnique({
+        where: {
+          workspaceId_userId: {
+            workspaceId,
+            userId,
+          },
+        },
+        select: { userId: true },
+      });
+      if (!member) return;
       socket.join(`workspace:${workspaceId}`);
       await upsertPresence(redis, workspaceId, socket.id, {
         userId,

@@ -53,20 +53,55 @@ export function createSocketServer(httpServer: HttpServer) {
       const userId = socket.data.userId as string;
       socket.join(`user:${userId}`);
 
-      socket.on('join-workspace', (workspaceId: string) => {
-        if (typeof workspaceId === 'string') socket.join(`workspace:${workspaceId}`);
+      socket.on('join-workspace', async (data: { workspaceId: string }) => {
+        if (typeof data?.workspaceId !== 'string') return;
+        const { prisma } = await import('./prisma');
+        const member = await prisma.workspaceMember.findUnique({
+          where: {
+            workspaceId_userId: {
+              workspaceId: data.workspaceId,
+              userId,
+            },
+          },
+          select: { userId: true },
+        });
+        if (member) {
+          socket.join(`workspace:${data.workspaceId}`);
+        }
       });
 
-      socket.on('leave-workspace', (workspaceId: string) => {
-        if (typeof workspaceId === 'string') socket.leave(`workspace:${workspaceId}`);
+      socket.on('leave-workspace', (data: { workspaceId: string }) => {
+        if (typeof data?.workspaceId === 'string') {
+          socket.leave(`workspace:${data.workspaceId}`);
+        }
       });
 
-      socket.on('join-task', (taskId: string) => {
-        if (typeof taskId === 'string') socket.join(`task:${taskId}`);
+      socket.on('join-task', async (data: { taskId: string }) => {
+        if (typeof data?.taskId !== 'string') return;
+        const { prisma } = await import('./prisma');
+        const task = await prisma.task.findUnique({
+          where: { id: data.taskId, deletedAt: null },
+          select: { workspaceId: true },
+        });
+        if (!task) return;
+        const member = await prisma.workspaceMember.findUnique({
+          where: {
+            workspaceId_userId: {
+              workspaceId: task.workspaceId,
+              userId,
+            },
+          },
+          select: { userId: true },
+        });
+        if (member) {
+          socket.join(`task:${data.taskId}`);
+        }
       });
 
-      socket.on('leave-task', (taskId: string) => {
-        if (typeof taskId === 'string') socket.leave(`task:${taskId}`);
+      socket.on('leave-task', (data: { taskId: string }) => {
+        if (typeof data?.taskId === 'string') {
+          socket.leave(`task:${data.taskId}`);
+        }
       });
 
       socket.on('disconnect', () => {

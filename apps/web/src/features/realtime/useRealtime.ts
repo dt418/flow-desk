@@ -9,12 +9,20 @@ export const realtimeKeys = {
   notifications: () => ['notifications'] as const,
 };
 
-function joinRoom(socket: Socket, room: string) {
-  socket.emit('join', { room });
+function joinWorkspace(socket: Socket, workspaceId: string) {
+  socket.emit('join-workspace', { workspaceId });
 }
 
-function leaveRoom(socket: Socket, room: string) {
-  socket.emit('leave', { room });
+function leaveWorkspace(socket: Socket, workspaceId: string) {
+  socket.emit('leave-workspace', { workspaceId });
+}
+
+function joinTask(socket: Socket, taskId: string) {
+  socket.emit('join-task', { taskId });
+}
+
+function leaveTask(socket: Socket, taskId: string) {
+  socket.emit('leave-task', { taskId });
 }
 
 export function useRealtime(workspaceId: string, taskId?: string) {
@@ -23,8 +31,7 @@ export function useRealtime(workspaceId: string, taskId?: string) {
 
   useEffect(() => {
     if (!workspaceId) return;
-    const workspaceRoom = `workspace:${workspaceId}`;
-    joinRoom(socket, workspaceRoom);
+    joinWorkspace(socket, workspaceId);
 
     const invalidateBoard = () =>
       qc.invalidateQueries({ queryKey: realtimeKeys.board(workspaceId) });
@@ -55,16 +62,15 @@ export function useRealtime(workspaceId: string, taskId?: string) {
     handlers.push(['task:labels-changed', invalidateBoard] as const);
 
     return () => {
-      leaveRoom(socket, workspaceRoom);
+      leaveWorkspace(socket, workspaceId);
       for (const [evt, handler] of handlers) socket.off(evt, handler);
     };
   }, [socket, workspaceId, qc]);
 
   useEffect(() => {
     if (!taskId) return;
-    const taskRoom = `task:${taskId}`;
     const commentsKey = realtimeKeys.comments(taskId);
-    joinRoom(socket, taskRoom);
+    joinTask(socket, taskId);
 
     const invalidateComments = () => qc.invalidateQueries({ queryKey: commentsKey });
     const commentHandlers = (
@@ -76,7 +82,7 @@ export function useRealtime(workspaceId: string, taskId?: string) {
     });
 
     return () => {
-      leaveRoom(socket, taskRoom);
+      leaveTask(socket, taskId);
       for (const [evt, handler] of commentHandlers) socket.off(evt, handler);
     };
   }, [socket, taskId, qc]);
