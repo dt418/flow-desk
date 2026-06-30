@@ -21,6 +21,17 @@ export interface PresenceUserPayload {
   lastSeen: number;
 }
 
+async function scanPresenceKeys(redis: Redis, pattern: string): Promise<string[]> {
+  const keys: string[] = [];
+  let cursor = '0';
+  do {
+    const [next, batch] = await redis.scan(cursor, 'MATCH', pattern, 'COUNT', 100);
+    cursor = next;
+    keys.push(...batch);
+  } while (cursor !== '0');
+  return keys;
+}
+
 function parseRedisMap(raw: Record<string, string>): PresenceRecord[] {
   return Object.values(raw)
     .map((v) => {
@@ -147,7 +158,7 @@ export function attachPresenceHandlers(
 
   const sweeper = setInterval(async () => {
     try {
-      const keys = await redis.keys('presence:*');
+      const keys = await scanPresenceKeys(redis, 'presence:*');
       for (const key of keys) {
         const wid = key.slice('presence:'.length);
         const raw = await redis.hgetall(key);

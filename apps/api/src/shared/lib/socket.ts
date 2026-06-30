@@ -112,9 +112,16 @@ export function createSocketServer(httpServer: HttpServer) {
     });
   }
 
-  attachPresenceHandlers(io, redis, '/tasks');
+  const { stop } = attachPresenceHandlers(io, redis, '/tasks');
+  sweeperStop = stop;
 
   return io;
+}
+
+let sweeperStop: (() => void) | null = null;
+
+export function getSweeperStop(): (() => void) | null {
+  return sweeperStop;
 }
 
 export type FlowDeskSocket = Socket;

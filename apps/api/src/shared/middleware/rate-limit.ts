@@ -10,6 +10,16 @@ type RateLimitOptions = {
   scope: string;
 };
 
+const RATE_LIMIT_SCRIPT = `
+  local key = KEYS[1]
+  local window = tonumber(ARGV[1])
+  local count = redis.call('INCR', key)
+  if count == 1 then
+    redis.call('EXPIRE', key, window)
+  end
+  return count
+`;
+
 function getClientIp(c: { req: { header: (k: string) => string | undefined } }): string {
   if (env.TRUST_PROXY_HOPS > 0) {
     const xff = c.req.header('x-forwarded-for');
@@ -35,10 +45,12 @@ export function rateLimit(opts: RateLimitOptions): MiddlewareHandler {
     const bucket = Math.floor(Date.now() / 1000 / windowSec);
     const key = `rl:${scope}:${identity}:${bucket}`;
 
-    const count = await redis.incr(key);
-    if (count === 1) {
-      await redis.expire(key, windowSec);
-    }
+    const count = (await redis.eval(
+      RATE_LIMIT_SCRIPT,
+      1,
+      key,
+      String(windowSec),
+    )) as number;
 
     const resetEpoch = (bucket + 1) * windowSec;
     const remaining = Math.max(0, max - count);

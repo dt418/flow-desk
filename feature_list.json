@@ -997,7 +997,7 @@
       "area": "performance",
       "title": "Fix Redis KEYS blocking + graceful shutdown + rate-limit atomicity (P1, P3, P5)",
       "user_visible_behavior": "Presence sweeper uses non-blocking SCAN. API + email worker close cleanly on SIGTERM. Rate-limit INCR+EXPIRE atomic.",
-      "status": "not_started",
+      "status": "completed",
       "verification": [
         "pnpm --filter @flow-desk/api typecheck → exit 0",
         "pnpm --filter @flow-desk/api vitest run → all pass",
@@ -1005,8 +1005,20 @@
         "rg 'SIGTERM|SIGINT' apps/api/src/index.ts → ≥2 matches",
         "rg 'eval|RATE_LIMIT_SCRIPT' apps/api/src/shared/middleware/rate-limit.ts → ≥1 match"
       ],
-      "evidence": [],
-      "notes": "Plan 008. P1: redis.keys blocking O(n) every 10s. P3: no SIGTERM handler, resources not closed. P5: INCR+EXPIRE non-atomic → permanent block if process dies between."
+      "evidence": [
+        "apps/api/src/modules/realtime/realtime.gateway.ts:24-33 — module-level scanPresenceKeys(redis, pattern) cursor loop (ioredis SCAN MATCH COUNT 100)",
+        "apps/api/src/modules/realtime/realtime.gateway.ts:171 — sweeper uses scanPresenceKeys instead of redis.keys (non-blocking, O(1) amortized)",
+        "apps/api/src/shared/lib/socket.ts:115-117,120-122 — captures attachPresenceHandlers return {stop}, exports getSweeperStop()",
+        "apps/api/src/index.ts:30-55 — shutdown(signal) handler closes HTTP server → io.close() → sweeper stop → redis.quit() → prisma.$disconnect(); SIGTERM+SIGINT handlers + 10s force-exit unref",
+        "apps/api/src/workers/email/email-worker.ts:9-37 — shutdown calls stopScheduler → Promise.all([sendEmailWorker.close, digestEmailWorker.close]) → redis.quit → prisma.$disconnect",
+        "apps/api/src/shared/middleware/rate-limit.ts:13-20 — RATE_LIMIT_SCRIPT Lua atomic INCR+EXPIRE; replaces non-atomic INCR+EXPIRE pair; redis.eval(script, 1, key, windowSec)",
+        "pnpm --filter @flow-desk/api typecheck → exit 0",
+        "./node_modules/.bin/vitest run --config vitest.integration.config.ts → 190/190 pass",
+        "rg 'redis.keys' realtime.gateway.ts → 0 matches",
+        "rg 'SIGTERM|SIGINT' index.ts → 2 matches (1 file); email-worker.ts → 2 matches (1 file)",
+        "rg 'eval|RATE_LIMIT_SCRIPT' rate-limit.ts → 3 matches"
+      ],
+      "notes": "Plan 008. P1: redis.keys blocking O(n) every 10s. P3: no SIGTERM handler, resources not closed. P5: INCR+EXPIRE non-atomic → permanent block if process dies between. ioredis client used: SCAN returns [cursor, keys[]], eval(script, numKeys, key1, ...args). rtk vitest swallows output → use ./node_modules/.bin/vitest directly. Lua script cached by Redis SHA1 after first eval."
     }
   ]
 }
