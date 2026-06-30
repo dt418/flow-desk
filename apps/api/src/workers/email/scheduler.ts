@@ -1,3 +1,4 @@
+import type { Prisma } from '@flowdesk/db';
 import { prisma } from '../../shared/lib/prisma';
 import { logger } from '../../shared/lib/logger';
 import { enqueueEmail } from './queue';
@@ -90,17 +91,9 @@ export async function checkDigests() {
   for (const ws of settings) {
     const cadence = ws.weeklyDigest ? 'WEEKLY' : 'DAILY';
 
-    const cooldownStart = new Date(now.getTime() - (cadence === 'WEEKLY' ? 7 : 1) * 24 * 3600_000);
-
-    const recentDigests = await prisma.emailJob.findFirst({
-      where: {
-        type: 'DIGEST' as any,
-        status: 'SENT' as any,
-        createdAt: { gte: cooldownStart },
-      },
-    });
-
-    if (recentDigests) continue;
+    const cooldownStart = new Date(
+      now.getTime() - (cadence === 'WEEKLY' ? 7 : 1) * 24 * 3600_000,
+    );
 
     const members = await prisma.workspaceMember.findMany({
       where: { workspaceId: ws.workspaceId },
@@ -115,19 +108,31 @@ export async function checkDigests() {
 
       if (!user) continue;
 
-      const existing = await prisma.emailJob.findFirst({
+      const recentDigest = await prisma.emailJob.findFirst({
         where: {
           userId: member.userId,
           type: 'DIGEST' as any,
-          status: { in: ['PENDING' as any, 'PROCESSING' as any] },
-          createdAt: { gte: new Date(now.getTime() - DIGEST_COOLDOWN_MS) },
+          createdAt: { gte: cooldownStart },
         },
       });
 
-      if (existing) continue;
+      if (recentDigest) continue;
 
       const today = now.toISOString().slice(0, 10);
       const jobId = `digest-${ws.workspaceId}-${member.userId}-${today}`;
+
+      const emailJob = await prisma.emailJob.create({
+        data: {
+          userId: member.userId,
+          type: 'DIGEST',
+          payload: {
+            workspaceId: ws.workspaceId,
+            cadence,
+          } as unknown as Prisma.JsonObject,
+          status: 'PENDING',
+          scheduledAt: new Date(),
+        },
+      });
 
       await enqueueEmail(
         {
@@ -140,12 +145,13 @@ export async function checkDigests() {
             workspaceId: ws.workspaceId,
             cadence,
           },
+          emailJobId: emailJob.id,
         },
         { jobId },
       );
 
       logger.info(
-        { workspaceId: ws.workspaceId, userId: member.userId, cadence },
+        { workspaceId: ws.workspaceId, userId: member.userId, cadence, emailJobId: emailJob.id },
         'digest enqueued',
       );
     }

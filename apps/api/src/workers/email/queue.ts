@@ -11,6 +11,7 @@ export interface EmailJobData {
   html: string;
   text?: string;
   metadata?: Record<string, unknown>;
+  emailJobId?: string;
 }
 
 export function createEmailQueue() {

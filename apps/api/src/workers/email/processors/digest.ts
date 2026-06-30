@@ -12,9 +12,14 @@ export function createDigestEmailWorker() {
       if (job.name !== 'send') return;
       if (job.data.type !== 'DIGEST') return;
 
-      const { userId, to, metadata } = job.data;
+      const { userId, to, metadata, emailJobId } = job.data;
       const workspaceId = metadata?.workspaceId as string | undefined;
       const cadence = (metadata?.cadence as 'DAILY' | 'WEEKLY') ?? 'DAILY';
+
+      if (!emailJobId) {
+        logger.warn({ jobId: job.id }, 'digest email missing emailJobId');
+        return;
+      }
 
       if (!workspaceId) {
         logger.warn({ jobId: job.id }, 'digest email missing workspaceId');
@@ -74,7 +79,7 @@ export function createDigestEmailWorker() {
         });
 
         await prisma.emailJob.updateMany({
-          where: { userId, id: job.id ?? undefined },
+          where: { id: emailJobId },
           data: {
             status: 'SENT',
             completedAt: new Date(),
@@ -89,7 +94,7 @@ export function createDigestEmailWorker() {
         logger.error({ err, jobId: job.id }, 'digest email failed');
 
         await prisma.emailJob.updateMany({
-          where: { userId, id: job.id ?? undefined },
+          where: { id: emailJobId },
           data: {
             status: 'FAILED',
             failedAt: new Date(),

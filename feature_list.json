@@ -970,7 +970,7 @@
       "area": "correctness",
       "title": "Fix digest EmailJob state machine + listTasks cursor pagination (C3, C4)",
       "user_visible_behavior": "Digest emails tracked with EmailJob records (no duplicates, status updates correctly). Task list pagination works across all sort fields.",
-      "status": "not_started",
+      "status": "completed",
       "verification": [
         "pnpm --filter @flow-desk/api typecheck → exit 0",
         "pnpm --filter @flow-desk/api vitest run → all pass",
@@ -978,8 +978,18 @@
         "rg 'emailJobId' apps/api/src/workers/email/scheduler.ts → ≥1 match",
         "rg 'emailJobId' apps/api/src/workers/email/processors/digest.ts → ≥1 match"
       ],
-      "evidence": [],
-      "notes": "Plan 007. C3: DIGEST path never creates EmailJob → cooldown broken + status stuck PENDING. C4: listTasks cursor always uses createdAt but orderBy uses primarySortField → skipped/duped rows."
+      "evidence": [
+        "apps/api/src/workers/email/queue.ts:14 — added emailJobId?: string to EmailJobData",
+        "apps/api/src/workers/email/scheduler.ts:148,154 — DIGEST path creates EmailJob {userId,type:'DIGEST',payload,scheduledAt} PENDING before enqueue; passes emailJobId to BullMQ job data",
+        "apps/api/src/workers/email/scheduler.ts — removed buggy workspace-level recentDigests check (no userId filter), replaced with per-member cooldown query (userId + type=DIGEST + createdAt>=cooldownStart, covering SENT+PENDING+PROCESSING)",
+        "apps/api/src/workers/email/processors/digest.ts:15,82,97 — destructures emailJobId, guard returns if missing, updateMany where {id: emailJobId} (was {userId, id: job.id} which found nothing)",
+        "packages/shared/src/pagination.ts — cursor format rewritten to base64url JSON {v:sortValue, c:ISO, id}; decodeCursor JSON-parses with ISO regex date reconstitution; legacy 2-arg encodeCursor(createdAt, id) preserved for other call sites",
+        "apps/api/src/modules/task/task.service.ts list() — default sortBy 'position', sortOrder 'asc'; type-aware cursor predicate (priority enum uses in: rankedSubset, Date/Int uses {field:{dir:sv}}+tiebreaker, dueDate nullable asc adds NullsLast branch, sv null handled); orderBy [{field:order},{id:order}] drops createdAt:desc middle; encodeCursor({sortValue,createdAt,id})",
+        "tests/integration/task.service.test.ts — added 4 tests: sortBy=position asc, sortBy=priority desc (in enum), sortBy=dueDate asc nulls-last (3 dated + 2 null), sortBy=updatedAt asc",
+        "pnpm --filter @flow-desk/shared build ✓; pnpm --filter @flow-desk/api typecheck ✓; pnpm exec vitest run --config vitest.integration.config.ts → 190/190 pass (186 baseline + 4 new)",
+        "rg 'emailJobId' scheduler.ts → 2 matches; rg 'emailJobId' digest.ts → 5 matches"
+      ],
+      "notes": "Plan 007. C3: DIGEST path never creates EmailJob → cooldown broken + status stuck PENDING. C4: listTasks cursor always uses createdAt but orderBy uses primarySortField → skipped/duped rows. Task.position is Int not Float. priority enum order LOW<MEDIUM<HIGH<URGENT; Prisma enum comparisons reject lt/gt, use in: rankedSubset. rtk vitest swallows output via Passthrough tier — use pnpm exec vitest run --reporter=default instead."
     },
     {
       "id": "AUD-008",

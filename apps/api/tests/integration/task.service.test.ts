@@ -93,6 +93,125 @@ describe('task.service', () => {
       );
       expect(p2.data.length).toBe(1);
     });
+
+    it('cursor pagination with sortBy=position (asc) no overlap/skip', async () => {
+      for (let i = 0; i < 5; i++) {
+        await prisma.task.create({
+          data: {
+            workspaceId: wid,
+            columnId: colTodo.id,
+            title: `P-${i}`,
+            createdById: ownerId,
+            position: (i + 1) * 10,
+          },
+        });
+      }
+      const ids: string[] = [];
+      let cursor: string | undefined;
+      for (;;) {
+        const page = await taskService.list(
+          { workspaceId: wid, sortBy: 'position', sortOrder: 'asc', limit: 2, cursor } as never,
+          ownerId,
+        );
+        ids.push(...page.data.map((t) => t.id));
+        cursor = page.nextCursor ?? undefined;
+        if (!cursor) break;
+      }
+      expect(ids.length).toBe(6);
+      expect(new Set(ids).size).toBe(6);
+    });
+
+    it('cursor pagination with sortBy=priority (desc) no overlap/skip', async () => {
+      const prios = ['LOW', 'MEDIUM', 'HIGH', 'URGENT'] as const;
+      for (let i = 0; i < 4; i++) {
+        await prisma.task.create({
+          data: {
+            workspaceId: wid,
+            columnId: colTodo.id,
+            title: `PR-${i}`,
+            createdById: ownerId,
+            priority: prios[i],
+          },
+        });
+      }
+      const ids: string[] = [];
+      let cursor: string | undefined;
+      for (;;) {
+        const page = await taskService.list(
+          { workspaceId: wid, sortBy: 'priority', sortOrder: 'desc', limit: 2, cursor } as never,
+          ownerId,
+        );
+        ids.push(...page.data.map((t) => t.id));
+        cursor = page.nextCursor ?? undefined;
+        if (!cursor) break;
+      }
+      expect(new Set(ids).size).toBe(5);
+    });
+
+    it('cursor pagination with sortBy=dueDate (asc) handles nulls last', async () => {
+      for (let i = 0; i < 3; i++) {
+        await prisma.task.create({
+          data: {
+            workspaceId: wid,
+            columnId: colTodo.id,
+            title: `D-${i}`,
+            createdById: ownerId,
+            dueDate: new Date(2024, 0, 1 + i),
+          },
+        });
+      }
+      await prisma.task.create({
+        data: {
+          workspaceId: wid,
+          columnId: colTodo.id,
+          title: 'D-null',
+          createdById: ownerId,
+          dueDate: null,
+        },
+      });
+      const ids: string[] = [];
+      let cursor: string | undefined;
+      for (;;) {
+        const page = await taskService.list(
+          { workspaceId: wid, sortBy: 'dueDate', sortOrder: 'asc', limit: 2, cursor } as never,
+          ownerId,
+        );
+        ids.push(...page.data.map((t) => t.id));
+        cursor = page.nextCursor ?? undefined;
+        if (!cursor) break;
+      }
+      expect(new Set(ids).size).toBe(5);
+    });
+
+    it('cursor pagination with sortBy=updatedAt no overlap/skip', async () => {
+      const ids_seed: string[] = [];
+      for (let i = 0; i < 3; i++) {
+        const t = await prisma.task.create({
+          data: { workspaceId: wid, columnId: colTodo.id, title: `U-${i}`, createdById: ownerId },
+        });
+        ids_seed.push(t.id);
+      }
+      const times = [
+        new Date('2024-01-01T00:00:00Z'),
+        new Date('2024-01-02T00:00:00Z'),
+        new Date('2024-01-03T00:00:00Z'),
+      ];
+      for (let i = 0; i < 3; i++) {
+        await prisma.$executeRaw`UPDATE "Task" SET "updatedAt" = ${times[i]} WHERE id = ${ids_seed[i]}`;
+      }
+      const ids: string[] = [];
+      let cursor: string | undefined;
+      for (;;) {
+        const page = await taskService.list(
+          { workspaceId: wid, sortBy: 'updatedAt', sortOrder: 'asc', limit: 2, cursor } as never,
+          ownerId,
+        );
+        ids.push(...page.data.map((t) => t.id));
+        cursor = page.nextCursor ?? undefined;
+        if (!cursor) break;
+      }
+      expect(new Set(ids).size).toBeGreaterThanOrEqual(4);
+    });
   });
 
   describe('create', () => {

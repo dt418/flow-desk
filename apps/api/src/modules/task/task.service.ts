@@ -65,32 +65,53 @@ export const taskService = {
         : {}),
     };
 
-    const order: 'asc' | 'desc' = query.sortOrder;
-    const decoded = query.cursor ? decodeCursor(query.cursor) : null;
-    const cursorWhere: Prisma.TaskWhereInput | undefined = decoded
-      ? {
-          AND: [
-            where,
-            {
-              OR: [
-                { createdAt: { lt: decoded.createdAt } },
-                { createdAt: decoded.createdAt, id: { lt: decoded.id } },
-              ],
-            },
-          ],
-        }
-      : undefined;
-
-    const primarySortField = query.sortBy as
+    const order: 'asc' | 'desc' = query.sortOrder ?? 'asc';
+    const primarySortField = (query.sortBy ?? 'position') as
       | 'createdAt'
       | 'updatedAt'
       | 'dueDate'
       | 'priority'
       | 'position';
+    const decoded = query.cursor ? decodeCursor(query.cursor) : null;
+    const dir = order === 'asc' ? 'gt' : 'lt';
+    const PRIORITY_ORDER = ['LOW', 'MEDIUM', 'HIGH', 'URGENT'] as const;
+    const cursorWhere: Prisma.TaskWhereInput | undefined = decoded
+      ? {
+          AND: [
+            where,
+            (() => {
+              const sv =
+                decoded.sortValue !== undefined ? decoded.sortValue : decoded.createdAt;
+              if (sv === null) {
+                return { [primarySortField]: null, id: { [dir]: decoded.id } } as const;
+              }
+              const or: Prisma.TaskWhereInput[] = [];
+              if (primarySortField === 'priority') {
+                const rank = PRIORITY_ORDER.indexOf(sv as (typeof PRIORITY_ORDER)[number]);
+                if (rank >= 0) {
+                  const subset =
+                    order === 'asc'
+                      ? PRIORITY_ORDER.slice(rank + 1)
+                      : PRIORITY_ORDER.slice(0, rank);
+                  if (subset.length > 0) or.push({ priority: { in: subset } });
+                  or.push({ priority: sv as never, id: { [dir]: decoded.id } });
+                }
+              } else {
+                or.push({ [primarySortField]: { [dir]: sv } });
+                or.push({ [primarySortField]: sv, id: { [dir]: decoded.id } });
+                if (primarySortField === 'dueDate' && order === 'asc') {
+                  or.push({ [primarySortField]: null });
+                }
+              }
+              return { OR: or } as const;
+            })(),
+          ],
+        }
+      : undefined;
 
     const items = await prisma.task.findMany({
       where: cursorWhere ?? where,
-      orderBy: [{ [primarySortField]: order }, { createdAt: 'desc' }, { id: order }],
+      orderBy: [{ [primarySortField]: order }, { id: order }],
       take: query.limit + 1,
       include: {
         assignee: { select: { id: true, name: true, email: true, avatarUrl: true } },
@@ -99,7 +120,14 @@ export const taskService = {
     const hasMore = items.length > query.limit;
     const data = hasMore ? items.slice(0, query.limit) : items;
     const last = data[data.length - 1];
-    const nextCursor = hasMore && last ? encodeCursor(last.createdAt, last.id) : null;
+    const nextCursor =
+      hasMore && last
+        ? encodeCursor({
+            sortValue: last[primarySortField],
+            createdAt: last.createdAt,
+            id: last.id,
+          })
+        : null;
     return { data, nextCursor };
   },
 
