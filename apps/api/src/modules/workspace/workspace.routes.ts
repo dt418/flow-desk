@@ -144,6 +144,7 @@ workspaceRouter.get(
 workspaceRouter.post(
   '/:workspaceId/members',
   requireWorkspaceRole(['OWNER', 'ADMIN']),
+  rateLimit({ ...RATE_LIMITS.WORKSPACE_INVITE, keyBy: 'user', scope: 'workspace:invite' }),
   async (c) => {
     const id = c.req.param('workspaceId')!;
     const body = inviteMemberSchema.parse(await c.req.json());

@@ -943,7 +943,7 @@
       "area": "security",
       "title": "Harden JWT secret + rate limiting + env defaults (S2, S10, S11, S16, S17)",
       "user_visible_behavior": "Production refuses to start with default JWT_SECRET. Rate limits cannot be disabled in production. XFF spoofing blocked. Docker ports bound to localhost.",
-      "status": "not_started",
+      "status": "completed",
       "verification": [
         "pnpm --filter @flow-desk/api typecheck → exit 0",
         "pnpm --filter @flow-desk/api vitest run → all pass",
@@ -953,8 +953,16 @@
         "rg 'WORKSPACE_INVITE' apps/api/src/modules/workspace/workspace.routes.ts → ≥1 match",
         "rg '127.0.0.1' docker-compose.yml → ≥2 matches"
       ],
-      "evidence": [],
-      "notes": "Plan 006. S2: JWT_SECRET public default. S10: SKIP_RATE_LIMIT no production guard. S11: XFF spoofing. S16: WORKSPACE_INVITE rate limit never applied. S17: ports exposed + default password."
+      "evidence": [
+        "docker-compose.yml:50,90 — JWT_SECRET uses ${JWT_SECRET:?...} not default",
+        "packages/env/src/backend.ts + apps/api/src/shared/lib/env.ts — JWT_SECRET refine rejects KNOWN_DEFAULTS in production",
+        "rate-limit.ts:25 — SKIP_RATE_LIMIT only honored when NODE_ENV !== 'production'",
+        "env.ts/backend.ts — added TRUST_PROXY_HOPS (default 0); rate-limit.ts getClientIp only trusts XFF when hops > 0",
+        "workspace.routes.ts:147 — added rateLimit({ ...RATE_LIMITS.WORKSPACE_INVITE, ... }) to POST /:workspaceId/members",
+        "docker-compose.yml:14,28 — postgres/redis ports bound to 127.0.0.1; POSTGRES_PASSWORD uses :? not default",
+        "pnpm --filter @flow-desk/api test → 186/186 pass"
+      ],
+      "notes": "Plan 006. S2: JWT_SECRET public default. S10: SKIP_RATE_LIMIT no production guard. S11: XFF spoofing. S16: WORKSPACE_INVITE rate limit never applied. S17: ports exposed + default password. Real env schema lives in packages/env/src/backend.ts (not apps/api/env.ts). Document TRUST_PROXY_HOPS in deployment docs."
     },
     {
       "id": "AUD-007",

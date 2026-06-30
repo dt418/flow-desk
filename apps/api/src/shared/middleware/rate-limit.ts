@@ -11,10 +11,14 @@ type RateLimitOptions = {
 };
 
 function getClientIp(c: { req: { header: (k: string) => string | undefined } }): string {
-  const fwd = c.req.header('x-forwarded-for');
-  if (fwd) return fwd.split(',')[0]!.trim();
-  const real = c.req.header('x-real-ip');
-  if (real) return real;
+  if (env.TRUST_PROXY_HOPS > 0) {
+    const xff = c.req.header('x-forwarded-for');
+    if (xff) {
+      const hops = xff.split(',').map((s) => s.trim());
+      return hops[hops.length - env.TRUST_PROXY_HOPS] ?? hops[0] ?? 'unknown';
+    }
+    return c.req.header('x-real-ip') ?? 'unknown';
+  }
   return 'unknown';
 }
 
@@ -22,7 +26,7 @@ export function rateLimit(opts: RateLimitOptions): MiddlewareHandler {
   const { windowSec, max, keyBy, scope } = opts;
 
   return async (c, next) => {
-    if (env.NODE_ENV === 'test' || env.SKIP_RATE_LIMIT) {
+    if (env.NODE_ENV === 'test' || (env.SKIP_RATE_LIMIT && env.NODE_ENV !== 'production')) {
       return next();
     }
 
