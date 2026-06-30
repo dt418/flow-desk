@@ -2,6 +2,7 @@ import { resolve } from 'node:path';
 import { execSync } from 'node:child_process';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../../../../packages/db/generated/client';
+import { softDeleteExtension } from '../../src/shared/lib/prisma-extension';
 
 function detectDbPort(): number {
   try {
@@ -24,7 +25,9 @@ export const TEST_DB_URL =
 const WORKSPACE_ROOT = resolve(__dirname, '../../../..');
 
 export function createTestPrisma() {
-  return new PrismaClient({ adapter: new PrismaPg({ connectionString: TEST_DB_URL }) });
+  return new PrismaClient({
+    adapter: new PrismaPg({ connectionString: TEST_DB_URL }),
+  }).$extends(softDeleteExtension);
 }
 
 export async function resetTestDb(prisma: PrismaClient) {

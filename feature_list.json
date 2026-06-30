@@ -921,15 +921,21 @@
       "area": "correctness",
       "title": "Fix soft-delete extension completeness (C1)",
       "user_visible_behavior": "Soft-deleted records not returned by any Prisma query method including findUnique. ChatChannel/ChatMessage covered by extension.",
-      "status": "not_started",
+      "status": "completed",
       "verification": [
         "pnpm --filter @flow-desk/api typecheck → exit 0",
         "pnpm --filter @flow-desk/api vitest run --config vitest.integration.config.ts soft-delete → all pass",
         "rg 'ChatChannel' apps/api/src/shared/lib/prisma-extension.ts → ≥1 match",
         "rg 'findUnique' apps/api/src/shared/lib/prisma-extension.ts → ≥1 match"
       ],
-      "evidence": [],
-      "notes": "Plan 005. C1: extension covers findFirst/findMany/count/aggregate/groupBy but NOT findUnique. ChatChannel + ChatMessage have deletedAt but missing from SOFT_DELETE_MODELS."
+      "evidence": [
+        "apps/api/src/shared/lib/prisma-extension.ts:10-11 — added ChatChannel, ChatMessage to SOFT_DELETE_MODELS",
+        "apps/api/src/shared/lib/prisma-extension.ts:41-59 — findUnique post-fetch filter (returns null on deletedAt≠null), findUniqueOrThrow throws P2025",
+        "apps/api/tests/setup/db.ts:5,28 — test client now applies softDeleteExtension via $extends",
+        "apps/api/tests/integration/soft-delete.test.ts:315-371 — 6 new tests: Task/Comment/ChatChannel/ChatMessage findUnique + findUniqueOrThrow + findUnique live record",
+        "pnpm --filter @flow-desk/api test → 186/186 pass"
+      ],
+      "notes": "Plan 005. C1: extension covers findFirst/findMany/count/aggregate/groupBy but NOT findUnique. ChatChannel + ChatMessage have deletedAt but missing from SOFT_DELETE_MODELS. Test prisma client was missing extension — fixed in db.ts setup."
     },
     {
       "id": "AUD-006",

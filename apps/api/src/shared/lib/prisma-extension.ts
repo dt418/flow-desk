@@ -7,6 +7,8 @@ const SOFT_DELETE_MODELS = new Set<string>([
   'TaskLabel',
   'TaskLabelAssignment',
   'Comment',
+  'ChatChannel',
+  'ChatMessage',
 ]);
 
 type ReadArgs = { where?: Record<string, unknown> };
@@ -35,6 +37,29 @@ export const softDeleteExtension = Prisma.defineExtension({
       },
       async groupBy({ model, args, query }) {
         return query(injectDeletedAtNull(args ?? {}, model));
+      },
+      async findUnique({ model, args, query }) {
+        if (!model || !SOFT_DELETE_MODELS.has(model)) {
+          return query(args);
+        }
+        const result = await query(args);
+        if (result && 'deletedAt' in result && result.deletedAt !== null) {
+          return null;
+        }
+        return result;
+      },
+      async findUniqueOrThrow({ model, args, query }) {
+        if (!model || !SOFT_DELETE_MODELS.has(model)) {
+          return query(args);
+        }
+        const result = await query(args);
+        if (result && 'deletedAt' in result && result.deletedAt !== null) {
+          throw new Prisma.PrismaClientKnownRequestError('Record not found', {
+            code: 'P2025',
+            clientVersion: Prisma.prismaVersion.client,
+          });
+        }
+        return result;
       },
     },
   },

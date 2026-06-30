@@ -306,4 +306,69 @@ describe('soft-delete gap audit (R-29)', () => {
       expect(res.status).toBe(404);
     });
   });
+
+  // ─── Extension findUnique coverage (C1) ─────────────────────────────────
+
+  describe('findUnique soft-delete filtering', () => {
+    it('findUnique returns null for soft-deleted Task', async () => {
+      const { ownerId, wid, colId } = await setupOwnerWorkspace();
+      const t = await makeTask(wid, colId, ownerId, 'Task');
+      await softDeleteTask(t.id);
+      const result = await prisma.task.findUnique({ where: { id: t.id } });
+      expect(result).toBeNull();
+    });
+
+    it('findUnique returns live Task (not filtered out)', async () => {
+      const { ownerId, wid, colId } = await setupOwnerWorkspace();
+      const t = await makeTask(wid, colId, ownerId, 'Task');
+      const result = await prisma.task.findUnique({ where: { id: t.id } });
+      expect(result?.id).toBe(t.id);
+      expect(result?.deletedAt).toBeNull();
+    });
+
+    it('findUnique returns null for soft-deleted Comment', async () => {
+      const { ownerId, wid, colId } = await setupOwnerWorkspace();
+      const t = await makeTask(wid, colId, ownerId, 'Task');
+      const c = await prisma.comment.create({
+        data: { taskId: t.id, authorId: ownerId, content: 'x' },
+      });
+      await softDeleteComment(c.id);
+      const result = await prisma.comment.findUnique({ where: { id: c.id } });
+      expect(result).toBeNull();
+    });
+
+    it('findUnique returns null for soft-deleted ChatChannel', async () => {
+      const { ownerId, wid } = await setupOwnerWorkspace();
+      const channel = await prisma.chatChannel.create({
+        data: { workspaceId: wid, name: 'chan-' + crypto.randomUUID() },
+      });
+      await prisma.$executeRawUnsafe(
+        `UPDATE "ChatChannel" SET "deletedAt" = NOW() WHERE id = '${channel.id}'`,
+      );
+      const result = await prisma.chatChannel.findUnique({ where: { id: channel.id } });
+      expect(result).toBeNull();
+    });
+
+    it('findUnique returns null for soft-deleted ChatMessage', async () => {
+      const { ownerId, wid } = await setupOwnerWorkspace();
+      const channel = await prisma.chatChannel.create({
+        data: { workspaceId: wid, name: 'chan-' + crypto.randomUUID() },
+      });
+      const msg = await prisma.chatMessage.create({
+        data: { channelId: channel.id, authorId: ownerId, content: 'hi' },
+      });
+      await prisma.$executeRawUnsafe(
+        `UPDATE "ChatMessage" SET "deletedAt" = NOW() WHERE id = '${msg.id}'`,
+      );
+      const result = await prisma.chatMessage.findUnique({ where: { id: msg.id } });
+      expect(result).toBeNull();
+    });
+
+    it('findUniqueOrThrow throws P2025 for soft-deleted Task', async () => {
+      const { ownerId, wid, colId } = await setupOwnerWorkspace();
+      const t = await makeTask(wid, colId, ownerId, 'Task');
+      await softDeleteTask(t.id);
+      await expect(prisma.task.findUniqueOrThrow({ where: { id: t.id } })).rejects.toThrow();
+    });
+  });
 });
