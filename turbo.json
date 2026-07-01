@@ -9,6 +9,7 @@
       "outputs": ["dist/**", ".vite/**", "build/**", "generated/**"]
     },
     "dev": {
+      "dependsOn": ["^build", "^db:generate"],
       "cache": false,
       "persistent": true
     },
