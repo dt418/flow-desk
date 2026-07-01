@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { workspaceApi } from './api';
+import type { CreateWorkspaceInput } from '@flow-desk/shared/workspace';
 import type { UserRole } from '@flow-desk/shared/user';
 
 export const workspaceKeys = {
@@ -41,6 +42,16 @@ export function useColumns(workspaceId: string) {
     queryKey: workspaceKeys.columns(workspaceId),
     queryFn: () => workspaceApi.columns(workspaceId),
     enabled: Boolean(workspaceId),
+  });
+}
+
+export function useCreateWorkspace() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: CreateWorkspaceInput) => workspaceApi.create(body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: workspaceKeys.all });
+    },
   });
 }
 

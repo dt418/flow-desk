@@ -5,6 +5,7 @@ export {
   useWorkspaceRole,
   useMembers,
   useColumns,
+  useCreateWorkspace,
   useUpdateWorkspace,
   useDeleteWorkspace,
   useInviteMember,

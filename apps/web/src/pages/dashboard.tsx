@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn, formatDate } from '@/lib/utils';
+import { WorkspaceCreateDialog } from '@/components/ui/workspace-create-dialog';
 
 interface WorkspaceSummary {
   id: string;
@@ -182,7 +183,8 @@ function TaskSkeletonRow() {
 }
 
 export function DashboardPage() {
-  const navigate = useNavigate();
+    const navigate = useNavigate();
+  const [createOpen, setCreateOpen] = React.useState(false);
   const me = useQuery({
     queryKey: ['me'],
     queryFn: () => api<{ user: { id: string; name: string } }>('/api/auth/me'),
@@ -302,6 +304,7 @@ export function DashboardPage() {
           </button>
           <button
             type="button"
+            onClick={() => setCreateOpen(true)}
             className="btn-primary inline-flex h-9 items-center gap-2 text-[12px]"
           >
             <Plus className="h-4 w-4" />
@@ -399,6 +402,7 @@ export function DashboardPage() {
               <p className="caption mb-3">You don't have any workspace yet.</p>
               <button
                 type="button"
+                onClick={() => setCreateOpen(true)}
                 className="btn-primary inline-flex h-8 items-center gap-1 text-[12px]"
               >
                 <Plus className="h-3.5 w-3.5" />
@@ -432,6 +436,12 @@ export function DashboardPage() {
           )}
         </aside>
       </section>
+
+      <WorkspaceCreateDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        onCreated={(ws) => navigate(`/board/${ws.id}`)}
+      />
     </div>
   );
 }

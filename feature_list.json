@@ -1,6 +1,6 @@
 {
   "project": "flow-desk",
-  "last_updated": "2026-06-28",
+  "last_updated": "2026-07-01",
   "f3_active": true,
   "f3_f6_shipped": ["F3", "F4", "F5", "F6"],
   "rules": {
@@ -1019,6 +1019,36 @@
         "rg 'eval|RATE_LIMIT_SCRIPT' rate-limit.ts → 3 matches"
       ],
       "notes": "Plan 008. P1: redis.keys blocking O(n) every 10s. P3: no SIGTERM handler, resources not closed. P5: INCR+EXPIRE non-atomic → permanent block if process dies between. ioredis client used: SCAN returns [cursor, keys[]], eval(script, numKeys, key1, ...args). rtk vitest swallows output → use ./node_modules/.bin/vitest directly. Lua script cached by Redis SHA1 after first eval."
+    },
+    {
+      "id": "F8",
+      "priority": 94,
+      "area": "polish",
+      "title": "Workspace CRUD dialog + Kanban polish (no-flicker drag, a11y announcements, column kebab)",
+      "user_visible_behavior": "Dashboard \"New workspace\" and \"Create your first\" buttons open a create-workspace dialog (name, auto-slug, description, visibility). On submit, workspace is created and user navigates to the new board. Board drag has no source-slot flicker. Keyboard drag announces to screen readers. Column header kebab menu offers \"Add task\" (opens NewTaskModal with that column pre-selected) and \"Rename column\" (inline edit).",
+      "status": "passing",
+      "verification": [
+        "pnpm --filter @flow-desk/web typecheck → exit 0",
+        "pnpm --filter @flow-desk/web build → exit 0 (7.07s)",
+        "rg 'data-no-drag' apps/web/src/features/task/components/TaskCard.tsx → ≥1 (prior kanban-click fix preserved)",
+        "Integration tests: 187/190 pass (3 pre-existing label.routes 401 failures, unrelated to frontend-only changes)"
+      ],
+      "evidence": [
+        "apps/web/src/features/workspace/api.ts:13-18 — create(body: CreateWorkspaceInput) → POST /api/workspaces",
+        "apps/web/src/features/workspace/hooks.ts:48-56 — useCreateWorkspace() mutation (invalidates ['workspaces'])",
+        "apps/web/src/features/workspace/index.ts:8 — exports useCreateWorkspace",
+        "apps/web/src/components/ui/workspace-create-dialog.tsx (NEW, ~165 LOC) — RHF + zodResolver(createWorkspaceSchema); auto-slug from name (editable); visibility Select (PRIVATE|PUBLIC); toast errors via sonner; onCreated(ws) callback",
+        "apps/web/src/pages/dashboard.tsx:187 — const [createOpen, setCreateOpen]; lines 305-312 + 403-410 — both buttons wired to setCreateOpen(true); lines 440-444 — <WorkspaceCreateDialog> rendered with onCreated navigate",
+        "apps/web/src/components/ui/kanban.tsx:52-76 — announcements + screenReaderInstructions constants for dnd-kit a11y",
+        "apps/web/src/components/ui/kanban.tsx:161 — accessibility={{ announcements, screenReaderInstructions }} on DndContext",
+        "apps/web/src/components/ui/kanban.tsx:277 — isDragging && 'invisible' (was 'opacity-30') — no source-slot flicker",
+        "apps/web/src/components/ui/kanban.tsx:196-198 — KanbanColumnProps.onAddTask + onRenameColumn optional callbacks",
+        "apps/web/src/components/ui/kanban.tsx:267-300 — DropdownMenu kebab in column header: Add task + Rename column (inline Input with Enter/Escape/blur)",
+        "apps/web/src/pages/board.tsx:111 — const [createColumnId, setCreateColumnId]; line 115 — const updateColumn = useUpdateColumn(workspaceId)",
+        "apps/web/src/pages/board.tsx:328-343 — KanbanColumn onAddTask (sets createColumnId + opens modal) + onRenameColumn (updateColumn.mutate with toast error)",
+        "apps/web/src/pages/board.tsx:369 — defaultColumnId={createColumnId ?? orderedColumns[0]?.meta.id ?? ''}; line 363-366 — resets createColumnId on close"
+      ],
+      "notes": "Design spec: docs/superpowers/specs/2026-06-30-workspace-crud-kanban-polish-design.md (approved). No backend change — POST /api/workspaces + PATCH /columns already existed. Web test (workspace-create-dialog.test.tsx) deferred: web package has no vitest setup (D10 — placeholder test script). ~200 LOC across 7 files (6 modified + 1 new)."
     }
   ]
 }

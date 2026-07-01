@@ -1,5 +1,6 @@
 import { api } from '@/lib/api';
 import type {
+  CreateWorkspaceInput,
   UpdateWorkspaceInput,
   InviteMemberInput,
   UpdateMemberInput,
@@ -9,6 +10,12 @@ import type {
 import type { WorkspaceDetail, MemberRow, Column, WorkspaceListEntry } from './types';
 
 export const workspaceApi = {
+  create(body: CreateWorkspaceInput) {
+    return api<{ workspace: WorkspaceDetail }>('/api/workspaces', {
+      method: 'POST',
+      json: body,
+    });
+  },
   list() {
     return api<{ data: WorkspaceListEntry[]; nextCursor: string | null }>('/api/workspaces');
   },

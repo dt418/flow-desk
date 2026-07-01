@@ -28,9 +28,18 @@ import {
   useDroppable,
   useSensor,
   useSensors,
+  type Announcements,
   type DragEndEvent,
   type DragStartEvent,
 } from '@dnd-kit/core';
+import { MoreVertical, Plus, Pencil } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 
 interface KanbanDndState {
@@ -39,6 +48,32 @@ interface KanbanDndState {
 }
 
 const KanbanContext = React.createContext<KanbanDndState>({ activeId: null, activeColumnId: null });
+
+const announcements: Announcements = {
+  onDragStart({ active }) {
+    return `Picked up task ${active.id}. Use arrow keys to move, space to drop, escape to cancel.`;
+  },
+  onDragOver({ active, over }) {
+    if (over) {
+      return `Task ${active.id} is now over ${over.id}.`;
+    }
+    return `Task ${active.id} is no longer over a drop target.`;
+  },
+  onDragEnd({ active, over }) {
+    if (over) {
+      return `Task ${active.id} was dropped onto ${over.id}.`;
+    }
+    return `Task ${active.id} was dropped.`;
+  },
+  onDragCancel({ active }) {
+    return `Dragging cancelled. Task ${active.id} returned to its original position.`;
+  },
+};
+
+const screenReaderInstructions = {
+  draggable:
+    'To pick up a draggable card, press space. While dragging, use arrow keys to move. Press space to drop, or escape to cancel.',
+};
 
 export type KanbanMoveHandler = (
   taskId: string,
@@ -119,10 +154,11 @@ export function Kanban({ onMove, renderOverlay, className, children }: KanbanPro
         collisionDetection={closestCorners}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
-        onDragCancel={() => {
+                onDragCancel={() => {
           setActiveId(null);
           setActiveColumnId(null);
         }}
+        accessibility={{ announcements, screenReaderInstructions }}
       >
         <div
           className={cn(
@@ -156,14 +192,38 @@ export interface KanbanColumnProps {
   count?: number;
   children: React.ReactNode;
   className?: string;
+  /** When provided, renders a column kebab menu with "Add task". */
+  onAddTask?: () => void;
+  /** When provided, the column kebab menu includes "Rename column". */
+  onRenameColumn?: (newName: string) => void;
 }
 
-export function KanbanColumn({ id, name, count, children, className }: KanbanColumnProps) {
+export function KanbanColumn({
+  id,
+  name,
+  count,
+  children,
+  className,
+  onAddTask,
+  onRenameColumn,
+}: KanbanColumnProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: `column:${id}`,
     data: { type: 'column', columnId: id },
   });
   const childArray = React.Children.toArray(children).filter(Boolean);
+  const showMenu = Boolean(onAddTask || onRenameColumn);
+  const [isRenaming, setIsRenaming] = React.useState(false);
+  const [renameValue, setRenameValue] = React.useState(name);
+
+  const submitRename = () => {
+    const trimmed = renameValue.trim();
+    if (trimmed && trimmed !== name && onRenameColumn) {
+      onRenameColumn(trimmed);
+    }
+    setIsRenaming(false);
+  };
+
   return (
     <section
       ref={setNodeRef}
@@ -177,14 +237,67 @@ export function KanbanColumn({ id, name, count, children, className }: KanbanCol
       aria-label={`Column ${name}`}
     >
       <header className="flex items-center justify-between px-3 py-2.5">
-        <div className="flex items-center gap-2">
-          <span className="text-[13px] font-medium tracking-tight">{name}</span>
-          {typeof count === 'number' && (
-            <span className="rounded-md bg-[var(--bg-3)] px-1.5 py-0.5 text-[11px] tabular-nums text-[var(--fg-2)]">
-              {count}
-            </span>
-          )}
-        </div>
+        {isRenaming ? (
+          <Input
+            autoFocus
+            value={renameValue}
+            onChange={(e) => setRenameValue(e.target.value)}
+            onBlur={submitRename}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                submitRename();
+              } else if (e.key === 'Escape') {
+                setRenameValue(name);
+                setIsRenaming(false);
+              }
+            }}
+            className="h-7 text-[13px]"
+          />
+        ) : (
+          <div className="flex items-center gap-2">
+            <span className="text-[13px] font-medium tracking-tight">{name}</span>
+            {typeof count === 'number' && (
+              <span className="rounded-md bg-[var(--bg-3)] px-1.5 py-0.5 text-[11px] tabular-nums text-[var(--fg-2)]">
+                {count}
+              </span>
+            )}
+          </div>
+        )}
+        {showMenu && !isRenaming && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                data-no-drag
+                onPointerDown={(e) => e.stopPropagation()}
+                className="flex h-6 w-6 items-center justify-center rounded text-[var(--fg-3)] hover:bg-[var(--bg-3)] hover:text-[var(--fg)]"
+                aria-label={`Column ${name} menu`}
+              >
+                <MoreVertical className="h-3.5 w-3.5" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="min-w-36">
+              {onAddTask && (
+                <DropdownMenuItem onSelect={() => onAddTask()}>
+                  <Plus className="h-3.5 w-3.5" />
+                  Add task
+                </DropdownMenuItem>
+              )}
+              {onRenameColumn && (
+                <DropdownMenuItem
+                  onSelect={() => {
+                    setRenameValue(name);
+                    setIsRenaming(true);
+                  }}
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                  Rename column
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </header>
       <div className="flex-1 space-y-2 overflow-y-auto px-2 pb-2 pt-1">
         {childArray.length === 0 ? (
@@ -234,7 +347,7 @@ export function KanbanCard({ id, columnId, index, children, className }: KanbanC
       data-kanban-id={id}
       className={cn(
         'cursor-grab select-none touch-none',
-        isDragging && 'opacity-30',
+                isDragging && 'invisible',
         isOtherDragging && activeColumnId !== columnId && 'opacity-60',
         className,
       )}

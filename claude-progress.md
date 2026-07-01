@@ -5,8 +5,8 @@
 - **Repository root**: `/home/thanh/flow-desk`
 - **Standard startup path**: `./init.sh` (pnpm install + shared build + git hook install) then `docker compose up -d`
 - **Standard verification path**: `pnpm --filter @flow-desk/shared build` + curl API endpoints + `bash scripts/prisma-exec.sh <args>` for prisma
-- **Highest priority unfinished feature**: none (33 features + F7 + E2E passing)
-- **Active branch**: `main` in `/home/thanh/flow-desk` (F7 merged)
+- **Highest priority unfinished feature**: none (33 features + F7 + E2E passing + F8 workspace CRUD + kanban polish)
+- **Active branch**: `main` in `/home/thanh/flow-desk` (F7 merged, F8 implemented)
 - **Prisma**: **7.8.0**
 - **pnpm**: 11.8.0
 - **Node**: 22-alpine
@@ -30,6 +30,23 @@
 - **Completed**: Prisma schema (5 models), Zod schemas (chat + notification-preferences), email-provider (nodemailer+resend), email templates, BullMQ queue + processors (instant/delayed/digest), chat channel+message API, task-level chat, notification preferences, task assignment trigger + email enqueue, frontend chat UI (sidebar, channel view, TaskChat), email worker Docker, integration tests.
 - **Verification**: `vitest run` 80/80, `vitest run --config vitest.integration.config.ts` 162/162, `vite build` 701 KB.
 - **E2E not run** — blocked by R-39.
+
+### Session 018 — Workspace CRUD + Kanban Polish (F8)
+
+- **Date**: 2026-07-01
+- **Goal**: Implement approved design spec `docs/superpowers/specs/2026-06-30-workspace-crud-kanban-polish-design.md` — two bounded improvements.
+- **P1 — Dashboard create-workspace hook + dialog**:
+  - `apps/web/src/features/workspace/api.ts` — added `create(body)` → POST /api/workspaces
+  - `apps/web/src/features/workspace/hooks.ts` — added `useCreateWorkspace()` mutation (invalidates `['workspaces']`)
+  - `apps/web/src/features/workspace/index.ts` — exported `useCreateWorkspace`
+  - `apps/web/src/components/ui/workspace-create-dialog.tsx` (NEW) — RHF + zodResolver(`createWorkspaceSchema`), fields: name, slug (auto-from-name, editable), description, visibility (PRIVATE|PUBLIC); toast errors via sonner; `onCreated(ws)` callback for redirect
+  - `apps/web/src/pages/dashboard.tsx` — wired both "New workspace" + "Create your first" buttons → opens dialog → on success navigates to `/board/{ws.id}`
+- **P2 — Kanban polish**:
+  - `apps/web/src/components/ui/kanban.tsx` — (a) no-flicker drag: `opacity-30` → `invisible` on source card slot (keeps layout, no reflow); (b) keyboard a11y: `accessibility={{ announcements, screenReaderInstructions }}` on DndContext (drag start/over/end/cancel announcements + screen reader instructions); (c) column header kebab: `KanbanColumn` now accepts optional `onAddTask`/`onRenameColumn` callbacks; renders `DropdownMenu` with "Add task" + "Rename column" (inline `Input` edit with Enter/Escape/blur)
+  - `apps/web/src/pages/board.tsx` — wired `onAddTask` (sets `createColumnId` + opens `NewTaskModal` with that column as default) + `onRenameColumn` (calls `useUpdateColumn` with toast error handling); `NewTaskModal` `defaultColumnId` now uses `createColumnId` fallback; resets `createColumnId` on close
+- **No backend change** — POST /api/workspaces + PATCH columns already existed
+- **Verification**: `pnpm --filter @flow-desk/web typecheck` → exit 0; `pnpm --filter @flow-desk/web build` → exit 0 (7.07s); `rg "data-no-drag" TaskCard.tsx` → 4 matches (prior fix preserved); integration tests 187/190 (3 pre-existing label.routes 401 failures, unrelated to frontend-only changes)
+- **Web test deferred**: spec mentioned `workspace-create-dialog.test.tsx` but web package has no vitest setup (D10 — placeholder test script). Setup of vitest + @testing-library/react + jsdom is a separate task.
 
 ### Session 017 — E2E stack fix (R-39): import chain, ESM loader, route mismatches
 

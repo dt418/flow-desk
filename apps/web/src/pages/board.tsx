@@ -15,7 +15,7 @@ import {
   useDeleteTask,
   useRestoreTask,
 } from '@/features/task';
-import { useMembers } from '@/features/workspace';
+import { useMembers, useUpdateColumn } from '@/features/workspace';
 import { useRealtime } from '@/features/realtime/useRealtime';
 import { EmptyBoardState, PresenceBar } from '@/features/board';
 
@@ -107,10 +107,12 @@ export function BoardPage() {
   const qc = useQueryClient();
   const [modalOpen, setModalOpen] = React.useState(false);
   const [editModalOpen, setEditModalOpen] = React.useState(false);
-  const [selectedTaskId, setSelectedTaskId] = React.useState<string | null>(null);
+    const [selectedTaskId, setSelectedTaskId] = React.useState<string | null>(null);
+  const [createColumnId, setCreateColumnId] = React.useState<string | null>(null);
   const membersQuery = useMembers(workspaceId);
   const deleteTask = useDeleteTask(workspaceId);
   const restoreTask = useRestoreTask(workspaceId);
+  const updateColumn = useUpdateColumn(workspaceId);
 
   const data = useQuery({
     queryKey: ['board', workspaceId],
@@ -318,7 +320,28 @@ export function BoardPage() {
           }}
         >
           {orderedColumns.map(({ meta, tasks }) => (
-            <KanbanColumn key={meta.id} id={meta.id} name={meta.name} count={tasks.length}>
+            <KanbanColumn
+              key={meta.id}
+              id={meta.id}
+              name={meta.name}
+              count={tasks.length}
+              onAddTask={() => {
+                setCreateColumnId(meta.id);
+                setModalOpen(true);
+              }}
+              onRenameColumn={(newName) => {
+                updateColumn.mutate(
+                  { columnId: meta.id, body: { name: newName } },
+                  {
+                    onError: (err) => {
+                      toast.error(
+                        err instanceof ApiError ? err.message : 'Failed to rename column',
+                      );
+                    },
+                  },
+                );
+              }}
+            >
               {tasks.map((t, i) => (
                 <KanbanCard key={t.id} id={t.id} columnId={meta.id} index={i}>
                   <TaskCard
@@ -337,10 +360,13 @@ export function BoardPage() {
 
       <NewTaskModal
         open={modalOpen}
-        onClose={() => setModalOpen(false)}
+        onClose={() => {
+          setModalOpen(false);
+          setCreateColumnId(null);
+        }}
         workspaceId={workspaceId}
         columns={orderedColumns.map(({ meta }) => ({ id: meta.id, name: meta.name }))}
-        defaultColumnId={orderedColumns[0]?.meta.id ?? ''}
+        defaultColumnId={createColumnId ?? orderedColumns[0]?.meta.id ?? ''}
         members={(membersQuery.data ?? []).map((m) => ({
           id: m.user.id,
           name: m.user.name,
