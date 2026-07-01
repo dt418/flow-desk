@@ -23,7 +23,7 @@
       "@flowdesk/env": ["../../packages/env/src"],
       "@flowdesk/env/*": ["../../packages/env/src/*"]
     },
-    "types": ["vite/client", "node"]
+    "types": ["vite/client", "node", "vitest/globals"]
   },
   "include": ["src", "vite.config.ts", "../../packages/env/src/**/*"]
 }

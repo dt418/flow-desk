@@ -1031,7 +1031,8 @@
         "pnpm --filter @flow-desk/web typecheck → exit 0",
         "pnpm --filter @flow-desk/web build → exit 0 (7.07s)",
         "rg 'data-no-drag' apps/web/src/features/task/components/TaskCard.tsx → ≥1 (prior kanban-click fix preserved)",
-        "Integration tests: 187/190 pass (3 pre-existing label.routes 401 failures, unrelated to frontend-only changes)"
+        "Integration tests: 187/190 pass (3 pre-existing label.routes 401 failures, unrelated to frontend-only changes)",
+        "pnpm --filter @flow-desk/web test → 6/6 pass (2.35s) — vitest + @testing-library/react + jsdom"
       ],
       "evidence": [
         "apps/web/src/features/workspace/api.ts:13-18 — create(body: CreateWorkspaceInput) → POST /api/workspaces",
@@ -1046,9 +1047,13 @@
         "apps/web/src/components/ui/kanban.tsx:267-300 — DropdownMenu kebab in column header: Add task + Rename column (inline Input with Enter/Escape/blur)",
         "apps/web/src/pages/board.tsx:111 — const [createColumnId, setCreateColumnId]; line 115 — const updateColumn = useUpdateColumn(workspaceId)",
         "apps/web/src/pages/board.tsx:328-343 — KanbanColumn onAddTask (sets createColumnId + opens modal) + onRenameColumn (updateColumn.mutate with toast error)",
-        "apps/web/src/pages/board.tsx:369 — defaultColumnId={createColumnId ?? orderedColumns[0]?.meta.id ?? ''}; line 363-366 — resets createColumnId on close"
+        "apps/web/src/pages/board.tsx:369 — defaultColumnId={createColumnId ?? orderedColumns[0]?.meta.id ?? ''}; line 363-366 — resets createColumnId on close",
+        "apps/web/vite.config.ts — test block (jsdom env, globals, setupFiles, include src/**/*.test.{ts,tsx})",
+        "apps/web/src/test-setup.ts (NEW) — @testing-library/jest-dom/vitest matchers + cleanup afterEach",
+        "apps/web/src/components/ui/workspace-create-dialog.test.tsx (NEW) — 6 tests: renders fields, auto-slug from name, manual slug override, submit + POST /api/workspaces + onCreated, API error keeps dialog open, empty-name zod validation. 6/6 pass.",
+        "apps/web/package.json — test script replaced from placeholder echo to vitest run; added test:watch"
       ],
-      "notes": "Design spec: docs/superpowers/specs/2026-06-30-workspace-crud-kanban-polish-design.md (approved). No backend change — POST /api/workspaces + PATCH /columns already existed. Web test (workspace-create-dialog.test.tsx) deferred: web package has no vitest setup (D10 — placeholder test script). ~200 LOC across 7 files (6 modified + 1 new)."
+      "notes": "Design spec: docs/superpowers/specs/2026-06-30-workspace-crud-kanban-polish-design.md (approved). No backend change. D10 (web test placeholder) resolved — vitest + @testing-library/react + jsdom set up, 6 component tests passing. ~200 LOC feature + ~120 LOC test infra."
     }
   ]
 }
