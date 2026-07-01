@@ -5,8 +5,9 @@
 - **Repository root**: `/home/thanh/flow-desk`
 - **Standard startup path**: `./init.sh` (pnpm install + shared build + git hook install) then `docker compose up -d`
 - **Standard verification path**: `pnpm --filter @flow-desk/shared build` + curl API endpoints + `bash scripts/prisma-exec.sh <args>` for prisma
-- **Highest priority unfinished feature**: none (33 features + F7 + E2E passing + F8 workspace CRUD + kanban polish)
-- **Active branch**: `main` in `/home/thanh/flow-desk` (F7 merged, F8 implemented)
+- **Highest priority unfinished feature**: none (33 features + F7 + E2E passing + F8 workspace CRUD + kanban polish + post-F8 dev/seed fixes)
+- **Active branch**: `main` in `/home/thanh/flow-desk` (F7 merged, F8 implemented, post-F8 fixes committed)
+- **Post-F8 fixes (session 019)**: (a) dev startup race condition — `turbo.json` dev task `dependsOn: [^build, ^db:generate]` + `tsup.config.ts` `clean: false` (prevents `MODULE_NOT_FOUND` + `EADDRINUSE` when shared rebuilds under `--watch`); (b) seed cleanup — `packages/db/prisma/seed.ts` added `deleteMany` for `ChatMessage`, `ChatChannel`, `UserNotificationPreference`, `WorkspaceNotificationSetting`, `EmailJob` before workspace deletion (fixes P2003 FK constraint violation on re-seed after F7 models added)
 - **Prisma**: **7.8.0**
 - **pnpm**: 11.8.0
 - **Node**: 22-alpine
@@ -48,6 +49,28 @@
 - **Verification**: `pnpm --filter @flow-desk/web typecheck` → exit 0; `pnpm --filter @flow-desk/web build` → exit 0 (7.15s); `rg "data-no-drag" TaskCard.tsx` → 4 matches (prior fix preserved); integration tests 187/190 (3 pre-existing label.routes 401 failures, unrelated to frontend-only changes)
 - **Web test setup**: Installed vitest ^2.1.9 + @testing-library/react ^16 + @testing-library/jest-dom ^6 + @testing-library/user-event ^14 + jsdom ^25. Added `test` block to `vite.config.ts` (jsdom env, globals, setup file). Created `src/test-setup.ts` (jest-dom matchers + cleanup). Replaced placeholder `test` script with `vitest run`. Wrote `src/components/ui/workspace-create-dialog.test.tsx` (6 tests: renders fields, auto-slug from name, manual slug override, submit + POST + onCreated, API error keeps dialog open, empty-name validation). **6/6 pass** in 2.35s. D10 (web test placeholder) resolved.
 
+### Session 019 — Post-F8 follow-up fixes (dev startup race + seed cleanup)
+
+- **Date**: 2026-07-01
+- **Goal**: Fix two issues discovered after F8 commit — `pnpm dev` startup race condition and `prisma db seed` FK constraint failure on re-seed with F7 models.
+- **Fix 1 — Dev startup race condition** (commit `adfaa29`):
+  - **Root cause**: `turbo.json` `dev` task had no `dependsOn`, so all packages started concurrently. API crashed with `MODULE_NOT_FOUND` (shared `dist/` not built yet) and `EADDRINUSE` (tsx watch restarted API before port 3000 was released, triggered by shared tsup file writes).
+  - **Fix**: `turbo.json` — added `dependsOn: ["^build", "^db:generate"]` to `dev` task (ensures shared builds + Prisma generates before dev servers start). `packages/shared/tsup.config.ts` — `clean: false` (was `true`, prevents tsup `--watch` from wiping `dist/` on rebuild, which caused momentary `MODULE_NOT_FOUND` in API).
+  - **Verification**: `pnpm dev` starts all 3 servers cleanly — Vite on :5173 (324ms), API on :3000, shared tsup --watch — zero `EADDRINUSE` / `MODULE_NOT_FOUND` / `ECONNREFUSED` errors.
+- **Fix 2 — Seed cleanup missing deleteMany for F7 models** (commit `ca6969d`):
+  - **Root cause**: `packages/db/prisma/seed.ts` cleanup did not delete `ChatMessage`, `ChatChannel`, `UserNotificationPreference`, `WorkspaceNotificationSetting`, or `EmailJob` before deleting workspaces. These models have FK to Workspace without `onDelete: Cascade`, causing `PrismaClientKnownRequestError P2003` (foreign key constraint violated on `ChatChannel_workspaceId_fkey`).
+  - **Fix**: Added `deleteMany` calls in correct FK order (lines 295-302) before workspace deletion: `chatMessage` → `chatChannel` → `userNotificationPreference` → `workspaceNotificationSetting` → (workspace members/workspaces) → `emailJob` → `notification`.
+  - **Verification**: `npx prisma db seed` succeeds — 15 users, 6 workspaces, 51 tasks, 120 notifications seeded.
+- **Full verification suite (this session)**:
+  - `pnpm --filter @flow-desk/shared build` → ✓ (all DTS files generated)
+  - `pnpm --filter @flow-desk/web typecheck` → ✓ (exit 0, no TS errors)
+  - `pnpm --filter @flow-desk/api typecheck` → ✓ (exit 0, no TS errors)
+  - `pnpm --filter @flow-desk/web test` → ✓ (6/6 pass, 6.96s)
+  - `pnpm --filter @flow-desk/api test:integration` → ✓ (18 files, **190/190 pass**, 54.78s — 3 pre-existing label.routes 401 failures now resolved)
+- **Commits**: `adfaa29` (dev race condition), `ca6969d` (seed deleteMany) — both already on `main`.
+- **Files or artifacts updated**: `turbo.json`, `packages/shared/tsup.config.ts`, `packages/db/prisma/seed.ts`, `claude-progress.md`, `feature_list.json`
+- **Known risk or unresolved issue**: none new. Remaining: R-24 (ai-001 latency UX), auth-002 (needs Google OAuth creds), ai-001 (needs LLM_API_KEY).
+- **Next best step**: All features passing or blocked on external credentials. Next work requires product decisions on PRD-only items (NL task creation, meeting summarization) or external credential provisioning (Google OAuth, LLM API key).
 
 ### Session 017 — E2E stack fix (R-39): import chain, ESM loader, route mismatches
 

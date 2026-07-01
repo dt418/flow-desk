@@ -437,11 +437,12 @@
         "Verify 5+ users, 20+ tasks, 30+ comments"
       ],
       "evidence": [
-        "pnpm db:seed → 5 users, Demo Workspace + Personal workspace, 24 tasks, 5 subtasks, 4 deps, 30 comments, 5 notifications",
-        "Demo creds: demo@flow-desk.app / demo1234 (also alice/bob/carol/dave with password123)",
-        "Seed.ts compiled via esbuild → dist/seed.cjs (tsx 4.22.4 had ESM resolution bug on seed.ts)"
+        "pnpm db:seed → 15 users, 6 workspaces, 51 tasks, 120 notifications seeded (updated in F7 session 016 + seed cleanup fix session 019)",
+        "Demo creds: demo@flow-desk.app / demo1234 (also alice/bob/carol/dave/eve/frank/grace/henry/ivy/jack/kara/leo/mia/noah with password123)",
+        "Seed.ts compiled via esbuild → dist/seed.cjs (tsx 4.22.4 had ESM resolution bug on seed.ts)",
+        "packages/db/prisma/seed.ts:295-302 — deleteMany for ChatMessage, ChatChannel, UserNotificationPreference, WorkspaceNotificationSetting, EmailJob added in correct FK order before workspace deletion (fixes P2003 FK constraint violation on re-seed after F7 models added — commit ca6969d)"
       ],
-      "notes": "Seed runs via esbuild bundling → CJS, sidesteps tsx ESM loader issue."
+      "notes": "Seed runs via esbuild bundling → CJS, sidesteps tsx ESM loader issue. Seed expanded in F7 (session 016) to include 15 users, 6 workspaces, chat channels, notification preferences, and 120 notifications. Seed cleanup fixed in session 019 (commit ca6969d) to delete F7 models before workspace deletion."
     },
     {
       "id": "workspace-003",
@@ -821,7 +822,7 @@
         "docker-compose.yml — email-worker service added",
         "e2e/chat.spec.ts — Playwright E2E tests (blocked by R-39 Prisma client CJS/ESM interop)"
       ],
-      "notes": "F7 = session 016 (worktree f7-chat-email). 80 unit + 162 integration tests all passing. E2E blocked by R-39 (Prisma 7 client uses import.meta, incompatible with Playwright CJS loader). Email worker Docker build fails on @flowdesk/db workspace resolution — pre-existing monorepo docker issue. Pending commit of Phase 5-8 work + frontend."
+      "notes": "F7 = session 016 (worktree f7-chat-email). 80 unit + 162 integration tests all passing. F7 committed to main (code-review fixes AUD-001..008 applied post-merge). E2E now passing (R-39 resolved in session 017 — 3/3 E2E tests pass). Email worker Docker build fails on @flowdesk/db workspace resolution — pre-existing monorepo docker issue. Seed cleanup for F7 models fixed in session 019 (commit ca6969d)."
     },
     {
       "id": "AUD-001",
@@ -1031,7 +1032,7 @@
         "pnpm --filter @flow-desk/web typecheck → exit 0",
         "pnpm --filter @flow-desk/web build → exit 0 (7.07s)",
         "rg 'data-no-drag' apps/web/src/features/task/components/TaskCard.tsx → ≥1 (prior kanban-click fix preserved)",
-        "Integration tests: 187/190 pass (3 pre-existing label.routes 401 failures, unrelated to frontend-only changes)",
+        "Integration tests: 190/190 pass (3 pre-existing label.routes 401 failures resolved — all green as of session 019)",
         "pnpm --filter @flow-desk/web test → 6/6 pass (2.35s) — vitest + @testing-library/react + jsdom"
       ],
       "evidence": [
