@@ -291,8 +291,14 @@ async function main() {
   await prisma.task.deleteMany();
   await prisma.taskLabel.deleteMany();
   await prisma.column.deleteMany();
+  // Chat + notification settings have FK to Workspace without onDelete: Cascade
+  await prisma.chatMessage.deleteMany();
+  await prisma.chatChannel.deleteMany();
+  await prisma.userNotificationPreference.deleteMany();
+  await prisma.workspaceNotificationSetting.deleteMany();
   await prisma.workspaceMember.deleteMany();
   await prisma.workspace.deleteMany();
+  await prisma.emailJob.deleteMany();
   await prisma.notification.deleteMany();
   await prisma.refreshToken.deleteMany();
   await prisma.user.deleteMany();
