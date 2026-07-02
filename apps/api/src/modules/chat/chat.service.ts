@@ -65,13 +65,6 @@ export async function createChannel(
 ) {
   await assertMembership(workspaceId, userId);
 
-  const existing = await prisma.chatChannel.findFirst({
-    where: { workspaceId, name: body.name, deletedAt: null },
-  });
-  if (existing) {
-    throw new ConflictError('A channel with this name already exists');
-  }
-
   const channel = await repo.create(prisma, {
     workspaceId,
     name: body.name,
