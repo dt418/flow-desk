@@ -1,5 +1,5 @@
 import { prisma } from '../../shared/lib/prisma';
-import { enqueueEmail, EmailJobData } from './queue';
+import { enqueueEmail, emailQueue, EmailJobData } from './queue';
 import type { Prisma } from '@flowdesk/db';
 
 export async function scheduleDelayed(
@@ -39,6 +39,11 @@ export async function scheduleDelayed(
 }
 
 export async function cancelDelayed(userId: string, jobId: string) {
+  const job = await emailQueue.getJob(jobId);
+  if (job) {
+    await job.remove();
+  }
+
   await prisma.emailJob.updateMany({
     where: { id: jobId, userId, type: 'DELAYED', status: 'PENDING' },
     data: { status: 'CANCELLED' },

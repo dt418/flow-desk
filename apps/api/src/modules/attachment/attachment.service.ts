@@ -11,6 +11,14 @@ import { env } from '../../shared/lib/prisma';
 import { decodeCursor, encodeCursor } from '@flow-desk/shared/pagination';
 import * as repo from './attachment.repository';
 
+const ALLOWED_EXTENSIONS = new Set([
+  '.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg',
+  '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx',
+  '.txt', '.csv', '.json',
+  '.zip', '.tar', '.gz',
+  '.mp3', '.mp4', '.wav', '.webm',
+]);
+
 export type AttachmentKind = 'IMAGE' | 'VIDEO' | 'AUDIO' | 'DOCUMENT' | 'OTHER';
 
 export function classifyMime(mime: string): AttachmentKind {
@@ -75,7 +83,10 @@ export async function uploadAttachment(
   await assertMembership(task.workspaceId, userId);
 
   await mkdir(env.UPLOAD_DIR, { recursive: true });
-  const ext = extname(file.name) || '';
+  const ext = extname(file.name).toLowerCase();
+  if (!ALLOWED_EXTENSIONS.has(ext)) {
+    throw new BadRequestError(`File extension "${ext}" is not allowed`);
+  }
   const stored = `${randomUUID()}${ext}`;
   const path = join(env.UPLOAD_DIR, stored);
   const buf = Buffer.from(await file.arrayBuffer());

@@ -1,4 +1,4 @@
-import type { Prisma } from '@flowdesk/db';
+import { TaskStatus, type Prisma } from '@flowdesk/db';
 import { prisma } from '../../shared/lib/prisma';
 import { logger } from '../../shared/lib/logger';
 import { enqueueEmail } from './queue';
@@ -15,7 +15,7 @@ export async function checkDueReminders() {
   const dueTasks = await prisma.task.findMany({
     where: {
       dueDate: { gte: now, lte: windowEnd },
-      status: { not: 'DONE' as any },
+      status: { not: TaskStatus.DONE },
       deletedAt: null,
       assigneeId: { not: null },
     },
@@ -34,9 +34,10 @@ export async function checkDueReminders() {
     const existing = await prisma.emailJob.findFirst({
       where: {
         userId: task.assigneeId,
-        type: 'DUE_REMINDER' as any,
-        status: { in: ['PENDING' as any, 'PROCESSING' as any] },
+        type: 'DUE_REMINDER',
+        status: { in: ['PENDING', 'PROCESSING'] },
         createdAt: { gte: new Date(now.getTime() - 24 * 3600_000) },
+        payload: { path: ['taskId'], equals: task.id },
       },
     });
 
@@ -111,7 +112,7 @@ export async function checkDigests() {
       const recentDigest = await prisma.emailJob.findFirst({
         where: {
           userId: member.userId,
-          type: 'DIGEST' as any,
+          type: 'DIGEST',
           createdAt: { gte: cooldownStart },
         },
       });

@@ -29,7 +29,9 @@ function getClientIp(c: { req: { header: (k: string) => string | undefined } }):
     }
     return c.req.header('x-real-ip') ?? 'unknown';
   }
-  return 'unknown';
+  return c.req.header('x-forwarded-for')?.split(',')[0]?.trim()
+    ?? c.req.header('x-real-ip')
+    ?? 'unknown';
 }
 
 export function rateLimit(opts: RateLimitOptions): MiddlewareHandler {

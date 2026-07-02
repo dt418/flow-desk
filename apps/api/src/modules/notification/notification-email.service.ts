@@ -49,7 +49,7 @@ export async function handleTaskAssignedEmail(
         workspaceId: input.workspaceId,
         notificationType: 'TASK_ASSIGNED',
       } as unknown as Prisma.JsonObject,
-      status: delayMs ? 'PENDING' : 'SENT',
+      status: 'PENDING',
       ...(delayMs ? { scheduledAt: new Date(Date.now() + delayMs) } : {}),
     },
   });

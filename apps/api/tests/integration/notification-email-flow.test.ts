@@ -118,7 +118,7 @@ describe('notification → email flow', () => {
     expect(emailJobs).toHaveLength(1);
     expect(emailJobs[0]!.type).toBe('INSTANT');
     expect(emailJobs[0]!.userId).toBe(assigneeId);
-    expect(emailJobs[0]!.status).toBe('SENT');
+    expect(emailJobs[0]!.status).toBe('PENDING');
 
     jobSpy.mockRestore();
   });

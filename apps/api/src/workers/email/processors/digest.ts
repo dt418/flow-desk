@@ -1,4 +1,5 @@
 import { Worker, Job } from 'bullmq';
+import { TaskStatus } from '@flowdesk/db';
 import { logger } from '../../../shared/lib/logger';
 import { emailProvider } from '../../../shared/lib/email-provider';
 import { prisma } from '../../../shared/lib/prisma';
@@ -31,7 +32,7 @@ export function createDigestEmailWorker() {
           where: {
             workspaceId,
             assigneeId: userId,
-            status: { not: 'DONE' as any },
+            status: { not: TaskStatus.DONE },
             deletedAt: null,
           },
           select: {
@@ -40,7 +41,7 @@ export function createDigestEmailWorker() {
             dueDate: true,
             priority: true,
           },
-          orderBy: { dueDate: 'asc' as any },
+          orderBy: { dueDate: 'asc' },
           take: 50,
         });
 

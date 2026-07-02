@@ -37,7 +37,19 @@ boardRouter.get('/', requireWorkspaceRole(['OWNER', 'ADMIN', 'MEMBER', 'GUEST'])
       tasks: {
         where: { deletedAt: null },
         orderBy: { position: 'asc' },
-        include: {
+        select: {
+          id: true,
+          title: true,
+          status: true,
+          priority: true,
+          position: true,
+          dueDate: true,
+          version: true,
+          columnId: true,
+          workspaceId: true,
+          assigneeId: true,
+          createdAt: true,
+          labelsDeprecated: true,
           assignee: { select: { id: true, name: true, email: true, avatarUrl: true } },
         },
         take: 50,
@@ -46,8 +58,15 @@ boardRouter.get('/', requireWorkspaceRole(['OWNER', 'ADMIN', 'MEMBER', 'GUEST'])
   });
 
   const hasMore = columns.length > limit;
-  const data = hasMore ? columns.slice(0, limit) : columns;
-  const last = data[data.length - 1];
+  const raw = hasMore ? columns.slice(0, limit) : columns;
+  const data = raw.map((col) => ({
+    ...col,
+    tasks: col.tasks.map((t) => ({
+      ...t,
+      labels: t.labelsDeprecated,
+    })),
+  }));
+  const last = raw[raw.length - 1];
   const nextCursor = hasMore && last ? encodeCursor(last.createdAt, last.id) : null;
 
   return c.json({ columns: data, nextCursor });
