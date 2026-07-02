@@ -1107,10 +1107,10 @@
     {
       "id": "audit-002",
       "name": "Improve Audit — 14 Implementation Plans",
-      "status": "planning",
+      "status": "passing",
       "priority": 95,
       "started": "2026-07-03",
-      "completed": null,
+      "completed": "2026-07-03",
       "description": "Full /improve audit across correctness, security, performance, tests, tech-debt. 39 findings vetted, 20 prioritized into 14 plans (009-022).",
       "evidence": [
         "plans/README.md — index with execution order + dependency graph",
