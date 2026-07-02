@@ -23,6 +23,7 @@ import {
   DragOverlay,
   KeyboardSensor,
   PointerSensor,
+  TouchSensor,
   closestCorners,
   useDraggable,
   useDroppable,
@@ -99,6 +100,7 @@ export function Kanban({ onMove, renderOverlay, className, children }: KanbanPro
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6, delay: 80 } }),
     useSensor(KeyboardSensor),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
   );
 
   const handleDragStart = (event: DragStartEvent) => {

@@ -1,12 +1,18 @@
-export function formatDate(value: string | Date | null | undefined): string {
+export function formatDate(value: string | Date | null | undefined, timeZone?: string): string {
   if (!value) return '—';
   const d = typeof value === 'string' ? new Date(value) : value;
   if (Number.isNaN(d.getTime())) return '—';
-  return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: '2-digit' });
+  return d.toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: '2-digit',
+    ...(timeZone ? { timeZone } : {}),
+  });
 }
 
 export function relativeDays(
   value: string | Date | null | undefined,
+  timeZone = 'UTC',
 ): { label: string; tone: 'overdue' | 'today' | 'soon' | 'normal' } | null {
   if (!value) return null;
   const d = typeof value === 'string' ? new Date(value) : value;
@@ -19,8 +25,8 @@ export function relativeDays(
   if (days === 1) return { label: 'Tomorrow', tone: 'today' };
   if (days < 7)
     return {
-      label: d.toLocaleDateString(undefined, { weekday: 'short' }),
+      label: d.toLocaleDateString(undefined, { weekday: 'short', timeZone }),
       tone: 'soon',
     };
-  return { label: formatDate(value), tone: 'normal' };
+  return { label: formatDate(value, timeZone), tone: 'normal' };
 }

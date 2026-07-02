@@ -22,11 +22,13 @@ function safeEmit(fn: () => void, ctx: Record<string, unknown>): void {
   }
 }
 
+const MAX_MENTIONS = 10;
+
 function extractMentions(content: string, members: Array<{ user: { id: string; name: string } }>) {
   const out: Array<{ userId: string; username: string }> = [];
   const seen = new Set<string>();
   let match: RegExpExecArray | null;
-  while ((match = MENTION_REGEX.exec(content)) !== null) {
+  while ((match = MENTION_REGEX.exec(content)) !== null && out.length < MAX_MENTIONS) {
     const username = match[1]!.toLowerCase();
     const member = members.find((m) => m.user.name.toLowerCase() === username);
     if (member && !seen.has(member.user.id)) {

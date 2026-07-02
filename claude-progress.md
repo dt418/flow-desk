@@ -14,6 +14,7 @@
 - **R-39 resolved**: E2E suite now runs (3/3 E2E tests passing). Fix: `e2e/` as workspace package with `"type":"module"`, `packages/db` with `"type":"module"`, inline seed helpers, route fix `/w/`→`/board/`, pointer-event drag helper.
 - **Current blocker**: none
 - **Key risks** (carry-forward): R-24 (ai-001 latency UX) — only material risk remaining
+- **Session 020 fixes (2026-07-02)**: R-09 mention cap (MAX_MENTIONS=10 in comment.service.ts), R-10 mobile drag (TouchSensor added to kanban.tsx), R-18 timezone (formatDate/relativeDays accept optional timeZone param)
 - **Resolved in F2 (session 011)**: R-33 (split-brain selects — Radix primitives added)
 - **Resolved in F3-F6 (session 012)**: R-29 (soft-delete gaps + extension), R-30 (cursor pagination), R-31 (service/repo split all modules), R-32 (zero tests — 142 integration tests), R-34 (DragOverlay real-card clone)
 - **Resolved risks (session 010)**: R-36 (prisma-exec regression), R-37 (silent env fallback), R-38 (sh -c word-split + hardcoded container name in seed path)
