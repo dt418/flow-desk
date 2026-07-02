@@ -93,7 +93,7 @@ export function ColumnsTab({ workspaceId }: Props) {
       {canEdit && (
         <form
           onSubmit={onCreate}
-          className="flex flex-col gap-3 rounded-lg border border-[var(--border)] bg-[var(--bg-2)]/50 p-4 sm:flex-row sm:items-end"
+          className="flex flex-col gap-3 rounded-lg border border-border bg-card/50 p-4 sm:flex-row sm:items-end"
         >
           <div className="flex-1 space-y-1.5">
             <Label htmlFor="col-name">Add column</Label>
@@ -103,16 +103,21 @@ export function ColumnsTab({ workspaceId }: Props) {
               {...register('name')}
               aria-invalid={Boolean(errors.name)}
             />
-            {errors.name && <p className="text-[11px] text-red-500">{errors.name.message}</p>}
+            {errors.name && (
+              <p className="text-xs text-destructive" role="status">
+                {errors.name.message}
+              </p>
+            )}
           </div>
-          <label className="flex items-center gap-2 text-[12px] text-[var(--fg-2)]">
+          <label className="flex items-center gap-2 text-xs text-muted-foreground">
             <input type="checkbox" {...register('isDoneColumn')} className="h-4 w-4" />
             Marks tasks done
           </label>
           <Button
             type="submit"
             disabled={isSubmitting}
-            className="h-9 bg-emerald-500 px-4 text-[12px] text-white hover:bg-emerald-600"
+            size="sm"
+            className="h-9 px-4"
           >
             <Plus className="mr-1.5 h-4 w-4" />
             Add
@@ -120,9 +125,9 @@ export function ColumnsTab({ workspaceId }: Props) {
         </form>
       )}
 
-      <div className="overflow-hidden rounded-lg border border-[var(--border)]">
-        <table className="w-full text-[13px]">
-          <thead className="bg-[var(--bg-2)] text-left text-[10px] uppercase tracking-wider text-[var(--fg-3)]">
+      <div className="overflow-hidden rounded-lg border border-border">
+        <table className="w-full text-sm">
+          <thead className="bg-card text-left text-xs uppercase tracking-wider text-muted-foreground">
             <tr>
               <th className="w-12 px-3 py-2 font-medium">Pos</th>
               <th className="px-3 py-2 font-medium">Name</th>
@@ -130,7 +135,7 @@ export function ColumnsTab({ workspaceId }: Props) {
               <th className="w-24 px-3 py-2 text-right font-medium">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-[var(--border)]">
+          <tbody className="divide-y divide-border">
             {columns.isLoading ? (
               Array.from({ length: 4 }).map((_, i) => (
                 <tr key={i}>
@@ -157,7 +162,7 @@ export function ColumnsTab({ workspaceId }: Props) {
                 .slice()
                 .sort((a, b) => a.position - b.position)
                 .map((col) => (
-                  <tr key={col.id} className="bg-[var(--bg)]/40">
+                  <tr key={col.id} className="bg-background/40">
                     <td className="px-3 py-2.5 caption tabular-nums">{col.position}</td>
                     <td className="px-3 py-2.5">
                       {editingId === col.id ? (
@@ -170,7 +175,7 @@ export function ColumnsTab({ workspaceId }: Props) {
                             if (e.key === 'Enter') onRename(col);
                             if (e.key === 'Escape') setEditingId(null);
                           }}
-                          className="h-7 rounded border border-emerald-500/60 bg-[var(--bg-2)] px-2 text-[13px] focus:outline-none"
+                          className="h-7 rounded border border-primary/60 bg-card px-2 text-sm focus:outline-none"
                         />
                       ) : (
                         <button
@@ -180,7 +185,7 @@ export function ColumnsTab({ workspaceId }: Props) {
                             setEditingId(col.id);
                             setEditingName(col.name);
                           }}
-                          className={cn('text-left', canEdit && 'hover:text-emerald-500')}
+                            className={cn('text-left', canEdit && 'hover:text-primary')}
                           title={canEdit ? 'Click to rename' : undefined}
                         >
                           {col.name}

@@ -19,7 +19,9 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { initials } from '@/lib/utils';
 import {
   Tooltip,
   TooltipContent,
@@ -94,17 +96,25 @@ const STATUS_TONE: Record<string, string> = {
   TODO: 'bg-slate-500',
   IN_PROGRESS: 'bg-blue-500',
   IN_REVIEW: 'bg-amber-500',
-  DONE: 'bg-emerald-500',
+  DONE: 'bg-primary',
   BLOCKED: 'bg-red-500',
 };
 
-function MemberAvatar({ name, avatarUrl, size = 6 }: { name: string; avatarUrl?: string | null; size?: 6 | 8 }) {
+function MemberAvatar({
+  name,
+  avatarUrl,
+  size = 6,
+}: {
+  name?: string | null;
+  avatarUrl?: string | null;
+  size?: 6 | 8;
+}) {
   const dim = size === 6 ? 'h-6 w-6' : 'h-8 w-8';
   return (
-    <Avatar className={`${dim} rounded-full bg-slate-200`}>
-      {avatarUrl ? <AvatarImage src={avatarUrl} alt={name} /> : null}
-      <AvatarFallback className="text-[10px] font-medium text-slate-600">
-        {name.charAt(0).toUpperCase()}
+    <Avatar className={`${dim} rounded-full`}>
+      {avatarUrl ? <AvatarImage src={avatarUrl} alt={name ?? ''} /> : null}
+      <AvatarFallback className="bg-muted text-[10px] font-medium text-muted-foreground">
+        {initials(name)}
       </AvatarFallback>
     </Avatar>
   );
@@ -124,14 +134,14 @@ const QUICK_DATE_OFFSETS: { label: string; days: number | null }[] = [
 ];
 
 function FieldDivider() {
-  return <div className="border-t border-[var(--border)]" />;
+  return <div className="border-t border-border" />;
 }
 
 function SectionLabel({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
     <p
       className={cn(
-        'text-[11px] font-medium uppercase tracking-wider text-[var(--fg-3)]',
+        'text-xs font-medium uppercase tracking-wider text-muted-foreground',
         className,
       )}
     >
@@ -281,20 +291,21 @@ export function TaskEditModal({
         aria-describedby="task-edit-desc"
       >
         {/* Header */}
-        <DialogHeader className="flex-row items-center justify-between border-b border-[var(--border)] px-5 py-3">
+        <DialogHeader className="flex-row items-center justify-between border-b border-border px-5 py-3">
           <DialogTitle className="text-sm font-semibold tracking-tight">
             {isEdit ? 'Edit task' : 'New task'}
           </DialogTitle>
           {isEdit && (
-            <div className="flex items-center gap-1 text-[12px]">
+            <div className="flex items-center gap-1 text-xs">
               <button
                 type="button"
                 onClick={() => setTab('details')}
+                aria-current={tab === 'details' ? 'page' : undefined}
                 className={cn(
                   'rounded-md px-2.5 py-1 font-medium transition-colors',
                   tab === 'details'
-                    ? 'bg-[var(--bg-3)] text-[var(--fg)]'
-                    : 'text-[var(--fg-3)] hover:text-[var(--fg)]',
+                    ? 'bg-muted text-foreground'
+                    : 'text-muted-foreground hover:text-foreground',
                 )}
               >
                 Details
@@ -302,11 +313,12 @@ export function TaskEditModal({
               <button
                 type="button"
                 onClick={() => setTab('chat')}
+                aria-current={tab === 'chat' ? 'page' : undefined}
                 className={cn(
                   'rounded-md px-2.5 py-1 font-medium transition-colors',
                   tab === 'chat'
-                    ? 'bg-[var(--bg-3)] text-[var(--fg)]'
-                    : 'text-[var(--fg-3)] hover:text-[var(--fg)]',
+                    ? 'bg-muted text-foreground'
+                    : 'text-muted-foreground hover:text-foreground',
                 )}
               >
                 Chat
@@ -332,21 +344,23 @@ export function TaskEditModal({
                 className="h-11 border-transparent bg-transparent px-0 text-base font-medium shadow-none focus-visible:border-transparent focus-visible:ring-0"
               />
               {errors.title && (
-                <p className="-mt-2 text-[11px] text-red-500">{errors.title.message}</p>
+                <p className="-mt-2 text-xs text-destructive" role="status">
+                  {errors.title.message}
+                </p>
               )}
 
               {/* Description */}
               {previewDescription ? (
-                <div className="min-h-[44px] rounded-md border border-[var(--border)] bg-[var(--bg-2)] px-3 py-2 text-[13px] leading-relaxed text-[var(--fg-2)]">
+                <div className="min-h-[44px] rounded-md border border-border bg-card px-3 py-2 text-sm leading-relaxed text-muted-foreground">
                   {watchDescription.trim() ? (
                     <div
-                      className="prose prose-sm prose-invert max-w-none [&_a]:text-emerald-400 [&_code]:rounded [&_code]:bg-[var(--bg-3)] [&_code]:px-1 [&_h1]:mb-1 [&_h2]:mb-1 [&_h3]:mb-1 [&_p]:mb-1.5 [&_ul]:mb-1.5"
+                      className="prose prose-sm prose-invert max-w-none [&_a]:text-primary [&_code]:rounded [&_code]:bg-muted [&_code]:px-1 [&_h1]:mb-1 [&_h2]:mb-1 [&_h3]:mb-1 [&_p]:mb-1.5 [&_ul]:mb-1.5"
                       dangerouslySetInnerHTML={{
                         __html: renderMarkdownToHtml(watchDescription),
                       }}
                     />
                   ) : (
-                    <span className="text-[var(--fg-3)]">No description</span>
+                    <span className="text-muted-foreground">No description</span>
                   )}
                 </div>
               ) : (
@@ -355,13 +369,13 @@ export function TaskEditModal({
                   rows={2}
                   placeholder="Add a description…"
                   aria-label="Task description"
-                  className="w-full resize-y rounded-md border border-transparent bg-transparent px-0 text-[13px] leading-relaxed text-[var(--fg-2)] placeholder:text-[var(--fg-3)] outline-none transition-colors focus-visible:border-[var(--border)] focus-visible:bg-[var(--bg-2)] focus-visible:px-3 focus-visible:py-2"
+                  className="w-full resize-y rounded-md border border-input bg-transparent px-3 py-2 text-sm leading-relaxed text-foreground placeholder:text-muted-foreground outline-none transition-colors focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring/40"
                 />
               )}
               <button
                 type="button"
                 onClick={() => setPreviewDescription((v) => !v)}
-                className="mt-1 inline-flex items-center gap-1 text-[11px] text-[var(--fg-3)] transition-colors hover:text-[var(--fg-2)]"
+                className="mt-1 inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
                 aria-label={previewDescription ? 'Edit description' : 'Preview description'}
               >
                 {previewDescription ? (
@@ -482,7 +496,7 @@ export function TaskEditModal({
                       size="xs"
                       onClick={handleSuggest}
                       disabled={suggestAssignee.isPending || members.length === 0}
-                      className="gap-1 text-[11px] text-emerald-500 hover:text-emerald-400"
+                      className="gap-1 text-xs text-primary hover:text-primary/80"
                       title="AI-suggest assignee based on workload"
                     >
                       {suggestAssignee.isPending ? (
@@ -502,13 +516,13 @@ export function TaskEditModal({
                         <Select value={field.value ?? ''} onValueChange={field.onChange}>
                           <SelectTrigger className="w-full">
                             <SelectValue placeholder="Unassigned">
-                              {selected ? (
+                              {selected && selected.name ? (
                                 <span className="flex items-center gap-2">
                                   <MemberAvatar name={selected.name} avatarUrl={selected.avatarUrl} />
                                   <span>{selected.name}</span>
                                 </span>
                               ) : (
-                                <span className="text-[var(--fg-3)]">Unassigned</span>
+                                <span className="text-muted-foreground">Unassigned</span>
                               )}
                             </SelectValue>
                           </SelectTrigger>
@@ -539,13 +553,13 @@ export function TaskEditModal({
                               setValue('assigneeId', s.userId, { shouldValidate: true });
                               setAiSuggestions(null);
                             }}
-                            className="flex w-full items-center justify-between rounded-md border border-[var(--border)] bg-[var(--bg-2)] px-2 py-1.5 text-left transition-colors hover:border-emerald-500/40 hover:bg-emerald-500/5"
+                            className="flex w-full items-center justify-between rounded-md border border-border bg-card px-2 py-1.5 text-left transition-colors hover:border-primary/40 hover:bg-primary/5"
                             title={`Assign to ${member?.name ?? 'this user'}`}
                           >
-                            <span className="text-[12px] font-medium text-[var(--fg)]">
+                            <span className="text-xs font-medium text-foreground">
                               {member?.name ?? s.userId.slice(0, 8)}
                             </span>
-                            <span className="max-w-[160px] truncate text-[11px] text-[var(--fg-3)]">
+                            <span className="max-w-[160px] truncate text-xs text-muted-foreground">
                               {s.reason}
                             </span>
                           </button>
@@ -568,12 +582,10 @@ export function TaskEditModal({
                     control={control}
                     render={({ field }) => (
                       <div className="space-y-1.5">
-                        <Input
-                          type="date"
-                          value={field.value ?? ''}
-                          onChange={(e) => field.onChange(e.target.value)}
-                          aria-label="Due date"
-                          className="w-full"
+                        <DatePicker
+                          value={field.value}
+                          onChange={field.onChange}
+                          placeholder="Pick a date"
                         />
                         <div className="flex flex-wrap items-center gap-1">
                           {QUICK_DATE_OFFSETS.map((q) => {
@@ -587,25 +599,16 @@ export function TaskEditModal({
                                 type="button"
                                 onClick={() => field.onChange(value)}
                                 className={cn(
-                                  'rounded-md border px-2 py-0.5 text-[11px] font-medium transition-colors',
+                                  'rounded-md border px-2 py-0.5 text-xs font-medium transition-colors',
                                   active
-                                    ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-500'
-                                    : 'border-[var(--border)] bg-[var(--bg-2)] text-[var(--fg-2)] hover:border-[var(--fg-3)] hover:text-[var(--fg)]',
+                                    ? 'border-primary/50 bg-primary/10 text-primary'
+                                    : 'border-border bg-card text-muted-foreground hover:border-muted-foreground/50 hover:text-foreground',
                                 )}
                               >
                                 {q.label}
                               </button>
                             );
                           })}
-                          {field.value && (
-                            <button
-                              type="button"
-                              onClick={() => field.onChange('')}
-                              className="inline-flex items-center gap-1 rounded-md border border-[var(--border)] bg-transparent px-2 py-0.5 text-[11px] font-medium text-[var(--fg-3)] transition-colors hover:border-[var(--fg-3)] hover:text-[var(--fg)]"
-                            >
-                              <XIcon className="h-3 w-3" /> Clear
-                            </button>
-                          )}
                         </div>
                       </div>
                     )}
@@ -615,12 +618,13 @@ export function TaskEditModal({
             </div>
             
             {/* Footer — sticky, always visible */}
-            <div className="flex items-center justify-end gap-2 border-t border-[var(--border)] px-5 py-3">
+            <div className="flex items-center justify-end gap-2 border-t border-border px-5 py-3">
               <Button
                 type="button"
                 variant="ghost"
                 onClick={onClose}
-                className="h-9 px-3 text-[12px]"
+                size="sm"
+                className="h-9 px-3"
               >
                 Cancel
               </Button>
@@ -629,7 +633,8 @@ export function TaskEditModal({
                   <Button
                     type="submit"
                     disabled={isSubmitting}
-                    className="h-9 bg-emerald-500 px-4 text-[12px] text-white hover:bg-emerald-600"
+                    size="sm"
+                    className="h-9 px-4"
                   >
                     {isSubmitting
                       ? isEdit
@@ -642,14 +647,14 @@ export function TaskEditModal({
                 </TooltipTrigger>
                 <TooltipContent side="top" sideOffset={6}>
                   <span className="flex items-center gap-1.5">
-                    <kbd className="rounded border border-[var(--border)] bg-[var(--bg-3)] px-1 font-mono text-[10px] text-[var(--fg-2)]">
+                    <kbd className="rounded border border-border bg-muted px-1 font-mono text-[10px] text-muted-foreground">
                       {isMac ? '⌘' : 'Ctrl'}
                     </kbd>
-                    <span className="text-[var(--fg-3)]">+</span>
-                    <kbd className="rounded border border-[var(--border)] bg-[var(--bg-3)] px-1 font-mono text-[10px] text-[var(--fg-2)]">
+                    <span className="text-muted-foreground">+</span>
+                    <kbd className="rounded border border-border bg-muted px-1 font-mono text-[10px] text-muted-foreground">
                       ↵
                     </kbd>
-                    <span className="text-[var(--fg-2)]">to submit</span>
+                    <span className="text-muted-foreground">to submit</span>
                   </span>
                 </TooltipContent>
               </Tooltip>

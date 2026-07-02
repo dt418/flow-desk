@@ -51,9 +51,9 @@ export function LabelManagerPage({ workspaceId, embedded = false }: Props) {
           </Link>
         )}
         <div>
-          <span className="caption">Workspace</span>
-          <h1 className="flex items-center gap-2 text-[20px] font-semibold tracking-tight">
-            <Tag className="h-5 w-5 text-emerald-500" />
+          <span className="text-xs text-muted-foreground">Workspace</span>
+          <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
+            <Tag className="h-5 w-5 text-primary" />
             Labels
           </h1>
         </div>
@@ -62,7 +62,8 @@ export function LabelManagerPage({ workspaceId, embedded = false }: Props) {
         <Button
           type="button"
           onClick={() => setCreating(true)}
-          className="h-9 bg-emerald-500 px-4 text-[12px] text-white hover:bg-emerald-600"
+          size="sm"
+          className="h-9 px-4"
         >
           <Plus className="mr-1.5 h-4 w-4" />
           New label
@@ -82,17 +83,18 @@ export function LabelManagerPage({ workspaceId, embedded = false }: Props) {
           ))}
         </div>
       ) : list.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-[var(--border)] bg-[var(--bg-2)]/40 p-10 text-center">
-          <Tag className="h-8 w-8 text-[var(--fg-3)]" />
-          <p className="text-[14px] font-medium">No labels yet</p>
-          <p className="caption max-w-sm">
+        <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border bg-card/40 p-10 text-center">
+          <Tag className="h-8 w-8 text-muted-foreground" />
+          <p className="text-sm font-medium">No labels yet</p>
+          <p className="max-w-sm text-xs text-muted-foreground">
             Create your first label to start categorizing tasks across columns.
           </p>
           {canManage && (
             <Button
               type="button"
               onClick={() => setCreating(true)}
-              className="mt-2 h-9 bg-emerald-500 px-4 text-[12px] text-white hover:bg-emerald-600"
+              size="sm"
+              className="mt-2 h-9 px-4"
             >
               <Plus className="mr-1.5 h-4 w-4" />
               New label
@@ -104,7 +106,7 @@ export function LabelManagerPage({ workspaceId, embedded = false }: Props) {
           {list.map((l) => (
             <div
               key={l.id}
-              className="group flex items-center justify-between gap-3 rounded-lg border border-[var(--border)] bg-[var(--bg-2)]/50 p-4 transition-colors hover:border-emerald-500/40"
+              className="group flex items-center justify-between gap-3 rounded-lg border border-border bg-card/50 p-4 transition-colors hover:border-primary/40"
             >
               <div className="flex flex-1 items-center gap-3">
                 <span
@@ -114,7 +116,7 @@ export function LabelManagerPage({ workspaceId, embedded = false }: Props) {
                 />
                 <div className="min-w-0 flex-1">
                   <LabelChip label={l} size="md" />
-                  <p className="mt-1 font-mono text-[10px] text-[var(--fg-3)]">
+                  <p className="mt-1 font-mono text-[10px] text-muted-foreground">
                     {l.color} · {colorToHex(l.color)}
                   </p>
                 </div>

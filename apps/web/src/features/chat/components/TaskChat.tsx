@@ -3,9 +3,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/features/auth';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
+import { cn, initials } from '@/lib/utils';
 
 interface ChatComment {
   id: string;
@@ -17,13 +18,6 @@ interface ChatComment {
     name: string;
     avatarUrl: string | null;
   };
-}
-
-function initials(name: string): string {
-  const parts = name.trim().split(/\s+/);
-  if (parts.length === 0 || !parts[0]) return '?';
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return (parts[0][0]! + parts[parts.length - 1]![0]!).toUpperCase();
 }
 
 function formatTime(dateStr: string): string {
@@ -46,7 +40,7 @@ export function TaskChat({ taskId }: TaskChatProps) {
 
   const queryKey = ['task-chat', taskId];
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, error } = useQuery({
     queryKey,
     queryFn: () => api<{ data: ChatComment[] }>(`/api/tasks/${encodeURIComponent(taskId)}/chat`),
     enabled: Boolean(taskId),
@@ -95,9 +89,17 @@ export function TaskChat({ taskId }: TaskChatProps) {
             <Skeleton className="h-8 w-1/2" />
           </div>
         )}
-        {!isLoading && (!data?.data || data.data.length === 0) && (
+        {isError && (
+          <div
+            role="alert"
+            className="m-3 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive"
+          >
+            Failed to load chat: {(error as Error | null)?.message ?? 'unknown error'}
+          </div>
+        )}
+        {!isLoading && !isError && (!data?.data || data.data.length === 0) && (
           <div className="flex h-full items-center justify-center p-4">
-            <p className="text-xs text-[var(--fg-3)]">No messages yet</p>
+            <p className="text-xs text-muted-foreground">No messages yet</p>
           </div>
         )}
         {(data?.data ?? []).map((msg) => (
@@ -110,7 +112,7 @@ export function TaskChat({ taskId }: TaskChatProps) {
           >
             {msg.authorId !== user?.id && (
               <Avatar className="mt-0.5 h-6 w-6 shrink-0">
-                <AvatarImage src={msg.author.avatarUrl ?? undefined} />
+                <AvatarImage src={msg.author.avatarUrl ?? undefined} alt={msg.author.name} />
                 <AvatarFallback className="text-[9px]">{initials(msg.author.name)}</AvatarFallback>
               </Avatar>
             )}
@@ -118,11 +120,11 @@ export function TaskChat({ taskId }: TaskChatProps) {
               className={cn(
                 'max-w-[80%] rounded-2xl px-3 py-1.5 text-sm',
                 msg.authorId === user?.id
-                  ? 'bg-emerald-500 text-white'
-                  : 'bg-[var(--bg-3)] text-[var(--fg)]',
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-foreground',
               )}
             >
-              <p className="text-[10px] font-medium text-[var(--fg-2)]">{msg.author.name}</p>
+              <p className="text-[10px] font-medium text-muted-foreground">{msg.author.name}</p>
               <p className="whitespace-pre-wrap break-words">{msg.content}</p>
               <p className="mt-0.5 text-right text-[9px] opacity-60">{formatTime(msg.createdAt)}</p>
             </div>
@@ -131,7 +133,7 @@ export function TaskChat({ taskId }: TaskChatProps) {
         <div ref={bottomRef} />
       </div>
 
-      <div className="border-t border-[var(--border)] p-2">
+      <div className="border-t border-border p-2">
         <div className="flex items-end gap-2">
           <textarea
             ref={inputRef}
@@ -140,12 +142,14 @@ export function TaskChat({ taskId }: TaskChatProps) {
             onKeyDown={handleKeyDown}
             onInput={handleInput}
             placeholder="Chat…"
+            aria-label="Chat message"
             rows={1}
             disabled={sendMutation.isPending}
-            className="max-h-24 min-h-[32px] flex-1 resize-none rounded-lg border border-[var(--border)] bg-[var(--bg-2)] px-3 py-1.5 text-sm text-[var(--fg)] placeholder:text-[var(--fg-3)] focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:opacity-50"
+            className="max-h-24 min-h-[32px] flex-1 resize-none rounded-lg border border-input bg-card px-3 py-1.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
           />
-          <button
+          <Button
             type="button"
+            size="sm"
             onClick={() => {
               const trimmed = input.trim();
               if (trimmed && !sendMutation.isPending) {
@@ -153,10 +157,10 @@ export function TaskChat({ taskId }: TaskChatProps) {
               }
             }}
             disabled={sendMutation.isPending || !input.trim()}
-            className="btn-primary shrink-0 rounded-lg px-3 py-1.5 text-xs disabled:opacity-40"
+            className="shrink-0"
           >
             Send
-          </button>
+          </Button>
         </div>
       </div>
     </div>

@@ -113,7 +113,11 @@ export function LabelFormDialog({ open, onClose, workspaceId, initial }: Props) 
               aria-invalid={Boolean(errors.name)}
               {...register('name')}
             />
-            {errors.name && <p className="text-[11px] text-red-500">{errors.name.message}</p>}
+            {errors.name && (
+              <p className="text-xs text-destructive" role="status">
+                {errors.name.message}
+              </p>
+            )}
           </div>
 
           <div className="flex flex-col gap-1.5">
@@ -148,10 +152,10 @@ export function LabelFormDialog({ open, onClose, workspaceId, initial }: Props) 
           </div>
 
           {name && color && (
-            <div className="flex items-center gap-2 rounded-md border border-dashed border-[var(--border)] p-2.5">
+            <div className="flex items-center gap-2 rounded-md border border-dashed border-border p-2.5">
               <span className="caption">Preview</span>
               <LabelChip label={{ id: 'preview', name, color }} size="md" />
-              <span className="ml-auto font-mono text-[10px] text-[var(--fg-3)]">
+              <span className="ml-auto font-mono text-[10px] text-muted-foreground">
                 {colorToHex(color)}
               </span>
             </div>
@@ -164,7 +168,7 @@ export function LabelFormDialog({ open, onClose, workspaceId, initial }: Props) 
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="bg-emerald-500 px-4 text-white hover:bg-emerald-600"
+              className="px-4"
             >
               {isSubmitting
                 ? isEdit

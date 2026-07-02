@@ -46,31 +46,34 @@ export function DangerZoneTab({ workspaceId }: Props) {
           <Trash2 className="h-4 w-4" />
           Delete this workspace
         </h3>
-        <p className="mt-2 text-[12px] text-[var(--fg-2)]">
+        <p className="mt-2 text-xs text-muted-foreground">
           This soft-deletes the workspace and all its tasks. Members lose access immediately. Data
           is recoverable for 30 days via an admin tool.
         </p>
       </div>
 
       {!allowed ? (
-        <p className="caption">Only the workspace owner can delete this workspace.</p>
+        <p className="text-xs text-muted-foreground">
+          Only the workspace owner can delete this workspace.
+        </p>
       ) : (
         <>
-          <p className="text-[13px]">
+          <p className="text-sm">
             Type <span className="font-mono font-semibold">{matchRequired}</span> to confirm.
           </p>
           <input
             value={confirmText}
             onChange={(e) => setConfirmText(e.target.value)}
             placeholder={matchRequired}
-            className="flex h-9 w-full rounded-md border border-[var(--border)] bg-[var(--bg-2)] px-3 text-[13px] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-red-500/60"
+            className="flex h-9 w-full rounded-md border border-input bg-card px-3 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-destructive/60"
           />
           <Button
             type="button"
             onClick={onDelete}
             disabled={!canSubmit}
             variant="destructive"
-            className="h-9 w-fit px-4 text-[12px]"
+            size="sm"
+            className="h-9 w-fit px-4"
           >
             {del.isPending ? 'Deleting…' : 'Delete workspace'}
           </Button>

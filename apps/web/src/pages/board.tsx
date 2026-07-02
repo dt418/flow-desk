@@ -6,6 +6,7 @@ import { api, ApiError } from '@/lib/api';
 import { Kanban, KanbanCard, KanbanColumn } from '@/components/ui/kanban';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import {
@@ -59,7 +60,7 @@ const STATUS_TONE: Record<string, string> = {
   TODO: 'bg-slate-500/10 text-slate-600 dark:text-slate-300',
   IN_PROGRESS: 'bg-blue-500/10 text-blue-600 dark:text-blue-300',
   IN_REVIEW: 'bg-amber-500/10 text-amber-600 dark:text-amber-300',
-  DONE: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-300',
+  DONE: 'bg-primary/10 text-primary',
   BLOCKED: 'bg-red-500/10 text-red-600 dark:text-red-300',
 };
 
@@ -94,8 +95,8 @@ function relativeDate(
 
 function PriorityDot({ priority }: { priority: string }) {
   return (
-    <span className="inline-flex items-center gap-1.5 text-[11px] text-[var(--fg-2)]">
-      <span className={cn('h-1.5 w-1.5 rounded-full', PRIORITY_DOT[priority] ?? 'bg-slate-400')} />
+    <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+      <span className={cn('h-1.5 w-1.5 rounded-full', PRIORITY_DOT[priority] ?? 'bg-muted-foreground')} />
       {priority}
     </span>
   );
@@ -255,33 +256,29 @@ export function BoardPage() {
 
   return (
     <div className="flex h-full flex-col">
-      <header className="flex shrink-0 items-center justify-between border-b border-[var(--border)] bg-[var(--bg)]/80 px-6 py-3 backdrop-blur">
+      <header className="flex shrink-0 items-center justify-between border-b border-border bg-background/80 px-6 py-3 backdrop-blur">
         <div className="flex items-center gap-3">
-          <h2 className="text-[15px] font-semibold tracking-tight">Board</h2>
-          <span className="caption">
+          <h2 className="text-base font-semibold tracking-tight">Board</h2>
+          <span className="text-xs text-muted-foreground">
             {orderedColumns.reduce((acc, c) => acc + c.tasks.length, 0)} tasks
           </span>
         </div>
         <div className="flex items-center gap-1">
           <PresenceBar workspaceId={workspaceId} />
-          <div className="flex items-center rounded-md border border-[var(--border)] bg-[var(--bg-2)] p-0.5 text-[12px]">
-            <span className="rounded bg-[var(--bg-3)] px-2.5 py-1 font-medium text-[var(--fg)]">
+          <div className="flex items-center rounded-md border border-border bg-card p-0.5 text-xs">
+            <span className="rounded bg-muted px-2.5 py-1 font-medium text-foreground">
               Board
             </span>
             <Link
               to={`/list/${workspaceId}`}
-              className="rounded px-2.5 py-1 text-[var(--fg-2)] hover:text-[var(--fg)]"
+              className="rounded px-2.5 py-1 text-muted-foreground hover:text-foreground"
             >
               List
             </Link>
           </div>
-          <button
-            type="button"
-            className="btn-primary text-[12px]"
-            onClick={() => setModalOpen(true)}
-          >
+          <Button size="sm" onClick={() => setModalOpen(true)}>
             New task
-          </button>
+          </Button>
         </div>
       </header>
 
@@ -290,7 +287,7 @@ export function BoardPage() {
           {[0, 1, 2, 3, 4].map((i) => (
             <div
               key={i}
-              className="flex w-72 flex-shrink-0 flex-col gap-2 rounded-xl border border-[var(--border)] bg-[var(--bg-2)]/40 p-3"
+              className="flex w-72 flex-shrink-0 flex-col gap-2 rounded-xl border border-border bg-card/40 p-3"
             >
               <Skeleton className="h-5 w-24" />
               <Skeleton className="h-20 w-full" />
@@ -300,7 +297,14 @@ export function BoardPage() {
         </div>
       )}
 
-      {data.isError && <div className="caption p-6 text-red-500">Failed to load board.</div>}
+      {data.isError && (
+        <div
+          role="alert"
+          className="rounded-md border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive"
+        >
+          Failed to load board: {(data.error as Error | null)?.message ?? 'unknown error'}
+        </div>
+      )}
 
       {data.data && orderedColumns.reduce((acc, c) => acc + c.tasks.length, 0) === 0 && (
         <EmptyBoardState onCreate={() => setModalOpen(true)} />

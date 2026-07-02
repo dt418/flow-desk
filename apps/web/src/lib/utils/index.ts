@@ -1,2 +1,2 @@
 export { cn } from './cn';
-export { formatDate, relativeDays } from './format-date';
+export { formatDate, relativeDays, initials } from './format-date';

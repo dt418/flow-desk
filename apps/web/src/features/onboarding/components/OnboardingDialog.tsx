@@ -159,38 +159,34 @@ export function OnboardingDialog({ open, onClose }: OnboardingDialogProps) {
       aria-modal="true"
       aria-labelledby="onboarding-title"
     >
-      <div className="w-full max-w-md rounded-xl border border-[var(--border)] bg-[var(--bg)] p-6 shadow-xl">
+      <div className="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-xl">
         <Stepper current={step} />
 
         <div className="mt-5 mb-1 flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-emerald-500" aria-hidden />
-          <h3 id="onboarding-title" className="text-[15px] font-semibold tracking-tight">
+          <Sparkles className="h-4 w-4 text-primary" aria-hidden />
+          <h3 id="onboarding-title" className="text-base font-semibold tracking-tight">
             {stepTitle}
           </h3>
         </div>
 
         {step === 1 && (
           <div className="mt-4 space-y-4">
-            <div className="flex items-center gap-3 rounded-lg border border-[var(--border)] bg-[var(--bg-2)]/60 p-3">
+            <div className="flex items-center gap-3 rounded-lg border border-border bg-muted/60 p-3">
               <Avatar className="h-12 w-12 text-sm">
                 {user?.avatarUrl ? <AvatarImage src={user.avatarUrl} alt={user.name} /> : null}
                 <AvatarFallback>{initials(user?.name ?? '?')}</AvatarFallback>
               </Avatar>
               <div className="min-w-0">
-                <div className="truncate text-[14px] font-medium">{user?.name}</div>
-                <div className="caption truncate">{user?.email}</div>
+                <div className="truncate text-sm font-medium">{user?.name}</div>
+                <div className="truncate text-xs text-muted-foreground">{user?.email}</div>
               </div>
             </div>
-            <p className="text-[13px] leading-relaxed text-[var(--fg-2)]">
+            <p className="text-sm leading-relaxed text-muted-foreground">
               Hi {user?.name?.split(' ')[0] ?? 'there'} — let&apos;s set up your workspace so you
               can start tracking work. Three quick steps and you&apos;re done.
             </p>
             <div className="flex justify-end">
-              <Button
-                type="button"
-                onClick={() => setStep(2)}
-                className="h-9 bg-emerald-500 px-4 text-white hover:bg-emerald-600"
-              >
+              <Button type="button" onClick={() => setStep(2)} size="sm" className="h-9 px-4">
                 Get started
                 <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
               </Button>
@@ -200,7 +196,7 @@ export function OnboardingDialog({ open, onClose }: OnboardingDialogProps) {
 
         {step === 2 && (
           <form onSubmit={onCreateWorkspace} className="mt-4 space-y-3">
-            <p className="text-[13px] text-[var(--fg-2)]">
+            <p className="text-sm text-muted-foreground">
               Pick a name for your first workspace. You can rename it later.
             </p>
             <div className="space-y-1.5">
@@ -213,7 +209,7 @@ export function OnboardingDialog({ open, onClose }: OnboardingDialogProps) {
                 {...workspaceForm.register('name')}
               />
               {workspaceForm.formState.errors.name && (
-                <p className="text-[11px] text-red-500">
+                <p className="text-xs text-destructive" role="status">
                   {workspaceForm.formState.errors.name.message}
                 </p>
               )}
@@ -230,7 +226,8 @@ export function OnboardingDialog({ open, onClose }: OnboardingDialogProps) {
               <Button
                 type="submit"
                 disabled={workspaceForm.formState.isSubmitting}
-                className="h-9 bg-emerald-500 px-4 text-white hover:bg-emerald-600"
+                size="sm"
+                className="h-9 px-4"
               >
                 {workspaceForm.formState.isSubmitting ? 'Creating…' : 'Continue'}
                 <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
@@ -241,9 +238,9 @@ export function OnboardingDialog({ open, onClose }: OnboardingDialogProps) {
 
         {step === 3 && (
           <form onSubmit={onCreateFirstTask} className="mt-4 space-y-3">
-            <p className="text-[13px] text-[var(--fg-2)]">
+            <p className="text-sm text-muted-foreground">
               Almost done. Give your first task a title — it lands in{' '}
-              <span className="font-medium text-[var(--fg)]">
+              <span className="font-medium text-foreground">
                 {columns[0]?.name ?? 'the first column'}
               </span>
               .
@@ -257,7 +254,7 @@ export function OnboardingDialog({ open, onClose }: OnboardingDialogProps) {
                 {...taskForm.register('title')}
               />
               {taskForm.formState.errors.title && (
-                <p className="text-[11px] text-red-500">
+                <p className="text-xs text-destructive" role="status">
                   {taskForm.formState.errors.title.message}
                 </p>
               )}
@@ -267,14 +264,16 @@ export function OnboardingDialog({ open, onClose }: OnboardingDialogProps) {
                 type="button"
                 variant="ghost"
                 onClick={() => setStep(2)}
-                className="h-9 px-3 text-[12px]"
+                size="sm"
+                className="h-9 px-3"
               >
                 Back
               </Button>
               <Button
                 type="submit"
                 disabled={taskForm.formState.isSubmitting}
-                className="h-9 bg-emerald-500 px-4 text-white hover:bg-emerald-600"
+                size="sm"
+                className="h-9 px-4"
               >
                 {taskForm.formState.isSubmitting ? 'Saving…' : 'Done'}
                 <Check className="ml-1.5 h-3.5 w-3.5" />
@@ -301,10 +300,10 @@ function Stepper({ current }: { current: 1 | 2 | 3 }) {
                 aria-current={active ? 'step' : undefined}
                 className={
                   done
-                    ? 'inline-flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-[10px] font-semibold text-white'
+                    ? 'inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground'
                     : active
-                      ? 'inline-flex h-6 w-6 items-center justify-center rounded-full border-2 border-emerald-500 text-[10px] font-semibold text-emerald-600'
-                      : 'inline-flex h-6 w-6 items-center justify-center rounded-full border border-[var(--border)] text-[10px] font-semibold text-[var(--fg-3)]'
+                      ? 'inline-flex h-6 w-6 items-center justify-center rounded-full border-2 border-primary text-[10px] font-semibold text-primary'
+                      : 'inline-flex h-6 w-6 items-center justify-center rounded-full border border-border text-[10px] font-semibold text-muted-foreground'
                 }
               >
                 {done ? <Check className="h-3 w-3" /> : n}
@@ -312,8 +311,8 @@ function Stepper({ current }: { current: 1 | 2 | 3 }) {
               <span
                 className={
                   active
-                    ? 'text-[11px] font-medium text-[var(--fg)]'
-                    : 'text-[11px] text-[var(--fg-3)]'
+                    ? 'text-xs font-medium text-foreground'
+                    : 'text-xs text-muted-foreground'
                 }
               >
                 {n === 1 ? 'Welcome' : n === 2 ? 'Workspace' : 'First task'}
@@ -322,7 +321,7 @@ function Stepper({ current }: { current: 1 | 2 | 3 }) {
             {i < steps.length - 1 && (
               <span
                 aria-hidden
-                className={done ? 'h-px w-6 bg-emerald-500' : 'h-px w-6 bg-[var(--border)]'}
+                className={done ? 'h-px w-6 bg-primary' : 'h-px w-6 bg-border'}
               />
             )}
           </React.Fragment>

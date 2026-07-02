@@ -80,7 +80,7 @@ function relativeDate(
 
 function PriorityDot({ priority }: { priority: TaskCardData['priority'] }) {
   return (
-    <span className="inline-flex items-center gap-1.5 text-[11px] text-[var(--fg-2)]">
+    <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
       <span className={cn('h-1.5 w-1.5 rounded-full', PRIORITY_DOT[priority])} />
       {priority}
     </span>
@@ -132,9 +132,9 @@ export function TaskCard({
         }
       }}
       className={cn(
-        'group relative overflow-hidden rounded-lg border bg-[var(--bg)] p-3 pl-4',
-        'border-[var(--border)] shadow-[0_1px_0_rgba(0,0,0,0.02)]',
-        'transition-[border-color,box-shadow] duration-150 hover:border-[var(--fg-3)]',
+        'group relative overflow-hidden rounded-lg border bg-card p-3 pl-4',
+        'border-border shadow-[0_1px_0_rgba(0,0,0,0.02)]',
+        'transition-[border-color,box-shadow] duration-150 hover:border-muted-foreground/50',
         onClick && 'cursor-pointer',
         className,
       )}
@@ -146,7 +146,7 @@ export function TaskCard({
           PRIORITY_BAR[task.priority] ?? 'bg-transparent',
         )}
       />
-      <span className="absolute right-2 top-2 rounded font-mono text-[10px] text-[var(--fg-3)] opacity-0 transition-opacity group-hover:opacity-100">
+      <span className="absolute right-2 top-2 rounded font-mono text-[10px] text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100">
         {shortId(task.id)}
       </span>
       {(onEdit || onDelete) && (
@@ -156,12 +156,12 @@ export function TaskCard({
               type="button"
               data-task-kebab
               data-no-drag
-              className="absolute right-7 top-1.5 rounded p-1 opacity-0 transition-opacity hover:bg-[var(--bg-2)] group-hover:opacity-100"
+              className="absolute right-7 top-1.5 rounded p-1 opacity-0 transition-opacity hover:bg-card group-hover:opacity-100"
               onClick={(e) => e.stopPropagation()}
               onPointerDown={(e) => e.stopPropagation()}
               aria-label="Task actions"
             >
-              <MoreHorizontal className="h-4 w-4 text-[var(--fg-2)]" />
+              <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="min-w-[120px]">
@@ -203,7 +203,7 @@ export function TaskCard({
                 ? 'bg-red-500/10 text-red-500'
                 : due.tone === 'soon'
                   ? 'bg-amber-500/10 text-amber-600'
-                  : 'bg-[var(--bg-3)] text-[var(--fg-2)]',
+                  : 'bg-muted text-muted-foreground',
             )}
           >
             {due.label}
@@ -229,7 +229,7 @@ export function TaskCard({
 
 export function TaskCardSkeleton() {
   return (
-    <div className="rounded-lg border border-[var(--border)] bg-[var(--bg)] p-3 pl-4">
+    <div className="rounded-lg border border-border bg-card p-3 pl-4">
       <Skeleton className="h-3.5 w-3/4" />
       <div className="mt-2 flex gap-1">
         <Skeleton className="h-4 w-12 rounded-full" />

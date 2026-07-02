@@ -18,29 +18,24 @@ export function EmptyBoardState({ ctaDisabled = false, onCreate }: EmptyBoardSta
     <div className="flex h-full flex-1 items-center justify-center px-6 py-16">
       <div className="flex w-full max-w-md flex-col items-center text-center">
         <div className="relative mb-6 flex h-32 w-32 items-center justify-center">
-          <span aria-hidden className="absolute inset-0 rounded-full bg-emerald-500/10 blur-2xl" />
+          <span aria-hidden className="absolute inset-0 rounded-full bg-primary/10 blur-2xl" />
           <span
             aria-hidden
-            className="absolute inset-3 rounded-2xl border border-[var(--border)] bg-[var(--bg-2)]/80 shadow-sm"
+            className="absolute inset-3 rounded-2xl border border-border bg-card/80 shadow-sm"
           />
-          <ListTodo className="relative h-12 w-12 text-emerald-500" aria-hidden />
+          <ListTodo className="relative h-12 w-12 text-primary" aria-hidden />
           <span
             aria-hidden
-            className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-emerald-500 shadow ring-4 ring-[var(--bg)]"
+            className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-primary shadow ring-4 ring-background"
           />
         </div>
 
-        <h2 className="text-[18px] font-semibold tracking-tight">No tasks yet</h2>
-        <p className="mt-2 max-w-sm text-[13px] leading-relaxed text-[var(--fg-2)]">
+        <h2 className="text-xl font-semibold tracking-tight">No tasks yet</h2>
+        <p className="mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
           Start by creating one — give it a title, pick a column, and you&apos;re set.
         </p>
 
-        <Button
-          type="button"
-          onClick={onCreate}
-          disabled={ctaDisabled}
-          className="mt-6 h-9 bg-emerald-500 px-4 text-white hover:bg-emerald-600"
-        >
+        <Button type="button" onClick={onCreate} disabled={ctaDisabled} className="mt-6 h-9 px-4">
           <Plus className="mr-1.5 h-3.5 w-3.5" />
           Create your first task
         </Button>

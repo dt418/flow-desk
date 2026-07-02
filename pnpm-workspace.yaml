@@ -11,3 +11,5 @@ allowBuilds:
   lefthook: true
   msgpackr-extract: true
   prisma: true
+overrides:
+  zod: ^3.25.76

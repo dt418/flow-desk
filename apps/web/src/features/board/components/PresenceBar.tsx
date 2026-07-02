@@ -2,7 +2,7 @@ import * as React from 'react';
 import { Users } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useNamespacedSocket } from '@/lib/socket';
-import { cn } from '@/lib/utils';
+import { cn, initials } from '@/lib/utils';
 
 export interface PresenceUser {
   userId: string;
@@ -70,7 +70,10 @@ export function PresenceBar({ workspaceId, max = 5, className }: PresenceBarProp
   if (users.length === 0) {
     return (
       <div
-        className={cn('inline-flex items-center gap-1.5 text-[var(--fg-3)]', 'caption', className)}
+        className={cn(
+          'inline-flex items-center gap-1.5 text-xs text-muted-foreground',
+          className,
+        )}
         aria-label="No active collaborators"
         title="No active collaborators"
       >
@@ -90,7 +93,7 @@ export function PresenceBar({ workspaceId, max = 5, className }: PresenceBarProp
     >
       <div className="flex -space-x-2">
         {visible.map((u) => (
-          <Avatar key={u.userId} size="sm" className="ring-2 ring-[var(--bg)]" title={u.name}>
+          <Avatar key={u.userId} size="sm" className="ring-2 ring-background" title={u.name}>
             {u.avatarUrl ? <AvatarImage src={u.avatarUrl} alt={u.name} /> : null}
             <AvatarFallback>{initials(u.name)}</AvatarFallback>
           </Avatar>
@@ -98,20 +101,15 @@ export function PresenceBar({ workspaceId, max = 5, className }: PresenceBarProp
         {overflow > 0 && (
           <span
             aria-hidden
-            className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[var(--bg-3)] text-[10px] font-medium text-[var(--fg-2)] ring-2 ring-[var(--bg)]"
+            className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-muted text-[10px] font-medium text-muted-foreground ring-2 ring-background"
           >
             +{overflow}
           </span>
         )}
       </div>
-      <span className="caption hidden sm:inline">{users.length} online</span>
+      <span className="hidden text-xs text-muted-foreground sm:inline">
+        {users.length} online
+      </span>
     </div>
   );
-}
-
-function initials(name: string): string {
-  const parts = name.trim().split(/\s+/);
-  if (parts.length === 0 || !parts[0]) return '?';
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return (parts[0][0]! + parts[parts.length - 1]![0]!).toUpperCase();
 }

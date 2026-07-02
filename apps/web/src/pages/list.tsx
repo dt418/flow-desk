@@ -1,8 +1,8 @@
 import { Link, useParams } from 'react-router-dom';
-import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ColumnDef } from '@tanstack/react-table';
 import { useMemo, useState } from 'react';
-import { ChevronDown, Plus, Trash2 } from 'lucide-react';
+import { ChevronDown, Pencil, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { api, ApiError } from '@/lib/api';
 import { DataTable } from '@/components/ui/data-table';
@@ -10,7 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { cn, formatDate } from '@/lib/utils';
+import { cn, formatDate, initials } from '@/lib/utils';
 import { useDeleteTask } from '@/features/task';
 import { useMembers, useColumns } from '@/features/workspace';
 import { TaskEditModal, NewTaskModal } from '@/features/task/components/TaskEditModal';
@@ -52,7 +52,7 @@ const STATUS_TONE: Record<string, string> = {
   TODO: 'bg-slate-500/10 text-slate-600 dark:text-slate-300',
   IN_PROGRESS: 'bg-blue-500/10 text-blue-600 dark:text-blue-300',
   IN_REVIEW: 'bg-amber-500/10 text-amber-600 dark:text-amber-300',
-  DONE: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-300',
+  DONE: 'bg-primary/10 text-primary',
   BLOCKED: 'bg-red-500/10 text-red-600 dark:text-red-300',
 };
 
@@ -73,18 +73,15 @@ function StatusPill({ status }: { status: string }) {
 
 function PriorityDot({ priority }: { priority: string }) {
   return (
-    <span className="inline-flex items-center gap-1.5 text-[11px] text-[var(--fg-2)]">
-      <span className={cn('h-1.5 w-1.5 rounded-full', PRIORITY_DOT[priority] ?? 'bg-slate-400')} />
+    <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+      <span className={cn('h-1.5 w-1.5 rounded-full', PRIORITY_DOT[priority] ?? 'bg-muted-foreground')} />
       {priority}
     </span>
   );
 }
 
-function initials(name: string): string {
-  const parts = name.trim().split(/\s+/);
-  if (parts.length === 0 || !parts[0]) return '?';
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return (parts[0][0]! + parts[parts.length - 1]![0]!).toUpperCase();
+function priorityDotColor(priority: string): string {
+  return PRIORITY_DOT[priority] ?? 'bg-muted-foreground';
 }
 
 /**
@@ -112,22 +109,22 @@ function NativeSelect({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className={cn(
-          'h-8 appearance-none rounded-md border bg-[var(--bg-2)] py-0 pl-2.5 pr-8 text-[12px] text-[var(--fg)]',
-          'border-[var(--border)] outline-none transition-colors',
-          'focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/40',
-          'hover:border-[var(--fg-3)]',
+          'h-8 appearance-none rounded-md border bg-card py-0 pl-2.5 pr-8 text-xs text-foreground',
+          'border-input outline-none transition-colors',
+          'focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring/40',
+          'hover:border-muted-foreground/50',
         )}
         style={{ colorScheme: 'light dark' }}
       >
         {options.map(([v, label]) => (
-          <option key={v} value={v} className="bg-[var(--bg-2)] text-[var(--fg)]">
+          <option key={v} value={v} className="bg-card text-foreground">
             {label}
           </option>
         ))}
       </select>
       <ChevronDown
         aria-hidden
-        className="pointer-events-none absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--fg-3)]"
+        className="pointer-events-none absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
       />
       <span className="sr-only">{current}</span>
     </div>
@@ -179,14 +176,13 @@ export function ListPage() {
     });
   };
 
-  const data = useInfiniteQuery<ListPageResponse, Error>({
+  const data = useQuery<ListPageResponse, Error>({
     queryKey: ['tasks', workspaceId],
-    initialPageParam: undefined,
-    queryFn: async ({ pageParam }) => {
+    queryFn: async () => {
       try {
-        const search = new URLSearchParams({ workspaceId, limit: '100' });
-        if (pageParam) search.set('cursor', String(pageParam));
-        const res = await api<ListPageResponse>(`/api/tasks?${search.toString()}`);
+        const res = await api<ListPageResponse>(
+          `/api/tasks?${new URLSearchParams({ workspaceId, limit: '100' }).toString()}`,
+        );
         return {
           data: Array.isArray(res?.data) ? res.data : [],
           nextCursor: typeof res?.nextCursor === 'string' ? res.nextCursor : null,
@@ -195,14 +191,12 @@ export function ListPage() {
         return { data: [], nextCursor: null };
       }
     },
-    getNextPageParam: (lastPage) => lastPage?.nextCursor ?? undefined,
     enabled: Boolean(workspaceId),
     retry: false,
   });
 
   const filtered = useMemo(() => {
-    const pages = Array.isArray(data.data?.pages) ? data.data.pages : [];
-    const tasks = pages.flatMap((p) => (Array.isArray(p?.data) ? p.data : []));
+    const tasks = Array.isArray(data.data?.data) ? data.data.data : [];
     return tasks.filter((t) => {
       if (statusFilter !== 'ALL' && t?.status !== statusFilter) return false;
       if (priorityFilter !== 'ALL' && t?.priority !== priorityFilter) return false;
@@ -219,8 +213,11 @@ export function ListPage() {
         cell: ({ row }) => (
           <button
             type="button"
-            onClick={() => handleEdit(row.original.id)}
-            className="cursor-pointer font-medium text-[var(--fg)] hover:text-emerald-600"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleEdit(row.original.id);
+            }}
+            className="cursor-pointer text-left font-medium text-foreground hover:text-primary"
           >
             {row.original.title}
           </button>
@@ -254,10 +251,10 @@ export function ListPage() {
                 ) : null}
                 <AvatarFallback>{initials(row.original.assignee.name)}</AvatarFallback>
               </Avatar>
-              <span className="text-[12px]">{row.original.assignee.name}</span>
+              <span className="text-xs">{row.original.assignee.name}</span>
             </div>
           ) : (
-            <span className="caption">Unassigned</span>
+            <span className="text-xs text-muted-foreground">Unassigned</span>
           ),
       },
       {
@@ -267,13 +264,13 @@ export function ListPage() {
         enableHiding: true,
         cell: ({ row }) =>
           !row.original.labels || row.original.labels.length === 0 ? (
-            <span className="caption">—</span>
+            <span className="text-xs text-muted-foreground">—</span>
           ) : (
             <div className="flex flex-wrap gap-1">
               {row.original.labels.map((l) => (
                 <span
                   key={l}
-                  className="rounded bg-[var(--bg-3)] px-1.5 py-0.5 text-[10px] uppercase tracking-wider text-[var(--fg-2)]"
+                  className="rounded bg-muted px-1.5 py-0.5 text-[10px] uppercase tracking-wider text-muted-foreground"
                 >
                   {l}
                 </span>
@@ -286,7 +283,7 @@ export function ListPage() {
         accessorKey: 'dueDate',
         header: 'Due',
         cell: ({ getValue }) => (
-          <span className="text-[12px] text-[var(--fg-2)]">
+          <span className="text-xs text-muted-foreground">
             {formatDate(getValue() as string | null)}
           </span>
         ),
@@ -295,17 +292,32 @@ export function ListPage() {
         id: 'actions',
         header: '',
         cell: ({ row }) => (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleDelete(row.original.id);
-            }}
-            className="cursor-pointer rounded p-1 text-[var(--fg-3)] opacity-0 transition-opacity hover:bg-red-500/10 hover:text-red-500 group-hover/row:opacity-100"
-            title="Delete task"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </button>
+          <div className="flex items-center justify-end gap-1">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleEdit(row.original.id);
+              }}
+              className="cursor-pointer rounded p-1 text-muted-foreground opacity-0 transition-opacity hover:bg-accent hover:text-foreground group-hover/row:opacity-100 focus-visible:opacity-100"
+              title="Edit task"
+              aria-label={`Edit ${row.original.title}`}
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDelete(row.original.id);
+              }}
+              className="cursor-pointer rounded p-1 text-muted-foreground opacity-0 transition-opacity hover:bg-destructive/10 hover:text-destructive group-hover/row:opacity-100 focus-visible:opacity-100"
+              title="Delete task"
+              aria-label={`Delete ${row.original.title}`}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
         ),
       },
     ],
@@ -325,8 +337,10 @@ export function ListPage() {
     <div className="flex h-full flex-col gap-4 p-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <h2 className="text-[15px] font-semibold tracking-tight">Tasks</h2>
-          <span className="caption">{filtered.length} shown</span>
+          <h2 className="text-base font-semibold tracking-tight">Tasks</h2>
+          <span className="text-xs text-muted-foreground">
+            {filtered.length} of {data.data?.data.length ?? 0} shown
+          </span>
         </div>
         <div className="flex items-center gap-2">
           <Button
@@ -334,7 +348,7 @@ export function ListPage() {
             variant="ghost"
             size="sm"
             onClick={() => setNewModalOpen(true)}
-            className="h-8 gap-1 text-[12px]"
+            className="h-8 gap-1 text-xs"
           >
             <Plus className="h-3.5 w-3.5" />
             New task
@@ -351,14 +365,14 @@ export function ListPage() {
             onChange={(v) => setPriorityFilter(v as PriorityFilter)}
             options={priorityOptions}
           />
-          <div className="flex items-center rounded-md border border-[var(--border)] bg-[var(--bg-2)] p-0.5 text-[12px]">
+          <div className="flex items-center rounded-md border border-border bg-card p-0.5 text-xs">
             <Link
               to={`/board/${workspaceId}`}
-              className="rounded px-2.5 py-1 text-[var(--fg-2)] hover:text-[var(--fg)]"
+              className="rounded px-2.5 py-1 text-muted-foreground hover:text-foreground"
             >
               Board
             </Link>
-            <span className="rounded bg-[var(--bg-3)] px-2.5 py-1 font-medium text-[var(--fg)]">
+            <span className="rounded bg-muted px-2.5 py-1 font-medium text-foreground">
               List
             </span>
           </div>
@@ -373,7 +387,10 @@ export function ListPage() {
           <Skeleton className="h-12 w-full" />
         </div>
       ) : data.isError ? (
-        <div className="rounded-md border border-red-500/40 bg-red-500/10 p-4 text-sm text-red-600">
+        <div
+          role="alert"
+          className="rounded-md border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive"
+        >
           Failed to load tasks: {(data.error as Error | null)?.message ?? 'unknown error'}
         </div>
       ) : (
@@ -384,19 +401,8 @@ export function ListPage() {
             searchKey="title"
             searchPlaceholder="Filter by title…"
             empty="No tasks match the current filters."
+            onRowClick={(row) => handleEdit(row.id)}
           />
-          {data.hasNextPage ? (
-            <div className="flex justify-center pt-1">
-              <button
-                type="button"
-                onClick={() => void data.fetchNextPage()}
-                disabled={data.isFetchingNextPage}
-                className="btn-ghost text-[12px]"
-              >
-                {data.isFetchingNextPage ? 'Loading…' : 'Load more'}
-              </button>
-            </div>
-          ) : null}
         </>
       )}
 
@@ -423,8 +429,7 @@ export function ListPage() {
           columns={wsColumns}
           members={members}
           initial={
-            data.data?.pages.flatMap((p) => p.data ?? []).find((t) => t.id === selectedTaskId) ??
-            null
+            (data.data?.data ?? []).find((t) => t.id === selectedTaskId) ?? null
           }
         />
       )}

@@ -98,12 +98,12 @@ export function MembersTab({ workspaceId }: Props) {
       {canManage && (
         <form
           onSubmit={onInvite}
-          className="flex flex-col gap-3 rounded-lg border border-[var(--border)] bg-[var(--bg-2)]/50 p-4 sm:flex-row sm:items-end"
+          className="flex flex-col gap-3 rounded-lg border border-border bg-card/50 p-4 sm:flex-row sm:items-end"
         >
           <div className="flex-1 space-y-1.5">
             <Label htmlFor="invite-email">Invite by email</Label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--fg-3)]" />
+              <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 id="invite-email"
                 type="email"
@@ -113,7 +113,11 @@ export function MembersTab({ workspaceId }: Props) {
                 className="pl-9"
               />
             </div>
-            {errors.email && <p className="text-[11px] text-red-500">{errors.email.message}</p>}
+            {errors.email && (
+              <p className="text-xs text-destructive" role="status">
+                {errors.email.message}
+              </p>
+            )}
           </div>
           <div className="w-full space-y-1.5 sm:w-32">
             <Label>Role</Label>
@@ -137,7 +141,8 @@ export function MembersTab({ workspaceId }: Props) {
           <Button
             type="submit"
             disabled={isSubmitting}
-            className="h-9 bg-emerald-500 px-4 text-[12px] text-white hover:bg-emerald-600"
+            size="sm"
+            className="h-9 px-4"
           >
             <UserPlus className="mr-1.5 h-4 w-4" />
             {isSubmitting ? 'Inviting…' : 'Invite'}
@@ -145,9 +150,9 @@ export function MembersTab({ workspaceId }: Props) {
         </form>
       )}
 
-      <div className="overflow-hidden rounded-lg border border-[var(--border)]">
-        <table className="w-full text-[13px]">
-          <thead className="bg-[var(--bg-2)] text-left text-[10px] uppercase tracking-wider text-[var(--fg-3)]">
+      <div className="overflow-hidden rounded-lg border border-border">
+        <table className="w-full text-sm">
+          <thead className="bg-card text-left text-xs uppercase tracking-wider text-muted-foreground">
             <tr>
               <th className="px-3 py-2 font-medium">Member</th>
               <th className="px-3 py-2 font-medium">Email</th>
@@ -155,7 +160,7 @@ export function MembersTab({ workspaceId }: Props) {
               <th className="w-12 px-3 py-2" />
             </tr>
           </thead>
-          <tbody className="divide-y divide-[var(--border)]">
+          <tbody className="divide-y divide-border">
             {members.isLoading ? (
               Array.from({ length: 3 }).map((_, i) => (
                 <tr key={i}>
@@ -173,7 +178,7 @@ export function MembersTab({ workspaceId }: Props) {
               ))
             ) : (members.data ?? []).length === 0 ? (
               <tr>
-                <td colSpan={4} className="px-3 py-8 text-center caption">
+                <td colSpan={4} className="px-3 py-8 text-center text-xs text-muted-foreground">
                   No members yet.
                 </td>
               </tr>
@@ -181,27 +186,29 @@ export function MembersTab({ workspaceId }: Props) {
               (members.data ?? []).map((m) => {
                 const isSelf = me.user?.id === m.userId;
                 return (
-                  <tr key={m.id} className="bg-[var(--bg)]/40">
+                  <tr key={m.id} className="bg-background/40">
                     <td className="px-3 py-2.5">
                       <div className="flex items-center gap-2">
-                        <Avatar className="h-7 w-7 text-[11px]">
-                          {m.user.avatarUrl ? <AvatarImage src={m.user.avatarUrl} /> : null}
+                        <Avatar className="h-7 w-7 text-xs">
+                          {m.user.avatarUrl ? <AvatarImage src={m.user.avatarUrl} alt={m.user.name} /> : null}
                           <AvatarFallback>{initials(m.user.name)}</AvatarFallback>
                         </Avatar>
                         <span className="font-medium">
                           {m.user.name}
-                          {isSelf && <span className="ml-1 caption">(you)</span>}
+                          {isSelf && (
+                            <span className="ml-1 text-xs text-muted-foreground">(you)</span>
+                          )}
                         </span>
                       </div>
                     </td>
-                    <td className="px-3 py-2.5 text-[var(--fg-2)]">{m.user.email}</td>
+                    <td className="px-3 py-2.5 text-muted-foreground">{m.user.email}</td>
                     <td className="px-3 py-2.5">
                       {canChange && !isSelf ? (
                         <Select
                           value={m.role}
                           onValueChange={(v) => onRoleChange(m, v as UserRole)}
                         >
-                          <SelectTrigger className="h-7 w-28 border border-[var(--border)] bg-[var(--bg-2)] text-[12px]">
+                          <SelectTrigger className="h-7 w-28 border border-input bg-card text-xs">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>

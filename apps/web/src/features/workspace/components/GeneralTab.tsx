@@ -85,7 +85,11 @@ export function GeneralTab({ workspaceId }: Props) {
           aria-invalid={Boolean(errors.name)}
           placeholder="Acme Inc."
         />
-        {errors.name && <p className="text-[11px] text-red-500">{errors.name.message}</p>}
+        {errors.name && (
+          <p className="text-xs text-destructive" role="status">
+            {errors.name.message}
+          </p>
+        )}
       </div>
 
       <div className="space-y-1.5">
@@ -96,10 +100,12 @@ export function GeneralTab({ workspaceId }: Props) {
           aria-invalid={Boolean(errors.description)}
           placeholder="What this workspace is for"
           rows={3}
-          className="flex w-full rounded-md border border-[var(--border)] bg-[var(--bg-2)] px-3 py-2 text-[13px] placeholder:text-[var(--fg-3)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-emerald-500/60"
+          className="flex w-full rounded-md border border-input bg-card px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring/40"
         />
         {errors.description && (
-          <p className="text-[11px] text-red-500">{errors.description.message}</p>
+          <p className="text-xs text-destructive" role="status">
+            {errors.description.message}
+          </p>
         )}
       </div>
 
@@ -120,7 +126,7 @@ export function GeneralTab({ workspaceId }: Props) {
             </Select>
           )}
         />
-        <p className="caption">
+        <p className="text-xs text-muted-foreground">
           Slug <span className="font-mono">/{ws.data?.slug}</span> is permanent.
         </p>
       </div>
@@ -129,7 +135,8 @@ export function GeneralTab({ workspaceId }: Props) {
         <Button
           type="submit"
           disabled={isSubmitting || !isDirty}
-          className="h-9 bg-emerald-500 px-4 text-[12px] text-white hover:bg-emerald-600"
+          size="sm"
+          className="h-9 px-4"
         >
           {isSubmitting ? 'Saving…' : 'Save changes'}
         </Button>

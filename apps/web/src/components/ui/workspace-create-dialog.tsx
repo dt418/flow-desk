@@ -108,7 +108,9 @@ export function WorkspaceCreateDialog({ open, onOpenChange, onCreated }: Props) 
               {...register('name')}
             />
             {errors.name && (
-              <p className="text-[11px] text-red-500">{errors.name.message}</p>
+              <p className="text-xs text-destructive" role="status">
+                {errors.name.message}
+              </p>
             )}
           </div>
 
@@ -125,7 +127,9 @@ export function WorkspaceCreateDialog({ open, onOpenChange, onCreated }: Props) 
               })}
             />
             {errors.slug && (
-              <p className="text-[11px] text-red-500">{errors.slug.message}</p>
+              <p className="text-xs text-destructive" role="status">
+                {errors.slug.message}
+              </p>
             )}
           </div>
 
@@ -135,11 +139,13 @@ export function WorkspaceCreateDialog({ open, onOpenChange, onCreated }: Props) 
               id="ws-desc"
               placeholder="What this workspace is for"
               rows={3}
-              className="flex w-full rounded-md border border-[var(--border)] bg-[var(--bg-2)] px-3 py-2 text-[13px] placeholder:text-[var(--fg-3)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-emerald-500/60"
+              className="flex w-full rounded-md border border-input bg-card px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring/40"
               {...register('description')}
             />
             {errors.description && (
-              <p className="text-[11px] text-red-500">{errors.description.message}</p>
+              <p className="text-xs text-destructive" role="status">
+                {errors.description.message}
+              </p>
             )}
           </div>
 
@@ -165,11 +171,7 @@ export function WorkspaceCreateDialog({ open, onOpenChange, onCreated }: Props) 
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              className="bg-emerald-500 px-4 text-white hover:bg-emerald-600"
-            >
+            <Button type="submit" disabled={isSubmitting} className="px-4">
               {isSubmitting ? 'Creating…' : 'Create workspace'}
               {!isSubmitting && <Plus className="ml-1.5 h-4 w-4" />}
             </Button>

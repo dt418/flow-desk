@@ -3,8 +3,17 @@ import { useQueries, useQuery } from '@tanstack/react-query';
 import * as React from 'react';
 import { Plus, Search, Calendar, AlertCircle, ListChecks, Clock } from 'lucide-react';
 import { api } from '@/lib/api';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn, formatDate } from '@/lib/utils';
 import { WorkspaceCreateDialog } from '@/components/ui/workspace-create-dialog';
@@ -35,11 +44,14 @@ const PRIORITY_BAR: Record<string, string> = {
   URGENT: 'bg-red-500',
 };
 
-const PRIORITY_TONE: Record<string, string> = {
-  LOW: 'border-slate-400/40 text-slate-500',
-  MEDIUM: 'border-blue-500/40 text-blue-600',
-  HIGH: 'border-amber-500/40 text-amber-600',
-  URGENT: 'border-red-500/40 text-red-600',
+const PRIORITY_VARIANT: Record<
+  string,
+  'outline' | 'secondary' | 'warning' | 'destructive'
+> = {
+  LOW: 'outline',
+  MEDIUM: 'secondary',
+  HIGH: 'warning',
+  URGENT: 'destructive',
 };
 
 function initials(name: string): string {
@@ -80,37 +92,45 @@ function StatCard({
   hint?: string;
 }) {
   return (
-    <div className="relative flex flex-col gap-1 rounded-xl border border-[var(--border)] bg-[var(--bg-2)]/70 p-4 backdrop-blur-sm">
-      <div className="flex items-center justify-between text-[var(--fg-3)]">
-        <span className="text-[11px] font-medium uppercase tracking-wider">{label}</span>
-        <Icon
+    <Card>
+      <CardHeader>
+        <CardDescription className="flex items-center justify-between">
+          <span className="text-xs font-medium uppercase tracking-wider">{label}</span>
+          <Icon
+            className={cn(
+              'size-4 text-muted-foreground',
+              tone === 'warning' && 'text-amber-500',
+              tone === 'critical' && 'text-red-500',
+            )}
+          />
+        </CardDescription>
+        <CardTitle
           className={cn(
-            'h-4 w-4',
-            tone === 'warning' && 'text-amber-500',
+            'text-2xl font-semibold tabular-nums',
             tone === 'critical' && 'text-red-500',
+            tone === 'warning' && 'text-amber-600',
           )}
-        />
-      </div>
-      <span
-        className={cn(
-          'text-[28px] font-semibold tabular-nums tracking-tight',
-          tone === 'critical' && 'text-red-500',
-          tone === 'warning' && 'text-amber-600',
-        )}
-      >
-        {value}
-      </span>
-      {hint && <span className="caption">{hint}</span>}
-    </div>
+        >
+          {value}
+        </CardTitle>
+      </CardHeader>
+      {hint && (
+        <CardContent className="pt-0">
+          <p className="text-xs text-muted-foreground">{hint}</p>
+        </CardContent>
+      )}
+    </Card>
   );
 }
 
 function StatSkeleton() {
   return (
-    <div className="flex flex-col gap-1 rounded-xl border border-[var(--border)] bg-[var(--bg-2)]/70 p-4">
-      <Skeleton className="h-3 w-20" />
-      <Skeleton className="h-7 w-12" />
-    </div>
+    <Card>
+      <CardHeader>
+        <Skeleton className="h-3 w-20" />
+        <Skeleton className="h-7 w-12" />
+      </CardHeader>
+    </Card>
   );
 }
 
@@ -121,8 +141,8 @@ function TaskRow({ task, workspaceSlug }: { task: TaskRow; workspaceSlug?: strin
     <Link
       to={`/board/${task.workspaceId}`}
       className={cn(
-        'group flex items-center gap-3 rounded-md border border-transparent px-3 py-2 transition-colors',
-        'hover:border-[var(--border)] hover:bg-[var(--bg-2)]',
+        'group flex items-center gap-3 px-3 py-2 transition-colors',
+        'hover:bg-muted/50',
         isDone && 'opacity-60',
       )}
     >
@@ -133,37 +153,32 @@ function TaskRow({ task, workspaceSlug }: { task: TaskRow; workspaceSlug?: strin
       <div className="min-w-0 flex-1">
         <div
           className={cn(
-            'truncate text-[13px] font-medium',
-            isDone && 'line-through text-[var(--fg-3)]',
+            'truncate text-sm font-medium',
+            isDone && 'line-through text-muted-foreground',
           )}
         >
           {task.title}
         </div>
         {workspaceSlug && (
-          <div className="truncate text-[11px] text-[var(--fg-3)]">/{workspaceSlug}</div>
+          <div className="truncate text-xs text-muted-foreground">/{workspaceSlug}</div>
         )}
       </div>
-      <Badge
-        variant="outline"
-        className={cn('border text-[10px]', PRIORITY_TONE[task.priority] ?? '')}
-      >
-        {task.priority}
-      </Badge>
+      <Badge variant={PRIORITY_VARIANT[task.priority] ?? 'outline'}>{task.priority}</Badge>
       {due ? (
-        <span
-          className={cn(
-            'shrink-0 rounded px-1.5 py-0.5 text-[10px] tabular-nums',
+        <Badge
+          variant={
             due.tone === 'overdue'
-              ? 'bg-red-500/10 text-red-500'
+              ? 'destructive'
               : due.tone === 'today'
-                ? 'bg-amber-500/10 text-amber-600'
-                : 'bg-[var(--bg-3)] text-[var(--fg-2)]',
-          )}
+                ? 'warning'
+                : 'secondary'
+          }
+          className="tabular-nums"
         >
           {due.label}
-        </span>
+        </Badge>
       ) : (
-        <span className="shrink-0 caption">—</span>
+        <span className="shrink-0 text-xs text-muted-foreground">—</span>
       )}
     </Link>
   );
@@ -183,7 +198,7 @@ function TaskSkeletonRow() {
 }
 
 export function DashboardPage() {
-    const navigate = useNavigate();
+  const navigate = useNavigate();
   const [createOpen, setCreateOpen] = React.useState(false);
   const me = useQuery({
     queryKey: ['me'],
@@ -197,7 +212,6 @@ export function DashboardPage() {
 
   const workspaceList = workspaces.data?.data ?? [];
 
-  // Fetch tasks per workspace in parallel to build a unified "my tasks" feed.
   const taskQueries = useQueries({
     queries: workspaceList.map((w) => ({
       queryKey: ['tasks', w.id],
@@ -228,7 +242,6 @@ export function DashboardPage() {
     [allTasks, myUserId],
   );
 
-  const now = Date.now();
   const startOfToday = new Date();
   startOfToday.setHours(0, 0, 0, 0);
   const endOfWeek = new Date(startOfToday);
@@ -246,17 +259,9 @@ export function DashboardPage() {
     const ms = new Date(t.dueDate).getTime();
     return ms >= startOfToday.getTime() && ms <= endOfWeek.getTime();
   }).length;
-  const completedThisWeek = allTasks.filter((t) => {
-    if (t.assignee?.id !== myUserId) return false;
-    // Without completedAt in our slice, approximate by status DONE in the page.
-    return false;
-  }).length;
   const totalOpen = allTasks.filter(
     (t) => t.assignee?.id === myUserId && t.status !== 'DONE',
   ).length;
-
-  void now;
-  void completedThisWeek; // reserved for future completedAt filter
 
   const greeting = React.useMemo(() => {
     const h = new Date().getHours();
@@ -270,51 +275,47 @@ export function DashboardPage() {
     workspaces.isLoading || (workspaceList.length > 0 && taskQueries.some((q) => q.isLoading));
 
   return (
-    <div className="flex w-full flex-col gap-8 p-8">
-      {/* Hero / Greeting */}
+    <div className="flex w-full flex-col gap-6 p-6 md:p-8">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div className="space-y-1">
-          <span className="caption">FlowDesk</span>
-          <h1 className="text-[28px] font-semibold tracking-tight">
+          <p className="text-xs text-muted-foreground">FlowDesk</p>
+          <h1 className="text-3xl font-bold tracking-tight">
             {greeting}
             {me.data?.user.name ? (
-              <span className="text-[var(--fg-2)]">, {me.data.user.name.split(' ')[0]}</span>
+              <span className="text-muted-foreground">, {me.data.user.name.split(' ')[0]}</span>
             ) : null}
           </h1>
-          <p className="text-[13px] text-[var(--fg-2)]">
+          <p className="text-sm text-muted-foreground">
             {workspaceList.length === 0
               ? 'Create your first workspace to get started.'
               : `${totalOpen} open · ${dueThisWeekCount} due this week · ${overdueCount} overdue`}
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            type="button"
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => {
               const w = workspaceList[0];
               if (w) navigate(`/board/${w.id}`);
             }}
-            className="inline-flex h-9 items-center gap-2 rounded-md border border-[var(--border)] bg-[var(--bg-2)] px-3 text-[12px] text-[var(--fg-2)] transition-colors hover:bg-[var(--bg-3)]"
           >
-            <Search className="h-4 w-4" />
+            <Search />
             <span className="hidden sm:inline">Quick switch</span>
-            <kbd className="ml-1 hidden rounded bg-[var(--bg-3)] px-1.5 py-0.5 font-mono text-[10px] sm:inline">
+            <kbd className="ml-1 hidden rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] sm:inline">
               ⌘K
             </kbd>
-          </button>
-          <button
-            type="button"
-            onClick={() => setCreateOpen(true)}
-            className="btn-primary inline-flex h-9 items-center gap-2 text-[12px]"
-          >
-            <Plus className="h-4 w-4" />
+          </Button>
+          <Button size="sm" onClick={() => setCreateOpen(true)}>
+            <Plus />
             New workspace
-          </button>
+          </Button>
         </div>
       </header>
 
-      {/* Stat strip */}
-      <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
+      <Separator />
+
+      <section className="grid grid-cols-2 gap-4 md:grid-cols-4">
         {loadingWorkspaces && !me.data ? (
           <>
             <StatSkeleton />
@@ -354,87 +355,86 @@ export function DashboardPage() {
         )}
       </section>
 
-      {/* Main two-column */}
       <section className="grid grid-cols-1 gap-6 lg:grid-cols-[2fr_1fr]">
-        {/* My tasks */}
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-[15px] font-semibold tracking-tight">My tasks</h2>
-            {myTasks.length > 0 && (
-              <span className="caption">
-                {myTasks.length} of {totalOpen}
-              </span>
-            )}
-          </div>
-          <div className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg-2)]/50">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>My tasks</CardTitle>
+              {myTasks.length > 0 && (
+                <CardDescription>
+                  {myTasks.length} of {totalOpen}
+                </CardDescription>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent className="px-0 pb-0">
             {myTasks.length === 0 ? (
-              <div className="flex flex-col items-center gap-2 px-6 py-12 text-center">
-                <span className="caption">No tasks assigned to you yet.</span>
-                <Link to="/workspaces" className="text-[12px] text-emerald-600 hover:underline">
+              <div className="flex flex-col items-center gap-2 px-6 pb-6 text-center">
+                <p className="text-sm text-muted-foreground">No tasks assigned to you yet.</p>
+                <Link to="/workspaces" className="text-xs text-primary hover:underline">
                   Open a workspace →
                 </Link>
               </div>
             ) : (
-              <div className="divide-y divide-[var(--border)]">
+              <div className="divide-y divide-border">
                 {myTasks.map((t) => {
                   const ws = workspaceList.find((w) => w.id === t.workspaceId);
                   return <TaskRow key={t.id} task={t} workspaceSlug={ws?.slug} />;
                 })}
               </div>
             )}
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
-        {/* Workspaces rail */}
-        <aside className="flex flex-col gap-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-[15px] font-semibold tracking-tight">Workspaces</h2>
-            <span className="caption">{workspaceList.length}</span>
-          </div>
-          {workspaces.isLoading ? (
-            <div className="flex flex-col gap-2">
-              {[0, 1, 2].map((i) => (
-                <Skeleton key={i} className="h-16 w-full" />
-              ))}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Workspaces</CardTitle>
+              <CardDescription>{workspaceList.length}</CardDescription>
             </div>
-          ) : workspaceList.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-[var(--border)] bg-[var(--bg-2)]/40 p-6 text-center">
-              <p className="caption mb-3">You don't have any workspace yet.</p>
-              <button
-                type="button"
-                onClick={() => setCreateOpen(true)}
-                className="btn-primary inline-flex h-8 items-center gap-1 text-[12px]"
-              >
-                <Plus className="h-3.5 w-3.5" />
-                Create your first
-              </button>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-2">
-              {workspaceList.map((w) => (
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {workspaces.isLoading ? (
+              <>
+                <Skeleton className="h-16 w-full" />
+                <Skeleton className="h-16 w-full" />
+                <Skeleton className="h-16 w-full" />
+              </>
+            ) : workspaceList.length === 0 ? (
+              <div className="rounded-lg border border-dashed p-6 text-center">
+                <p className="mb-3 text-sm text-muted-foreground">
+                  You don't have any workspace yet.
+                </p>
+                <Button size="sm" onClick={() => setCreateOpen(true)}>
+                  <Plus />
+                  Create your first
+                </Button>
+              </div>
+            ) : (
+              workspaceList.map((w) => (
                 <Link
                   key={w.id}
                   to={`/board/${w.id}`}
-                  className="group flex items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--bg-2)]/70 p-3 transition-colors hover:border-emerald-500/50 hover:bg-[var(--bg-2)]"
+                  className="group flex items-center gap-3 rounded-lg border bg-card p-3 transition-colors hover:border-primary/50 hover:bg-accent"
                 >
-                  <Avatar className="h-9 w-9 text-[12px]">
+                  <Avatar>
                     <AvatarFallback>{initials(w.name)}</AvatarFallback>
                   </Avatar>
                   <div className="min-w-0 flex-1">
-                    <div className="truncate text-[13px] font-medium">{w.name}</div>
-                    <div className="caption truncate">/{w.slug}</div>
+                    <div className="truncate text-sm font-medium">{w.name}</div>
+                    <div className="truncate text-xs text-muted-foreground">/{w.slug}</div>
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-0.5 text-right">
-                    <span className="text-[12px] tabular-nums">{w._count.tasks}</span>
-                    <span className="text-[10px] uppercase tracking-wider text-[var(--fg-3)]">
+                    <span className="text-sm tabular-nums">{w._count.tasks}</span>
+                    <span className="text-xs uppercase tracking-wider text-muted-foreground">
                       tasks
                     </span>
                   </div>
                 </Link>
-              ))}
-            </div>
-          )}
-        </aside>
+              ))
+            )}
+          </CardContent>
+        </Card>
       </section>
 
       <WorkspaceCreateDialog

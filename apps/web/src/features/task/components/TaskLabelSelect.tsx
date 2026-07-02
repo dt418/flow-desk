@@ -53,7 +53,7 @@ export function TaskLabelSelect({
     <div
       className={cn(
         'flex flex-wrap items-center gap-1 rounded-md p-0.5',
-        canEdit && 'cursor-pointer hover:bg-[var(--bg-2)]',
+        canEdit && 'cursor-pointer hover:bg-card',
         className,
       )}
       role={canEdit ? 'button' : undefined}
@@ -71,14 +71,16 @@ export function TaskLabelSelect({
       {taskLabels.isLoading ? (
         <Skeleton className="h-4 w-12" />
       ) : assigned.length === 0 && canEdit ? (
-        <span className="inline-flex h-5 items-center gap-1 rounded-full border border-dashed border-[var(--border)] px-2 text-[10px] text-[var(--fg-3)]">
+        <span className="inline-flex h-5 items-center gap-1 rounded-full border border-dashed border-border px-2 text-[10px] text-muted-foreground">
           <Plus className="h-3 w-3" />
           Label
         </span>
       ) : (
         assigned.slice(0, 4).map((l) => <LabelChip key={l.id} label={l} size={size} />)
       )}
-      {assigned.length > 4 && <span className="caption px-1">+{assigned.length - 4}</span>}
+      {assigned.length > 4 && (
+        <span className="px-1 text-xs text-muted-foreground">+{assigned.length - 4}</span>
+      )}
     </div>
   );
 
@@ -114,9 +116,9 @@ export function TaskLabelSelect({
                   key={l.id}
                   type="button"
                   onClick={() => onToggle(l.id, true)}
-                  className="flex w-full items-center gap-2 rounded-md px-1.5 py-1 text-left text-[12px] hover:bg-[var(--bg-2)]"
+                  className="flex w-full items-center gap-2 rounded-md px-1.5 py-1 text-left text-xs hover:bg-card"
                 >
-                  <Check className="h-3.5 w-3.5 text-emerald-500" />
+                  <Check className="h-3.5 w-3.5 text-primary" />
                   <LabelChip label={l} size="sm" />
                 </button>
               ))}
@@ -134,11 +136,11 @@ export function TaskLabelSelect({
                   type="button"
                   onClick={() => onToggle(l.id, false)}
                   disabled={toggle.isPending}
-                  className="flex w-full items-center gap-2 rounded-md px-1.5 py-1 text-left text-[12px] hover:bg-[var(--bg-2)] disabled:opacity-50"
+                    className="flex w-full items-center gap-2 rounded-md px-1.5 py-1 text-left text-xs hover:bg-card disabled:opacity-50"
                 >
                   <span
                     aria-hidden
-                    className="flex h-3.5 w-3.5 items-center justify-center rounded-sm border border-[var(--border)]"
+                    className="flex h-3.5 w-3.5 items-center justify-center rounded-sm border border-border"
                   />
                   <LabelChip label={l} size="sm" />
                 </button>

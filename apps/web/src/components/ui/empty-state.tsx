@@ -20,16 +20,18 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        'flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-[var(--border)] bg-[var(--bg-2)]/40 px-6 py-12 text-center',
+        'flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border bg-card/40 px-6 py-12 text-center',
         className,
       )}
     >
-      <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[var(--bg-3)] text-[var(--fg-3)]">
+      <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
         <Icon className="h-5 w-5" />
       </span>
       <div className="space-y-1">
-        <p className="text-[13px] font-medium text-[var(--fg)]">{title}</p>
-        {description && <p className="max-w-sm text-[12px] text-[var(--fg-3)]">{description}</p>}
+        <p className="text-sm font-medium text-foreground">{title}</p>
+        {description && (
+          <p className="max-w-sm text-xs text-muted-foreground">{description}</p>
+        )}
       </div>
       {action}
     </div>

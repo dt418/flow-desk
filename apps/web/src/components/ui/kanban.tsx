@@ -177,8 +177,8 @@ export function Kanban({ onMove, renderOverlay, className, children }: KanbanPro
                 {renderOverlay(activeId)}
               </div>
             ) : (
-              <div className="kanban-drag-overlay pointer-events-none w-[272px] rotate-1 rounded-lg border border-emerald-500/60 bg-[var(--bg)] p-3 shadow-2xl">
-                <span className="caption">Moving…</span>
+              <div className="kanban-drag-overlay pointer-events-none w-[272px] rotate-1 rounded-lg border border-primary/60 bg-card p-3 shadow-2xl">
+                <span className="text-xs text-muted-foreground">Moving…</span>
               </div>
             )
           ) : null}
@@ -231,8 +231,8 @@ export function KanbanColumn({
       ref={setNodeRef}
       data-column-id={id}
       className={cn(
-        'flex w-72 flex-shrink-0 flex-col rounded-xl border bg-[var(--bg-2)]/80 backdrop-blur-sm',
-        'border-[var(--border)]',
+        'flex w-72 flex-shrink-0 flex-col rounded-xl border bg-card/80 backdrop-blur-sm',
+        'border-border',
         isOver && 'kanban-column-over',
         className,
       )}
@@ -254,13 +254,13 @@ export function KanbanColumn({
                 setIsRenaming(false);
               }
             }}
-            className="h-7 text-[13px]"
+            className="h-7 text-sm"
           />
         ) : (
           <div className="flex items-center gap-2">
-            <span className="text-[13px] font-medium tracking-tight">{name}</span>
+            <span className="text-sm font-medium tracking-tight">{name}</span>
             {typeof count === 'number' && (
-              <span className="rounded-md bg-[var(--bg-3)] px-1.5 py-0.5 text-[11px] tabular-nums text-[var(--fg-2)]">
+              <span className="rounded-md bg-muted px-1.5 py-0.5 text-xs tabular-nums text-muted-foreground">
                 {count}
               </span>
             )}
@@ -273,7 +273,7 @@ export function KanbanColumn({
                 type="button"
                 data-no-drag
                 onPointerDown={(e) => e.stopPropagation()}
-                className="flex h-6 w-6 items-center justify-center rounded text-[var(--fg-3)] hover:bg-[var(--bg-3)] hover:text-[var(--fg)]"
+                className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
                 aria-label={`Column ${name} menu`}
               >
                 <MoreVertical className="h-3.5 w-3.5" />
@@ -305,8 +305,8 @@ export function KanbanColumn({
         {childArray.length === 0 ? (
           <div
             className={cn(
-              'rounded-lg border border-dashed border-[var(--border)] px-3 py-8 text-center text-[12px] text-[var(--fg-3)] transition-colors',
-              isOver && 'border-emerald-500 text-emerald-600',
+              'rounded-lg border border-dashed border-border px-3 py-8 text-center text-xs text-muted-foreground transition-colors',
+              isOver && 'border-primary text-primary',
             )}
           >
             {isOver ? 'Drop here' : 'No tasks'}

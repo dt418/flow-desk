@@ -63,12 +63,13 @@ export function SettingsTabs({ workspaceId, children }: Props) {
                 <button
                   type="button"
                   onClick={() => setActive(tab.id)}
+                  aria-current={isActive ? 'page' : undefined}
                   className={cn(
-                    'flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-[13px] transition-colors',
+                    'flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm transition-colors',
                     isActive
-                      ? 'bg-emerald-500/10 text-emerald-600'
-                      : 'text-[var(--fg-2)] hover:bg-[var(--bg-2)]',
-                    tab.id === 'danger' && !isActive && 'text-red-500/80 hover:text-red-500',
+                      ? 'bg-primary/10 text-primary'
+                      : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                    tab.id === 'danger' && !isActive && 'text-destructive/80 hover:text-destructive',
                   )}
                 >
                   <Icon className="h-4 w-4" />
@@ -81,7 +82,7 @@ export function SettingsTabs({ workspaceId, children }: Props) {
       </nav>
 
       <div className="flex-1 min-w-0">
-        <div className="rounded-lg border border-[var(--border)] bg-[var(--bg)] p-5">
+        <div className="rounded-lg border border-border bg-card p-5">
           {children[active]}
         </div>
       </div>

@@ -30,6 +30,8 @@ export interface DataTableProps<TData> {
   pageSize?: number;
   empty?: React.ReactNode;
   className?: string;
+  /** Called when a row body is clicked (not when a cell's own button is clicked). */
+  onRowClick?: (row: TData) => void;
 }
 
 export function DataTable<TData>({
@@ -40,6 +42,7 @@ export function DataTable<TData>({
   pageSize = 25,
   empty = 'No results.',
   className,
+  onRowClick,
 }: DataTableProps<TData>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
@@ -63,7 +66,7 @@ export function DataTable<TData>({
     <div className={cn('flex flex-col gap-3', className)}>
       <div className="flex items-center gap-2">
         <div className="relative flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--fg-muted)]" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input
             type="search"
             value={
@@ -77,16 +80,16 @@ export function DataTable<TData>({
                 : setGlobalFilter(e.target.value)
             }
             placeholder={searchPlaceholder}
-            className="h-9 w-full rounded-md border border-[var(--border)] bg-[var(--bg-2)] pl-9 pr-3 text-sm outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/40"
+            className="h-9 w-full rounded-md border border-input bg-card pl-9 pr-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring/40"
           />
         </div>
         {table.getAllColumns().some((c) => c.getCanHide()) && (
           <details className="relative">
-            <summary className="inline-flex h-9 cursor-pointer list-none items-center gap-2 rounded-md border border-[var(--border)] bg-[var(--bg-2)] px-3 text-sm text-[var(--fg-2)] hover:bg-[var(--bg-3)]">
+            <summary className="inline-flex h-9 cursor-pointer list-none items-center gap-2 rounded-md border border-input bg-card px-3 text-sm text-muted-foreground hover:bg-muted">
               <Settings2 className="h-4 w-4" />
               Columns
             </summary>
-            <div className="absolute right-0 z-20 mt-1 w-48 rounded-md border border-[var(--border)] bg-[var(--bg-2)] p-2 shadow-lg">
+            <div className="absolute right-0 z-20 mt-1 w-48 rounded-md border border-border bg-popover p-2 shadow-lg">
               {table
                 .getAllColumns()
                 .filter((c) => c.getCanHide())
@@ -105,7 +108,7 @@ export function DataTable<TData>({
         )}
       </div>
 
-      <div className="rounded-lg border border-[var(--border)] bg-[var(--bg-2)]/40">
+      <div className="rounded-lg border border-border bg-card">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((hg) => (
@@ -121,7 +124,7 @@ export function DataTable<TData>({
                           onClick={canSort ? header.column.getToggleSortingHandler() : undefined}
                           className={cn(
                             'inline-flex items-center gap-1 text-[11px] font-medium uppercase tracking-wider',
-                            canSort && 'cursor-pointer select-none hover:text-emerald-600',
+                            canSort && 'cursor-pointer select-none hover:text-primary',
                           )}
                         >
                           {flexRender(header.column.columnDef.header, header.getContext())}
@@ -144,13 +147,26 @@ export function DataTable<TData>({
           <TableBody>
             {table.getRowModel().rows.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center text-[var(--fg-3)]">
+                <TableCell colSpan={columns.length} className="h-24 text-center text-muted-foreground">
                   {empty}
                 </TableCell>
               </TableRow>
             ) : (
               table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
+                <TableRow
+                  key={row.id}
+                  data-state={row.getIsSelected() && 'selected'}
+                  className={cn('group/row', onRowClick && 'cursor-pointer')}
+                  onClick={(e) => {
+                    // Don't open the row modal if the user clicked an interactive
+                    // element inside the cell (button, input, a, select, etc.).
+                    const target = e.target as HTMLElement;
+                    if (target.closest('button, a, input, select, textarea, [role="button"]')) {
+                      return;
+                    }
+                    onRowClick?.(row.original);
+                  }}
+                >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -163,7 +179,7 @@ export function DataTable<TData>({
         </Table>
       </div>
 
-      <div className="flex items-center justify-between text-xs text-[var(--fg-3)]">
+      <div className="flex items-center justify-between text-xs text-muted-foreground">
         <span>
           {table.getFilteredRowModel().rows.length} of {data.length} row(s)
         </span>
@@ -172,7 +188,7 @@ export function DataTable<TData>({
             type="button"
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
-            className="inline-flex h-7 items-center rounded-md border border-[var(--border)] bg-[var(--bg-2)] px-2.5 text-xs disabled:opacity-50"
+            className="inline-flex h-7 items-center rounded-md border border-input bg-card px-2.5 text-xs disabled:opacity-50"
           >
             Prev
           </button>
@@ -183,7 +199,7 @@ export function DataTable<TData>({
             type="button"
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
-            className="inline-flex h-7 items-center rounded-md border border-[var(--border)] bg-[var(--bg-2)] px-2.5 text-xs disabled:opacity-50"
+            className="inline-flex h-7 items-center rounded-md border border-input bg-card px-2.5 text-xs disabled:opacity-50"
           >
             Next
           </button>

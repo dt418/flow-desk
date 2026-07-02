@@ -25,24 +25,25 @@ export function ChannelItem({ channel, active, onClick }: ChannelItemProps) {
     <button
       type="button"
       onClick={onClick}
+      aria-current={active ? 'page' : undefined}
       className={cn(
-        'w-full px-4 py-2 text-left transition-colors hover:bg-[var(--bg-3)]',
-        active && 'bg-emerald-500/10',
+        'w-full px-4 py-2 text-left transition-colors hover:bg-muted',
+        active && 'bg-primary/10',
       )}
     >
       <div className="flex items-center justify-between">
         <span
-          className={cn('text-sm font-medium', active ? 'text-emerald-500' : 'text-[var(--fg)]')}
+          className={cn('text-sm font-medium', active ? 'text-primary' : 'text-foreground')}
         >
           # {channel.name}
         </span>
         {channel.latestMessage && (
-          <span className="text-[11px] text-[var(--fg-3)]">
+          <span className="text-xs text-muted-foreground">
             {timeAgo(channel.latestMessage.createdAt)}
           </span>
         )}
       </div>
-      <p className="mt-0.5 truncate text-xs text-[var(--fg-3)]">{previewClamped}</p>
+      <p className="mt-0.5 truncate text-xs text-muted-foreground">{previewClamped}</p>
     </button>
   );
 }

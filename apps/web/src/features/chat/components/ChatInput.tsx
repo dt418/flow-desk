@@ -1,4 +1,5 @@
 import { useState, useRef, type KeyboardEvent } from 'react';
+import { Button } from '@/components/ui/button';
 
 interface ChatInputProps {
   onSend: (content: string) => void;
@@ -35,7 +36,7 @@ export function ChatInput({ onSend, disabled, placeholder }: ChatInputProps) {
   };
 
   return (
-    <div className="flex items-end gap-2 border-t border-[var(--border)] bg-[var(--bg)] p-3">
+    <div className="flex items-end gap-2 border-t border-border bg-background p-3">
       <textarea
         ref={inputRef}
         value={value}
@@ -45,16 +46,18 @@ export function ChatInput({ onSend, disabled, placeholder }: ChatInputProps) {
         placeholder={placeholder ?? 'Message #channel'}
         disabled={disabled}
         rows={1}
-        className="max-h-40 min-h-[36px] flex-1 resize-none rounded-lg border border-[var(--border)] bg-[var(--bg-2)] px-3 py-2 text-sm text-[var(--fg)] placeholder:text-[var(--fg-3)] focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:opacity-50"
+        aria-label="Message"
+        className="max-h-40 min-h-[36px] flex-1 resize-none rounded-lg border border-input bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
       />
-      <button
+      <Button
         type="button"
         onClick={handleSend}
         disabled={disabled || !value.trim()}
-        className="btn-primary shrink-0 rounded-lg px-4 py-2 text-sm disabled:opacity-40"
+        size="sm"
+        className="shrink-0"
       >
         Send
-      </button>
+      </Button>
     </div>
   );
 }

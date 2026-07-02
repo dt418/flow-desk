@@ -39,17 +39,17 @@ export function ChannelView({
   if (!channel) {
     return (
       <div className="flex h-full items-center justify-center">
-        <p className="text-sm text-[var(--fg-3)]">Select a channel to start chatting</p>
+        <p className="text-sm text-muted-foreground">Select a channel to start chatting</p>
       </div>
     );
   }
 
   return (
     <div className="flex h-full flex-col">
-      <header className="shrink-0 border-b border-[var(--border)] px-4 py-3">
+      <header className="shrink-0 border-b border-border px-4 py-3">
         <h2 className="text-sm font-semibold"># {channel.name}</h2>
         {channel.description && (
-          <p className="mt-0.5 text-xs text-[var(--fg-3)]">{channel.description}</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">{channel.description}</p>
         )}
       </header>
 
@@ -59,7 +59,7 @@ export function ChannelView({
             <button
               type="button"
               onClick={onLoadMore}
-              className="text-xs text-[var(--fg-3)] hover:text-[var(--fg-2)]"
+              className="text-xs text-muted-foreground hover:text-foreground"
             >
               Load older messages
             </button>
@@ -76,7 +76,7 @@ export function ChannelView({
 
         {!loading && messages.length === 0 && (
           <div className="flex h-full items-center justify-center">
-            <p className="text-sm text-[var(--fg-3)]">No messages yet. Start a conversation!</p>
+            <p className="text-sm text-muted-foreground">No messages yet. Start a conversation!</p>
           </div>
         )}
 

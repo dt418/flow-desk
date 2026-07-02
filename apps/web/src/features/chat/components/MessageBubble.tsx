@@ -1,16 +1,10 @@
 import type { ChatMessageWithAuthor } from '../types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { cn, initials } from '@/lib/utils';
 
 interface MessageBubbleProps {
   message: ChatMessageWithAuthor;
   isOwn: boolean;
-}
-
-function initials(name: string): string {
-  const parts = name.trim().split(/\s+/);
-  if (parts.length === 0 || !parts[0]) return '?';
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return (parts[0][0]! + parts[parts.length - 1]![0]!).toUpperCase();
 }
 
 function formatTime(dateStr: string): string {
@@ -32,27 +26,28 @@ function formatDate(dateStr: string): string {
 
 export function MessageBubble({ message, isOwn }: MessageBubbleProps) {
   return (
-    <div className={`flex gap-2 px-4 py-1.5 ${isOwn ? 'flex-row-reverse' : ''}`}>
+    <div className={cn('flex gap-2 px-4 py-1.5', isOwn && 'flex-row-reverse')}>
       {!isOwn && (
         <Avatar className="mt-0.5 h-7 w-7 shrink-0">
-          <AvatarImage src={message.author.avatarUrl ?? undefined} />
+          <AvatarImage src={message.author.avatarUrl ?? undefined} alt={message.author.name} />
           <AvatarFallback className="text-[10px]">{initials(message.author.name)}</AvatarFallback>
         </Avatar>
       )}
-      <div className={`flex max-w-[70%] flex-col ${isOwn ? 'items-end' : ''}`}>
+      <div className={cn('flex max-w-[70%] flex-col', isOwn && 'items-end')}>
         {!isOwn && (
-          <span className="mb-0.5 text-[11px] font-medium text-[var(--fg-2)]">
+          <span className="mb-0.5 text-xs font-medium text-muted-foreground">
             {message.author.name}
           </span>
         )}
         <div
-          className={`rounded-2xl px-3 py-1.5 text-sm ${
-            isOwn ? 'bg-emerald-500 text-white' : 'bg-[var(--bg-3)] text-[var(--fg)]'
-          }`}
+          className={cn(
+            'rounded-2xl px-3 py-1.5 text-sm',
+            isOwn ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground',
+          )}
         >
           {message.content}
         </div>
-        <span className="mt-0.5 px-1 text-[10px] text-[var(--fg-3)]">
+        <span className="mt-0.5 px-1 text-[10px] text-muted-foreground">
           {formatDate(message.createdAt)}
           {message.editedAt && ' (edited)'}
         </span>

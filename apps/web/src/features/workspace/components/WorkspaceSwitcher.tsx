@@ -11,10 +11,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { cn } from '@/lib/utils';
+import { cn, initials } from '@/lib/utils';
 import { useWorkspaceRole, workspaceKeys } from '../hooks';
 import { workspaceApi } from '../api';
-import { initials } from './role';
 import type { WorkspaceListEntry } from '../types';
 
 interface Props {
@@ -78,20 +77,20 @@ export function WorkspaceSwitcher({
           <button
             type="button"
             className={cn(
-              'flex w-full items-center gap-2 rounded-md border border-[var(--border)] bg-[var(--bg-2)] px-2.5 py-1.5 text-left transition-colors hover:bg-[var(--bg-3)]',
+              'flex w-full items-center gap-2 rounded-md border border-input bg-card px-2.5 py-1.5 text-left transition-colors hover:bg-muted',
               className,
             )}
           >
             <span
               aria-hidden
-              className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-emerald-500/15 text-[10px] font-semibold text-emerald-600"
+              className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-primary/15 text-[10px] font-semibold text-primary"
             >
               {initials(current?.name ?? '?')}
             </span>
-            <span className="min-w-0 flex-1 truncate text-[12px] font-medium">
+            <span className="min-w-0 flex-1 truncate text-xs font-medium">
               {current?.name ?? 'Select workspace'}
             </span>
-            <ChevronDown className="h-3.5 w-3.5 text-[var(--fg-3)]" />
+            <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" sideOffset={4} className="min-w-56">
@@ -106,12 +105,12 @@ export function WorkspaceSwitcher({
               >
                 <span
                   aria-hidden
-                  className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-[var(--bg-3)] text-[10px] font-semibold"
+                  className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-muted text-[10px] font-semibold"
                 >
                   {initials(w.name)}
                 </span>
                 <span className="min-w-0 flex-1 truncate">{w.name}</span>
-                {active && <Check className="h-4 w-4 text-emerald-500" />}
+                {active && <Check className="h-4 w-4 text-primary" />}
               </DropdownMenuItem>
             );
           })}
@@ -140,14 +139,14 @@ export function WorkspaceSwitcher({
         >
           <span
             aria-hidden
-            className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-emerald-500/15 text-[10px] font-semibold text-emerald-600"
+            className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-primary/15 text-[10px] font-semibold text-primary"
           >
             {initials(current?.name ?? '?')}
           </span>
-          <span className="hidden max-w-[180px] truncate text-[13px] font-medium sm:inline">
+          <span className="hidden max-w-[180px] truncate text-sm font-medium sm:inline">
             {current?.name ?? 'Select workspace'}
           </span>
-          <ChevronDown className="h-3.5 w-3.5 text-[var(--fg-3)]" />
+          <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" sideOffset={6} className="min-w-56">
@@ -162,15 +161,15 @@ export function WorkspaceSwitcher({
             >
               <span
                 aria-hidden
-                className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-[var(--bg-3)] text-[10px] font-semibold"
+                className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-muted text-[10px] font-semibold"
               >
                 {initials(w.name)}
               </span>
               <span className="min-w-0 flex-1 truncate">{w.name}</span>
               {currentRole && w.id === currentWorkspaceId && (
-                <span className="caption">{currentRole.toLowerCase()}</span>
+                <span className="text-xs text-muted-foreground">{currentRole.toLowerCase()}</span>
               )}
-              {active && <Check className="h-4 w-4 text-emerald-500" />}
+              {active && <Check className="h-4 w-4 text-primary" />}
             </DropdownMenuItem>
           );
         })}
