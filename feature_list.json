@@ -1,6 +1,6 @@
 {
   "project": "flow-desk",
-  "last_updated": "2026-07-01",
+    "last_updated": "2026-07-02",
   "f3_active": true,
   "f3_f6_shipped": ["F3", "F4", "F5", "F6"],
   "rules": {
@@ -1020,6 +1020,33 @@
         "rg 'eval|RATE_LIMIT_SCRIPT' rate-limit.ts → 3 matches"
       ],
       "notes": "Plan 008. P1: redis.keys blocking O(n) every 10s. P3: no SIGTERM handler, resources not closed. P5: INCR+EXPIRE non-atomic → permanent block if process dies between. ioredis client used: SCAN returns [cursor, keys[]], eval(script, numKeys, key1, ...args). rtk vitest swallows output → use ./node_modules/.bin/vitest directly. Lua script cached by Redis SHA1 after first eval."
+    },
+    {
+      "id": "kanban-sprint-1",
+      "priority": 93,
+      "area": "polish",
+      "title": "Kanban Sprint 1: a11y nested-interactive fix, click-bubble guard, sensor tuning",
+      "user_visible_behavior": "Kanban cards no longer produce nested role=button axe violations. Clicking kebab menu or label select on a card works without drag interference. PointerSensor fires on 8px movement (no 80ms delay). TouchSensor uses 150ms delay. Drop animation is 120ms. Screen readers hear 'draggable' role and task name.",
+      "status": "passing",
+      "verification": [
+        "pnpm --filter @flow-desk/web typecheck → exit 0",
+        "pnpm --filter @flow-desk/web build → exit 0 (908KB JS / 93KB CSS, 272KB gzip)",
+        "pnpm check:secrets → exit 0"
+      ],
+      "evidence": [
+        "apps/web/src/components/ui/kanban.tsx — exported INTERACTIVE_SELECTOR constant + NoCardClick wrapper component",
+        "kanban.tsx sensors: PointerSensor {distance:8} (no delay), TouchSensor {delay:150, tolerance:8}",
+        "kanban.tsx DropAnimation {duration:120}",
+        "kanban.tsx KanbanCard filter uses INTERACTIVE_SELECTOR instead of hardcoded button/input/textarea/a list",
+        "kanban.tsx useDraggable: attributes+listeners spread on inner div (not wrapper div) — eliminates nested role=button",
+        "apps/web/src/features/task/components/TaskCard.tsx — removed role='button' from article element",
+        "TaskCard.tsx article: added aria-roledescription='draggable' + aria-label='Task: {title}'",
+        "TaskCard.tsx: 3 separate interactive whitelists unified to single INTERACTIVE_SELECTOR check",
+        "TaskCard.tsx kebab DropdownMenuTrigger wrapped in <NoCardClick> with aria-label='Actions for {title}'",
+        "TaskCard.tsx TaskLabelSelect wrapped in <NoCardClick>",
+        "TaskCard.tsx: removed all data-no-drag attributes (superseded by INTERACTIVE_SELECTOR pattern)"
+      ],
+      "notes": "Kanban UX audit: 15 bugs grouped into 6 root-cause clusters. Sprint 1 addresses RC1 (click bubbling), RC2 (80ms lag), RC4 (nested role=button). RC3 (optimistic reorder race), RC5 (same-position move), RC6 (overlay drift) deferred to Sprint 1.5. List page sync deferred."
     },
     {
       "id": "F8",

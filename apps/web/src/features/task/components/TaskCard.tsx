@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { INTERACTIVE_SELECTOR, NoCardClick } from '@/components/ui/kanban';
 import { TaskLabelSelect } from './TaskLabelSelect';
 
 export interface TaskCardData {
@@ -100,33 +101,21 @@ export function TaskCard({
 
   const onCardClick = (e: React.MouseEvent<HTMLElement>) => {
     const target = e.target as HTMLElement;
-    if (target.closest('[data-no-drag]')) return;
-    if (target.closest('[data-task-label-trigger]')) return;
-    if (target.closest('[data-task-kebab]')) return;
-    if (target.closest('button, a, input, select, textarea')) return;
-    if (target.closest('[role="button"]') && target.closest('[role="button"]') !== e.currentTarget)
-      return;
+    if (target.closest(INTERACTIVE_SELECTOR)) return;
     onClick?.(task.id);
   };
 
   return (
     <article
-      role={onClick ? 'button' : undefined}
+      aria-roledescription="draggable"
       tabIndex={onClick ? 0 : -1}
+      aria-label={`Task: ${task.title}`}
       onClick={onClick ? onCardClick : undefined}
       onKeyDown={(e) => {
         if (!onClick) return;
         if (e.key === 'Enter' || e.key === ' ') {
           const target = e.target as HTMLElement;
-          if (target.closest('[data-no-drag]')) return;
-          if (target.closest('[data-task-label-trigger]')) return;
-          if (target.closest('[data-task-kebab]')) return;
-          if (target.closest('button, a, input, select, textarea')) return;
-          if (
-            target.closest('[role="button"]') &&
-            target.closest('[role="button"]') !== e.currentTarget
-          )
-            return;
+          if (target.closest(INTERACTIVE_SELECTOR)) return;
           e.preventDefault();
           onClick(task.id);
         }
@@ -150,48 +139,49 @@ export function TaskCard({
         {shortId(task.id)}
       </span>
       {(onEdit || onDelete) && (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              type="button"
-              data-task-kebab
-              data-no-drag
-              className="absolute right-7 top-1.5 rounded p-1 opacity-0 transition-opacity hover:bg-card group-hover:opacity-100"
-              onClick={(e) => e.stopPropagation()}
-              onPointerDown={(e) => e.stopPropagation()}
-              aria-label="Task actions"
-            >
-              <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="min-w-[120px]">
-            {onEdit && (
-              <DropdownMenuItem onClick={() => onEdit(task.id)}>
-                <Pencil className="mr-2 h-3.5 w-3.5" />
-                Edit
-              </DropdownMenuItem>
-            )}
-            {onDelete && (
-              <DropdownMenuItem
-                onClick={() => onDelete(task.id, task.title)}
-                className="text-red-600 focus:text-red-600"
+        <NoCardClick>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                data-task-kebab
+                className="absolute right-7 top-1.5 rounded p-1 opacity-0 transition-opacity hover:bg-card group-hover:opacity-100"
+                aria-label={`Actions for ${task.title}`}
               >
-                <Trash2 className="mr-2 h-3.5 w-3.5" />
-                Delete
-              </DropdownMenuItem>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
+                <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="min-w-[120px]">
+              {onEdit && (
+                <DropdownMenuItem onClick={() => onEdit(task.id)}>
+                  <Pencil className="mr-2 h-3.5 w-3.5" />
+                  Edit
+                </DropdownMenuItem>
+              )}
+              {onDelete && (
+                <DropdownMenuItem
+                  onClick={() => onDelete(task.id, task.title)}
+                  className="text-red-600 focus:text-red-600"
+                >
+                  <Trash2 className="mr-2 h-3.5 w-3.5" />
+                  Delete
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </NoCardClick>
       )}
       <div className="line-clamp-2 pr-6 text-[13px] font-medium leading-snug">{task.title}</div>
 
-      <div data-task-label-trigger data-no-drag className="mt-2">
-        <TaskLabelSelect
-          workspaceId={workspaceId}
-          taskId={task.id}
-          canEdit={canEditLabels}
-          size="sm"
-        />
+      <div data-task-label-trigger className="mt-2">
+        <NoCardClick>
+          <TaskLabelSelect
+            workspaceId={workspaceId}
+            taskId={task.id}
+            canEdit={canEditLabels}
+            size="sm"
+          />
+        </NoCardClick>
       </div>
 
       <div className="mt-2.5 flex items-center justify-between">

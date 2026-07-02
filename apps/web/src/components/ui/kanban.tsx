@@ -76,6 +76,25 @@ const screenReaderInstructions = {
     'To pick up a draggable card, press space. While dragging, use arrow keys to move. Press space to drop, or escape to cancel.',
 };
 
+export const INTERACTIVE_SELECTOR =
+  ':is(button, [role="button"], [role="menuitem"], [role="checkbox"], a, input, select, textarea, [data-card-no-click])';
+
+export function NoCardClick({ children, className }: { children: React.ReactNode; className?: string }) {
+  const stop = (e: React.SyntheticEvent) => e.stopPropagation();
+  return (
+    <span
+      data-card-no-click
+      className={className}
+      onClick={stop}
+      onPointerDown={stop}
+      onKeyDown={stop}
+      style={{ display: 'contents' }}
+    >
+      {children}
+    </span>
+  );
+}
+
 export type KanbanMoveHandler = (
   taskId: string,
   fromColumnId: string,
@@ -98,9 +117,9 @@ export function Kanban({ onMove, renderOverlay, className, children }: KanbanPro
   const activeRef = React.useRef<HTMLElement | null>(null);
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6, delay: 80 } }),
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(KeyboardSensor),
-    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 8 } }),
   );
 
   const handleDragStart = (event: DragStartEvent) => {
@@ -170,7 +189,7 @@ export function Kanban({ onMove, renderOverlay, className, children }: KanbanPro
         >
           {children}
         </div>
-        <DragOverlay dropAnimation={{ duration: 200, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }}>
+        <DragOverlay dropAnimation={{ duration: 120, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }}>
           {activeId ? (
             renderOverlay ? (
               <div className="pointer-events-none w-[272px] rotate-1 shadow-2xl">
@@ -336,7 +355,7 @@ export function KanbanCard({ id, columnId, index, children, className }: KanbanC
   const isOtherDragging = activeId !== null && activeId !== id;
 
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    if ((e.target as HTMLElement | null)?.closest('[data-no-drag]')) {
+    if ((e.target as HTMLElement | null)?.closest(INTERACTIVE_SELECTOR)) {
       e.stopPropagation();
       return;
     }
@@ -354,7 +373,7 @@ export function KanbanCard({ id, columnId, index, children, className }: KanbanC
         className,
       )}
     >
-      <div {...attributes} onPointerDown={onPointerDown}>
+      <div {...listeners} {...attributes} onPointerDown={onPointerDown}>
         {children}
       </div>
     </div>

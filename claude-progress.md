@@ -5,7 +5,7 @@
 - **Repository root**: `/home/thanh/flow-desk`
 - **Standard startup path**: `./init.sh` (pnpm install + shared build + git hook install) then `docker compose up -d`
 - **Standard verification path**: `pnpm --filter @flow-desk/shared build` + curl API endpoints + `bash scripts/prisma-exec.sh <args>` for prisma
-- **Highest priority unfinished feature**: none (33 features + F7 + E2E passing + F8 workspace CRUD + kanban polish + post-F8 dev/seed fixes)
+- **Highest priority unfinished feature**: none (34 features + F7 + E2E passing + kanban-sprint-1 passing + post-F8 dev/seed fixes)
 - **Active branch**: `main` in `/home/thanh/flow-desk` (F7 merged, F8 implemented, post-F8 fixes committed)
 - **Post-F8 fixes (session 019)**: (a) dev startup race condition — `turbo.json` dev task `dependsOn: [^build, ^db:generate]` + `tsup.config.ts` `clean: false` (prevents `MODULE_NOT_FOUND` + `EADDRINUSE` when shared rebuilds under `--watch`); (b) seed cleanup — `packages/db/prisma/seed.ts` added `deleteMany` for `ChatMessage`, `ChatChannel`, `UserNotificationPreference`, `WorkspaceNotificationSetting`, `EmailJob` before workspace deletion (fixes P2003 FK constraint violation on re-seed after F7 models added); (c) force-exit timer regression — `apps/api/src/index.ts` 10s `setTimeout` was at module level (fired unconditionally 10s after every startup, killing the API in dev mode); moved inside `shutdown()` function so it only fires during actual SIGTERM/SIGINT (commit `89c0233`, regression from AUD-008)
 - **Prisma**: **7.8.0**
@@ -14,6 +14,7 @@
 - **R-39 resolved**: E2E suite now runs (3/3 E2E tests passing). Fix: `e2e/` as workspace package with `"type":"module"`, `packages/db` with `"type":"module"`, inline seed helpers, route fix `/w/`→`/board/`, pointer-event drag helper.
 - **Current blocker**: none
 - **Key risks** (carry-forward): R-24 (ai-001 latency UX) — only material risk remaining
+- **Session 021 (kanban-sprint-1)**: Kanban UX audit found 15 bugs in 6 root-cause clusters. Sprint 1 fixes RC1 (click bubbling via INTERACTIVE_SELECTOR + NoCardClick), RC2 (80ms PointerSensor lag → distance:8 no delay), RC4 (nested role=button → attributes on inner div + aria on article). Verified: typecheck ✓, build ✓ (908KB JS / 93KB CSS, 272KB gzip), check:secrets ✓. R-36/R-37/R-38 added. Deferred to Sprint 1.5: RC3 (optimistic reorder race), RC5 (same-position move), RC6 (overlay drift), list page sync.
 - **Session 020 fixes (2026-07-02)**: R-09 mention cap (MAX_MENTIONS=10 in comment.service.ts), R-10 mobile drag (TouchSensor added to kanban.tsx), R-18 timezone (formatDate/relativeDays accept optional timeZone param)
 - **Resolved in F2 (session 011)**: R-33 (split-brain selects — Radix primitives added)
 - **Resolved in F3-F6 (session 012)**: R-29 (soft-delete gaps + extension), R-30 (cursor pagination), R-31 (service/repo split all modules), R-32 (zero tests — 142 integration tests), R-34 (DragOverlay real-card clone)
@@ -23,6 +24,18 @@
 - **Security note**: `LLM_API_KEY` (sk-80c6f26e1...) was pasted in chat once during session 006. Recommend rotating the key at the provider. Key is in `.env`/`.env.local` (gitignored). Pre-commit hook blocks future leaks.
 
 ## Session Log
+
+### Session 021 — Kanban Sprint 1: a11y + click-bubble + sensor tuning
+
+- **Date**: 2026-07-02
+- **Goal**: Fix Kanban UX audit findings — RC1 (click bubbling), RC2 (80ms PointerSensor lag), RC4 (nested role=button axe violation)
+- **Completed**:
+  - `kanban.tsx`: exported `INTERACTIVE_SELECTOR` constant + `NoCardClick` wrapper; sensors → PointerSensor {distance:8} no delay + TouchSensor {delay:150, tolerance:8}; DropAnimation {duration:120}; KanbanCard filter uses INTERACTIVE_SELECTOR; useDraggable attributes+listeners on inner div (not wrapper)
+  - `TaskCard.tsx`: removed role='button' from article; added aria-roledescription='draggable' + aria-label='Task: {title}'; 3 whitelists unified to INTERACTIVE_SELECTOR; kebab + label select wrapped in NoCardClick; removed data-no-drag attributes
+- **Verification**: `pnpm --filter @flow-desk/web typecheck` → exit 0; `pnpm --filter @flow-desk/web build` → exit 0 (908KB JS / 93KB CSS, 272KB gzip); `pnpm check:secrets` → exit 0
+- **Risks**: R-36 (click bubbling), R-37 (80ms lag), R-38 (nested role=button) — all mitigated by Sprint 1 changes
+- **Deferred to Sprint 1.5**: RC3 (optimistic reorder + Socket.IO race), RC5 (same-position move no early-return), RC6 (DragOverlay animation drift), list page sync
+- **Files updated**: `apps/web/src/components/ui/kanban.tsx`, `apps/web/src/features/task/components/TaskCard.tsx`, `plans/kanban-sprint-1.md`, `feature_list.json`, `RISKS.md`, `claude-progress.md`
 
 ### Session 016 — Chat, Notifications & Email backend
 
