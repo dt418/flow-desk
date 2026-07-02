@@ -18,8 +18,8 @@ Generated: 2026-07-03 | Base commit: `732acb4` | Audit run: standard
 | 018 | API client validation (TECH-09) | tech-debt | M | — | DONE |
 | 019 | Register/OAuth transactional (CORRECT-06) | correctness | M | — | DONE |
 | 020 | Test pipeline — CI unit tests (TC-03) | tests | S | — | DONE |
-| 021 | Test pipeline — E2E realtime (TC-04) | tests | M | 020 | TODO |
-| 022 | Realtime gateway tests (TC-01) | tests | L | 020 | TODO |
+| 021 | Test pipeline — E2E realtime (TC-04) | tests | M | 020 | DONE |
+| 022 | Realtime gateway tests (TC-01) | tests | L | 020 | DONE |
 
 ## Dependency Graph
 
@@ -55,3 +55,4 @@ Generated: 2026-07-03 | Base commit: `732acb4` | Audit run: standard
 | kanban-sprint-1.5 | DONE | Optimistic race + overlay fade |
 | 009-015 | DONE | Batch 1 — email bugs, security, vite, board, dedup, enum, chat |
 | 016-020 | DONE | Batch 2 — auth cache, code splitting, API validation, register txn, CI tests |
+| 021-022 | DONE | Batch 3 — E2E realtime, gateway tests |
