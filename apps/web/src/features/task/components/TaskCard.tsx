@@ -8,9 +8,10 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, initials } from '@/lib/utils';
 import { INTERACTIVE_SELECTOR, NoCardClick } from '@/components/ui/kanban';
 import { TaskLabelSelect } from './TaskLabelSelect';
+import { PRIORITY_BAR, PRIORITY_DOT, shortId, relativeDate, PriorityDot } from '../utils';
 
 export interface TaskCardData {
   id: string;
@@ -34,58 +35,6 @@ interface Props {
   onClick?: (taskId: string) => void;
   onEdit?: (taskId: string) => void;
   onDelete?: (taskId: string, title: string) => void;
-}
-
-const PRIORITY_BAR: Record<TaskCardData['priority'], string> = {
-  LOW: 'bg-slate-300 dark:bg-slate-600',
-  MEDIUM: 'bg-blue-500',
-  HIGH: 'bg-amber-500',
-  URGENT: 'bg-red-500',
-};
-
-const PRIORITY_DOT: Record<TaskCardData['priority'], string> = {
-  LOW: 'bg-slate-400',
-  MEDIUM: 'bg-blue-500',
-  HIGH: 'bg-amber-500',
-  URGENT: 'bg-red-500',
-};
-
-function shortId(id: string): string {
-  return id.slice(-4).toUpperCase();
-}
-
-function initials(name: string): string {
-  const parts = name.trim().split(/\s+/);
-  if (parts.length === 0 || !parts[0]) return '?';
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return (parts[0][0]! + parts[parts.length - 1]![0]!).toUpperCase();
-}
-
-function relativeDate(
-  value: string | null,
-): { label: string; tone: 'overdue' | 'soon' | 'normal' } | null {
-  if (!value) return null;
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return null;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const days = Math.round((d.getTime() - today.getTime()) / 86_400_000);
-  if (days === 0) return { label: 'Today', tone: 'soon' };
-  if (days === 1) return { label: 'Tomorrow', tone: 'soon' };
-  if (days === -1) return { label: 'Yesterday', tone: 'overdue' };
-  if (days > 1 && days < 7)
-    return { label: d.toLocaleDateString(undefined, { weekday: 'short' }), tone: 'normal' };
-  if (days < 0) return { label: `${-days}d late`, tone: 'overdue' };
-  return { label: `+${days}d`, tone: 'normal' };
-}
-
-function PriorityDot({ priority }: { priority: TaskCardData['priority'] }) {
-  return (
-    <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-      <span className={cn('h-1.5 w-1.5 rounded-full', PRIORITY_DOT[priority])} />
-      {priority}
-    </span>
-  );
 }
 
 export function TaskCard({

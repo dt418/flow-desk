@@ -13,7 +13,7 @@ import {
   type CreateSubtaskInput,
   type CreateDependencyInput,
 } from '@flow-desk/shared/task';
-import { emitToTask, emitToWorkspace, emitToUser } from '../../shared/lib/socket-events';
+import { emitToTask, emitToWorkspace, emitToUser, safeEmit } from '../../shared/lib/socket-events';
 import { logger } from '../../shared/lib/logger';
 import { BadRequestError, ConflictError, NotFoundError } from '../../shared/errors';
 import * as repo from './task.repository';
@@ -33,14 +33,6 @@ export const listTasksQuerySchema = CursorPaginationQuery.extend({
   sortOrder: z.enum(['asc', 'desc']).default('asc'),
 });
 export type ListTasksQuery = z.infer<typeof listTasksQuerySchema>;
-
-function safeEmit(fn: () => void, ctx: Record<string, unknown>): void {
-  try {
-    fn();
-  } catch (err) {
-    logger.warn({ err, ...ctx }, 'socket emit failed');
-  }
-}
 
 type TaskStatusLike = TaskStatus;
 

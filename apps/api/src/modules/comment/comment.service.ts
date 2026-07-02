@@ -7,20 +7,11 @@ import type {
 } from '@flow-desk/shared/comment';
 import { BadRequestError, NotFoundError } from '../../shared/errors';
 import { assertMembership } from '../../shared/lib/access';
-import { emitToTask, emitToUser } from '../../shared/lib/socket-events';
-import { logger } from '../../shared/lib/logger';
+import { emitToTask, emitToUser, safeEmit } from '../../shared/lib/socket-events';
 import { decodeCursor, encodeCursor } from '@flow-desk/shared/pagination';
 import * as repo from './comment.repository';
 
 const MENTION_REGEX = /@([a-zA-Z0-9_-]+)/g;
-
-function safeEmit(fn: () => void, ctx: Record<string, unknown>): void {
-  try {
-    fn();
-  } catch (err) {
-    logger.warn({ err, ...ctx }, 'socket emit failed');
-  }
-}
 
 const MAX_MENTIONS = 10;
 

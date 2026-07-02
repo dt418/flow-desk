@@ -7,20 +7,11 @@ import type {
 } from './chat.message.schema';
 import { BadRequestError, NotFoundError } from '../../shared/errors';
 import { assertMembership } from '../../shared/lib/access';
-import { emitToRoom, emitToUser } from '../../shared/lib/socket-events';
-import { logger } from '../../shared/lib/logger';
+import { emitToRoom, emitToUser, safeEmit } from '../../shared/lib/socket-events';
 import { decodeCursor, encodeCursor } from '@flow-desk/shared/pagination';
 import * as channelRepo from './chat.repository';
 import * as commentRepo from '../comment/comment.repository';
 import * as repo from './chat.message.repository';
-
-function safeEmit(fn: () => void, ctx: Record<string, unknown>): void {
-  try {
-    fn();
-  } catch (err) {
-    logger.warn({ err, ...ctx }, 'socket emit failed');
-  }
-}
 
 export async function listMessages(
   prisma: PrismaClient,

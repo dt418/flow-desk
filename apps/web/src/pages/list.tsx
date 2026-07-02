@@ -13,6 +13,7 @@ import { cn, formatDate, initials } from '@/lib/utils';
 import { useTaskDelete } from '@/features/task';
 import { useMembers, useColumns } from '@/features/workspace';
 import { TaskEditModal, NewTaskModal } from '@/features/task/components/TaskEditModal';
+import { PRIORITY_DOT, STATUS_TONE, PriorityDot } from '@/features/task/utils';
 
 interface TaskRow {
   id: string;
@@ -46,41 +47,12 @@ type StatusFilter = (typeof STATUS_OPTIONS)[number];
 const PRIORITY_OPTIONS = ['ALL', 'LOW', 'MEDIUM', 'HIGH', 'URGENT'] as const;
 type PriorityFilter = (typeof PRIORITY_OPTIONS)[number];
 
-const STATUS_TONE: Record<string, string> = {
-  BACKLOG: 'bg-slate-500/10 text-slate-600 dark:text-slate-300',
-  TODO: 'bg-slate-500/10 text-slate-600 dark:text-slate-300',
-  IN_PROGRESS: 'bg-blue-500/10 text-blue-600 dark:text-blue-300',
-  IN_REVIEW: 'bg-amber-500/10 text-amber-600 dark:text-amber-300',
-  DONE: 'bg-primary/10 text-primary',
-  BLOCKED: 'bg-red-500/10 text-red-600 dark:text-red-300',
-};
-
-const PRIORITY_DOT: Record<string, string> = {
-  LOW: 'bg-slate-400',
-  MEDIUM: 'bg-blue-500',
-  HIGH: 'bg-amber-500',
-  URGENT: 'bg-red-500',
-};
-
 function StatusPill({ status }: { status: string }) {
   return (
     <Badge variant="secondary" className={cn('border-transparent', STATUS_TONE[status] ?? '')}>
       {status.replace('_', ' ')}
     </Badge>
   );
-}
-
-function PriorityDot({ priority }: { priority: string }) {
-  return (
-    <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-      <span className={cn('h-1.5 w-1.5 rounded-full', PRIORITY_DOT[priority] ?? 'bg-muted-foreground')} />
-      {priority}
-    </span>
-  );
-}
-
-function priorityDotColor(priority: string): string {
-  return PRIORITY_DOT[priority] ?? 'bg-muted-foreground';
 }
 
 /**

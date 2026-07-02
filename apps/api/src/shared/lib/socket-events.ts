@@ -1,5 +1,6 @@
 import type { Server as SocketServer } from 'socket.io';
 import type { TaskLabel } from '@flowdesk/db';
+import { logger } from './logger';
 
 export type FlowDeskNamespace = '/tasks' | '/notifications' | '/collab';
 
@@ -50,4 +51,12 @@ export function emitToWorkspace(workspaceId: string, event: string, payload: Eve
 
 export function emitToTask(taskId: string, event: string, payload: EventPayload): void {
   emitToRoom('/tasks', `task:${taskId}`, event, payload);
+}
+
+export function safeEmit(fn: () => void, ctx: Record<string, unknown>): void {
+  try {
+    fn();
+  } catch (err) {
+    logger.warn({ err, ...ctx }, 'socket emit failed');
+  }
 }
