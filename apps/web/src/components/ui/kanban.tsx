@@ -367,8 +367,8 @@ export function KanbanCard({ id, columnId, index, children, className }: KanbanC
       ref={setNodeRef}
       data-kanban-id={id}
       className={cn(
-        'cursor-grab select-none touch-none',
-                isDragging && 'invisible',
+        'cursor-grab select-none touch-none transition-opacity duration-150',
+                isDragging && 'opacity-30',
         isOtherDragging && activeColumnId !== columnId && 'opacity-60',
         className,
       )}

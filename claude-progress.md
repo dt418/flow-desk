@@ -15,6 +15,7 @@
 - **Current blocker**: none
 - **Key risks** (carry-forward): R-24 (ai-001 latency UX) — only material risk remaining
 - **Session 021 (kanban-sprint-1)**: Kanban UX audit found 15 bugs in 6 root-cause clusters. Sprint 1 fixes RC1 (click bubbling via INTERACTIVE_SELECTOR + NoCardClick), RC2 (80ms PointerSensor lag → distance:8 no delay), RC4 (nested role=button → attributes on inner div + aria on article). Verified: typecheck ✓, build ✓ (908KB JS / 93KB CSS, 272KB gzip), check:secrets ✓. R-36/R-37/R-38 added. Deferred to Sprint 1.5: RC3 (optimistic reorder race), RC5 (same-position move), RC6 (overlay drift), list page sync.
+- **Session 022 (kanban-sprint-1.5)**: Fixed RC3 (optimistic reorder + Socket.IO self-broadcast race via move-progress flag), RC5 (same-position move early-return), RC6 (DragOverlay invisible snap → opacity-30 + transition-opacity). Verified: typecheck ✓, build ✓, check:secrets ✓. R-36/R-37/R-38 resolved, R-39/R-40/R-41 added. List sync N/A (table rows).
 - **Session 020 fixes (2026-07-02)**: R-09 mention cap (MAX_MENTIONS=10 in comment.service.ts), R-10 mobile drag (TouchSensor added to kanban.tsx), R-18 timezone (formatDate/relativeDays accept optional timeZone param)
 - **Resolved in F2 (session 011)**: R-33 (split-brain selects — Radix primitives added)
 - **Resolved in F3-F6 (session 012)**: R-29 (soft-delete gaps + extension), R-30 (cursor pagination), R-31 (service/repo split all modules), R-32 (zero tests — 142 integration tests), R-34 (DragOverlay real-card clone)
@@ -36,6 +37,20 @@
 - **Risks**: R-36 (click bubbling), R-37 (80ms lag), R-38 (nested role=button) — all mitigated by Sprint 1 changes
 - **Deferred to Sprint 1.5**: RC3 (optimistic reorder + Socket.IO race), RC5 (same-position move no early-return), RC6 (DragOverlay animation drift), list page sync
 - **Files updated**: `apps/web/src/components/ui/kanban.tsx`, `apps/web/src/features/task/components/TaskCard.tsx`, `plans/kanban-sprint-1.md`, `feature_list.json`, `RISKS.md`, `claude-progress.md`
+
+### Session 022 — Kanban Sprint 1.5: race fix + same-position guard + overlay fade
+
+- **Date**: 2026-07-02
+- **Goal**: Fix remaining Kanban audit items — RC3 (optimistic reorder race), RC5 (same-position move), RC6 (DragOverlay flicker)
+- **Completed**:
+  - `realtime/move-progress.ts`: new shared module with `isMoveInProgress()` flag + `setMoveInProgress()` setter
+  - `board.tsx`: early-return in `handleMove` when fromColumnId === toColumnId && fromIndex === toIndex (RC5); `setMoveInProgress(true)` before mutate, `setMoveInProgress(false)` in onError + onSettled (RC3)
+  - `useRealtime.ts`: `task:moved` handler skips invalidation when `isMoveInProgress()` is true (RC3)
+  - `kanban.tsx`: KanbanCard `isDragging` uses `opacity-30` + `transition-opacity duration-150` instead of `invisible` (RC6)
+- **Verification**: `pnpm --filter @flow-desk/web typecheck` → exit 0; `pnpm --filter @flow-desk/web build` → exit 0; `pnpm check:secrets` → exit 0
+- **Risks**: R-36/R-37/R-38 resolved (Sprint 1 + 1.5). R-39 (optimistic reorder race), R-40 (same-position move), R-41 (DragOverlay snap) added and mitigated.
+- **List sync N/A**: list.tsx uses table rows, not KanbanCard/TaskCard — no INTERACTIVE_SELECTOR or NoCardClick needed.
+- **Files updated**: `apps/web/src/pages/board.tsx`, `apps/web/src/components/ui/kanban.tsx`, `apps/web/src/features/realtime/move-progress.ts` (new), `apps/web/src/features/realtime/useRealtime.ts`, `feature_list.json`, `RISKS.md`, `claude-progress.md`
 
 ### Session 016 — Chat, Notifications & Email backend
 

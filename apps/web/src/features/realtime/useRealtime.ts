@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import type { Socket } from 'socket.io-client';
 import { useNamespacedSocket } from '@/lib/socket';
+import { isMoveInProgress } from './move-progress';
 
 export const realtimeKeys = {
   board: (workspaceId: string) => ['board', workspaceId] as const,
@@ -46,7 +47,11 @@ export function useRealtime(workspaceId: string, taskId?: string) {
       'task:dependency:added',
     ];
     const handlers: Array<readonly [string, () => void]> = taskEvents.map((evt) => {
-      const handler = () => invalidateBoard();
+      const handler = () => {
+        // Skip self-broadcast during local move (onSettled handles invalidation).
+        if (evt === 'task:moved' && isMoveInProgress()) return;
+        invalidateBoard();
+      };
       socket.on(evt, handler);
       return [evt, handler] as const;
     });

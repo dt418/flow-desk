@@ -17,6 +17,7 @@ import {
 } from '@/features/task';
 import { useMembers, useUpdateColumn } from '@/features/workspace';
 import { useRealtime } from '@/features/realtime/useRealtime';
+import { setMoveInProgress } from '@/features/realtime/move-progress';
 import { EmptyBoardState, PresenceBar } from '@/features/board';
 
 interface Task {
@@ -176,12 +177,14 @@ export function BoardPage() {
       }
       moveSnapshotRef.current = null;
       moveIdRef.current = null;
+      setMoveInProgress(false);
       const message = err instanceof ApiError ? err.message : 'Move failed. Reverted board state.';
       toast.error(message);
     },
     onSettled: () => {
       moveSnapshotRef.current = null;
       moveIdRef.current = null;
+      setMoveInProgress(false);
       qc.invalidateQueries({ queryKey: ['board', workspaceId] });
     },
   });
@@ -193,6 +196,9 @@ export function BoardPage() {
     fromIndex,
     toIndex,
   ) => {
+    // RC5: Skip no-op moves (same column, same position).
+    if (fromColumnId === toColumnId && fromIndex === toIndex) return;
+
     setLocal((prev) => {
       const base = prev ?? serverColumnsById;
       const fromList = [...(base[fromColumnId] ?? [])];
@@ -216,6 +222,7 @@ export function BoardPage() {
       fromColumnId === toColumnId ? baseLen : (columnsById[toColumnId]?.length ?? 0);
     const clampedPosition = Math.min(Math.max(toIndex, 0), targetLen);
     const taskVersion = columnsById[fromColumnId]?.find((t) => t.id === taskId)?.version ?? 0;
+    setMoveInProgress(true);
     moveMutation.mutate({ taskId, toColumnId, position: clampedPosition, version: taskVersion });
   };
 

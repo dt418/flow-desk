@@ -1049,6 +1049,27 @@
       "notes": "Kanban UX audit: 15 bugs grouped into 6 root-cause clusters. Sprint 1 addresses RC1 (click bubbling), RC2 (80ms lag), RC4 (nested role=button). RC3 (optimistic reorder race), RC5 (same-position move), RC6 (overlay drift) deferred to Sprint 1.5. List page sync deferred."
     },
     {
+      "id": "kanban-sprint-1.5",
+      "priority": 93,
+      "area": "polish",
+      "title": "Kanban Sprint 1.5: same-position guard, optimistic reorder race fix, overlay fade",
+      "user_visible_behavior": "Dragging a card to its original position no longer fires a network request. After dropping a card, the board no longer flickers when the Socket.IO broadcast arrives. DragOverlay transition is smooth (opacity fade instead of invisible snap).",
+      "status": "passing",
+      "verification": [
+        "pnpm --filter @flow-desk/web typecheck → exit 0",
+        "pnpm --filter @flow-desk/web build → exit 0",
+        "pnpm check:secrets → exit 0"
+      ],
+      "evidence": [
+        "board.tsx handleMove: early-return when fromColumnId === toColumnId && fromIndex === toIndex (RC5)",
+        "realtime/move-progress.ts: shared isMoveInProgress() flag set before mutate, cleared in onSettled",
+        "useRealtime.ts: task:moved handler skips invalidation when isMoveInProgress() is true (RC3)",
+        "board.tsx moveMutation: setMoveInProgress(true) before mutate, setMoveInProgress(false) in onError + onSettled",
+        "kanban.tsx KanbanCard: isDragging uses opacity-30 + transition-opacity instead of invisible (RC6)"
+      ],
+      "notes": "Sprint 1.5 from Kanban UX audit. RC5: same-position early-return. RC3: optimistic reorder race (Socket.IO self-broadcast skipped during in-flight mutation). RC6: DragOverlay fade (opacity-30 + 150ms transition). List page sync N/A (table rows, not KanbanCard)."
+    },
+    {
       "id": "F8",
       "priority": 94,
       "area": "polish",
