@@ -10,6 +10,7 @@ import {
   DangerZoneTab,
 } from '@/features/workspace';
 import { LabelManagerPage } from '@/features/label';
+import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { initials } from '@/features/workspace/components/role';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -21,14 +22,11 @@ export function WorkspaceSettingsPage() {
   return (
     <div className="flex w-full flex-col gap-6 p-6 lg:p-8">
       <header className="flex items-center gap-3">
-        <Link
-          to={`/board/${workspaceId}`}
-          className="btn-ghost h-8 w-8 p-0"
-          aria-label="Back to board"
-          title="Back to board"
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Link>
+        <Button asChild variant="ghost" size="icon-sm" aria-label="Back to board" title="Back to board">
+          <Link to={`/board/${workspaceId}`}>
+            <ArrowLeft />
+          </Link>
+        </Button>
         {ws.isLoading ? (
           <Skeleton className="h-7 w-48" />
         ) : (
@@ -37,8 +35,8 @@ export function WorkspaceSettingsPage() {
               <AvatarFallback>{initials(ws.data?.name ?? '?')}</AvatarFallback>
             </Avatar>
             <div>
-              <span className="caption">Workspace settings</span>
-              <h1 className="text-[20px] font-semibold tracking-tight">
+              <p className="text-xs text-muted-foreground">Workspace settings</p>
+              <h1 className="text-2xl font-semibold tracking-tight">
                 {ws.data?.name ?? 'Untitled'}
               </h1>
             </div>

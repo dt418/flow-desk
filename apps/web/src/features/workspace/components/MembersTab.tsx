@@ -25,6 +25,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { ApiError } from '@/lib/api';
 import type { MemberRow } from '../types';
 import type { UserRole } from '@flow-desk/shared/user';
@@ -61,6 +71,8 @@ export function MembersTab({ workspaceId }: Props) {
     defaultValues: { email: '', role: 'MEMBER' },
   });
 
+  const [removeTarget, setRemoveTarget] = useState<MemberRow | null>(null);
+
   const onInvite = handleSubmit(async (values) => {
     try {
       await invite.mutateAsync(values);
@@ -81,7 +93,13 @@ export function MembersTab({ workspaceId }: Props) {
   };
 
   const onRemove = async (m: MemberRow) => {
-    if (!confirm(`Remove ${m.user.name} from this workspace?`)) return;
+    setRemoveTarget(m);
+  };
+
+  const confirmRemove = async () => {
+    if (!removeTarget) return;
+    const m = removeTarget;
+    setRemoveTarget(null);
     try {
       await remove.mutateAsync(m.userId);
       toast.success('Member removed');
@@ -225,15 +243,17 @@ export function MembersTab({ workspaceId }: Props) {
                     </td>
                     <td className="px-3 py-2.5 text-right">
                       {canManage && !isSelf && m.role !== 'OWNER' && (
-                        <button
+                        <Button
                           type="button"
+                          variant="ghost"
+                          size="icon-sm"
                           onClick={() => onRemove(m)}
-                          className="btn-ghost h-7 w-7 p-0 text-red-500"
                           aria-label={`Remove ${m.user.name}`}
                           title="Remove member"
+                          className="text-muted-foreground hover:text-destructive"
                         >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
+                          <Trash2 />
+                        </Button>
                       )}
                     </td>
                   </tr>
@@ -249,6 +269,38 @@ export function MembersTab({ workspaceId }: Props) {
           Only owners and admins can change member roles. Ask an admin for help.
         </p>
       ) : null}
+
+      <AlertDialog
+        open={removeTarget !== null}
+        onOpenChange={(open) => !open && setRemoveTarget(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove member?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {removeTarget && (
+                <>
+                  <span className="font-medium text-foreground">{removeTarget.user.name}</span> will
+                  lose access to this workspace immediately. You can re-invite them later.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={remove.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                void confirmRemove();
+              }}
+              disabled={remove.isPending}
+              className="bg-destructive text-white hover:bg-destructive/90"
+            >
+              {remove.isPending ? 'Removing…' : 'Remove member'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

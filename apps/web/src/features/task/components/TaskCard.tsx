@@ -32,7 +32,7 @@ interface Props {
   className?: string;
   onClick?: (taskId: string) => void;
   onEdit?: (taskId: string) => void;
-  onDelete?: (taskId: string) => void;
+  onDelete?: (taskId: string, title: string) => void;
 }
 
 const PRIORITY_BAR: Record<TaskCardData['priority'], string> = {
@@ -173,7 +173,7 @@ export function TaskCard({
             )}
             {onDelete && (
               <DropdownMenuItem
-                onClick={() => onDelete(task.id)}
+                onClick={() => onDelete(task.id, task.title)}
                 className="text-red-600 focus:text-red-600"
               >
                 <Trash2 className="mr-2 h-3.5 w-3.5" />

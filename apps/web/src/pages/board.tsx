@@ -13,8 +13,7 @@ import {
   NewTaskModal,
   TaskCard,
   TaskEditModal,
-  useDeleteTask,
-  useRestoreTask,
+  useTaskDelete,
 } from '@/features/task';
 import { useMembers, useUpdateColumn } from '@/features/workspace';
 import { useRealtime } from '@/features/realtime/useRealtime';
@@ -111,8 +110,7 @@ export function BoardPage() {
     const [selectedTaskId, setSelectedTaskId] = React.useState<string | null>(null);
   const [createColumnId, setCreateColumnId] = React.useState<string | null>(null);
   const membersQuery = useMembers(workspaceId);
-  const deleteTask = useDeleteTask(workspaceId);
-  const restoreTask = useRestoreTask(workspaceId);
+  const taskDelete = useTaskDelete(workspaceId);
   const updateColumn = useUpdateColumn(workspaceId);
 
   const data = useQuery({
@@ -226,23 +224,8 @@ export function BoardPage() {
     setEditModalOpen(true);
   };
 
-  const handleDelete = (taskId: string) => {
-    deleteTask.mutate(taskId, {
-      onSuccess: () => {
-        toast('Task deleted', {
-          action: {
-            label: 'Undo',
-            onClick: () => {
-              restoreTask.mutate(taskId);
-            },
-          },
-          duration: 5000,
-        });
-      },
-      onError: (err) => {
-        toast.error(err instanceof ApiError ? err.message : 'Failed to delete task');
-      },
-    });
+  const handleDelete = (taskId: string, title: string) => {
+    taskDelete.request({ id: taskId, title });
   };
 
   const selectedTask = React.useMemo(() => {
@@ -391,6 +374,7 @@ export function BoardPage() {
         }))}
         initial={selectedTask as unknown as Parameters<typeof TaskEditModal>[0]['initial']}
       />
+      {taskDelete.dialog}
     </div>
   );
 }

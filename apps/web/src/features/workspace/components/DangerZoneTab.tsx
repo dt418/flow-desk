@@ -41,8 +41,8 @@ export function DangerZoneTab({ workspaceId }: Props) {
 
   return (
     <div className="flex max-w-xl flex-col gap-4">
-      <div className="rounded-lg border border-red-500/40 bg-red-500/5 p-5">
-        <h3 className="flex items-center gap-2 text-[14px] font-semibold text-red-500">
+      <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-5">
+        <h3 className="flex items-center gap-2 text-sm font-semibold text-destructive">
           <Trash2 className="h-4 w-4" />
           Delete this workspace
         </h3>
@@ -59,7 +59,7 @@ export function DangerZoneTab({ workspaceId }: Props) {
       ) : (
         <>
           <p className="text-sm">
-            Type <span className="font-mono font-semibold">{matchRequired}</span> to confirm.
+            Type <span className="font-mono font-semibold text-foreground">{matchRequired}</span> to confirm.
           </p>
           <input
             value={confirmText}

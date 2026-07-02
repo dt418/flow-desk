@@ -15,10 +15,22 @@ import { canManageColumns } from './role';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { ApiError } from '@/lib/api';
 import type { Column } from '@flow-desk/shared/workspace';
 import type { UserRole } from '@flow-desk/shared/user';
+import type { ColumnWithCount } from '../types';
 import { cn } from '@/lib/utils';
 
 const newColumnSchema = z.object({
@@ -50,6 +62,7 @@ export function ColumnsTab({ workspaceId }: Props) {
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
+  const [removeTarget, setRemoveTarget] = useState<ColumnWithCount | null>(null);
 
   const onCreate = handleSubmit(async (values) => {
     try {
@@ -75,8 +88,14 @@ export function ColumnsTab({ workspaceId }: Props) {
     }
   };
 
-  const onDelete = async (col: Column) => {
-    if (!confirm(`Delete column “${col.name}”? Tasks in this column will be orphaned.`)) return;
+  const onDelete = (col: ColumnWithCount) => {
+    setRemoveTarget(col);
+  };
+
+  const confirmDelete = async () => {
+    if (!removeTarget) return;
+    const col = removeTarget;
+    setRemoveTarget(null);
     try {
       await remove.mutateAsync(col.id);
       toast.success('Column deleted');
@@ -86,7 +105,7 @@ export function ColumnsTab({ workspaceId }: Props) {
   };
 
   const canEdit = canManageColumns(role);
-  const list = columns.data ?? [];
+  const list = (columns.data as ColumnWithCount[] | undefined) ?? [];
 
   return (
     <div className="flex flex-col gap-6">
@@ -131,7 +150,8 @@ export function ColumnsTab({ workspaceId }: Props) {
             <tr>
               <th className="w-12 px-3 py-2 font-medium">Pos</th>
               <th className="px-3 py-2 font-medium">Name</th>
-              <th className="px-3 py-2 font-medium">Done?</th>
+              <th className="px-3 py-2 font-medium">Tasks</th>
+              <th className="px-3 py-2 font-medium">Status</th>
               <th className="w-24 px-3 py-2 text-right font-medium">Actions</th>
             </tr>
           </thead>
@@ -148,12 +168,15 @@ export function ColumnsTab({ workspaceId }: Props) {
                   <td className="px-3 py-2.5">
                     <Skeleton className="h-4 w-10" />
                   </td>
+                  <td className="px-3 py-2.5">
+                    <Skeleton className="h-4 w-12" />
+                  </td>
                   <td className="px-3 py-2.5" />
                 </tr>
               ))
             ) : list.length === 0 ? (
               <tr>
-                <td colSpan={4} className="px-3 py-8 text-center caption">
+                <td colSpan={5} className="px-3 py-8 text-center caption">
                   No columns yet.
                 </td>
               </tr>
@@ -163,7 +186,9 @@ export function ColumnsTab({ workspaceId }: Props) {
                 .sort((a, b) => a.position - b.position)
                 .map((col) => (
                   <tr key={col.id} className="bg-background/40">
-                    <td className="px-3 py-2.5 caption tabular-nums">{col.position}</td>
+                    <td className="px-3 py-2.5 tabular-nums text-xs text-muted-foreground">
+                      {col.position}
+                    </td>
                     <td className="px-3 py-2.5">
                       {editingId === col.id ? (
                         <input
@@ -193,23 +218,35 @@ export function ColumnsTab({ workspaceId }: Props) {
                       )}
                     </td>
                     <td className="px-3 py-2.5">
+                      <span className="inline-flex items-center gap-1.5 rounded-md bg-muted px-2 py-0.5 text-xs font-medium tabular-nums text-muted-foreground">
+                        {col._count?.tasks ?? 0}
+                        <span className="text-[10px] uppercase tracking-wider opacity-70">
+                          tasks
+                        </span>
+                      </span>
+                    </td>
+                    <td className="px-3 py-2.5">
                       {col.isDoneColumn ? (
-                        <span className="caption text-emerald-600">Done</span>
+                        <Badge variant="default" className="text-[10px]">
+                          Done
+                        </Badge>
                       ) : (
-                        <span className="caption">—</span>
+                        <span className="text-xs text-muted-foreground">—</span>
                       )}
                     </td>
                     <td className="px-3 py-2.5 text-right">
                       {canEdit && (
-                        <button
+                        <Button
                           type="button"
+                          variant="ghost"
+                          size="icon-sm"
                           onClick={() => onDelete(col)}
-                          className="btn-ghost h-7 w-7 p-0 text-red-500"
                           aria-label={`Delete ${col.name}`}
                           title="Delete column"
+                          className="text-muted-foreground hover:text-destructive"
                         >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
+                          <Trash2 />
+                        </Button>
                       )}
                     </td>
                   </tr>
@@ -218,6 +255,38 @@ export function ColumnsTab({ workspaceId }: Props) {
           </tbody>
         </table>
       </div>
+
+      <AlertDialog
+        open={removeTarget !== null}
+        onOpenChange={(open) => !open && setRemoveTarget(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete column?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {removeTarget && (
+                <>
+                  Column <span className="font-medium text-foreground">{removeTarget.name}</span> will
+                  be removed. Tasks in this column will become orphaned and may be lost.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={remove.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                void confirmDelete();
+              }}
+              disabled={remove.isPending}
+              className="bg-destructive text-white hover:bg-destructive/90"
+            >
+              {remove.isPending ? 'Deleting…' : 'Delete column'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

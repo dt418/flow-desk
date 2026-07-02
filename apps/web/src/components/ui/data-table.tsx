@@ -20,6 +20,15 @@ import {
 } from '@tanstack/react-table';
 import { ChevronDown, ChevronUp, ChevronsUpDown, Search, Settings2 } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './table';
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from './dropdown-menu';
+import { Button } from './button';
 import { cn } from '@/lib/utils';
 
 export interface DataTableProps<TData> {
@@ -84,27 +93,36 @@ export function DataTable<TData>({
           />
         </div>
         {table.getAllColumns().some((c) => c.getCanHide()) && (
-          <details className="relative">
-            <summary className="inline-flex h-9 cursor-pointer list-none items-center gap-2 rounded-md border border-input bg-card px-3 text-sm text-muted-foreground hover:bg-muted">
-              <Settings2 className="h-4 w-4" />
-              Columns
-            </summary>
-            <div className="absolute right-0 z-20 mt-1 w-48 rounded-md border border-border bg-popover p-2 shadow-lg">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="default"
+                className="h-9 gap-2 px-3"
+                aria-label="Toggle columns"
+              >
+                <Settings2 className="h-4 w-4" />
+                Columns
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="min-w-44">
+              <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
+              <DropdownMenuSeparator />
               {table
                 .getAllColumns()
                 .filter((c) => c.getCanHide())
                 .map((c) => (
-                  <label key={c.id} className="flex items-center gap-2 px-2 py-1 text-sm">
-                    <input
-                      type="checkbox"
-                      checked={c.getIsVisible()}
-                      onChange={c.getToggleVisibilityHandler()}
-                    />
+                  <DropdownMenuCheckboxItem
+                    key={c.id}
+                    checked={c.getIsVisible()}
+                    onCheckedChange={() => c.toggleVisibility()}
+                    onSelect={(e) => e.preventDefault()}
+                  >
                     {typeof c.columnDef.header === 'string' ? c.columnDef.header : c.id}
-                  </label>
+                  </DropdownMenuCheckboxItem>
                 ))}
-            </div>
-          </details>
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
       </div>
 

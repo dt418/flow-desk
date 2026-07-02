@@ -3,15 +3,14 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ColumnDef } from '@tanstack/react-table';
 import { useMemo, useState } from 'react';
 import { ChevronDown, Pencil, Plus, Trash2 } from 'lucide-react';
-import { toast } from 'sonner';
-import { api, ApiError } from '@/lib/api';
+import { api } from '@/lib/api';
 import { DataTable } from '@/components/ui/data-table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn, formatDate, initials } from '@/lib/utils';
-import { useDeleteTask } from '@/features/task';
+import { useTaskDelete } from '@/features/task';
 import { useMembers, useColumns } from '@/features/workspace';
 import { TaskEditModal, NewTaskModal } from '@/features/task/components/TaskEditModal';
 
@@ -139,7 +138,7 @@ export function ListPage() {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [newModalOpen, setNewModalOpen] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
-  const deleteTask = useDeleteTask(workspaceId);
+  const taskDelete = useTaskDelete(workspaceId);
   const { data: membersData } = useMembers(workspaceId) as {
     data:
       | Array<{ id: string; name: string; email: string }>
@@ -165,15 +164,8 @@ export function ListPage() {
     setEditModalOpen(true);
   };
 
-  const handleDelete = (taskId: string) => {
-    deleteTask.mutate(taskId, {
-      onSuccess: () => {
-        toast('Task deleted', { duration: 3000 });
-        qc.invalidateQueries({ queryKey: ['tasks', workspaceId] });
-      },
-      onError: (err) =>
-        toast.error(err instanceof ApiError ? err.message : 'Failed to delete task'),
-    });
+  const handleDelete = (taskId: string, title: string) => {
+    taskDelete.request({ id: taskId, title });
   };
 
   const data = useQuery<ListPageResponse, Error>({
@@ -290,7 +282,7 @@ export function ListPage() {
       },
       {
         id: 'actions',
-        header: '',
+        header: 'Actions',
         cell: ({ row }) => (
           <div className="flex items-center justify-end gap-1">
             <button
@@ -309,7 +301,7 @@ export function ListPage() {
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                handleDelete(row.original.id);
+                handleDelete(row.original.id, row.original.title);
               }}
               className="cursor-pointer rounded p-1 text-muted-foreground opacity-0 transition-opacity hover:bg-destructive/10 hover:text-destructive group-hover/row:opacity-100 focus-visible:opacity-100"
               title="Delete task"
@@ -433,6 +425,7 @@ export function ListPage() {
           }
         />
       )}
+      {taskDelete.dialog}
     </div>
   );
 }

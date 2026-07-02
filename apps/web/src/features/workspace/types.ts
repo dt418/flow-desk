@@ -27,5 +27,9 @@ export interface MemberRow extends WorkspaceMember {
   };
 }
 
+export interface ColumnWithCount extends Column {
+  _count?: { tasks: number };
+}
+
 export type { WorkspaceVisibility, UserRole };
 export type { Workspace, Column };

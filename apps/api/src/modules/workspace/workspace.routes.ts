@@ -78,7 +78,12 @@ workspaceRouter.get(
     const id = c.req.param('workspaceId')!;
     const workspace = await prisma.workspace.findFirst({
       where: { id, deletedAt: null },
-      include: { columns: { orderBy: { position: 'asc' } } },
+      include: {
+        columns: {
+          orderBy: { position: 'asc' },
+          include: { _count: { select: { tasks: { where: { deletedAt: null } } } } },
+        },
+      },
     });
     if (!workspace) throw new NotFoundError('Workspace not found');
     return c.json({ workspace });
