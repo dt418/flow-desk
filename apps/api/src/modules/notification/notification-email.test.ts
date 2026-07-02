@@ -73,7 +73,7 @@ describe('handleTaskAssignedEmail', () => {
     expect(mockEmailJobCreate).toHaveBeenCalledTimes(1);
     const jobArgs = mockEmailJobCreate.mock.calls[0]![0];
     expect(jobArgs.data.type).toBe('INSTANT');
-    expect(jobArgs.data.status).toBe('SENT');
+    expect(jobArgs.data.status).toBe('PENDING');
     expect(jobArgs.data.userId).toBe('user-1');
   });
 

@@ -40,6 +40,8 @@ vi.mock('../../shared/lib/access', () => ({
 
 vi.mock('../../shared/lib/socket-events', () => ({
   emitToRoom: vi.fn(),
+  emitToUser: vi.fn(),
+  safeEmit: (fn: () => void) => fn(),
 }));
 
 vi.mock('../../shared/lib/prisma', () => ({

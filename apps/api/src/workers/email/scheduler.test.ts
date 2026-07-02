@@ -5,6 +5,7 @@ const mockFindEmailJob = vi.fn();
 const mockFindUser = vi.fn();
 const mockFindSettings = vi.fn();
 const mockFindMembers = vi.fn();
+const mockEmailJobCreate = vi.fn();
 
 vi.mock('bullmq', () => ({
   Queue: vi.fn(() => ({ add: vi.fn().mockResolvedValue({ id: 'job-1' }) })),
@@ -32,7 +33,7 @@ vi.mock('../../shared/lib/email-provider', () => ({
 vi.mock('../../shared/lib/prisma', () => ({
   prisma: {
     task: { findMany: mockFindTasks },
-    emailJob: { findFirst: mockFindEmailJob },
+    emailJob: { findFirst: mockFindEmailJob, create: mockEmailJobCreate },
     user: { findUnique: mockFindUser },
     workspaceNotificationSetting: { findMany: mockFindSettings },
     workspaceMember: { findMany: mockFindMembers },
@@ -107,7 +108,17 @@ describe('scheduler', () => {
     ]);
     mockFindMembers.mockResolvedValue([{ userId: 'user-1' }]);
     mockFindEmailJob.mockResolvedValue(null);
+    mockEmailJobCreate.mockResolvedValue({ id: 'ej-digest-1' });
     await checkDigests();
     expect(mockFindMembers).toHaveBeenCalled();
+    expect(mockEmailJobCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          userId: 'user-1',
+          type: 'DIGEST',
+          status: 'PENDING',
+        }),
+      }),
+    );
   });
 });

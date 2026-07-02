@@ -5,10 +5,22 @@ import { PrismaClient } from '../../../../packages/db/generated/client';
 import { softDeleteExtension } from '../../src/shared/lib/prisma-extension';
 
 function detectDbPort(): number {
+  const envPort = process.env.TEST_DB_PORT;
+  if (envPort) return parseInt(envPort, 10);
+
+  // Check if postgres is listening on 5432 (native or Docker)
+  try {
+    execSync('pg_isready -h 127.0.0.1 -p 5432 -t 2', { stdio: 'ignore' });
+    return 5432;
+  } catch {
+    // not on 5432
+  }
+
+  // Try Docker container port binding
   try {
     const out = execSync(
       'docker inspect flow-desk-postgres-1 --format "{{json .HostConfig.PortBindings}}"',
-      { encoding: 'utf8' },
+      { encoding: 'utf8', stdio: ['pipe', 'pipe', 'ignore'] },
     ).trim();
     const bindings = JSON.parse(out);
     return parseInt(bindings['5432/tcp']?.[0]?.HostPort ?? '5432', 10);

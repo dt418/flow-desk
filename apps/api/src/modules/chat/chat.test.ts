@@ -116,15 +116,20 @@ describe('chat service', () => {
       expect(result.name).toBe('general');
     });
 
-    it('throws ConflictError on duplicate name', async () => {
-      mockFindFirst.mockResolvedValue(mockChannel);
+    it('throws on duplicate name (P2002 unique constraint)', async () => {
+      const p2002Error = Object.assign(new Error('Unique constraint failed'), {
+        code: 'P2002',
+        clientVersion: '0.0.0',
+        meta: { target: ['workspaceId', 'name'] },
+      });
+      mockCreate.mockRejectedValueOnce(p2002Error);
       const { createChannel } = await import('./chat.service');
       await expect(
         createChannel(mockPrisma as any, 'user-1', 'ws-1', {
           name: 'general',
           isPrivate: false,
         }),
-      ).rejects.toThrow('already exists');
+      ).rejects.toThrow('Unique constraint');
     });
   });
 

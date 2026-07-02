@@ -1,13 +1,15 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 const mockQueueAdd = vi.fn().mockResolvedValue({ id: 'job-1' });
+const mockJobRemove = vi.fn().mockResolvedValue(undefined);
+const mockQueueGetJob = vi.fn().mockResolvedValue({ remove: mockJobRemove });
 const mockWorkerOn = vi.fn();
 const mockWorkerClose = vi.fn().mockResolvedValue(undefined);
 const mockEmailJobCreate = vi.fn();
 const mockEmailJobUpdateMany = vi.fn();
 
 vi.mock('bullmq', () => ({
-  Queue: vi.fn(() => ({ add: mockQueueAdd })),
+  Queue: vi.fn(() => ({ add: mockQueueAdd, getJob: mockQueueGetJob })),
   Worker: vi.fn(() => ({ on: mockWorkerOn, close: mockWorkerClose })),
 }));
 
@@ -123,6 +125,7 @@ describe('email worker', () => {
   describe('scheduleDelayed', () => {
     beforeEach(() => {
       vi.clearAllMocks();
+      mockQueueGetJob.mockResolvedValue({ remove: mockJobRemove });
     });
 
     it('creates EmailJob in DB then enqueues with delay', async () => {
