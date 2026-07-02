@@ -6,13 +6,13 @@ Generated: 2026-07-03 | Base commit: `732acb4` | Audit run: standard
 
 | Plan | Finding | Category | Effort | Dependencies | Status |
 |------|---------|----------|--------|--------------|--------|
-| 009 | Email worker bugs (CORRECT-01,02,03) | correctness | S | — | TODO |
-| 010 | Security hardening (ATTACH-01, HDR-01, RATE-01) | security | S | — | TODO |
-| 011 | Vite prod config (PERF-06, PERF-07) | performance | S | — | TODO |
-| 012 | Board over-fetch (PERF-02) | performance | S | — | TODO |
-| 013 | Tech debt dedup (TECH-01, TECH-02) | tech-debt | S | — | TODO |
-| 014 | `as any` casts (TECH-07) | tech-debt | S | — | TODO |
-| 015 | Chat channel uniqueness (CORRECT-08) | correctness | S | — | TODO |
+| 009 | Email worker bugs (CORRECT-01,02,03) | correctness | S | — | DONE |
+| 010 | Security hardening (ATTACH-01, HDR-01, RATE-01) | security | S | — | DONE |
+| 011 | Vite prod config (PERF-06, PERF-07) | performance | S | — | DONE |
+| 012 | Board over-fetch (PERF-02) | performance | S | — | DONE |
+| 013 | Tech debt dedup (TECH-01, TECH-02) | tech-debt | S | — | DONE |
+| 014 | `as any` casts (TECH-07) | tech-debt | S | — | DONE |
+| 015 | Chat channel uniqueness (CORRECT-08) | correctness | S | — | DONE |
 | 016 | Auth + membership caching (PERF-03, PERF-10) | performance | M | Redis available | TODO |
 | 017 | Code splitting + lazy loading (PERF-05) | performance | M | 011 | TODO |
 | 018 | API client validation (TECH-09) | tech-debt | M | — | TODO |
@@ -53,3 +53,4 @@ Generated: 2026-07-03 | Base commit: `732acb4` | Audit run: standard
 | 001-008 | DONE (as AUD-004-AUD-008) | Previous audit, 2026-06-28 |
 | kanban-sprint-1 | DONE | DnD a11y + click bubbling |
 | kanban-sprint-1.5 | DONE | Optimistic race + overlay fade |
+| 009-015 | DONE | Batch 1 — email bugs, security, vite, board, dedup, enum, chat |
