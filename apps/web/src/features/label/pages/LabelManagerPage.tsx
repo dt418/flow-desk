@@ -16,7 +16,7 @@ interface Props {
   embedded?: boolean;
 }
 
-export function LabelManagerPage({ workspaceId, embedded = false }: Props) {
+export default function LabelManagerPage({ workspaceId, embedded = false }: Props) {
   const labels = useLabels(workspaceId);
   const role = useWorkspaceRole(workspaceId);
   const del = useDeleteLabel(workspaceId);

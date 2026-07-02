@@ -15,7 +15,7 @@ const loginSchema = z.object({
 });
 type LoginInput = z.infer<typeof loginSchema>;
 
-export function LoginPage() {
+export default function LoginPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
   const [serverError, setServerError] = useState<string | null>(null);

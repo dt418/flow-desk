@@ -15,7 +15,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { initials } from '@/features/workspace/components/role';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
-export function WorkspaceSettingsPage() {
+export default function WorkspaceSettingsPage() {
   const { workspaceId = '' } = useParams();
   const ws = useWorkspace(workspaceId);
 

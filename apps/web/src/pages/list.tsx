@@ -102,7 +102,7 @@ function NativeSelect({
   );
 }
 
-export function ListPage() {
+export default function ListPage() {
   const { workspaceId = '' } = useParams();
   const qc = useQueryClient();
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');

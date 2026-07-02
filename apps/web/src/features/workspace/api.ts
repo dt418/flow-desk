@@ -8,6 +8,7 @@ import type {
   UpdateColumnInput,
 } from '@flow-desk/shared/workspace';
 import type { WorkspaceDetail, MemberRow, Column, WorkspaceListEntry } from './types';
+import { boardResponseSchema } from '@/features/task/schemas';
 
 export const workspaceApi = {
   create(body: CreateWorkspaceInput) {
@@ -84,6 +85,8 @@ export const workspaceApi = {
   board(workspaceId: string) {
     return api<{
       columns: Array<{ id: string; name: string; position: number; isDoneColumn: boolean }>;
-    }>(`/api/workspaces/${encodeURIComponent(workspaceId)}/board`);
+    }>(`/api/workspaces/${encodeURIComponent(workspaceId)}/board`, {
+      schema: boardResponseSchema,
+    });
   },
 };

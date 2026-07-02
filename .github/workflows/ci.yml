@@ -31,6 +31,23 @@ jobs:
       - run: pnpm lint
       - run: pnpm --filter @flow-desk/web build
 
+  unit-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      DATABASE_URL: postgresql://placeholder:placeholder@localhost:5432/placeholder
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @flow-desk/shared build
+      - run: pnpm --filter @flowdesk/db db:generate
+      - run: pnpm --filter @flow-desk/api test:unit
+
   integration:
     runs-on: ubuntu-latest
     timeout-minutes: 15

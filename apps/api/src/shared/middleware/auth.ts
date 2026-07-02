@@ -3,7 +3,7 @@ import { getCookie } from 'hono/cookie';
 import type { UserRole } from '@flowdesk/db';
 import { verifyAccessToken, signAccessToken } from '../lib/jwt';
 import { UnauthorizedError } from '../errors';
-import { prisma } from '../lib/prisma';
+import { getCachedUser, getCachedMembership } from '../lib/auth-cache';
 import type { AccessTokenPayload } from '../lib/jwt';
 
 export interface AuthContext {
@@ -36,10 +36,7 @@ export function requireAuth() {
       throw new UnauthorizedError('Invalid or expired token');
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id: payload.userId },
-      select: { id: true, email: true, name: true, avatarUrl: true, deletedAt: true },
-    });
+    const user = await getCachedUser(payload.userId);
     if (!user || user.deletedAt) throw new UnauthorizedError('User not found');
 
     c.set('auth', {
@@ -57,14 +54,12 @@ export function requireWorkspaceRole(roles: UserRole[]) {
     const workspaceId = c.req.param('workspaceId') ?? c.req.param('id');
     if (!workspaceId) throw new UnauthorizedError('workspaceId required');
 
-    const member = await prisma.workspaceMember.findUnique({
-      where: { workspaceId_userId: { workspaceId, userId: auth.user.id } },
-    });
+    const member = await getCachedMembership(workspaceId, auth.user.id);
     if (!member) throw new UnauthorizedError('Not a member');
-    if (!roles.includes(member.role)) throw new UnauthorizedError('Insufficient role');
+    if (!roles.includes(member.role as UserRole)) throw new UnauthorizedError('Insufficient role');
 
     c.set('auth', { ...auth, user: { ...auth.user } } as AuthContext);
-    (c as Context & { workspaceRole: string }).workspaceRole = member.role;
+    (c as Context & { workspaceRole: string }).workspaceRole = member.role as string;
     (c as Context & { workspaceId: string }).workspaceId = workspaceId;
     await next();
   };

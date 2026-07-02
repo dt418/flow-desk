@@ -25,7 +25,7 @@ const registerSchema = z
   });
 type RegisterInput = z.infer<typeof registerSchema>;
 
-export function RegisterPage() {
+export default function RegisterPage() {
   const navigate = useNavigate();
   const { register: registerUser } = useAuth();
   const [serverError, setServerError] = useState<string | null>(null);

@@ -1,5 +1,6 @@
 import { beforeAll, afterAll, beforeEach } from 'vitest';
 import { createTestPrisma, resetTestDb, migrateTestDb, TEST_DB_URL } from './db';
+import { redis } from '../../src/shared/lib/redis';
 import type { PrismaClient } from '../../../../packages/db/generated/client';
 
 process.env.DATABASE_URL = TEST_DB_URL;
@@ -34,5 +35,6 @@ afterAll(async () => {
 
 beforeEach(async () => {
   if (!prisma) prisma = createTestPrisma();
+  await redis.flushdb();
   await resetTestDb(prisma);
 });

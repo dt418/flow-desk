@@ -197,7 +197,7 @@ function TaskSkeletonRow() {
   );
 }
 
-export function DashboardPage() {
+export default function DashboardPage() {
   const navigate = useNavigate();
   const [createOpen, setCreateOpen] = React.useState(false);
   const me = useQuery({

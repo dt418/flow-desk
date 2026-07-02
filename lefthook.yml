@@ -31,5 +31,7 @@ pre-push:
       run: pnpm typecheck
     test-api:
       run: pnpm --filter @flow-desk/api test:integration
+    unit-tests:
+      run: pnpm --filter @flow-desk/api test:unit
     build-web:
       run: pnpm --filter @flow-desk/web build

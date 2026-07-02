@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
-export function ChatPage() {
+export default function ChatPage() {
   const { workspaceId = '' } = useParams<{ workspaceId: string }>();
   const { user } = useAuth();
   const [activeChannelId, setActiveChannelId] = useState<string | null>(null);

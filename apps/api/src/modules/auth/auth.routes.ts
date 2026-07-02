@@ -45,30 +45,34 @@ authRouter.post(
     if (existing) throw new ConflictError('Email already registered');
 
     const passwordHash = await bcrypt.hash(body.password, 10);
-    const user = await prisma.user.create({
-      data: { email: body.email, name: body.name, passwordHash },
-    });
+    const user = await prisma.$transaction(async (tx) => {
+      const u = await tx.user.create({
+        data: { email: body.email, name: body.name, passwordHash },
+      });
 
-    await prisma.workspace.create({
-      data: {
-        name: `${body.name}'s workspace`,
-        slug: `ws-${user.id.slice(-6)}`,
-        ownerId: user.id,
-        members: { create: { userId: user.id, role: 'OWNER' } },
-      },
-    });
+      await tx.workspace.create({
+        data: {
+          name: `${body.name}'s workspace`,
+          slug: `ws-${u.id.slice(-6)}`,
+          ownerId: u.id,
+          members: { create: { userId: u.id, role: 'OWNER' } },
+        },
+      });
 
-    const access = signAccessToken({ userId: user.id, email: user.email });
-    const tokenId = crypto.randomUUID();
-    const refresh = signRefreshToken({ userId: user.id, tokenId });
-    await prisma.refreshToken.create({
-      data: {
-        id: tokenId,
-        userId: user.id,
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      },
+      const access = signAccessToken({ userId: u.id, email: u.email });
+      const tokenId = crypto.randomUUID();
+      const refresh = signRefreshToken({ userId: u.id, tokenId });
+      await tx.refreshToken.create({
+        data: {
+          id: tokenId,
+          userId: u.id,
+          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        },
+      });
+      setAuthCookies(c, access, refresh);
+
+      return u;
     });
-    setAuthCookies(c, access, refresh);
 
     return c.json(
       { user: { id: user.id, email: user.email, name: user.name, avatarUrl: user.avatarUrl } },
@@ -242,20 +246,23 @@ authRouter.get('/google/callback', async (c) => {
 
   let user = await prisma.user.findUnique({ where: { email: profile.email } });
   if (!user) {
-    user = await prisma.user.create({
-      data: {
-        email: profile.email,
-        name: profile.name ?? profile.email,
-        avatarUrl: profile.picture ?? null,
-      },
-    });
-    await prisma.workspace.create({
-      data: {
-        name: `${user.name}'s workspace`,
-        slug: `ws-${user.id.slice(-6)}`,
-        ownerId: user.id,
-        members: { create: { userId: user.id, role: 'OWNER' } },
-      },
+    user = await prisma.$transaction(async (tx) => {
+      const u = await tx.user.create({
+        data: {
+          email: profile.email,
+          name: profile.name ?? profile.email,
+          avatarUrl: profile.picture ?? null,
+        },
+      });
+      await tx.workspace.create({
+        data: {
+          name: `${u.name}'s workspace`,
+          slug: `ws-${u.id.slice(-6)}`,
+          ownerId: u.id,
+          members: { create: { userId: u.id, role: 'OWNER' } },
+        },
+      });
+      return u;
     });
   }
 

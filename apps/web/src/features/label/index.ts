@@ -12,4 +12,4 @@ export type { Label, LabelColor, CreateLabelInput, UpdateLabelInput } from './ty
 export { LABEL_COLOR_HEX, LABEL_COLOR_ORDER, LABEL_COLOR_LABEL } from './types';
 export { LabelChip, colorToHex } from './components/LabelChip';
 export { LabelFormDialog } from './components/LabelFormDialog';
-export { LabelManagerPage } from './pages/LabelManagerPage';
+export { default as LabelManagerPage } from './pages/LabelManagerPage';

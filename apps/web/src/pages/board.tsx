@@ -3,6 +3,7 @@ import * as React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { api, ApiError } from '@/lib/api';
+import { boardResponseSchema } from '@/features/task/schemas';
 import { Kanban, KanbanCard, KanbanColumn } from '@/components/ui/kanban';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -42,7 +43,7 @@ interface ColumnData {
   tasks: Task[];
 }
 
-export function BoardPage() {
+export default function BoardPage() {
   const { workspaceId = '' } = useParams();
   useRealtime(workspaceId);
   const qc = useQueryClient();
@@ -56,7 +57,10 @@ export function BoardPage() {
 
   const data = useQuery({
     queryKey: ['board', workspaceId],
-    queryFn: () => api<{ columns: ColumnData[] }>(`/api/workspaces/${workspaceId}/board`),
+    queryFn: () =>
+      api<{ columns: ColumnData[] }>(`/api/workspaces/${workspaceId}/board`, {
+        schema: boardResponseSchema,
+      }),
     enabled: Boolean(workspaceId),
   });
 

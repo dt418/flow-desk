@@ -1,6 +1,7 @@
 import { prisma } from '../../shared/lib/prisma';
 import { ForbiddenError, ConflictError, NotFoundError, BadRequestError } from '../../shared/errors';
 import { assertRole, assertMembership } from '../../shared/lib/access';
+import { invalidateMembershipCache } from '../../shared/lib/auth-cache';
 import type { UserRole, Prisma } from '@flowdesk/db';
 import type { CursorPaginationQuery } from '@flow-desk/shared/pagination';
 import { decodeCursor, encodeCursor } from '@flow-desk/shared/pagination';
@@ -48,6 +49,9 @@ export const memberService = {
 
     return prisma.workspaceMember.create({
       data: { workspaceId, userId: target.id, role },
+    }).then(async (result) => {
+      await invalidateMembershipCache(workspaceId, target.id);
+      return result;
     });
   },
 
@@ -67,6 +71,9 @@ export const memberService = {
     return prisma.workspaceMember.update({
       where: { workspaceId_userId: { workspaceId, userId: targetUserId } },
       data: { role: newRole },
+    }).then(async (result) => {
+      await invalidateMembershipCache(workspaceId, targetUserId);
+      return result;
     });
   },
 
@@ -87,5 +94,6 @@ export const memberService = {
     await prisma.workspaceMember.delete({
       where: { workspaceId_userId: { workspaceId, userId: targetUserId } },
     });
+    await invalidateMembershipCache(workspaceId, targetUserId);
   },
 };

@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Socket } from 'socket.io-client';
 import { api } from '@/lib/api';
 import { useNamespacedSocket } from '@/lib/socket';
+import { taskResponseSchema } from '@/features/task/schemas';
 
 export interface MoveTaskInput {
   taskId: string;
@@ -98,6 +99,7 @@ export function useMoveTask({ workspaceId, socket: externalSocket }: UseMoveTask
           position: input.position,
           version: input.version,
         },
+        schema: taskResponseSchema,
       }),
     onMutate: async (input) => {
       await qc.cancelQueries({ queryKey });

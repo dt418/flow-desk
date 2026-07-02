@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 const API_BASE = import.meta.env.VITE_API_URL ?? '';
 
 export class ApiError extends Error {
@@ -13,10 +15,14 @@ export class ApiError extends Error {
 
 interface RequestOptions extends RequestInit {
   json?: unknown;
+  schema?: z.ZodType;
 }
 
-export async function api<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const { json, headers, ...rest } = options;
+export async function api<T = unknown>(
+  path: string,
+  options: RequestOptions = {},
+): Promise<T> {
+  const { json, schema, headers, ...rest } = options;
   const res = await fetch(`${API_BASE}${path}`, {
     credentials: 'include',
     headers: {
@@ -38,6 +44,10 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
         ? String((body as { message: unknown }).message)
         : `Request failed with status ${res.status}`;
     throw new ApiError(res.status, body, message);
+  }
+
+  if (schema) {
+    return schema.parse(body) as T;
   }
 
   return body as T;

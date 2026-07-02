@@ -33,6 +33,23 @@ export default defineConfig({
     outDir: 'dist',
     sourcemap: process.env.NODE_ENV !== 'production',
     target: 'es2022',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-radix': [
+            '@radix-ui/react-avatar',
+            '@radix-ui/react-label',
+            '@radix-ui/react-select',
+            '@radix-ui/react-slot',
+            'radix-ui',
+          ],
+          'vendor-query': ['@tanstack/react-query', '@tanstack/react-query-devtools'],
+          'vendor-dnd': ['@dnd-kit/core', '@dnd-kit/sortable', '@dnd-kit/utilities'],
+          'vendor-socket': ['socket.io-client'],
+        },
+      },
+    },
   },
   test: {
     environment: 'jsdom',

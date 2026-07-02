@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "echo 'api: lint placeholder'",
     "test": "vitest run --config vitest.integration.config.ts",
+    "test:unit": "vitest run --config vitest.config.ts",
     "test:watch": "vitest --config vitest.config.ts",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:coverage": "vitest run --coverage --config vitest.config.ts",
