@@ -16,7 +16,7 @@ export default defineConfig({
       NODE_ENV: 'test',
       JWT_SECRET: 'test-secret-do-not-use-in-prod-32chars+',
       DATABASE_URL: 'postgresql://flowdesk:postgres@localhost:5432/flowdesk_test?schema=public',
-      REDIS_URL: process.env.REDIS_URL ?? 'redis://localhost:6390',
+      REDIS_URL: process.env.REDIS_URL ?? 'redis://localhost:6379',
       CORS_ORIGINS: 'http://localhost:5173',
       SKIP_RATE_LIMIT: '1',
       LLM_API_KEY: 'sk-placeholder',
