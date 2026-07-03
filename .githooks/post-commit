@@ -59,4 +59,9 @@ else
   echo -e "\n${ENTRY}" >> "$PROGRESS_FILE"
 fi
 
+# Format with prettier so format:check doesn't fail
+if command -v npx &>/dev/null; then
+  npx prettier --write "$PROGRESS_FILE" 2>/dev/null || true
+fi
+
 echo "📝 Session log updated: ${COMMIT_HASH} (${TYPE})"
