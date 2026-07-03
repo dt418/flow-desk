@@ -28,6 +28,24 @@
 
 ## Session Log
 
+### 2026-07-03 23:07 — `55a6989` (main)
+
+- **type:**
+- **msg:**
+- **author:** thanhd
+
+### 2026-07-03 23:00 — `9223ef6` (main)
+
+- **type:**
+- **msg:**
+- **author:** thanhd
+
+### 2026-07-03 22:57 — `8690fb2` (main)
+
+- **type:** feat
+- **msg:** add dev guardrails, fix CI, setup ESLint/Prettier hooks
+- **author:** thanhd
+
 ### Session 021 — Kanban Sprint 1: a11y + click-bubble + sensor tuning
 
 - **Date**: 2026-07-02
