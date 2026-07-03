@@ -36,6 +36,14 @@ fi
 
 # --- Layer 1: file-path blacklist --------------------------------------------
 
+# Allowlist: env templates (committed to repo, contain only placeholders).
+ALLOWED_PATTERNS=(
+  '\.env\.example$'
+  '\.env\.example\..*$'
+  '\.env\.template$'
+  '\.env\.sample$'
+)
+
 BLOCKED_PATTERNS=(
   '^\.env$'
   '^\.env\.'
@@ -57,6 +65,16 @@ BLOCKED_PATTERNS=(
 
 violations=0
 for file in $STAGED_FILES; do
+  # Skip allowlisted templates.
+  skip=0
+  for allow in "${ALLOWED_PATTERNS[@]}"; do
+    if printf '%s' "$file" | grep -Eq "$allow"; then
+      skip=1
+      break
+    fi
+  done
+  [ "$skip" -eq 1 ] && continue
+
   for pattern in "${BLOCKED_PATTERNS[@]}"; do
     if printf '%s' "$file" | grep -Eq "$pattern"; then
       warn "Blocked path: $file  (matches: $pattern)"
@@ -116,6 +134,10 @@ for file in $STAGED_FILES; do
   # Skip files we just added (the hook scripts themselves) — they document patterns.
   case "$file" in
     .githooks/*|scripts/check-secrets*) continue ;;
+  esac
+  # Skip env templates — placeholders should not trigger content scans.
+  case "$file" in
+    .env.example|.env.example.*|.env.template|.env.sample) continue ;;
   esac
 
   # Only grep text files. git diff --cached --numstat shows 0/0 for binary.
