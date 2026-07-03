@@ -27,6 +27,8 @@ jobs:
       - run: pnpm --filter @flow-desk/shared build
       - name: Generate prisma client
         run: pnpm --filter @flow-desk/api db:generate
+        env:
+          FLOW_DESK_DB_MODE: local
       - run: pnpm typecheck
       - run: pnpm format:check
       - run: pnpm lint
@@ -46,7 +48,10 @@ jobs:
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @flow-desk/shared build
-      - run: pnpm --filter @flow-desk/api db:generate
+      - name: Generate prisma client
+        run: pnpm --filter @flow-desk/api db:generate
+        env:
+          FLOW_DESK_DB_MODE: local
       - run: pnpm --filter @flow-desk/api test:unit
 
   integration:
@@ -86,7 +91,10 @@ jobs:
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @flow-desk/shared build
-      - run: pnpm --filter @flow-desk/api db:generate
+      - name: Generate prisma client
+        run: pnpm --filter @flow-desk/api db:generate
+        env:
+          FLOW_DESK_DB_MODE: local
 
       - name: Create flowdesk_test database + push schema
         run: |
