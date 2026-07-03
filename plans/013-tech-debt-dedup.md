@@ -31,6 +31,7 @@ export function safeEmit(room: string, event: string, data: unknown) {
 Check the existing `safeEmit` implementations — they may have slightly different signatures (some take `socket` instead of `room`). If so, extract the common pattern and keep socket-specific variants as thin wrappers.
 
 **Files to update:**
+
 - `apps/api/src/modules/task/task.service.ts` — remove local `safeEmit`, import from shared
 - `apps/api/src/modules/comment/comment.service.ts` — same
 - `apps/api/src/modules/chat/chat.message.service.ts` — same
@@ -40,6 +41,7 @@ Check the existing `safeEmit` implementations — they may have slightly differe
 **New file:** `apps/web/src/features/task/utils.ts`
 
 Move shared constants and helpers:
+
 - `PRIORITY_BAR` (color map)
 - `PRIORITY_DOT` (color map)
 - `STATUS_TONE` (color map)
@@ -49,6 +51,7 @@ Move shared constants and helpers:
 - `PriorityDot` component (if small and shared)
 
 **Files to update:**
+
 - `apps/web/src/pages/board.tsx` — import from utils, remove local definitions
 - `apps/web/src/pages/list.tsx` — same
 - `apps/web/src/features/task/components/TaskCard.tsx` — same

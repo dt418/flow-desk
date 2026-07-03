@@ -12,11 +12,29 @@ import { decodeCursor, encodeCursor } from '@flow-desk/shared/pagination';
 import * as repo from './attachment.repository';
 
 const ALLOWED_EXTENSIONS = new Set([
-  '.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg',
-  '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx',
-  '.txt', '.csv', '.json',
-  '.zip', '.tar', '.gz',
-  '.mp3', '.mp4', '.wav', '.webm',
+  '.png',
+  '.jpg',
+  '.jpeg',
+  '.gif',
+  '.webp',
+  '.svg',
+  '.pdf',
+  '.doc',
+  '.docx',
+  '.xls',
+  '.xlsx',
+  '.ppt',
+  '.pptx',
+  '.txt',
+  '.csv',
+  '.json',
+  '.zip',
+  '.tar',
+  '.gz',
+  '.mp3',
+  '.mp4',
+  '.wav',
+  '.webm',
 ]);
 
 export type AttachmentKind = 'IMAGE' | 'VIDEO' | 'AUDIO' | 'DOCUMENT' | 'OTHER';

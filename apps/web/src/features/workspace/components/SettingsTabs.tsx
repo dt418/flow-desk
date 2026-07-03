@@ -69,7 +69,9 @@ export function SettingsTabs({ workspaceId, children }: Props) {
                     isActive
                       ? 'bg-primary/10 text-primary'
                       : 'text-muted-foreground hover:bg-muted hover:text-foreground',
-                    tab.id === 'danger' && !isActive && 'text-destructive/80 hover:text-destructive',
+                    tab.id === 'danger' &&
+                      !isActive &&
+                      'text-destructive/80 hover:text-destructive',
                   )}
                 >
                   <Icon className="h-4 w-4" />
@@ -82,9 +84,7 @@ export function SettingsTabs({ workspaceId, children }: Props) {
       </nav>
 
       <div className="flex-1 min-w-0">
-        <div className="rounded-lg border border-border bg-card p-5">
-          {children[active]}
-        </div>
+        <div className="rounded-lg border border-border bg-card p-5">{children[active]}</div>
       </div>
     </div>
   );

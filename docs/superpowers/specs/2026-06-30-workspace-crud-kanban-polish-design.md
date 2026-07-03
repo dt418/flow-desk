@@ -26,6 +26,7 @@ Backend is fine: `POST /api/workspaces` (workspace.routes.ts:42) already validat
 ### P1 — Dashboard create-workspace hook + dialog
 
 **Files**:
+
 1. `apps/web/src/features/workspace/api.ts` — add `create(body)`: POST /api/workspaces, returns `{ workspace: WorkspaceDetail }`.
 2. `apps/web/src/features/workspace/hooks.ts` — add `useCreateWorkspace()` mutation. `mutationFn: (body: CreateWorkspaceInput) => workspaceApi.create(body)`. `onSuccess`: invalidate `['workspaces']` so dashboard re-queries; `useNavigate('/board/' + data.workspace.id)` if caller passed redirect handler (return id via mutation result).
 3. `apps/web/src/components/ui/workspace-create-dialog.tsx` (new) — shadcn Dialog + Form (react-hook-form) + Input + Select (visibility). Fields: `name` (required), `slug` (auto-from-name, editable), `description` (optional), `visibility` (PRIVATE | WORKSPACE | PUBLIC). Reuses `@flow-desk/shared/workspace` `createWorkspaceSchema`.
@@ -89,14 +90,14 @@ kanban.tsx
 
 ## Files / LOC
 
-| File | LOC |
-|------|-----|
-| apps/web/src/features/workspace/api.ts | +5 |
-| apps/web/src/features/workspace/hooks.ts | +12 |
-| apps/web/src/components/ui/workspace-create-dialog.tsx (new) | ~80 |
-| apps/web/src/pages/dashboard.tsx | +15 |
-| apps/web/src/components/ui/kanban.tsx | +10 |
-| apps/web/src/pages/board.tsx | +30 |
+| File                                                             | LOC |
+| ---------------------------------------------------------------- | --- |
+| apps/web/src/features/workspace/api.ts                           | +5  |
+| apps/web/src/features/workspace/hooks.ts                         | +12 |
+| apps/web/src/components/ui/workspace-create-dialog.tsx (new)     | ~80 |
+| apps/web/src/pages/dashboard.tsx                                 | +15 |
+| apps/web/src/components/ui/kanban.tsx                            | +10 |
+| apps/web/src/pages/board.tsx                                     | +30 |
 | apps/web/tests/components/workspace-create-dialog.test.tsx (new) | ~50 |
 
 Total: ~200 LOC across 7 files.

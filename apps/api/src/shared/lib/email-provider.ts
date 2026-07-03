@@ -67,18 +67,18 @@ class ResendEmailProvider implements EmailProvider {
   private client: Resend;
 
   constructor() {
-    this.client = new Resend(env.RESEND_API_KEY!);
+    this.client = new Resend(env.RESEND_API_KEY);
   }
 
   async send(payload: EmailPayload): Promise<EmailSendResult> {
     try {
       const { data, error } = await this.client.emails.send({
-        from: payload.from ?? env.EMAIL_FROM!,
+        from: payload.from ?? env.EMAIL_FROM,
         to: Array.isArray(payload.to) ? payload.to : [payload.to],
         subject: payload.subject,
         html: payload.html,
         text: payload.text,
-        replyTo: payload.replyTo as string | undefined,
+        replyTo: payload.replyTo,
         headers: payload.headers,
       });
       if (error || !data) {

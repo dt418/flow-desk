@@ -18,6 +18,7 @@ The server's `join-workspace` and `join-task` socket event handlers accept any s
 The client emits `socket.emit('join', { room })` but the server listens for `'join-workspace'` and `'join-task'`. The names don't match, so the client's `join` event is never handled by the server. The client never joins workspace/task rooms → server emits to rooms with zero members → realtime invalidations (board updates, task moves, presence) silently no-op. The app still "works" because TanStack Query refetches on navigation, but all real-time push is broken.
 
 **Affected files**:
+
 - `/home/thanh/flow-desk/apps/web/src/features/realtime/useRealtime.ts:13` (client emits `'join'`)
 - `/home/thanh/flow-desk/apps/api/src/shared/lib/socket.ts:56-70` (server listens for `'join-workspace'`)
 
@@ -34,11 +35,13 @@ Make the `join-workspace` and `join-task` handlers async. Before calling `socket
 ## Scope
 
 ### In Scope
+
 - `/home/thanh/flow-desk/apps/web/src/features/realtime/useRealtime.ts` — fix event names (C2)
 - `/home/thanh/flow-desk/apps/api/src/shared/lib/socket.ts` — add membership checks (S7)
 - `/home/thanh/flow-desk/apps/api/src/modules/realtime/realtime.gateway.ts` — add membership check to `presence:join` handler (S7)
 
 ### Out of Scope
+
 - Socket reconnect leak (D14 — separate plan)
 - Realtime gateway tests (T2 — separate plan)
 - Socket.IO event emission tests (T7 — separate plan)
@@ -52,11 +55,13 @@ Make the `join-workspace` and `join-task` handlers async. Before calling `socket
 **Verification**: `cd /home/thanh/flow-desk && pnpm --filter @flow-desk/web typecheck` → exit 0
 
 Read the file first. The current code at ~line 13 emits:
+
 ```typescript
 socket.emit('join', { room });
 ```
 
 The server expects:
+
 - `'join-workspace'` with `{ workspaceId: string }`
 - `'join-task'` with `{ taskId: string }`
 
@@ -92,6 +97,7 @@ So the client should send `{ workspaceId: 'abc123' }` (the raw ID), not `{ room:
 **Verification**: `cd /home/thanh/flow-desk && pnpm --filter @flow-desk/api typecheck` → exit 0
 
 **Current code at ~line 56-70**:
+
 ```typescript
 socket.on('join-workspace', (data) => {
   if (typeof data.workspaceId === 'string') {
@@ -119,6 +125,7 @@ socket.on('leave-task', (data) => {
 ```
 
 **Replace with** (add async membership checks):
+
 ```typescript
 socket.on('join-workspace', async (data) => {
   if (typeof data?.workspaceId !== 'string') return;
@@ -179,6 +186,7 @@ socket.on('leave-task', (data) => {
 Read the `presence:join` handler in the gateway file (~line 94-104). It currently joins the workspace room and upserts presence without a membership check.
 
 **Add membership check** before `socket.join` and presence upsert:
+
 ```typescript
 socket.on('presence:join', async (data) => {
   if (typeof data?.workspaceId !== 'string') return;
@@ -204,6 +212,7 @@ Read the existing handler code first and only add the membership check — don't
 **Verification**: Read the auth middleware at ~line 29-39
 
 The auth middleware should set `socket.data.userId` from the JWT. Verify this is the case:
+
 ```typescript
 io.use(async (socket, next) => {
   // ... JWT verification
@@ -225,6 +234,7 @@ cd /home/thanh/flow-desk && pnpm --filter @flow-desk/api vitest run --config vit
 ```
 
 Manual verification (if dev server available):
+
 1. Open board page as workspace member → socket should join `workspace:<id>` room
 2. Open board page as non-member → socket should NOT join the room
 3. Have another user create a task → first user should see the update in real-time

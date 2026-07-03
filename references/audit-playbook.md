@@ -17,8 +17,8 @@ Audit categories and finding format for the `/improve` skill.
 ## Finding Format
 
 ```markdown
-| # | Finding | Category | Impact | Effort | Risk | Evidence |
-|---|---------|----------|--------|--------|------|----------|
+| #   | Finding | Category | Impact | Effort | Risk | Evidence |
+| --- | ------- | -------- | ------ | ------ | ---- | -------- |
 ```
 
 Fields:
@@ -31,20 +31,22 @@ Fields:
 - **Evidence** — `file:line` references; command output snippets where relevant
 
 For security findings, also record:
+
 - Credential type (not the value itself) at `file:line`
 - Whether it is `introduced` (by current branch) or `pre-existing`
 
 ## Effort Levels
 
-| Level | Subagents | Categories | Breadth |
-|-------|-----------|------------|---------|
-| `quick` | 0–1 | correctness, security | hotspots only |
-| `standard` | ≤4 | all 9 | hotspot-weighted |
-| `deep` | ≤8 | all 9 | whole repo |
+| Level      | Subagents | Categories            | Breadth          |
+| ---------- | --------- | --------------------- | ---------------- |
+| `quick`    | 0–1       | correctness, security | hotspots only    |
+| `standard` | ≤4        | all 9                 | hotspot-weighted |
+| `deep`     | ≤8        | all 9                 | whole repo       |
 
 ## Vetting
 
 Before presenting findings:
+
 1. Open every cited file and confirm the finding is real
 2. Reject findings that are documented design decisions (check ADRs)
 3. Reject mis-attributed evidence

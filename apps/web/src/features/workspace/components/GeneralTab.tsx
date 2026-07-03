@@ -132,12 +132,7 @@ export function GeneralTab({ workspaceId }: Props) {
       </div>
 
       <div className="flex justify-end">
-        <Button
-          type="submit"
-          disabled={isSubmitting || !isDirty}
-          size="sm"
-          className="h-9 px-4"
-        >
+        <Button type="submit" disabled={isSubmitting || !isDirty} size="sm" className="h-9 px-4">
           {isSubmitting ? 'Saving…' : 'Save changes'}
         </Button>
       </div>

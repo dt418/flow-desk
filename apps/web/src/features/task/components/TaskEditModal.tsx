@@ -22,12 +22,7 @@ import { Label } from '@/components/ui/label';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { initials } from '@/lib/utils';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-  TooltipProvider,
-} from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import {
   Dialog,
   DialogContent,
@@ -331,7 +326,11 @@ export function TaskEditModal({
         </DialogDescription>
 
         {tab === 'details' && (
-          <form onSubmit={on_submit} onKeyDown={handleFormKeyDown} className="flex min-h-0 flex-1 flex-col">
+          <form
+            onSubmit={on_submit}
+            onKeyDown={handleFormKeyDown}
+            className="flex min-h-0 flex-1 flex-col"
+          >
             <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-5">
               {/* Title — highest priority */}
               <Input
@@ -518,7 +517,10 @@ export function TaskEditModal({
                             <SelectValue placeholder="Unassigned">
                               {selected && selected.name ? (
                                 <span className="flex items-center gap-2">
-                                  <MemberAvatar name={selected.name} avatarUrl={selected.avatarUrl} />
+                                  <MemberAvatar
+                                    name={selected.name}
+                                    avatarUrl={selected.avatarUrl}
+                                  />
                                   <span>{selected.name}</span>
                                 </span>
                               ) : (
@@ -616,7 +618,7 @@ export function TaskEditModal({
                 </div>
               </div>
             </div>
-            
+
             {/* Footer — sticky, always visible */}
             <div className="flex items-center justify-end gap-2 border-t border-border px-5 py-3">
               <Button
@@ -630,12 +632,7 @@ export function TaskEditModal({
               </Button>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button
-                    type="submit"
-                    disabled={isSubmitting}
-                    size="sm"
-                    className="h-9 px-4"
-                  >
+                  <Button type="submit" disabled={isSubmitting} size="sm" className="h-9 px-4">
                     {isSubmitting
                       ? isEdit
                         ? 'Saving…'

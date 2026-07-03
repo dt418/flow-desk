@@ -59,12 +59,7 @@ export default function LabelManagerPage({ workspaceId, embedded = false }: Prop
         </div>
       </div>
       {canManage && (
-        <Button
-          type="button"
-          onClick={() => setCreating(true)}
-          size="sm"
-          className="h-9 px-4"
-        >
+        <Button type="button" onClick={() => setCreating(true)} size="sm" className="h-9 px-4">
           <Plus className="mr-1.5 h-4 w-4" />
           New label
         </Button>

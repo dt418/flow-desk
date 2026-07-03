@@ -10,12 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import {
-  NewTaskModal,
-  TaskCard,
-  TaskEditModal,
-  useTaskDelete,
-} from '@/features/task';
+import { NewTaskModal, TaskCard, TaskEditModal, useTaskDelete } from '@/features/task';
 import { useMembers, useUpdateColumn } from '@/features/workspace';
 import { useRealtime } from '@/features/realtime/useRealtime';
 import { setMoveInProgress } from '@/features/realtime/move-progress';
@@ -49,7 +44,7 @@ export default function BoardPage() {
   const qc = useQueryClient();
   const [modalOpen, setModalOpen] = React.useState(false);
   const [editModalOpen, setEditModalOpen] = React.useState(false);
-    const [selectedTaskId, setSelectedTaskId] = React.useState<string | null>(null);
+  const [selectedTaskId, setSelectedTaskId] = React.useState<string | null>(null);
   const [createColumnId, setCreateColumnId] = React.useState<string | null>(null);
   const membersQuery = useMembers(workspaceId);
   const taskDelete = useTaskDelete(workspaceId);
@@ -200,9 +195,7 @@ export default function BoardPage() {
         <div className="flex items-center gap-1">
           <PresenceBar workspaceId={workspaceId} />
           <div className="flex items-center rounded-md border border-border bg-card p-0.5 text-xs">
-            <span className="rounded bg-muted px-2.5 py-1 font-medium text-foreground">
-              Board
-            </span>
+            <span className="rounded bg-muted px-2.5 py-1 font-medium text-foreground">Board</span>
             <Link
               to={`/list/${workspaceId}`}
               className="rounded px-2.5 py-1 text-muted-foreground hover:text-foreground"

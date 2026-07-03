@@ -43,6 +43,7 @@ Dispatch a cheaper executor subagent to implement one plan in an isolated worktr
 ### Executor prompt
 
 The executor prompt must include:
+
 - Absolute path to the repo
 - Full text of the plan (inline — executor has not seen it)
 - Instruction to create a worktree: `git worktree add /tmp/worktrees/plan-001 /home/thanh/flow-desk`
@@ -60,11 +61,11 @@ The executor prompt must include:
 
 ### Render verdict
 
-| Verdict | Meaning |
-|---------|---------|
-| PASS | All done criteria met, no out-of-scope changes |
-| NEEDS_REVIEW | All in-scope, but something needs human eyes |
-| FAIL | Regression introduced or scope violated |
+| Verdict      | Meaning                                        |
+| ------------ | ---------------------------------------------- |
+| PASS         | All done criteria met, no out-of-scope changes |
+| NEEDS_REVIEW | All in-scope, but something needs human eyes   |
+| FAIL         | Regression introduced or scope violated        |
 
 ### On PASS
 
@@ -81,6 +82,7 @@ The executor prompt must include:
 ## GitHub Issues (--issues flag)
 
 Before creating any issue:
+
 1. Check repo visibility: `gh repo view --json visibility`
 2. If **public**: warn user that security findings published as issues are publicly visible. Get explicit confirmation.
 3. If **private**: safe to publish.

@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import type { z } from 'zod';
 
 const API_BASE = import.meta.env.VITE_API_URL ?? '';
 
@@ -18,10 +18,7 @@ interface RequestOptions extends RequestInit {
   schema?: z.ZodType;
 }
 
-export async function api<T = unknown>(
-  path: string,
-  options: RequestOptions = {},
-): Promise<T> {
+export async function api<T = unknown>(path: string, options: RequestOptions = {}): Promise<T> {
   const { json, schema, headers, ...rest } = options;
   const res = await fetch(`${API_BASE}${path}`, {
     credentials: 'include',

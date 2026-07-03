@@ -31,11 +31,11 @@ Kanban board audit found 15 bugs across 6 root-cause clusters. Sprint 1 targets 
 
 ## Verification
 
-| Gate | Command | Result |
-|------|---------|--------|
-| Typecheck | `pnpm --filter @flow-desk/web typecheck` | exit 0 |
-| Build | `pnpm --filter @flow-desk/web build` | exit 0 (908KB JS / 93KB CSS, 272KB gzip) |
-| Secrets | `pnpm check:secrets` | exit 0 |
+| Gate      | Command                                  | Result                                   |
+| --------- | ---------------------------------------- | ---------------------------------------- |
+| Typecheck | `pnpm --filter @flow-desk/web typecheck` | exit 0                                   |
+| Build     | `pnpm --filter @flow-desk/web build`     | exit 0 (908KB JS / 93KB CSS, 272KB gzip) |
+| Secrets   | `pnpm check:secrets`                     | exit 0                                   |
 
 ## Risks
 

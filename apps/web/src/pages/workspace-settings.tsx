@@ -22,7 +22,13 @@ export default function WorkspaceSettingsPage() {
   return (
     <div className="flex w-full flex-col gap-6 p-6 lg:p-8">
       <header className="flex items-center gap-3">
-        <Button asChild variant="ghost" size="icon-sm" aria-label="Back to board" title="Back to board">
+        <Button
+          asChild
+          variant="ghost"
+          size="icon-sm"
+          aria-label="Back to board"
+          title="Back to board"
+        >
           <Link to={`/board/${workspaceId}`}>
             <ArrowLeft />
           </Link>

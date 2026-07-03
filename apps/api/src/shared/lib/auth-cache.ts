@@ -8,7 +8,13 @@ const MEMBER_CACHE_TTL = 30;
 export async function getCachedUser(userId: string) {
   const key = `auth:user:${userId}`;
   const cached = await redis.get(key);
-  if (cached) return JSON.parse(cached) as { id: string; email: string; name: string; deletedAt: string | null };
+  if (cached)
+    return JSON.parse(cached) as {
+      id: string;
+      email: string;
+      name: string;
+      deletedAt: string | null;
+    };
 
   const user = await prisma.user.findUnique({
     where: { id: userId },

@@ -14,6 +14,7 @@ The Prisma soft-delete extension at `apps/api/src/shared/lib/prisma-extension.ts
 2. **`ChatChannel` and `ChatMessage` are missing from the soft-delete model set**: The Prisma schema defines `deletedAt` on `ChatChannel` (schema:308) and `ChatMessage` (schema:324), but they are not in `SOFT_DELETE_MODELS`. Services must manually add `deletedAt: null` to queries, which is inconsistent and error-prone.
 
 **Affected `findUnique` calls that leak deleted records**:
+
 - `apps/api/src/modules/chat/chat.repository.ts:18-19` (ChatChannel)
 - `apps/api/src/modules/chat/chat.repository.ts:22-32` (findUniqueRaw)
 - `apps/api/src/modules/chat/chat.message.repository.ts:20-21` (ChatMessage)
@@ -29,16 +30,18 @@ The Prisma soft-delete extension at `apps/api/src/shared/lib/prisma-extension.ts
 
 The Prisma extension model works by intercepting query methods and injecting `deletedAt: null` into the `where` clause. Adding `findUnique` to the extension is straightforward — the same `query` callback pattern applies. However, `findUnique` uses a `where` clause with unique fields (not arbitrary filters), so the extension must inject `deletedAt: null` as an additional `where` condition. Prisma's extension `query.findUnique` callback receives `{ args, query }` where `args.where` can be augmented.
 
-**Important caveat**: Prisma's `findUnique` `where` clause requires ALL fields to be part of a unique constraint. Adding `deletedAt: null` to `findUnique`'s `where` may not work because `deletedAt` is not part of any unique constraint. The alternative is to convert `findUnique` calls to `findFirst` (which accepts arbitrary `where` filters) OR to filter after fetching (check `task.deletedAt !== null` and return null). 
+**Important caveat**: Prisma's `findUnique` `where` clause requires ALL fields to be part of a unique constraint. Adding `deletedAt: null` to `findUnique`'s `where` may not work because `deletedAt` is not part of any unique constraint. The alternative is to convert `findUnique` calls to `findFirst` (which accepts arbitrary `where` filters) OR to filter after fetching (check `task.deletedAt !== null` and return null).
 
 **Chosen approach**: Add `findUnique` to the extension but use the post-fetch filter pattern — the extension wraps `findUnique`, calls the original query, then returns `null` if the result has a non-null `deletedAt`. This avoids the Prisma unique-constraint limitation.
 
 ## Scope
 
 ### In Scope
+
 - `/home/thanh/flow-desk/apps/api/src/shared/lib/prisma-extension.ts` — add `findUnique` coverage + add ChatChannel/ChatMessage to model set
 
 ### Out of Scope
+
 - Converting `findUnique` calls to `findFirst` (too invasive, changes return type semantics)
 - Adding `findUniqueOrThrow` coverage (no `findUniqueOrThrow` calls exist — verified in audit)
 - Adding soft-delete models for other entities (only ChatChannel and ChatMessage have `deletedAt` and are missing)
@@ -51,6 +54,7 @@ The Prisma extension model works by intercepting query methods and injecting `de
 **Verification**: Read and understand the current code
 
 Read the full file. It currently:
+
 1. Defines `SOFT_DELETE_MODELS` as a Set of model names
 2. Creates a Prisma extension with `query` callbacks for `findFirst`, `findMany`, `count`, `aggregate`, `groupBy`
 3. Each callback checks if the model is in `SOFT_DELETE_MODELS` and injects `deletedAt: null` into `args.where`
@@ -61,6 +65,7 @@ Read the full file. It currently:
 **Verification**: `cd /home/thanh/flow-desk && pnpm --filter @flow-desk/api typecheck` → exit 0
 
 **Current code at ~line 3-10**:
+
 ```typescript
 const SOFT_DELETE_MODELS = new Set([
   'User',
@@ -73,6 +78,7 @@ const SOFT_DELETE_MODELS = new Set([
 ```
 
 **Replace with**:
+
 ```typescript
 const SOFT_DELETE_MODELS = new Set([
   'User',

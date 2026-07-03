@@ -51,7 +51,7 @@ labelRouter.patch(
   rateLimit({ ...RATE_LIMITS.LABEL_WRITE, keyBy: 'user', scope: 'labels:write' }),
   async (c) => {
     const wid = c.req.param('wid')!;
-    const labelId = c.req.param('labelId')!;
+    const labelId = c.req.param('labelId');
     const auth = c.get('auth');
     const body = updateLabelSchema.parse(await c.req.json());
     const label = await svc.updateLabel(prisma, auth.user.id, wid, labelId, body);
@@ -64,7 +64,7 @@ labelRouter.delete(
   rateLimit({ ...RATE_LIMITS.LABEL_WRITE, keyBy: 'user', scope: 'labels:write' }),
   async (c) => {
     const wid = c.req.param('wid')!;
-    const labelId = c.req.param('labelId')!;
+    const labelId = c.req.param('labelId');
     const auth = c.get('auth');
     await svc.deleteLabel(prisma, auth.user.id, wid, labelId);
     return c.json({ ok: true });

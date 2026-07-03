@@ -136,11 +136,9 @@ describe('Auth refresh token flow', () => {
   it('rejects refresh with an expired token', async () => {
     const user = await createUser(prisma, 'rt-expired@test.local', 'RT Expired');
     const expiredTokenId = crypto.randomUUID();
-    const expiredJwt = jwt.sign(
-      { userId: user.id, tokenId: expiredTokenId },
-      JWT_SECRET,
-      { expiresIn: '-1s' } as jwt.SignOptions,
-    );
+    const expiredJwt = jwt.sign({ userId: user.id, tokenId: expiredTokenId }, JWT_SECRET, {
+      expiresIn: '-1s',
+    } as jwt.SignOptions);
     await prisma.refreshToken.create({
       data: {
         id: expiredTokenId,

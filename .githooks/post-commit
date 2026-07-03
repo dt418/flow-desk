@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+# post-commit hook — append session log entry to claude-progress.md
+# Parses conventional commit format, extracts diff stats, writes summary.
+set -euo pipefail
+
+ROOT_DIR="$(git rev-parse --show-toplevel)"
+PROGRESS_FILE="$ROOT_DIR/claude-progress.md"
+
+# Skip if progress file doesn't exist
+[ -f "$PROGRESS_FILE" ] || exit 0
+
+# Get commit info
+COMMIT_HASH=$(git rev-parse --short HEAD)
+COMMIT_MSG=$(git log -1 --format=%s)
+BRANCH=$(git branch --show-current 2>/dev/null || echo "detached")
+AUTHOR=$(git log -1 --format=%an)
+DATE=$(date '+%Y-%m-%d %H:%M')
+
+# Parse conventional commit type
+TYPE=$(echo "$COMMIT_MSG" | sed -n 's/^\([a-z]*\)!\?:.*/\1/p')
+SCOPE=$(echo "$COMMIT_MSG" | sed -n 's/^[a-z]*!*\(\([^)]*\)\)\?:.*/\2/p')
+DESCRIPTION=$(echo "$COMMIT_MSG" | sed -n 's/^[a-z]*!*\(\([^)]*\)\)\?: *//p')
+
+# Diff stats (files changed, insertions, deletions)
+STATS=$(git diff --shortstat HEAD~1 HEAD 2>/dev/null || echo "new repo")
+FILES_CHANGED=$(echo "$STATS" | sed -n 's/.*\([0-9]*\) file.*/\1/p')
+INSERTIONS=$(echo "$STATS" | sed -n 's/.*\([0-9]*\) insertion.*/\1/p')
+DELETIONS=$(echo "$STATS" | sed -n 's/.*\([0-9]*\) deletion.*/\1/p')
+
+# Build log entry
+ENTRY="### ${DATE} — \`${COMMIT_HASH}\` (${BRANCH})\n"
+ENTRY="${ENTRY}- **type:** ${TYPE}"
+[ -n "$SCOPE" ] && ENTRY="${ENTRY}(\`${SCOPE}\`)"
+ENTRY="${ENTRY}\n"
+ENTRY="${ENTRY}- **msg:** ${DESCRIPTION}\n"
+ENTRY="${ENTRY}- **author:** ${AUTHOR}\n"
+if [ -n "$FILES_CHANGED" ]; then
+  ENTRY="${ENTRY}- **diff:** ${FILES_CHANGED} files, +${INSERTIONS:-0}/-${DELETIONS:-0}\n"
+fi
+ENTRY="${ENTRY}\n"
+
+# Find insertion point: after the last ### heading or at end
+# Look for the "## Session Log" section or last session entry
+if grep -q "^## Session Log" "$PROGRESS_FILE"; then
+  # Insert after "## Session Log" line
+  sed -i "/^## Session Log/a\\
+\\${ENTRY}" "$PROGRESS_FILE"
+elif grep -q "^### " "$PROGRESS_FILE"; then
+  # Insert before the last ### heading (newest first)
+  LAST_HEADING_LINE=$(grep -n "^### " "$PROGRESS_FILE" | tail -1 | cut -d: -f1)
+  if [ -n "$LAST_HEADING_LINE" ]; then
+    sed -i "${LAST_HEADING_LINE}i\\
+\\${ENTRY}" "$PROGRESS_FILE"
+  else
+    echo -e "\n${ENTRY}" >> "$PROGRESS_FILE"
+  fi
+else
+  # Append to end
+  echo -e "\n${ENTRY}" >> "$PROGRESS_FILE"
+fi
+
+echo "📝 Session log updated: ${COMMIT_HASH} (${TYPE})"

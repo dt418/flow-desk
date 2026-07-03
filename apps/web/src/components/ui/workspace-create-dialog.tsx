@@ -153,9 +153,7 @@ export function WorkspaceCreateDialog({ open, onOpenChange, onCreated }: Props) 
             <Label>Visibility</Label>
             <Select
               defaultValue="PRIVATE"
-              onValueChange={(value) =>
-                setValue('visibility', value as WorkspaceVisibility)
-              }
+              onValueChange={(value) => setValue('visibility', value as WorkspaceVisibility)}
             >
               <SelectTrigger className="w-full">
                 <SelectValue />

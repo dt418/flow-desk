@@ -22,7 +22,7 @@ Rewrite to test actual realtime sync:
 import { test, expect } from '@playwright/test';
 
 test.describe('Realtime task sync', () => {
-  test('moving a task on one board updates the other user\'s board', async ({ browser }) => {
+  test("moving a task on one board updates the other user's board", async ({ browser }) => {
     // Create two authenticated contexts
     const ctxA = await browser.newContext();
     const ctxB = await browser.newContext();
@@ -63,6 +63,7 @@ test.describe('Realtime task sync', () => {
 ### Add test data fixtures
 
 Create a setup script or test helper that:
+
 1. Creates two test users in the DB
 2. Creates a workspace with both as members
 3. Creates 3 columns with sample tasks

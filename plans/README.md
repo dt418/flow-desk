@@ -4,22 +4,22 @@ Generated: 2026-07-03 | Base commit: `732acb4` | Audit run: standard
 
 ## Priority Order
 
-| Plan | Finding | Category | Effort | Dependencies | Status |
-|------|---------|----------|--------|--------------|--------|
-| 009 | Email worker bugs (CORRECT-01,02,03) | correctness | S | — | DONE |
-| 010 | Security hardening (ATTACH-01, HDR-01, RATE-01) | security | S | — | DONE |
-| 011 | Vite prod config (PERF-06, PERF-07) | performance | S | — | DONE |
-| 012 | Board over-fetch (PERF-02) | performance | S | — | DONE |
-| 013 | Tech debt dedup (TECH-01, TECH-02) | tech-debt | S | — | DONE |
-| 014 | `as any` casts (TECH-07) | tech-debt | S | — | DONE |
-| 015 | Chat channel uniqueness (CORRECT-08) | correctness | S | — | DONE |
-| 016 | Auth + membership caching (PERF-03, PERF-10) | performance | M | Redis available | DONE |
-| 017 | Code splitting + lazy loading (PERF-05) | performance | M | 011 | DONE |
-| 018 | API client validation (TECH-09) | tech-debt | M | — | DONE |
-| 019 | Register/OAuth transactional (CORRECT-06) | correctness | M | — | DONE |
-| 020 | Test pipeline — CI unit tests (TC-03) | tests | S | — | DONE |
-| 021 | Test pipeline — E2E realtime (TC-04) | tests | M | 020 | DONE |
-| 022 | Realtime gateway tests (TC-01) | tests | L | 020 | DONE |
+| Plan | Finding                                         | Category    | Effort | Dependencies    | Status |
+| ---- | ----------------------------------------------- | ----------- | ------ | --------------- | ------ |
+| 009  | Email worker bugs (CORRECT-01,02,03)            | correctness | S      | —               | DONE   |
+| 010  | Security hardening (ATTACH-01, HDR-01, RATE-01) | security    | S      | —               | DONE   |
+| 011  | Vite prod config (PERF-06, PERF-07)             | performance | S      | —               | DONE   |
+| 012  | Board over-fetch (PERF-02)                      | performance | S      | —               | DONE   |
+| 013  | Tech debt dedup (TECH-01, TECH-02)              | tech-debt   | S      | —               | DONE   |
+| 014  | `as any` casts (TECH-07)                        | tech-debt   | S      | —               | DONE   |
+| 015  | Chat channel uniqueness (CORRECT-08)            | correctness | S      | —               | DONE   |
+| 016  | Auth + membership caching (PERF-03, PERF-10)    | performance | M      | Redis available | DONE   |
+| 017  | Code splitting + lazy loading (PERF-05)         | performance | M      | 011             | DONE   |
+| 018  | API client validation (TECH-09)                 | tech-debt   | M      | —               | DONE   |
+| 019  | Register/OAuth transactional (CORRECT-06)       | correctness | M      | —               | DONE   |
+| 020  | Test pipeline — CI unit tests (TC-03)           | tests       | S      | —               | DONE   |
+| 021  | Test pipeline — E2E realtime (TC-04)            | tests       | M      | 020             | DONE   |
+| 022  | Realtime gateway tests (TC-01)                  | tests       | L      | 020             | DONE   |
 
 ## Dependency Graph
 
@@ -48,11 +48,11 @@ Generated: 2026-07-03 | Base commit: `732acb4` | Audit run: standard
 
 ## Previously Completed Plans
 
-| Plan | Status | Notes |
-|------|--------|-------|
-| 001-008 | DONE (as AUD-004-AUD-008) | Previous audit, 2026-06-28 |
-| kanban-sprint-1 | DONE | DnD a11y + click bubbling |
-| kanban-sprint-1.5 | DONE | Optimistic race + overlay fade |
-| 009-015 | DONE | Batch 1 — email bugs, security, vite, board, dedup, enum, chat |
-| 016-020 | DONE | Batch 2 — auth cache, code splitting, API validation, register txn, CI tests |
-| 021-022 | DONE | Batch 3 — E2E realtime, gateway tests |
+| Plan              | Status                    | Notes                                                                        |
+| ----------------- | ------------------------- | ---------------------------------------------------------------------------- |
+| 001-008           | DONE (as AUD-004-AUD-008) | Previous audit, 2026-06-28                                                   |
+| kanban-sprint-1   | DONE                      | DnD a11y + click bubbling                                                    |
+| kanban-sprint-1.5 | DONE                      | Optimistic race + overlay fade                                               |
+| 009-015           | DONE                      | Batch 1 — email bugs, security, vite, board, dedup, enum, chat               |
+| 016-020           | DONE                      | Batch 2 — auth cache, code splitting, API validation, register txn, CI tests |
+| 021-022           | DONE                      | Batch 3 — E2E realtime, gateway tests                                        |

@@ -30,22 +30,22 @@ pre-push:
 Add a new job after `quality`:
 
 ```yaml
-  unit-tests:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    env:
-      DATABASE_URL: postgresql://placeholder:placeholder@localhost:5432/placeholder
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @flow-desk/shared build
-      - run: pnpm --filter @flowdesk/db db:generate
-      - run: pnpm --filter @flow-desk/api test
+unit-tests:
+  runs-on: ubuntu-latest
+  timeout-minutes: 10
+  env:
+    DATABASE_URL: postgresql://placeholder:placeholder@localhost:5432/placeholder
+  steps:
+    - uses: actions/checkout@v4
+    - uses: pnpm/action-setup@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'pnpm'
+    - run: pnpm install --frozen-lockfile
+    - run: pnpm --filter @flow-desk/shared build
+    - run: pnpm --filter @flowdesk/db db:generate
+    - run: pnpm --filter @flow-desk/api test
 ```
 
 Note: Unit tests use mocked DB/Redis, so no services needed. The `DATABASE_URL` is a placeholder since Prisma client generation requires it, but tests mock the actual queries.

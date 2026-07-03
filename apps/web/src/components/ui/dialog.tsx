@@ -43,8 +43,9 @@ const DialogOverlay = React.forwardRef<
 ));
 DialogOverlay.displayName = 'DialogOverlay';
 
-interface DialogContentProps
-  extends React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> {
+interface DialogContentProps extends React.ComponentPropsWithoutRef<
+  typeof DialogPrimitive.Content
+> {
   showCloseButton?: boolean;
 }
 
@@ -86,7 +87,12 @@ interface DialogFooterProps extends React.ComponentProps<'div'> {
   showCloseButton?: boolean;
 }
 
-const DialogFooter = ({ className, showCloseButton = false, children, ...props }: DialogFooterProps) => (
+const DialogFooter = ({
+  className,
+  showCloseButton = false,
+  children,
+  ...props
+}: DialogFooterProps) => (
   <div
     data-slot="dialog-footer"
     className={cn(

@@ -47,51 +47,51 @@ taskRouter.post('/', async (c) => {
 
 taskRouter.get('/:id', async (c) => {
   const auth = c.get('auth');
-  const id = c.req.param('id')!;
+  const id = c.req.param('id');
   return c.json({ task: await taskService.get(auth.user.id, id) });
 });
 
 taskRouter.patch('/:id', async (c) => {
   const auth = c.get('auth');
-  const id = c.req.param('id')!;
+  const id = c.req.param('id');
   const body = updateTaskSchema.parse(await c.req.json());
   return c.json({ task: await taskService.update(auth.user.id, id, body) });
 });
 
 taskRouter.get('/:id/chat', async (c) => {
   const auth = c.get('auth');
-  const id = c.req.param('id')!;
+  const id = c.req.param('id');
   const task = await taskService.get(auth.user.id, id);
   await assertMembership(task.workspaceId, auth.user.id);
   const limit = Math.min(parseInt(c.req.query('limit') ?? '50'), 100);
   const chatQuery = { taskId: id, limit, cursor: c.req.query('cursor') ?? undefined };
-  const chatResult = await commentSvc.listComments(prisma, auth.user.id, chatQuery as any, true);
+  const chatResult = await commentSvc.listComments(prisma, auth.user.id, chatQuery, true);
   return c.json({ data: chatResult.data, nextCursor: chatResult.nextCursor });
 });
 
 taskRouter.delete('/:id', async (c) => {
   const auth = c.get('auth');
-  const id = c.req.param('id')!;
+  const id = c.req.param('id');
   await taskService.delete(auth.user.id, id);
   return c.json({ ok: true });
 });
 
 taskRouter.post('/:id/move', async (c) => {
   const auth = c.get('auth');
-  const id = c.req.param('id')!;
+  const id = c.req.param('id');
   const body = moveTaskSchema.parse(await c.req.json());
   return c.json({ task: await taskService.move(auth.user.id, id, body) });
 });
 
 taskRouter.post('/:id/restore', async (c) => {
   const auth = c.get('auth');
-  const id = c.req.param('id')!;
+  const id = c.req.param('id');
   return c.json({ task: await taskService.restore(auth.user.id, id) });
 });
 
 taskRouter.post('/:id/subtasks', async (c) => {
   const auth = c.get('auth');
-  const id = c.req.param('id')!;
+  const id = c.req.param('id');
   const body = createSubtaskSchema.parse(await c.req.json());
   return c.json({ task: await taskService.createSubtask(auth.user.id, id, body) }, 201);
 });
@@ -104,7 +104,7 @@ taskRouter.post('/dependencies', async (c) => {
 
 taskRouter.delete('/dependencies/:id', async (c) => {
   const auth = c.get('auth');
-  const depId = c.req.param('id')!;
+  const depId = c.req.param('id');
   const dep = await prisma.taskDependency.findUnique({
     where: { id: depId },
     select: { blockingTask: { select: { id: true, workspaceId: true, deletedAt: true } } },

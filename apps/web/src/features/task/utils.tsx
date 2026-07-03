@@ -48,7 +48,9 @@ export function relativeDate(
 export function PriorityDot({ priority }: { priority: string }) {
   return (
     <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-      <span className={cn('h-1.5 w-1.5 rounded-full', PRIORITY_DOT[priority] ?? 'bg-muted-foreground')} />
+      <span
+        className={cn('h-1.5 w-1.5 rounded-full', PRIORITY_DOT[priority] ?? 'bg-muted-foreground')}
+      />
       {priority}
     </span>
   );

@@ -6,18 +6,16 @@ const envSchema = z.object({
   PORT: z.coerce.number().int().min(1).max(65_535).default(3000),
   DATABASE_URL: z.string().url(),
   REDIS_URL: z.string().url().default('redis://localhost:6379'),
-  JWT_SECRET: z.string().min(32).refine(
-    (secret) => {
+  JWT_SECRET: z
+    .string()
+    .min(32)
+    .refine((secret) => {
       if (process.env.NODE_ENV === 'production') {
-        const KNOWN_DEFAULTS = [
-          'change-me-to-a-32-char-random-string-please',
-        ];
+        const KNOWN_DEFAULTS = ['change-me-to-a-32-char-random-string-please'];
         return !KNOWN_DEFAULTS.includes(secret);
       }
       return true;
-    },
-    'JWT_SECRET must not be the default placeholder in production',
-  ),
+    }, 'JWT_SECRET must not be the default placeholder in production'),
   JWT_ACCESS_TTL: z.string().default('15m'),
   JWT_REFRESH_TTL: z.string().default('7d'),
   CORS_ORIGINS: z

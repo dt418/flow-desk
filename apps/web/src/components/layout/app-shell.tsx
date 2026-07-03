@@ -2,7 +2,8 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as React from 'react';
 import { LogOut, Moon, Sun, Plus } from 'lucide-react';
-import { api, ApiError } from '@/lib/api';
+import type { ApiError } from '@/lib/api';
+import { api } from '@/lib/api';
 import { useAuth } from '@/features/auth';
 import { useTheme } from '@/lib/theme';
 import { useSocket } from '@/lib/socket';
@@ -160,8 +161,6 @@ function navItem({ isActive }: { isActive: boolean }) {
 function navSubItem({ isActive }: { isActive: boolean }) {
   return cn(
     'block rounded-md py-1 pl-6 pr-3 text-xs transition-colors',
-    isActive
-      ? 'text-primary'
-      : 'text-muted-foreground hover:text-foreground',
+    isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground',
   );
 }

@@ -79,7 +79,13 @@ const screenReaderInstructions = {
 export const INTERACTIVE_SELECTOR =
   ':is(button, [role="button"], [role="menuitem"], [role="checkbox"], a, input, select, textarea, [data-card-no-click])';
 
-export function NoCardClick({ children, className }: { children: React.ReactNode; className?: string }) {
+export function NoCardClick({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
   const stop = (e: React.SyntheticEvent) => e.stopPropagation();
   return (
     <span
@@ -146,12 +152,13 @@ export function Kanban({ onMove, renderOverlay, className, children }: KanbanPro
     );
     if (!fromColumnId) return;
 
-    let toColumnId: string | null = null;
     let toIndex = 0;
 
     const overData = over.data.current as
       | { columnId?: string; index?: number; type?: string }
       | undefined;
+
+    let toColumnId: string;
     if (overData?.type === 'column' && typeof overData.columnId === 'string') {
       toColumnId = overData.columnId;
       toIndex = Number.MAX_SAFE_INTEGER;
@@ -162,7 +169,6 @@ export function Kanban({ onMove, renderOverlay, className, children }: KanbanPro
       // dropped onto a column wrapper by id
       toColumnId = overId.startsWith('column:') ? overId.slice('column:'.length) : overId;
     }
-    if (!toColumnId) return;
 
     const fromIndex = Number((active.data.current as { index?: number } | undefined)?.index ?? 0);
     onMove(taskId, fromColumnId, toColumnId, fromIndex, toIndex);
@@ -175,7 +181,7 @@ export function Kanban({ onMove, renderOverlay, className, children }: KanbanPro
         collisionDetection={closestCorners}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
-                onDragCancel={() => {
+        onDragCancel={() => {
           setActiveId(null);
           setActiveColumnId(null);
         }}
@@ -368,7 +374,7 @@ export function KanbanCard({ id, columnId, index, children, className }: KanbanC
       data-kanban-id={id}
       className={cn(
         'cursor-grab select-none touch-none transition-opacity duration-150',
-                isDragging && 'opacity-30',
+        isDragging && 'opacity-30',
         isOtherDragging && activeColumnId !== columnId && 'opacity-60',
         className,
       )}

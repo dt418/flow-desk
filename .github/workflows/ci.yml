@@ -26,8 +26,9 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @flow-desk/shared build
       - name: Generate prisma client
-        run: pnpm --filter @flowdesk/db db:generate
+        run: pnpm --filter @flow-desk/api db:generate
       - run: pnpm typecheck
+      - run: pnpm format:check
       - run: pnpm lint
       - run: pnpm --filter @flow-desk/web build
 
@@ -45,20 +46,20 @@ jobs:
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @flow-desk/shared build
-      - run: pnpm --filter @flowdesk/db db:generate
+      - run: pnpm --filter @flow-desk/api db:generate
       - run: pnpm --filter @flow-desk/api test:unit
 
   integration:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      DATABASE_URL: postgresql://flowdesk:flowdesk@localhost:5432/flowdesk_test?schema=public
+      DATABASE_URL: postgresql://flowdesk:postgres@localhost:5432/flowdesk_test?schema=public
     services:
       postgres:
         image: postgres:16-alpine
         env:
           POSTGRES_USER: flowdesk
-          POSTGRES_PASSWORD: flowdesk
+          POSTGRES_PASSWORD: postgres
           POSTGRES_DB: flowdesk
         ports:
           - 5432:5432
@@ -85,11 +86,11 @@ jobs:
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @flow-desk/shared build
-      - run: pnpm --filter @flowdesk/db db:generate
+      - run: pnpm --filter @flow-desk/api db:generate
 
       - name: Create flowdesk_test database + push schema
         run: |
-          PGPASSWORD=flowdesk psql -h localhost -U flowdesk -d postgres -c "CREATE DATABASE flowdesk_test;"
+          PGPASSWORD=postgres psql -h localhost -U flowdesk -d postgres -c "CREATE DATABASE flowdesk_test;"
           pnpm exec prisma db push --accept-data-loss --schema=packages/db/prisma/schema.prisma
 
       - name: Run integration tests

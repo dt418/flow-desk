@@ -16,10 +16,7 @@ async function shutdown(signal: string) {
   stopScheduler();
 
   // Close BullMQ workers
-  await Promise.all([
-    sendEmailWorker.close(),
-    digestEmailWorker.close(),
-  ]);
+  await Promise.all([sendEmailWorker.close(), digestEmailWorker.close()]);
 
   // Close Redis
   await redis.quit();

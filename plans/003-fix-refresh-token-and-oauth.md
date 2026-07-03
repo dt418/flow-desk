@@ -36,9 +36,11 @@ Add a check: if `profile.verified_email` is not `true`, reject the OAuth callbac
 ## Scope
 
 ### In Scope
+
 - `/home/thanh/flow-desk/apps/api/src/modules/auth/auth.routes.ts` — fix refresh token storage (S5), add OAuth verified_email check (S6)
 
 ### Out of Scope
+
 - Auth module service/repo refactoring (D1 — separate plan)
 - Auth module test coverage (T1 — separate plan, but basic tests should be added here as part of verification)
 - OAuth state cookie improvements (S12 — separate plan or batch)
@@ -55,12 +57,13 @@ Add a check: if `profile.verified_email` is not `true`, reject the OAuth callbac
 Read the file first to understand the exact current code. The fix applies to ALL places where refresh tokens are created (login, register, OAuth callback — typically 3 locations).
 
 **Current pattern** (at login, ~line 62-65):
+
 ```typescript
 const tokenId = crypto.randomUUID();
 const refresh = await signRefreshToken({ userId: user.id, tokenId });
 await prisma.refreshToken.create({
   data: {
-    id: refresh,  // BUG: stores JWT string, should store tokenId
+    id: refresh, // BUG: stores JWT string, should store tokenId
     userId: user.id,
     expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
   },
@@ -68,12 +71,13 @@ await prisma.refreshToken.create({
 ```
 
 **Fix** (change `id: refresh` to `id: tokenId`):
+
 ```typescript
 const tokenId = crypto.randomUUID();
 const refresh = await signRefreshToken({ userId: user.id, tokenId });
 await prisma.refreshToken.create({
   data: {
-    id: tokenId,  // FIXED: store the UUID, not the JWT string
+    id: tokenId, // FIXED: store the UUID, not the JWT string
     userId: user.id,
     expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
   },
@@ -81,6 +85,7 @@ await prisma.refreshToken.create({
 ```
 
 Apply this fix to ALL three locations:
+
 1. **Register handler** (~line 62-65) — user registration creates refresh token
 2. **Login handler** (~line 91-94) — login creates refresh token
 3. **OAuth callback** (~line 137-140) — Google OAuth creates refresh token
@@ -95,6 +100,7 @@ Search for `id: refresh` or `id:.*refresh` in the file and change each to `id: t
 **Verification**: `cd /home/thanh/flow-desk && pnpm --filter @flow-desk/api typecheck` → exit 0
 
 **Current code at ~line 223-229**:
+
 ```typescript
 const profileRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
   headers: { Authorization: `Bearer ${tokenData.access_token}` },
@@ -107,6 +113,7 @@ let user = await prisma.user.findUnique({
 ```
 
 **Add verified_email check before the user lookup**:
+
 ```typescript
 const profileRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
   headers: { Authorization: `Bearer ${tokenData.access_token}` },
@@ -114,7 +121,9 @@ const profileRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', 
 const profile = await profileRes.json();
 
 if (!profile.verified_email) {
-  throw new BadRequestError('Google email is not verified. Please verify your email with Google first.');
+  throw new BadRequestError(
+    'Google email is not verified. Please verify your email with Google first.',
+  );
 }
 
 let user = await prisma.user.findUnique({
@@ -132,6 +141,7 @@ let user = await prisma.user.findUnique({
 Create a new test file following the pattern of existing integration tests. Read `apps/api/tests/integration/task.service.test.ts` first to understand the setup pattern (Prisma test client, HTTP supertest or direct route invocation, test data factory).
 
 **Minimum test cases**:
+
 ```typescript
 import { describe, it, expect, beforeEach } from 'vitest';
 // ... setup matching existing integration test pattern

@@ -50,7 +50,8 @@ describe('RealtimeGateway', () => {
   describe('join-workspace', () => {
     it('joins room if user is member', async () => {
       vi.mocked(prisma.workspaceMember.findUnique).mockResolvedValue({
-        id: 'mem-1', role: 'MEMBER',
+        id: 'mem-1',
+        role: 'MEMBER',
       });
 
       // Emit join-workspace
@@ -128,6 +129,7 @@ export function createMockIO() {
 Read `apps/api/src/modules/realtime/realtime.gateway.ts` to understand the handler structure. The gateway likely exports a function that takes an IO instance and registers handlers. Mock the IO and test each handler.
 
 Key test cases:
+
 - Connection with missing userId → disconnect
 - `join-workspace` with valid membership → joins room
 - `join-workspace` without membership → rejects

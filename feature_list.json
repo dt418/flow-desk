@@ -1,7 +1,7 @@
 {
   "project": "flow-desk",
-    "last_updated": "2026-07-03",
-  "f3_active": true,
+  "last_updated": "2026-07-03",
+  "f3_active": false,
   "f3_f6_shipped": ["F3", "F4", "F5", "F6"],
   "rules": {
     "single_active_feature": true,

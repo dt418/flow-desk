@@ -7,14 +7,14 @@ For new engineers joining the team. Read once, then keep open as a reference. Th
     apps/web/         # React 18 + Vite + TypeScript + Tailwind v4 + shadcn/ui
     apps/api/         # Hono + Node 22 + TypeScript + Prisma 7 + Socket.IO
     packages/shared/  # Zod schemas + types shared by web and api
-    packages/db/      # Generated Prisma client (gitignored output lives at apps/api/generated)
-    prisma/           # schema.prisma + prisma.config.ts + seed.ts + migrations
+    packages/db/      # Prisma schema + migrations + generated client (output at apps/api/generated/prisma)
+    packages/env/     # Environment variable validation (Zod)
+    prisma.config.ts  # Prisma 7 config at repo root (schema path, seed, datasource)
     docker/           # Dockerfiles + nginx config
-    scripts/          # dev-local.sh, docker-up.sh, prisma-exec.sh, lefthook installers
-    docs/             # PRD.md, ADR-*.md, TASKS.md, ACCEPTANCE.md, RISKS.md,
-                      # CHANGELOG.md, claude-progress.md, session-handoff.md,
-                      # USER.md, DEV.md, ARCHITECTURE.md, superpowers/specs+plans/
+    scripts/          # dev-local.sh, docker-up.sh, prisma-exec.sh
+    docs/             # USER.md, DEV.md, ARCHITECTURE.md, superpowers/specs+plans/
     e2e/              # Playwright E2E (browser-based)
+    plans/            # Audit remediation plans
 
 Forging session notes live in `claude-progress.md`. Compact handoffs in `session-handoff.md`. Architecture decisions log: each `ADR-*.md`. Feature state source of truth: `feature_list.json`.
 
@@ -35,17 +35,54 @@ Run the stack:
 
     cp .env.example .env            # edit: JWT_SECRET, LLM_API_KEY at minimum
     pnpm stack:up                   # docker compose up -d (auto-detects port conflicts)
-    pnpm db:seed                    # 15 users / 6 workspaces / 51 tasks / 199 comments / ...
+    pnpm db:seed                    # 15 users / 6 workspaces / 51 tasks / 60 subtasks / 199 comments / 120 notifications / 16 attachments
 
 Verify:
 
     curl http://localhost:3000/api/health
     open http://localhost:5173      # login: demo@flow-desk.app / demo1234
 
-For local dev without docker (host-side postgres + redis bound to `localhost`):
+## Local Dev
+
+Three modes. Pick based on what you have running:
+
+### Hybrid mode (recommended): Docker services + turbo dev
+
+Starts postgres + redis in Docker, runs api + web + shared on the host via turbo. No local postgres/redis install needed.
+
+    pnpm stack:dev                 # docker postgres + redis up (auto-detects port conflicts)
+    pnpm dev                       # turbo: shared tsup --watch + api tsx watch + web vite
+
+Stop:
+
+    pnpm stack:dev-down
+
+Requires `.env` with:
+
+- `DATABASE_URL=postgresql://flowdesk:postgres@localhost:5432/flowdesk?schema=public`
+- `REDIS_URL=redis://localhost:6390` (or 6379 if no port conflict)
+
+Shared edits → tsup rebuilds dist → api tsx watch restarts. API edits restart within ~1s.
+
+### Docker hot-reload mode
+
+For iteration without host-side node. Binds host source into the api container:
+
+    pnpm stack:dev-build           # one-time: bake tsx + tsup into api image
+    pnpm stack:dev                 # up postgres + redis + api (bind-mounts apps/api/src + packages/shared/src)
+    # ... edit files on host ...
+    pnpm stack:dev-down            # stop the dev stack
+
+### Pure local mode
+
+Requires local postgres on localhost:5432 and redis on localhost:6379 natively.
 
     pnpm install
-    pnpm dev:local                  # shared tsup --watch + api tsx watch + web vite
+    pnpm dev:local                 # install + shared build + prisma generate + migrate + seed + run api+web
+
+All three modes start shared (`tsup --watch`) + api (`tsx watch`) + web (vite) for hot-reload.
+
+## Database (Prisma)
 
 The standard DB wrapper is `scripts/prisma-exec.sh`. It auto-detects docker-vs-host and rejects invalid `FLOW_DESK_DB_MODE` values (`docker|local`).
 
@@ -54,18 +91,6 @@ The standard DB wrapper is `scripts/prisma-exec.sh`. It auto-detects docker-vs-h
     pnpm db:studio                  # http://localhost:5555
     pnpm db:reset                   # DESTRUCTIVE — drops + re-pushes schema
     pnpm prisma db push --skip-generate   # arbitrary prisma args via wrapper
-
-## Daily Development Loop
-
-Hot-reload mode rebinds `apps/api/src` and `packages/shared/src` into the api container. Edits restart within ~1s; no image rebuild.
-
-    pnpm stack:dev-build            # one-time: bake tsx + tsup into api image
-    pnpm stack:dev                  # up postgres + redis + api
-    # ... edit files on host ...
-    pnpm stack:dev-down             # stop the dev stack
-    pnpm stack:up                   # back to compiled image (no watch)
-
-Watch chain: edit `packages/shared/src/**` → `tsup --watch` rebuilds `packages/shared/dist` → api's `tsx watch` (started with `--include='../../packages/shared/dist/**/*.js'`) restarts.
 
 ## Module Layout
 
@@ -116,7 +141,7 @@ Reconnect client uses exponential backoff 1s → 30s with randomization 0.5, tim
 
 ## Database (Prisma 7)
 
-- `prisma/schema.prisma` — `provider = "prisma-client"`, custom `output = "../apps/api/generated/prisma"`.
+- `packages/db/prisma/schema.prisma` — `provider = "prisma-client"`, custom `output = "../apps/api/generated/prisma"`.
 - `prisma.config.ts` at repo root defines the config (`env('DATABASE_URL')`, migrations path, etc.).
 - All app code imports the generated client, not `@prisma/client`. The generated dir is gitignored.
 - `PrismaPg` driver adapter pattern: `new PrismaClient({ adapter: new PrismaPg({ connectionString }), ... })`.
@@ -127,7 +152,7 @@ Reconnect client uses exponential backoff 1s → 30s with randomization 0.5, tim
 Backend integration tests:
 
     pnpm --filter @flow-desk/api test:integration
-    # 142 tests, ~30s
+    # 190 tests, ~55s
 
 Test structure: `apps/api/tests/integration/{feature}.test.ts`. Each module gets its own file. Tests use the soft-delete extension unchanged.
 
@@ -164,7 +189,7 @@ Done = implementation done + verification ran + evidence recorded + `./init.sh` 
 
 - `.env` keys in chat or commit messages → **rotate immediately**. Pre-commit secret scan blocks them in commits. Treat leaks as compromised the moment they reach scrollback.
 - Container hostname is `postgres:5432`. Host-side local dev (`pnpm dev:local`) needs `localhost:5432` in `.env`.
-- `apps/api/generated/prisma/` is gitignored. If a checkout "loses" Prisma types, run `pnpm prisma generate` first.
+- `apps/api/generated/prisma/` is gitignored. If a checkout "loses" Prisma types, run `pnpm db:generate` first.
 - `pnpm` 11 ignores `public-hoist-pattern` in `.npmrc`. Hoist settings live in `pnpm-workspace.yaml`. `prisma` and `@prisma/*` are public-hoisted on purpose for monorepo Docker builds.
 - Long-running feature branches accumulate symlinks; `pnpm install --no-frozen-lockfile` clears them.
 - Use `./scripts/docker-up.sh` instead of `docker compose up` directly — it auto-overrides conflicting host ports.

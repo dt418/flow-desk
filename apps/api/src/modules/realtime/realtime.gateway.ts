@@ -1,4 +1,5 @@
-import { Server as SocketServer, type Socket } from 'socket.io';
+import type { Server as SocketServer } from 'socket.io';
+import { type Socket } from 'socket.io';
 import type { Redis } from 'ioredis';
 import { logger } from '../../shared/lib/logger';
 

@@ -43,8 +43,8 @@ export const taskService = {
     const where: Prisma.TaskWhereInput = {
       workspaceId: query.workspaceId,
       ...(query.columnId ? { columnId: query.columnId } : {}),
-      ...(query.status ? { status: query.status as TaskStatus } : {}),
-      ...(query.priority ? { priority: query.priority as TaskPriority } : {}),
+      ...(query.status ? { status: query.status } : {}),
+      ...(query.priority ? { priority: query.priority } : {}),
       ...(query.assigneeId ? { assigneeId: query.assigneeId } : {}),
       ...(query.search ? { title: { contains: query.search, mode: 'insensitive' } } : {}),
       ...(query.dueBefore || query.dueAfter
@@ -58,12 +58,7 @@ export const taskService = {
     };
 
     const order: 'asc' | 'desc' = query.sortOrder ?? 'asc';
-    const primarySortField = (query.sortBy ?? 'position') as
-      | 'createdAt'
-      | 'updatedAt'
-      | 'dueDate'
-      | 'priority'
-      | 'position';
+    const primarySortField = query.sortBy ?? 'position';
     const decoded = query.cursor ? decodeCursor(query.cursor) : null;
     const dir = order === 'asc' ? 'gt' : 'lt';
     const PRIORITY_ORDER = ['LOW', 'MEDIUM', 'HIGH', 'URGENT'] as const;
@@ -72,8 +67,7 @@ export const taskService = {
           AND: [
             where,
             (() => {
-              const sv =
-                decoded.sortValue !== undefined ? decoded.sortValue : decoded.createdAt;
+              const sv = decoded.sortValue !== undefined ? decoded.sortValue : decoded.createdAt;
               if (sv === null) {
                 return { [primarySortField]: null, id: { [dir]: decoded.id } } as const;
               }
@@ -86,7 +80,7 @@ export const taskService = {
                       ? PRIORITY_ORDER.slice(rank + 1)
                       : PRIORITY_ORDER.slice(0, rank);
                   if (subset.length > 0) or.push({ priority: { in: subset } });
-                  or.push({ priority: sv as never, id: { [dir]: decoded.id } });
+                  or.push({ priority: sv, id: { [dir]: decoded.id } });
                 }
               } else {
                 or.push({ [primarySortField]: { [dir]: sv } });

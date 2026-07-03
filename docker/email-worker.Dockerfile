@@ -46,6 +46,7 @@ COPY packages/env/package.json packages/env/package.json
 COPY packages/db/package.json packages/db/package.json
 RUN pnpm install --no-frozen-lockfile
 COPY apps/api apps/api
+COPY prisma.config.ts ./
 ENV DATABASE_URL=postgresql://flowdesk:flowdesk@postgres:5432/flowdesk?schema=public
 RUN pnpm --filter @flow-desk/api build
 
@@ -61,5 +62,5 @@ COPY --from=worker-build /app/apps/api/dist apps/api/dist
 COPY --from=worker-build /app/packages/shared packages/shared
 COPY --from=worker-build /app/packages/env packages/env
 COPY --from=worker-build /app/packages/db packages/db
-COPY --from=worker-build /app/packages/db/prisma.config.ts ./
+COPY --from=worker-build /app/prisma.config.ts ./
 CMD ["sh", "-c", "pnpm exec prisma migrate deploy && node apps/api/dist/workers/email/email-worker.js"]

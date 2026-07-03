@@ -59,7 +59,8 @@ export function DangerZoneTab({ workspaceId }: Props) {
       ) : (
         <>
           <p className="text-sm">
-            Type <span className="font-mono font-semibold text-foreground">{matchRequired}</span> to confirm.
+            Type <span className="font-mono font-semibold text-foreground">{matchRequired}</span> to
+            confirm.
           </p>
           <input
             value={confirmText}

@@ -43,9 +43,7 @@ const fakeWorkspace = {
 
 // ─── Helpers ──────────────────────────────────────────────────────────
 
-function renderDialog(
-  props?: Partial<React.ComponentProps<typeof WorkspaceCreateDialog>>,
-) {
+function renderDialog(props?: Partial<React.ComponentProps<typeof WorkspaceCreateDialog>>) {
   const onCreated = vi.fn();
   const onOpenChange = vi.fn();
   const queryClient = new QueryClient({
@@ -151,9 +149,7 @@ describe('WorkspaceCreateDialog', () => {
   });
 
   it('keeps dialog open and does not call onCreated on API error', async () => {
-    mockApi.mockRejectedValue(
-      Object.assign(new Error('Slug already taken'), { status: 409 }),
-    );
+    mockApi.mockRejectedValue(Object.assign(new Error('Slug already taken'), { status: 409 }));
     const user = userEvent.setup();
     const { onCreated, onOpenChange } = renderDialog();
 

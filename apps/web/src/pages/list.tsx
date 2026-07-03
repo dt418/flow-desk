@@ -336,9 +336,7 @@ export default function ListPage() {
             >
               Board
             </Link>
-            <span className="rounded bg-muted px-2.5 py-1 font-medium text-foreground">
-              List
-            </span>
+            <span className="rounded bg-muted px-2.5 py-1 font-medium text-foreground">List</span>
           </div>
         </div>
       </div>
@@ -392,9 +390,7 @@ export default function ListPage() {
           workspaceId={workspaceId}
           columns={wsColumns}
           members={members}
-          initial={
-            (data.data?.data ?? []).find((t) => t.id === selectedTaskId) ?? null
-          }
+          initial={(data.data?.data ?? []).find((t) => t.id === selectedTaskId) ?? null}
         />
       )}
       {taskDelete.dialog}

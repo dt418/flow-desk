@@ -21,10 +21,7 @@ interface ApiOptions extends RequestInit {
   schema?: z.ZodType;
 }
 
-export async function api<T = unknown>(
-  url: string,
-  options: ApiOptions = {},
-): Promise<T> {
+export async function api<T = unknown>(url: string, options: ApiOptions = {}): Promise<T> {
   const { schema, ...fetchOptions } = options;
 
   const res = await fetch(url, {
@@ -64,23 +61,29 @@ export const BoardTaskSchema = z.object({
   dueDate: z.string().nullable(),
   version: z.number(),
   columnId: z.string(),
-  assignee: z.object({
-    id: z.string(),
-    name: z.string(),
-    email: z.string(),
-    avatarUrl: z.string().nullable(),
-  }).nullable(),
-  labels: z.array(z.object({
-    label: z.object({ id: z.string(), name: z.string(), color: z.string() }),
-  })),
+  assignee: z
+    .object({
+      id: z.string(),
+      name: z.string(),
+      email: z.string(),
+      avatarUrl: z.string().nullable(),
+    })
+    .nullable(),
+  labels: z.array(
+    z.object({
+      label: z.object({ id: z.string(), name: z.string(), color: z.string() }),
+    }),
+  ),
 });
 
 export const BoardResponseSchema = z.object({
-  columns: z.array(z.object({
-    id: z.string(),
-    name: z.string(),
-    tasks: z.array(BoardTaskSchema),
-  })),
+  columns: z.array(
+    z.object({
+      id: z.string(),
+      name: z.string(),
+      tasks: z.array(BoardTaskSchema),
+    }),
+  ),
   nextCursor: z.string().nullable(),
 });
 ```

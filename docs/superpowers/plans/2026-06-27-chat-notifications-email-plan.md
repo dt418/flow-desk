@@ -1495,16 +1495,12 @@ prefs.get('/', async (c) => {
     workspaceId ?? '',
   );
   const prefs = workspaceId
-    ? await c
-        .get('prisma')
-        .userNotificationPreference.findUnique({
-          where: { userId_workspaceId: { userId: user.id, workspaceId } },
-        })
-    : await c
-        .get('prisma')
-        .userNotificationPreference.findUnique({
-          where: { userId_workspaceId: { userId: user.id, workspaceId: null } },
-        });
+    ? await c.get('prisma').userNotificationPreference.findUnique({
+        where: { userId_workspaceId: { userId: user.id, workspaceId } },
+      })
+    : await c.get('prisma').userNotificationPreference.findUnique({
+        where: { userId_workspaceId: { userId: user.id, workspaceId: null } },
+      });
   return c.json({ data: { effective, current: prefs } });
 });
 

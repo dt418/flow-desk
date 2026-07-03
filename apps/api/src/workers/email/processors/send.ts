@@ -1,7 +1,8 @@
-import { Worker, Job } from 'bullmq';
+import type { Job } from 'bullmq';
+import { Worker } from 'bullmq';
 import { logger } from '../../../shared/lib/logger';
 import { emailProvider } from '../../../shared/lib/email-provider';
-import { EmailJobData } from '../queue';
+import type { EmailJobData } from '../queue';
 import { prisma } from '../../../shared/lib/prisma';
 
 const ACCEPTED_TYPES = new Set(['INSTANT', 'DELAYED', 'DUE_REMINDER']);

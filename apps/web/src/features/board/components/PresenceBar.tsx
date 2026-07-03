@@ -70,10 +70,7 @@ export function PresenceBar({ workspaceId, max = 5, className }: PresenceBarProp
   if (users.length === 0) {
     return (
       <div
-        className={cn(
-          'inline-flex items-center gap-1.5 text-xs text-muted-foreground',
-          className,
-        )}
+        className={cn('inline-flex items-center gap-1.5 text-xs text-muted-foreground', className)}
         aria-label="No active collaborators"
         title="No active collaborators"
       >
@@ -107,9 +104,7 @@ export function PresenceBar({ workspaceId, max = 5, className }: PresenceBarProp
           </span>
         )}
       </div>
-      <span className="hidden text-xs text-muted-foreground sm:inline">
-        {users.length} online
-      </span>
+      <span className="hidden text-xs text-muted-foreground sm:inline">{users.length} online</span>
     </div>
   );
 }

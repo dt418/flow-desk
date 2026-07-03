@@ -95,7 +95,7 @@ workspaceRouter.patch(
   rateLimit({ ...RATE_LIMITS.WORKSPACE_UPDATE, keyBy: 'user', scope: 'workspace:update' }),
   requireWorkspaceRole(['OWNER', 'ADMIN']),
   async (c) => {
-    const id = c.req.param('workspaceId')!;
+    const id = c.req.param('workspaceId');
     const auth = c.get('auth');
     const body = updateWorkspaceSchema.parse(await c.req.json());
     const existing = await prisma.workspace.findFirst({ where: { id, deletedAt: null } });
@@ -122,7 +122,7 @@ workspaceRouter.delete(
   rateLimit({ ...RATE_LIMITS.WORKSPACE_DELETE, keyBy: 'user', scope: 'workspace:delete' }),
   requireWorkspaceRole(['OWNER']),
   async (c) => {
-    const id = c.req.param('workspaceId')!;
+    const id = c.req.param('workspaceId');
     await prisma.workspace.update({ where: { id }, data: { deletedAt: new Date() } });
     return c.json({ ok: true });
   },
@@ -138,7 +138,7 @@ workspaceRouter.get(
     return undefined;
   }),
   async (c) => {
-    const id = c.req.param('workspaceId')!;
+    const id = c.req.param('workspaceId');
     const auth = c.get('auth');
     const query = c.req.valid('query');
     const result = await memberService.list(query, id, auth.user.id);
@@ -151,7 +151,7 @@ workspaceRouter.post(
   requireWorkspaceRole(['OWNER', 'ADMIN']),
   rateLimit({ ...RATE_LIMITS.WORKSPACE_INVITE, keyBy: 'user', scope: 'workspace:invite' }),
   async (c) => {
-    const id = c.req.param('workspaceId')!;
+    const id = c.req.param('workspaceId');
     const body = inviteMemberSchema.parse(await c.req.json());
     const user = await prisma.user.findUnique({ where: { email: body.email } });
     if (!user) throw new NotFoundError('User not registered');

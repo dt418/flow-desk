@@ -109,3 +109,65 @@
 | **F4.r30-cursor-pagination**: cursor/limit on 7 list endpoints + shared envelope         | packages/shared/pagination.ts + 7 routes + 12 tests                                            | 1d       | passing |
 | **F5.r31-r32-service-repo-tests**: split task/comment/notification/attachment/ai + tests | 5 modules × (repo+service+routes slim) + 73 tests + topologicalSort bug fix                    | 2d       | passing |
 | **F6.r34-presence-drag-overlay**: server presence gateway + DragOverlay real-card clone  | realtime.gateway.ts + Redis-backed presence (30s TTL, 10s sweeper) + Kanban renderOverlay prop | 1d       | passing |
+
+## Sprint 14: Chat + Notifications + Email (Session 016)
+
+### Epic: F7 — real-time chat + email notifications
+
+| Story                                                                | Tasks                                                                                  | Estimate | Status  |
+| -------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | -------- | ------- |
+| **F7.chat-be**: ChatChannel + ChatMessage models + API + task chat   | Prisma schema (5 models), Zod schemas, chat channel+message routes, task-level chat    | 2d       | passing |
+| **F7.notifications-be**: Email provider + templates + BullMQ workers | nodemailer+resend, 6 email templates, BullMQ queue + instant/delayed/digest processors | 2d       | passing |
+| **F7.notification-prefs-be**: Workspace + user notification settings | WorkspaceNotificationSetting + UserNotificationPreference models, preference routes    | 1d       | passing |
+| **F7.chat-fe**: Chat sidebar + channel view + TaskChat component     | Frontend chat UI (sidebar, channel view, message bubbles, task-level chat)             | 1.5d     | passing |
+| **F7.realtime-fe**: Notification bell + real-time delivery           | useNotificationsRealtime hook, bell badge, Socket.IO /notifications namespace          | 0.5d     | passing |
+
+## Sprint 15: Workspace CRUD + Kanban Polish (Session 018)
+
+### Epic: F8 — dashboard create + kanban column kebab
+
+| Story                                                    | Tasks                                                                                     | Estimate | Status  |
+| -------------------------------------------------------- | ----------------------------------------------------------------------------------------- | -------- | ------- |
+| **F8.dashboard-create**: Create workspace from dashboard | useCreateWorkspace hook + WorkspaceCreateDialog + dashboard wiring                        | 0.5d     | passing |
+| **F8.kanban-polish**: Column kebab menu + keyboard a11y  | DropdownMenu (Add task, Rename column), accessibility announcements, DropAnimation tuning | 0.5d     | passing |
+
+## Sprint 16: Kanban Sprint 1 — a11y + click-bubble + sensor (Session 021)
+
+### Epic: Kanban UX audit fixes
+
+| Story                              | Tasks                                                                            | Estimate | Status  |
+| ---------------------------------- | -------------------------------------------------------------------------------- | -------- | ------- |
+| **kanban-rc1**: Click bubbling fix | INTERACTIVE_SELECTOR constant + NoCardClick wrapper in kanban.tsx                | 0.25d    | passing |
+| **kanban-rc2**: PointerSensor lag  | distance:8 no delay + TouchSensor {delay:150, tolerance:8}                       | 0.25d    | passing |
+| **kanban-rc4**: Nested role=button | Attributes on inner div + aria-roledescription on article, removed role='button' | 0.25d    | passing |
+
+## Sprint 17: Kanban Sprint 1.5 — race + overlay (Session 022)
+
+### Epic: Kanban remaining audit fixes
+
+| Story                                   | Tasks                                                                                | Estimate | Status  |
+| --------------------------------------- | ------------------------------------------------------------------------------------ | -------- | ------- |
+| **kanban-rc3**: Optimistic reorder race | move-progress flag + useRealtime skip-when-dragging                                  | 0.25d    | passing |
+| **kanban-rc5**: Same-position move      | Early-return in handleMove when fromColumnId === toColumnId && fromIndex === toIndex | 0.1d     | passing |
+| **kanban-rc6**: DragOverlay fade        | opacity-30 + transition-opacity duration-150 on dragging card                        | 0.1d     | passing |
+
+## Sprint 18: Audit Batch (Sessions 023-024)
+
+### Epic: Security + Performance + Correctness + Tech Debt
+
+| Story                                 | Tasks                                                    | Estimate | Status  |
+| ------------------------------------- | -------------------------------------------------------- | -------- | ------- |
+| **audit-009**: Email worker bugs      | Per-task dedup, BullMQ cancel, PENDING status fix        | 0.25d    | passing |
+| **audit-010**: Security hardening     | Extension allowlist, security headers, rate-limit IP fix | 0.25d    | passing |
+| **audit-011**: Vite prod config       | Vite production build optimizations                      | 0.1d     | passing |
+| **audit-012**: Board over-fetch       | Board endpoint query optimization                        | 0.1d     | passing |
+| **audit-013**: Tech debt dedup        | safeEmit/task helper deduplication                       | 0.25d    | passing |
+| **audit-014**: Enum casts             | Prisma enum `as any` cast cleanup                        | 0.1d     | passing |
+| **audit-015**: Chat uniqueness        | Chat channel unique constraint fix                       | 0.1d     | passing |
+| **audit-016**: Auth caching           | Auth + membership caching                                | 0.5d     | passing |
+| **audit-017**: Code splitting         | Code splitting + lazy loading                            | 0.5d     | passing |
+| **audit-018**: API validation         | API client response validation                           | 0.5d     | passing |
+| **audit-019**: Register transactional | Register/OAuth transactional operations                  | 0.5d     | passing |
+| **audit-020**: Test pipeline CI       | CI unit tests job                                        | 0.25d    | passing |
+| **audit-021**: E2E realtime           | E2E realtime test                                        | 0.5d     | passing |
+| **audit-022**: Realtime gateway tests | Realtime gateway unit tests                              | 1d       | passing |

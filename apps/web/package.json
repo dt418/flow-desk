@@ -9,7 +9,7 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "lint": "echo 'web: lint placeholder'",
+    "lint": "eslint src/",
     "test": "vitest run",
     "test:watch": "vitest"
   },

@@ -203,19 +203,27 @@ Rules:
 
 ## Data Model Snapshot
 
-Models in `prisma/schema.prisma`. Every model carries `id` (cuid), `createdAt`, `updatedAt`. Soft-delete models (User, Workspace, Task, TaskLabel, TaskLabelAssignment, Comment) also carry `deletedAt?`. Indexes on every FK and common filter. Uniqueness constraints where business logic demands it.
+Models in `packages/db/prisma/schema.prisma`. Every model carries `id` (cuid), `createdAt`, `updatedAt`. Soft-delete models (User, Workspace, Task, TaskLabel, TaskLabelAssignment, Comment) also carry `deletedAt?`. Indexes on every FK and common filter. Uniqueness constraints where business logic demands it.
 
 - **User** — account; bcrypt password hash; optional Google `providerId`.
 - **Workspace** — tenant; name + slug.
-- **Membership** — `userId × workspaceId × role` (Owner/Admin/Member/Guest). Unique.
-- **Task** — the work item. `status`, `priority`, `assigneeId`, `reporterId`, `dueDate`. Subtasks live in `TaskSubtask`; blockers/blocks in `TaskDependency`.
+- **WorkspaceMember** — `userId × workspaceId × role` (Owner/Admin/Member/Guest). Unique.
+- **Column** — workspace column with position, color, isDoneColumn flag.
+- **Task** — the work item. `status`, `priority`, `assigneeId`, `createdById`, `dueDate`. Subtasks are child tasks via `parentTaskId`. Blockers/blocks in `TaskDependency`.
+- **TaskDependency** — `blockingTaskId × blockedTaskId`. Unique.
 - **TaskLabel** — per-workspace; `name` + named-enum `color` (8 values).
 - **TaskLabelAssignment** — `task × label` join.
-- **Comment** — `taskId` + `authorId` + `body`.
+- **Comment** — `taskId` + `authorId` + `body`. Supports threaded replies via `parentCommentId`.
+- **Notification** — `userId` + `type` (`TASK_ASSIGNED`, `TASK_MENTIONED`, …) + payload.
 - **Attachment** — `taskId` + `uploadedById` + `size` + `type` + storage pointer.
-- **Notification** — `recipientId` + `kind` (`TASK_MENTIONED`, `TASK_DUE_SOON`, …) + payload.
+- **RefreshToken** — refresh token storage for JWT rotation.
+- **ChatChannel** — workspace chat channel; `name` + `isPrivate`.
+- **ChatMessage** — channel message; `channelId` + `authorId` + `content`.
+- **WorkspaceNotificationSetting** — per-workspace notification preferences (email toggles, digest schedule).
+- **UserNotificationPreference** — per-user per-workspace notification opt-out.
+- **EmailJob** — BullMQ-style email queue entry; `status`, `attempts`, `scheduledAt`.
 
-See `prisma/schema.prisma` for the source of truth.
+See `packages/db/prisma/schema.prisma` for the source of truth.
 
 ## Caching
 

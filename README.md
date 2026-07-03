@@ -72,20 +72,45 @@ cd apps/api && pnpm db:push      # same wrapper, same auto-detect
 cd apps/api && pnpm db:seed      # same wrapper, same auto-detect
 ```
 
-## Local dev (without Docker)
+## Local dev
+
+Two modes depending on whether you have local postgres/redis or prefer Docker:
+
+### Hybrid mode (recommended): Docker services + turbo dev
+
+Starts postgres + redis in Docker, runs api + web + shared on the host via turbo. Best of both worlds — no local postgres/redis install needed, and native hot-reload performance.
 
 ```bash
-# Requires local postgres on localhost:5432 and redis on localhost:6379
+# Start postgres + redis via Docker (auto-detects port conflicts)
+pnpm stack:dev            # docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+# (only postgres + redis come up; api/web run on host via pnpm dev below)
+
+# In a second terminal:
+pnpm dev                  # turbo: shared tsup --watch + api tsx watch + web vite
+```
+
+- Web: <http://localhost:5173>
+- API: <http://localhost:3000>
+- Demo creds: `demo@flow-desk.app` / `demo1234`
+
+Requires `.env` with `DATABASE_URL=postgresql://flowdesk:postgres@localhost:5432/flowdesk?schema=public` (note: `postgres` password, not `flowdesk`; and `localhost`, not `docker-hostname`).
+
+Shared edits (`packages/shared/src/**`) → tsup rebuilds dist → api tsx watch restarts automatically. API edits (`apps/api/src/**`) restart within ~1s.
+
+```bash
+pnpm stack:dev-down       # stop docker services when done
+```
+
+### Pure local mode: no Docker at all
+
+Requires postgres on `localhost:5432` and redis on `localhost:6379` running natively (apt, brew, etc).
+
+```bash
 pnpm install
 pnpm dev:local            # install + shared build + prisma generate + migrate + seed + run api+web
 ```
 
-For local dev, set `DATABASE_URL=postgresql://flowdesk:flowdesk@localhost:5432/flowdesk?schema=public` in `.env` (not `postgres:5432`, which is the docker hostname).
-
-- Web: <http://localhost:5173>
-- API: <http://localhost:3000>
-
-`dev:local` now starts `shared` (`tsup --watch`) in parallel with api + web, so edits to `packages/shared/src/**` rebuild dist and api's `tsx watch` (`--include='../../packages/shared/dist/**/*.js'`) restarts automatically.
+`dev:local` runs shared (`tsup --watch`) + api (`tsx watch`) + web (vite) in parallel via `pnpm -r --parallel`. Same hot-reload behavior as hybrid mode.
 
 ## Dev mode with hot reload in Docker
 
@@ -110,21 +135,25 @@ pnpm stack:up             # uses compiled dist/index.js, no hot reload
 ## Repo layout
 
 ```
-docs/USER.md        # End-user guide (install + features + how-to)
-docs/DEV.md         # Developer onboarding
+docs/USER.md         # End-user guide (install + features + how-to)
+docs/DEV.md          # Developer onboarding
 docs/ARCHITECTURE.md # Architecture deep-dive (read once before editing a module)
-apps/web/           # React + Vite
-apps/api/           # Hono + Prisma
-packages/shared/    # Zod schemas + types
-prisma/             # schema.prisma + seed.ts
-docker/             # Dockerfiles + nginx config
-scripts/            # dev-local.sh (no Docker) + docker-up.sh (smart compose)
-PRD.md              # Product requirements
-ADR-*.md            # Architecture decisions (001..006)
-TASKS.md            # Sprint backlog
-ACCEPTANCE.md       # Testable acceptance criteria
-RISKS.md            # Risk register
-AGENTS.md           # Agent operating instructions
+apps/web/            # React + Vite
+apps/api/            # Hono + Prisma
+packages/shared/     # Zod schemas + types
+packages/db/         # Prisma schema + migrations + generated client
+packages/env/        # Environment variable validation (Zod)
+prisma.config.ts     # Prisma 7 config (schema path, seed, datasource)
+docker/              # Dockerfiles + nginx config
+scripts/             # dev-local.sh, docker-up.sh, prisma-exec.sh
+e2e/                 # Playwright E2E tests
+plans/               # Audit remediation plans
+PRD.md               # Product requirements
+ADR-*.md             # Architecture decisions (001..006)
+TASKS.md             # Sprint backlog
+ACCEPTANCE.md        # Testable acceptance criteria
+RISKS.md             # Risk register
+AGENTS.md            # Agent operating instructions
 ```
 
 ## Git hooks (lefthook)
@@ -143,16 +172,20 @@ Hooks are managed by [lefthook](https://github.com/evilmartians/lefthook) (confi
 **pre-push** (heavier, ~60-90s):
 
 - Full typecheck (all packages)
-- BE integration tests (142 tests)
+- BE integration tests (190 tests)
 - Web build
 
 Bypass (emergency): `git commit --no-verify` / `git push --no-verify`.
 
 ## Recent changes
 
-- **Session 012 (F3-F6)**: closed R-29 (soft-delete extension), R-30 (cursor pagination), R-31 (service/repo split for all remaining modules), R-32 (142 integration tests), R-34 (real-card DragOverlay + server presence gateway). 142/142 BE tests pass.
-- **Session 011 (F2 Kanban Polish)**: labels module (BE+FE), workspace service split, member invite endpoint, Radix primitives (dialog/dropdown-menu/popover/tooltip), workspace switcher, settings UI, task-card label select, welcome flow, realtime polish, Playwright E2E scaffold.
-- See `CHANGELOG.md`, `claude-progress.md`, and `feature_list.json` for the full session record.
+- **Session 025 (dev workflow)**: Fixed integration test env (Redis port 6379→6390, DB password flowdesk→postgres), created `apps/api/.env` symlink, verified 190/190 tests pass. Updated docs with hybrid dev mode (docker services + `pnpm dev`).
+- **Session 024 (test fixes)**: Fixed 7 broken unit tests + docker inspect error from audit batch changes. 97/97 unit tests pass.
+- **Session 023 (improve audit)**: Full /improve audit — 14 plans executed across 3 batches. Email worker, security, performance, tech debt, correctness, test pipeline all improved.
+- **Session 022 (kanban-sprint-1.5)**: RC3 (optimistic reorder race), RC5 (same-position move), RC6 (DragOverlay snap) fixed.
+- **Session 021 (kanban-sprint-1)**: Click bubbling, PointerSensor lag, nested role=button fixed.
+- **Session 019 (post-F8)**: Dev startup race condition + seed FK constraint fix.
+- See `CHANGELOG.md`, `claude-progress.md`, and `feature_list.json` for full history.
 
 ## Security
 

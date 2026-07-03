@@ -52,7 +52,7 @@ The `enqueueEmail` call on line 57 already passes `metadata: { taskId: task.id }
 Import the queue and remove the job:
 
 ```typescript
-import { emailQueue } from './queue';  // add import at top
+import { emailQueue } from './queue'; // add import at top
 
 export async function cancelDelayed(userId: string, jobId: string) {
   // Remove from BullMQ first

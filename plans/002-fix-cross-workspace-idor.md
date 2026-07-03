@@ -10,6 +10,7 @@
 Multiple API endpoints accept a resource ID (column, task dependency, task) from the request but fail to verify that the resource belongs to the workspace in the URL path. An authenticated user who is a member of workspace A can mutate or read resources in workspace B by supplying a foreign resource ID. This is a class of Insecure Direct Object Reference (IDOR) vulnerabilities.
 
 **Impact**: Cross-tenant data mutation and disclosure. An attacker can:
+
 - Delete/rename columns in workspaces they don't belong to (S3)
 - Delete task dependencies in any workspace (S4)
 - Push notification spam to arbitrary users (S8)
@@ -27,6 +28,7 @@ For AI (S9), verify the task's `workspaceId` matches the path `workspaceId` befo
 ## Scope
 
 ### In Scope
+
 - `/home/thanh/flow-desk/apps/api/src/modules/workspace/workspace.routes.ts` — column update/delete ownership check (S3)
 - `/home/thanh/flow-desk/apps/api/src/modules/task/task.routes.ts` — dependency delete auth+membership (S4)
 - `/home/thanh/flow-desk/apps/api/src/modules/task/task.service.ts` — task create column ownership (S18)
@@ -35,6 +37,7 @@ For AI (S9), verify the task's `workspaceId` matches the path `workspaceId` befo
 - `/home/thanh/flow-desk/apps/api/src/modules/ai/ai.repository.ts` — add workspace filter to findTask
 
 ### Out of Scope
+
 - Refactoring `workspace.routes.ts` to service/repo pattern (D1 — separate plan)
 - Adding auth module tests (T1 — separate plan)
 - WebSocket IDOR (S7 — separate plan, different fix approach)
@@ -47,6 +50,7 @@ For AI (S9), verify the task's `workspaceId` matches the path `workspaceId` befo
 **Verification**: `cd /home/thanh/flow-desk && pnpm --filter @flow-desk/api typecheck` → exit 0
 
 **Current code at line ~240-256** (column update and delete handlers):
+
 ```typescript
 // PATCH /:workspaceId/columns/:columnId
 .put(
@@ -77,6 +81,7 @@ For AI (S9), verify the task's `workspaceId` matches the path `workspaceId` befo
 ```
 
 **Replace with** (add ownership check before mutation):
+
 ```typescript
 .put(
   '/:workspaceId/columns/:columnId',
@@ -132,6 +137,7 @@ For AI (S9), verify the task's `workspaceId` matches the path `workspaceId` befo
 **Verification**: `cd /home/thanh/flow-desk && pnpm --filter @flow-desk/api typecheck` → exit 0
 
 **Current code at line ~100-106**:
+
 ```typescript
 .delete('/:id/dependencies/:depId', async (c) => {
   await taskService.deleteDependency(c.req.param('id')!);
@@ -142,6 +148,7 @@ For AI (S9), verify the task's `workspaceId` matches the path `workspaceId` befo
 Note: this route has NO `requireAuth` middleware and NO `assertMembership` call. The `:id` param is the task ID, `:depId` is unused (the service deletes by dependency ID directly).
 
 **Replace with**:
+
 ```typescript
 .delete(
   '/:id/dependencies/:depId',
@@ -169,6 +176,7 @@ Note: this route has NO `requireAuth` middleware and NO `assertMembership` call.
 **Service change**: `/home/thanh/flow-desk/apps/api/src/modules/task/task.service.ts`
 
 **Current code at line ~382-384**:
+
 ```typescript
 async deleteDependency(prisma: PrismaClient, id: string): Promise<void> {
   await prisma.taskDependency.delete({ where: { id } });
@@ -176,6 +184,7 @@ async deleteDependency(prisma: PrismaClient, id: string): Promise<void> {
 ```
 
 This stays the same — the auth/membership check is now in the route handler. But we should also verify the dependency belongs to the task. Add a check:
+
 ```typescript
 async deleteDependency(prisma: PrismaClient, id: string): Promise<void> {
   await prisma.taskDependency.delete({ where: { id } });
@@ -192,6 +201,7 @@ Actually, keep the service as-is. The route handler checks that the task exists 
 **Verification**: `cd /home/thanh/flow-desk && pnpm --filter @flow-desk/api typecheck` → exit 0
 
 **Current code at line ~106-121** (create method):
+
 ```typescript
 async create(prisma: PrismaClient, input: CreateTaskInput): Promise<Task> {
   // ... validation ...
@@ -211,6 +221,7 @@ async create(prisma: PrismaClient, input: CreateTaskInput): Promise<Task> {
 ```
 
 **Add column ownership check** after the existing validation, before `prisma.task.create`:
+
 ```typescript
 if (input.body.columnId) {
   const column = await prisma.column.findUnique({
@@ -233,10 +244,9 @@ if (input.body.columnId) {
 **Verification**: `cd /home/thanh/flow-desk && pnpm --filter @flow-desk/api typecheck` → exit 0
 
 **Current code at line ~72-88**:
+
 ```typescript
-const mentionedUserIds = body.mentionedUserIds.filter(
-  (id) => id !== userId,
-);
+const mentionedUserIds = body.mentionedUserIds.filter((id) => id !== userId);
 if (mentionedUserIds.length > 0) {
   await createManyNotifications(prisma, {
     // creates notifications for each mentionedUserIds entry
@@ -245,10 +255,9 @@ if (mentionedUserIds.length > 0) {
 ```
 
 **Replace with** (validate membership before creating notifications):
+
 ```typescript
-const requestedMentions = body.mentionedUserIds.filter(
-  (id) => id !== userId,
-);
+const requestedMentions = body.mentionedUserIds.filter((id) => id !== userId);
 let mentionedUserIds: string[] = [];
 if (requestedMentions.length > 0) {
   const members = await prisma.workspaceMember.findMany({
@@ -276,6 +285,7 @@ if (mentionedUserIds.length > 0) {
 **Verification**: `cd /home/thanh/flow-desk && pnpm --filter @flow-desk/api typecheck` → exit 0
 
 **Current code at line ~15**:
+
 ```typescript
 findTask: async (prisma: PrismaClient, taskId: string) => {
   return prisma.task.findUnique({
@@ -289,6 +299,7 @@ findTask: async (prisma: PrismaClient, taskId: string) => {
 ```
 
 **Replace with** (add `workspaceId` parameter):
+
 ```typescript
 findTask: async (prisma: PrismaClient, taskId: string, workspaceId: string) => {
   return prisma.task.findUnique({
@@ -304,6 +315,7 @@ findTask: async (prisma: PrismaClient, taskId: string, workspaceId: string) => {
 Wait — `findUnique` with `where: { id }` can't filter by `workspaceId` in the `where` clause (it's not a unique field). We need to check after fetching.
 
 **Corrected approach**:
+
 ```typescript
 findTask: async (prisma: PrismaClient, taskId: string, workspaceId: string) => {
   const task = await prisma.task.findUnique({
@@ -324,6 +336,7 @@ findTask: async (prisma: PrismaClient, taskId: string, workspaceId: string) => {
 **Verification**: `cd /home/thanh/flow-desk && pnpm --filter @flow-desk/api typecheck` → exit 0
 
 **Current code at line ~32-37**:
+
 ```typescript
 if (input.taskId) {
   const task = await repo.findTask(prisma, input.taskId);
@@ -335,6 +348,7 @@ if (input.taskId) {
 ```
 
 **Replace with**:
+
 ```typescript
 if (input.taskId) {
   const task = await repo.findTask(prisma, input.taskId, input.workspaceId);

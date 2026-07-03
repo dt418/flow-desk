@@ -21,7 +21,7 @@
 
 ## setup-003: Prisma Schema
 
-- [ ] `prisma/schema.prisma` defines: User, Workspace, WorkspaceMember, Column, Task, Subtask, TaskDependency, Comment, Notification, Attachment, RefreshToken
+- [ ] `packages/db/prisma/schema.prisma` defines: User, Workspace, WorkspaceMember, Column, Task, TaskDependency, TaskLabel, TaskLabelAssignment, Comment, Notification, Attachment, RefreshToken, ChatChannel, ChatMessage, WorkspaceNotificationSetting, UserNotificationPreference, EmailJob
 - [ ] Every model has `id` (cuid), `createdAt`, `updatedAt`, `deletedAt?`
 - [ ] `@@index` on all FKs
 - [ ] `@@unique` on business keys (e.g., WorkspaceMember[workspaceId,userId])
@@ -30,8 +30,8 @@
 
 ## setup-004: Docker Compose
 
-- [ ] `docker-compose.yml` defines: postgres, redis, api, web
-- [ ] `docker compose up -d` starts all 4 services
+- [ ] `docker-compose.yml` defines: postgres, redis, api, email-worker, web
+- [ ] `docker compose up -d` starts all 5 services
 - [ ] API responds at `http://localhost:3000/api/health` with `{ status: "ok" }`
 - [ ] Web accessible at `http://localhost:5173`
 - [ ] PostgreSQL accessible at `localhost:5432` with credentials from `.env`
@@ -180,7 +180,7 @@
 ## file-002: Seed Data
 
 - [ ] `pnpm db:seed` populates demo workspace
-- [ ] 5 users, 3 workspaces, 1 demo workspace with 50+ tasks, 30+ comments
+- [ ] 15 users, 6 workspaces, 51 tasks, 60 subtasks, 199 comments, 120 notifications, 16 attachments
 - [ ] Tasks distributed across all statuses
 - [ ] Some tasks have subtasks and dependencies
 - [ ] Login as `demo@flow-desk.app` (password: `demo1234`) works

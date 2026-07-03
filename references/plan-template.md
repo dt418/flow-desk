@@ -28,18 +28,20 @@ The approach. Key design decisions with rationale. Why not alternative approache
 ## Scope
 
 ### In Scope
+
 - file A
 - function B
 
 ### Out of Scope
+
 - Feature X (reason)
 - Refactoring Y (deferred)
 
 ## Steps
 
 For each step:
-
 ```
+
 ### Step N — <short label>
 
 **File**: `path/to/file.ext`
@@ -48,16 +50,20 @@ For each step:
 <what to do>
 
 Code excerpt (current state):
+
 ```typescript
 // existing code
 ```
+
 ```
 
 ## Verification
 
 ```
+
 <command 1> → expected output 1
 <command 2> → expected output 2
+
 ```
 
 ## Test Plan
@@ -103,8 +109,8 @@ Commit: `<short SHA>`
 ## Status Table
 
 | Plan | Finding | Status | Executor | Verified |
-|------|---------|--------|----------|----------|
-| 001 | #N | TODO | — | — |
+| ---- | ------- | ------ | -------- | -------- |
+| 001  | #N      | TODO   | —        | —        |
 ```
 
 ## Naming Conventions

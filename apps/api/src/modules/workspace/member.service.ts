@@ -47,12 +47,14 @@ export const memberService = {
     });
     if (existing) throw new ConflictError('User already a member');
 
-    return prisma.workspaceMember.create({
-      data: { workspaceId, userId: target.id, role },
-    }).then(async (result) => {
-      await invalidateMembershipCache(workspaceId, target.id);
-      return result;
-    });
+    return prisma.workspaceMember
+      .create({
+        data: { workspaceId, userId: target.id, role },
+      })
+      .then(async (result) => {
+        await invalidateMembershipCache(workspaceId, target.id);
+        return result;
+      });
   },
 
   async changeRole(workspaceId: string, targetUserId: string, newRole: UserRole, userId: string) {
@@ -68,13 +70,15 @@ export const memberService = {
         throw new ForbiddenError('Cannot demote the last owner');
       }
     }
-    return prisma.workspaceMember.update({
-      where: { workspaceId_userId: { workspaceId, userId: targetUserId } },
-      data: { role: newRole },
-    }).then(async (result) => {
-      await invalidateMembershipCache(workspaceId, targetUserId);
-      return result;
-    });
+    return prisma.workspaceMember
+      .update({
+        where: { workspaceId_userId: { workspaceId, userId: targetUserId } },
+        data: { role: newRole },
+      })
+      .then(async (result) => {
+        await invalidateMembershipCache(workspaceId, targetUserId);
+        return result;
+      });
   },
 
   async remove(workspaceId: string, targetUserId: string, userId: string) {

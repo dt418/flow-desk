@@ -25,8 +25,12 @@ function createMockSocket(userId?: string) {
     id: 'socket-1',
     data: userId !== undefined ? { userId, userName: 'Test User', userAvatar: null } : {},
     rooms,
-    join: vi.fn((room: string) => { rooms.add(room); }),
-    leave: vi.fn((room: string) => { rooms.delete(room); }),
+    join: vi.fn((room: string) => {
+      rooms.add(room);
+    }),
+    leave: vi.fn((room: string) => {
+      rooms.delete(room);
+    }),
     emit: vi.fn(),
     disconnect: vi.fn(),
     on: vi.fn(),
@@ -64,13 +68,15 @@ function createMockRedis() {
       for (const f of fields) delete store[key][f];
     }),
     expire: vi.fn(async () => 1),
-    scan: vi.fn(async (_cursor: string, _cmd: string, pattern: string, _countCmd: string, _count: number) => {
-      const keys = Object.keys(store).filter((k) => {
-        if (pattern === 'presence:*') return k.startsWith('presence:');
-        return k === pattern;
-      });
-      return ['0', keys];
-    }),
+    scan: vi.fn(
+      async (_cursor: string, _cmd: string, pattern: string, _countCmd: string, _count: number) => {
+        const keys = Object.keys(store).filter((k) => {
+          if (pattern === 'presence:*') return k.startsWith('presence:');
+          return k === pattern;
+        });
+        return ['0', keys];
+      },
+    ),
   };
 }
 
@@ -146,7 +152,9 @@ describe('RealtimeGateway', () => {
   describe('presence:join', () => {
     it('joins room and upserts presence with valid membership', async () => {
       const { prisma } = await import('../../shared/lib/prisma');
-      (prisma.workspaceMember.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue({ userId: 'user-1' });
+      (prisma.workspaceMember.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue({
+        userId: 'user-1',
+      });
 
       const { attachPresenceHandlers } = await import('./realtime.gateway');
       attachPresenceHandlers(mockIo as any, redis as unknown as Redis);

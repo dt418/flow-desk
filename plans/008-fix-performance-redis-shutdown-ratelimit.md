@@ -10,12 +10,15 @@
 Three performance/correctness issues that affect production stability:
 
 ### P1: `redis.keys('presence:*')` blocking
+
 `realtime.gateway.ts:139` calls `redis.keys('presence:*')` every 10 seconds in the presence sweeper. `KEYS` is a blocking O(n) command that scans the entire Redis keyspace. With many workspaces and presence keys, this causes latency spikes for all Redis operations during the scan. Should use `SCAN` instead (non-blocking, cursor-based).
 
 ### P3: No graceful shutdown
+
 `apps/api/src/index.ts:1-20` has no SIGTERM/SIGINT handler. On shutdown: `io` not closed, `redis` not quit, `prisma.$disconnect()` not called, `server.close()` not called, presence sweeper interval not stopped. In-flight requests are abruptly terminated. The email worker (`email-worker.ts:9-17`) only closes `sendEmailWorker`, not `digestEmailWorker` or the scheduler interval.
 
 ### P5: Rate-limit INCR/EXPIRE non-atomic
+
 `rate-limit.ts:34-37` does `INCR` then `EXPIRE` as separate Redis commands. If the process dies between them, the key gets incremented but never gets a TTL → permanent block on that identity/scope. Should use a Lua script or `SET NX EX` + `INCR` pipeline.
 
 ## Solution
@@ -29,12 +32,14 @@ Three performance/correctness issues that affect production stability:
 ## Scope
 
 ### In Scope
+
 - `/home/thanh/flow-desk/apps/api/src/modules/realtime/realtime.gateway.ts` — replace KEYS with SCAN (P1)
 - `/home/thanh/flow-desk/apps/api/src/index.ts` — add graceful shutdown handlers (P3)
 - `/home/thanh/flow-desk/apps/api/src/workers/email/email-worker.ts` — fix shutdown to close all workers + scheduler (P3)
 - `/home/thanh/flow-desk/apps/api/src/shared/middleware/rate-limit.ts` — atomic INCR+EXPIRE via Lua (P5)
 
 ### Out of Scope
+
 - Auth/membership Redis caching (P4 — separate plan)
 - Scheduler N+1 optimization (P2 — separate plan)
 - Attachment streaming (P6 — separate plan)
@@ -48,12 +53,14 @@ Three performance/correctness issues that affect production stability:
 **Verification**: `cd /home/thanh/flow-desk && pnpm --filter @flow-desk/api typecheck` → exit 0
 
 Read the file. Find the presence sweeper logic (~line 130-145). The current code likely does:
+
 ```typescript
 const keys = await redis.keys('presence:*');
 // ... process keys
 ```
 
 **Replace with** SCAN-based iteration:
+
 ```typescript
 async function scanPresenceKeys(pattern: string): Promise<string[]> {
   const keys: string[] = [];
@@ -125,6 +132,7 @@ setTimeout(() => {
 ```
 
 **Read the file to understand**:
+
 - How `server`, `io`, `redis`, `prisma` are accessed (they may be local variables or imported)
 - How the presence sweeper cleanup is accessible (the `attachPresenceHandlers` function returns a `stop` function — check if it's stored anywhere)
 - What `logger` is used (import from `shared/lib/logger`)
@@ -137,6 +145,7 @@ setTimeout(() => {
 **Verification**: `cd /home/thanh/flow-desk && pnpm --filter @flow-desk/api typecheck` → exit 0
 
 Read the file. Current code (~line 9-17):
+
 ```typescript
 async function shutdown() {
   await sendEmailWorker.close();
@@ -144,16 +153,14 @@ async function shutdown() {
 ```
 
 **Replace with** (close all workers + scheduler + Redis):
+
 ```typescript
 async function shutdown() {
   // Stop the scheduler interval
   stopScheduler(); // export this from scheduler.ts
 
   // Close all BullMQ workers
-  await Promise.all([
-    sendEmailWorker.close(),
-    digestEmailWorker.close(),
-  ]);
+  await Promise.all([sendEmailWorker.close(), digestEmailWorker.close()]);
 
   // Close Redis connections used by the workers
   // Read how redis is imported — it may be a shared instance
@@ -173,7 +180,8 @@ process.on('SIGINT', async () => {
 });
 ```
 
-**Import check**: 
+**Import check**:
+
 - `digestEmailWorker` is created in `processors/digest.ts` at module-import time (~line 111). Read that file to see how it's exported. It may need to be exported explicitly.
 - `stopScheduler` — the scheduler's `startScheduler()` function likely returns an interval handle. Check if there's a `stopScheduler` function or if the interval is stored. If not, add one:
   - In `scheduler.ts`, change `startScheduler()` to return a cleanup function: `return () => clearInterval(interval);`
@@ -197,6 +205,7 @@ export function startScheduler(): () => void {
 **Verification**: `cd /home/thanh/flow-desk && pnpm --filter @flow-desk/api typecheck` → exit 0
 
 Read the file. Current rate-limit logic (~line 30-40):
+
 ```typescript
 const key = `ratelimit:${scope}:${identifier}`;
 const count = await redis.incr(key);
@@ -223,17 +232,12 @@ const RATE_LIMIT_SCRIPT = `
 `;
 
 // In the rate-limit middleware:
-const count = await redis.eval(
-  RATE_LIMIT_SCRIPT,
-  1,
-  key,
-  windowSec,
-  max,
-) as number;
+const count = (await redis.eval(RATE_LIMIT_SCRIPT, 1, key, windowSec, max)) as number;
 ```
 
 **Note**: The exact `redis.eval` API depends on the Redis client:
-- **ioredis**: `redis.eval(script, numKeys, key1, ...args)` 
+
+- **ioredis**: `redis.eval(script, numKeys, key1, ...args)`
 - **node-redis**: `redis.eval(script, { keys: [key], arguments: [windowSec, max] })`
 
 Read the file's imports to determine the client and adapt accordingly.
@@ -251,6 +255,7 @@ cd /home/thanh/flow-desk && pnpm --filter @flow-desk/api vitest run --config vit
 ```
 
 Manual verification (if dev server available):
+
 1. Start the API server, send a few requests, then `kill -SIGTERM <pid>` → server should log "Shutting down gracefully" and exit cleanly
 2. Start the email worker, then `kill -SIGTERM <pid>` → worker should close all queues and exit
 

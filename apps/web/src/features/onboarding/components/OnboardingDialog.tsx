@@ -310,19 +310,14 @@ function Stepper({ current }: { current: 1 | 2 | 3 }) {
               </span>
               <span
                 className={
-                  active
-                    ? 'text-xs font-medium text-foreground'
-                    : 'text-xs text-muted-foreground'
+                  active ? 'text-xs font-medium text-foreground' : 'text-xs text-muted-foreground'
                 }
               >
                 {n === 1 ? 'Welcome' : n === 2 ? 'Workspace' : 'First task'}
               </span>
             </li>
             {i < steps.length - 1 && (
-              <span
-                aria-hidden
-                className={done ? 'h-px w-6 bg-primary' : 'h-px w-6 bg-border'}
-              />
+              <span aria-hidden className={done ? 'h-px w-6 bg-primary' : 'h-px w-6 bg-border'} />
             )}
           </React.Fragment>
         );

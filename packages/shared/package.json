@@ -77,7 +77,7 @@
     "build": "tsup",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
-    "lint": "echo 'shared: lint placeholder'",
+    "lint": "eslint src/",
     "test": "pnpm exec vitest run",
     "test:watch": "pnpm exec vitest",
     "clean": "rm -rf dist"

@@ -22,17 +22,41 @@ Add allowlist constants and validation in `uploadAttachment`:
 
 ```typescript
 const ALLOWED_EXTENSIONS = new Set([
-  '.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg',
-  '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx',
-  '.txt', '.csv', '.json',
-  '.zip', '.tar', '.gz',
-  '.mp3', '.mp4', '.wav', '.webm',
+  '.png',
+  '.jpg',
+  '.jpeg',
+  '.gif',
+  '.webp',
+  '.svg',
+  '.pdf',
+  '.doc',
+  '.docx',
+  '.xls',
+  '.xlsx',
+  '.ppt',
+  '.pptx',
+  '.txt',
+  '.csv',
+  '.json',
+  '.zip',
+  '.tar',
+  '.gz',
+  '.mp3',
+  '.mp4',
+  '.wav',
+  '.webm',
 ]);
 
 const ALLOWED_MIME_PREFIXES = [
-  'image/', 'video/', 'audio/',
-  'application/pdf', 'application/msword', 'application/vnd.',
-  'text/', 'application/json', 'application/zip',
+  'image/',
+  'video/',
+  'audio/',
+  'application/pdf',
+  'application/msword',
+  'application/vnd.',
+  'text/',
+  'application/json',
+  'application/zip',
 ];
 ```
 
@@ -49,7 +73,9 @@ Also sniff MIME server-side instead of trusting client:
 
 ```typescript
 // After writeFile, read first bytes to verify
-const sniffedType = await import('file-type').then(m => m.fileTypeFromBuffer(buf)).catch(() => null);
+const sniffedType = await import('file-type')
+  .then((m) => m.fileTypeFromBuffer(buf))
+  .catch(() => null);
 const mimeType = sniffedType?.mime || file.type || 'application/octet-stream';
 ```
 
@@ -94,9 +120,9 @@ function getClientIp(c: { req: { header: (k: string) => string | undefined } }):
   }
   // Without proxy: try x-forwarded-for (direct connection), else 'unknown'
   // In dev/direct mode, each user gets their own IP anyway
-  return c.req.header('x-forwarded-for')?.split(',')[0]?.trim()
-    ?? c.req.header('x-real-ip')
-    ?? 'unknown';
+  return (
+    c.req.header('x-forwarded-for')?.split(',')[0]?.trim() ?? c.req.header('x-real-ip') ?? 'unknown'
+  );
 }
 ```
 

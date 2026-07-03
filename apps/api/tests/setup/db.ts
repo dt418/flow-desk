@@ -33,7 +33,7 @@ const DB_PORT = detectDbPort();
 
 export const TEST_DB_URL =
   process.env.TEST_DB_URL ??
-  `postgresql://flowdesk:flowdesk@localhost:${DB_PORT}/flowdesk_test?schema=public`;
+  `postgresql://flowdesk:postgres@localhost:${DB_PORT}/flowdesk_test?schema=public`;
 const WORKSPACE_ROOT = resolve(__dirname, '../../../..');
 
 export function createTestPrisma() {

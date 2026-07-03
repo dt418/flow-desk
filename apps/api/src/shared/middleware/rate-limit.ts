@@ -29,9 +29,9 @@ function getClientIp(c: { req: { header: (k: string) => string | undefined } }):
     }
     return c.req.header('x-real-ip') ?? 'unknown';
   }
-  return c.req.header('x-forwarded-for')?.split(',')[0]?.trim()
-    ?? c.req.header('x-real-ip')
-    ?? 'unknown';
+  return (
+    c.req.header('x-forwarded-for')?.split(',')[0]?.trim() ?? c.req.header('x-real-ip') ?? 'unknown'
+  );
 }
 
 export function rateLimit(opts: RateLimitOptions): MiddlewareHandler {
@@ -47,12 +47,7 @@ export function rateLimit(opts: RateLimitOptions): MiddlewareHandler {
     const bucket = Math.floor(Date.now() / 1000 / windowSec);
     const key = `rl:${scope}:${identity}:${bucket}`;
 
-    const count = (await redis.eval(
-      RATE_LIMIT_SCRIPT,
-      1,
-      key,
-      String(windowSec),
-    )) as number;
+    const count = (await redis.eval(RATE_LIMIT_SCRIPT, 1, key, String(windowSec))) as number;
 
     const resetEpoch = (bucket + 1) * windowSec;
     const remaining = Math.max(0, max - count);

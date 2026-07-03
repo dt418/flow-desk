@@ -31,11 +31,13 @@ The cursor must use the same field that `orderBy` uses. Decode the cursor to inc
 ## Scope
 
 ### In Scope
+
 - `/home/thanh/flow-desk/apps/api/src/workers/email/scheduler.ts` — create EmailJob for DIGEST
 - `/home/thanh/flow-desk/apps/api/src/workers/email/processors/digest.ts` — use EmailJob id from job data
 - `/home/thanh/flow-desk/apps/api/src/modules/task/task.service.ts` — fix cursor condition to use sort field
 
 ### Out of Scope
+
 - Scheduler N+1 optimization (P2 — separate plan)
 - Email processor tests (T4/T5 — separate plan)
 - Digest processor refactoring (keep the fix minimal)
@@ -48,6 +50,7 @@ The cursor must use the same field that `orderBy` uses. Decode the cursor to inc
 **Verification**: `cd /home/thanh/flow-desk && pnpm --filter @flow-desk/api typecheck` → exit 0
 
 Read the file. Find the digest enqueue logic (~line 118-132). The current code likely does:
+
 ```typescript
 // For each member needing a digest:
 await enqueueEmail({
@@ -62,6 +65,7 @@ await enqueueEmail({
 ```
 
 **Add EmailJob creation before enqueue**:
+
 ```typescript
 // For each member needing a digest:
 const emailJob = await prisma.emailJob.create({
@@ -71,7 +75,9 @@ const emailJob = await prisma.emailJob.create({
     userId: member.userId,
     workspaceId: workspace.id,
     scheduledAt: new Date(),
-    payload: { /* whatever digest payload data is needed */ } as Prisma.InputJsonValue,
+    payload: {
+      /* whatever digest payload data is needed */
+    } as Prisma.InputJsonValue,
   },
 });
 
@@ -81,7 +87,7 @@ await enqueueEmail({
   data: {
     userId: member.userId,
     workspaceId: workspace.id,
-    emailJobId: emailJob.id,  // ADD THIS — pass EmailJob cuid
+    emailJobId: emailJob.id, // ADD THIS — pass EmailJob cuid
     // ...
   },
 });
@@ -92,6 +98,7 @@ await enqueueEmail({
 **Also fix the cooldown check**: The `findFirst({ where: { type: 'DIGEST' } })` at ~line 95/118 checks for recent digest EmailJob records. Now that we create them, this query will actually find records and the cooldown will work. Verify the cooldown query filters by `userId`, `workspaceId`, and a time window (e.g., `createdAt: { gt: cooldownDate }`).
 
 Read the cooldown logic carefully. It should be:
+
 ```typescript
 const recentDigest = await prisma.emailJob.findFirst({
   where: {
@@ -112,27 +119,30 @@ If the current cooldown query doesn't filter by `userId`/`workspaceId`, add thos
 **Verification**: `cd /home/thanh/flow-desk && pnpm --filter @flow-desk/api typecheck` → exit 0
 
 Read the file. Find the status update logic (~line 76-82). Current code:
+
 ```typescript
 await prisma.emailJob.updateMany({
   where: {
     userId: job.data.userId,
-    id: job.id,  // BUG: job.id is BullMQ id, not EmailJob cuid
+    id: job.id, // BUG: job.id is BullMQ id, not EmailJob cuid
   },
   data: { status: 'SENT', sentAt: new Date() },
 });
 ```
 
 **Replace with** (use `emailJobId` from job data):
+
 ```typescript
 await prisma.emailJob.updateMany({
   where: {
-    id: job.data.emailJobId,  // FIXED: use EmailJob cuid from job data
+    id: job.data.emailJobId, // FIXED: use EmailJob cuid from job data
   },
   data: { status: 'SENT', sentAt: new Date() },
 });
 ```
 
 Also fix any FAILED status updates in the error/catch path of the processor:
+
 ```typescript
 // In the catch/error handler:
 await prisma.emailJob.updateMany({
@@ -157,6 +167,7 @@ Read the full processor to find ALL `emailJob.update` or `emailJob.updateMany` c
 Read the `listTasks` method (~line 60-100). The current code:
 
 **Current cursor logic at ~line 76-77**:
+
 ```typescript
 if (cursor) {
   cursorWhere = {
@@ -169,6 +180,7 @@ if (cursor) {
 ```
 
 **Current orderBy at ~line 93**:
+
 ```typescript
 orderBy: [
   { [primarySortField]: 'desc' },
@@ -195,13 +207,14 @@ if (cursor) {
 **Also update the cursor encoding**: When returning the next-page cursor, include the sort field value. Find where the cursor is encoded for the response (likely at the end of `listTasks` where `nextCursor` is constructed):
 
 ```typescript
-const nextCursor = items.length === take
-  ? encodeCursor({
-      id: items[items.length - 1].id,
-      createdAt: items[items.length - 1].createdAt,
-      sortValue: items[items.length - 1][primarySortField],
-    })
-  : null;
+const nextCursor =
+  items.length === take
+    ? encodeCursor({
+        id: items[items.length - 1].id,
+        createdAt: items[items.length - 1].createdAt,
+        sortValue: items[items.length - 1][primarySortField],
+      })
+    : null;
 ```
 
 **Read the `encodeCursor`/`decodeCursor` functions** (likely in `packages/shared/src/pagination.ts` or `task.service.ts`). The cursor is probably base64-encoded JSON. Update the cursor type to include `sortValue` and update `encodeCursor`/`decodeCursor` to handle it.

@@ -14,6 +14,14 @@ pre-commit:
       glob: '*'
       exclude: "(\\.githooks/|\\.lefthook/|lefthook\\.yml|docs/|\\.md$)"
       run: bash .githooks/pre-commit
+    format-check:
+      glob: '*.{ts,tsx,js,jsx,json,md,css,yml,yaml}'
+      run: pnpm format:check
+      stage_fixed: true
+    eslint:
+      glob: '*.{ts,tsx}'
+      run: pnpm eslint .
+      stage_fixed: true
     typecheck-shared:
       glob: 'packages/shared/src/**/*.ts'
       run: pnpm --filter @flow-desk/shared typecheck

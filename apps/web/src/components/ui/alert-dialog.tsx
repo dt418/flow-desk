@@ -11,9 +11,9 @@ const AlertDialog = (props: React.ComponentProps<typeof AlertDialogPrimitive.Roo
 );
 AlertDialog.displayName = 'AlertDialog';
 
-const AlertDialogTrigger = (
-  props: React.ComponentProps<typeof AlertDialogPrimitive.Trigger>,
-) => <AlertDialogPrimitive.Trigger data-slot="alert-dialog-trigger" {...props} />;
+const AlertDialogTrigger = (props: React.ComponentProps<typeof AlertDialogPrimitive.Trigger>) => (
+  <AlertDialogPrimitive.Trigger data-slot="alert-dialog-trigger" {...props} />
+);
 AlertDialogTrigger.displayName = 'AlertDialogTrigger';
 
 const AlertDialogPortal = (props: React.ComponentProps<typeof AlertDialogPrimitive.Portal>) => (
@@ -104,11 +104,7 @@ const AlertDialogAction = React.forwardRef<
   React.ElementRef<typeof AlertDialogPrimitive.Action>,
   React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Action>
 >(({ className, ...props }, ref) => (
-  <AlertDialogPrimitive.Action
-    ref={ref}
-    className={cn(buttonVariants(), className)}
-    {...props}
-  />
+  <AlertDialogPrimitive.Action ref={ref} className={cn(buttonVariants(), className)} {...props} />
 ));
 AlertDialogAction.displayName = 'AlertDialogAction';
 

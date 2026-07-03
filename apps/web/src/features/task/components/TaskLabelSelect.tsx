@@ -136,7 +136,7 @@ export function TaskLabelSelect({
                   type="button"
                   onClick={() => onToggle(l.id, false)}
                   disabled={toggle.isPending}
-                    className="flex w-full items-center gap-2 rounded-md px-1.5 py-1 text-left text-xs hover:bg-card disabled:opacity-50"
+                  className="flex w-full items-center gap-2 rounded-md px-1.5 py-1 text-left text-xs hover:bg-card disabled:opacity-50"
                 >
                   <span
                     aria-hidden

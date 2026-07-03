@@ -1,10 +1,11 @@
-import { Worker, Job } from 'bullmq';
+import type { Job } from 'bullmq';
+import { Worker } from 'bullmq';
 import { TaskStatus } from '@flowdesk/db';
 import { logger } from '../../../shared/lib/logger';
 import { emailProvider } from '../../../shared/lib/email-provider';
 import { prisma } from '../../../shared/lib/prisma';
 import { renderDigestEmail } from '../../../shared/lib/email-templates';
-import { EmailJobData } from '../queue';
+import type { EmailJobData } from '../queue';
 
 export function createDigestEmailWorker() {
   return new Worker<EmailJobData>(
@@ -51,7 +52,7 @@ export function createDigestEmailWorker() {
           taskUrl: `${process.env.APP_URL ?? 'http://localhost:3000'}/tasks/${t.id}`,
           workspaceName: '',
           dueAt: t.dueDate?.toISOString() ?? null,
-          priority: t.priority as 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT',
+          priority: t.priority,
         }));
 
         const now = new Date();

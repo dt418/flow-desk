@@ -165,11 +165,7 @@ export function LabelFormDialog({ open, onClose, workspaceId, initial }: Props) 
             <Button type="button" variant="ghost" onClick={onClose}>
               Cancel
             </Button>
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              className="px-4"
-            >
+            <Button type="submit" disabled={isSubmitting} className="px-4">
               {isSubmitting
                 ? isEdit
                   ? 'Saving…'

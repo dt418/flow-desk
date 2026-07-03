@@ -156,12 +156,7 @@ export function MembersTab({ workspaceId }: Props) {
               )}
             />
           </div>
-          <Button
-            type="submit"
-            disabled={isSubmitting}
-            size="sm"
-            className="h-9 px-4"
-          >
+          <Button type="submit" disabled={isSubmitting} size="sm" className="h-9 px-4">
             <UserPlus className="mr-1.5 h-4 w-4" />
             {isSubmitting ? 'Inviting…' : 'Invite'}
           </Button>
@@ -208,7 +203,9 @@ export function MembersTab({ workspaceId }: Props) {
                     <td className="px-3 py-2.5">
                       <div className="flex items-center gap-2">
                         <Avatar className="h-7 w-7 text-xs">
-                          {m.user.avatarUrl ? <AvatarImage src={m.user.avatarUrl} alt={m.user.name} /> : null}
+                          {m.user.avatarUrl ? (
+                            <AvatarImage src={m.user.avatarUrl} alt={m.user.name} />
+                          ) : null}
                           <AvatarFallback>{initials(m.user.name)}</AvatarFallback>
                         </Avatar>
                         <span className="font-medium">

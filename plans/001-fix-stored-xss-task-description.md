@@ -14,6 +14,7 @@ This is a stored XSS vulnerability. While auth tokens are in httpOnly cookies (n
 **Affected file**: `/home/thanh/flow-desk/apps/web/src/features/task/components/TaskEditModal.tsx:344-346`
 
 **Current code**:
+
 ```tsx
 <div
   className="prose prose-sm max-w-none"
@@ -36,11 +37,13 @@ Add `dompurify` as a dependency and sanitize the `marked` output before injectin
 ## Scope
 
 ### In Scope
+
 - `/home/thanh/flow-desk/apps/web/src/features/task/components/TaskEditModal.tsx` — sanitize before `dangerouslySetInnerHTML`
 - `/home/thanh/flow-desk/apps/web/package.json` — add `dompurify` dependency
 - `/home/thanh/flow-desk/apps/web/src/lib/sanitize.ts` — new utility for sanitized markdown rendering (reusable)
 
 ### Out of Scope
+
 - Server-side markdown rendering (not currently used)
 - Replacing `marked` with another markdown library
 - Adding Content-Security-Policy headers (separate concern)
@@ -54,14 +57,17 @@ Add `dompurify` as a dependency and sanitize the `marked` output before injectin
 **Verification**: `cd /home/thanh/flow-desk && pnpm --filter @flow-desk/web list dompurify` → shows `dompurify` with version
 
 Run:
+
 ```bash
 cd /home/thanh/flow-desk && pnpm --filter @flow-desk/web add dompurify && pnpm --filter @flow-desk/web add -D @types/dompurify
 ```
 
 Note: DOMPurify v3+ ships its own types. If `@types/dompurify` fails (not found), skip it — DOMPurify 3.x includes TypeScript types in the package itself. Check with:
+
 ```bash
 cd /home/thanh/flow-desk && pnpm --filter @flow-desk/web list dompurify
 ```
+
 If version is `3.x`, no `@types/dompurify` needed. If version is `2.x`, install `@types/dompurify`.
 
 ### Step 2 — Create sanitize utility
@@ -70,6 +76,7 @@ If version is `3.x`, no `@types/dompurify` needed. If version is `2.x`, install 
 **Verification**: `cd /home/thanh/flow-desk && pnpm --filter @flow-desk/web typecheck` → exit 0
 
 Create new file:
+
 ```typescript
 import DOMPurify from 'dompurify';
 import { marked } from 'marked';
@@ -84,14 +91,36 @@ export function renderMarkdownToHtml(markdown: string): string {
   const rawHtml = marked.parse(markdown, { async: false }) as string;
   return DOMPurify.sanitize(rawHtml, {
     ALLOWED_TAGS: [
-      'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-      'p', 'br', 'hr',
-      'ul', 'ol', 'li',
-      'strong', 'em', 'del', 's', 'mark',
-      'code', 'pre', 'blockquote',
-      'a', 'img',
-      'table', 'thead', 'tbody', 'tr', 'th', 'td',
-      'span', 'div',
+      'h1',
+      'h2',
+      'h3',
+      'h4',
+      'h5',
+      'h6',
+      'p',
+      'br',
+      'hr',
+      'ul',
+      'ol',
+      'li',
+      'strong',
+      'em',
+      'del',
+      's',
+      'mark',
+      'code',
+      'pre',
+      'blockquote',
+      'a',
+      'img',
+      'table',
+      'thead',
+      'tbody',
+      'tr',
+      'th',
+      'td',
+      'span',
+      'div',
     ],
     ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'class', 'target', 'rel'],
     ALLOW_DATA_ATTR: false,
@@ -105,6 +134,7 @@ export function renderMarkdownToHtml(markdown: string): string {
 **Verification**: `cd /home/thanh/flow-desk && pnpm --filter @flow-desk/web typecheck` → exit 0
 
 **Current code at line 344-346**:
+
 ```tsx
 <div
   className="prose prose-sm max-w-none"
@@ -115,6 +145,7 @@ export function renderMarkdownToHtml(markdown: string): string {
 ```
 
 **Replace with**:
+
 ```tsx
 <div
   className="prose prose-sm max-w-none"
@@ -125,6 +156,7 @@ export function renderMarkdownToHtml(markdown: string): string {
 ```
 
 **Update imports at top of file**: Remove `marked` import (if it was imported directly). Add:
+
 ```tsx
 import { renderMarkdownToHtml } from '@/lib/sanitize';
 ```

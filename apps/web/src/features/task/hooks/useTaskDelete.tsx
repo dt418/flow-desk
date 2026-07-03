@@ -74,17 +74,14 @@ export function useTaskDelete(workspaceId: string): UseTaskDeleteResult {
   );
 
   const dialog = (
-    <AlertDialog
-      open={target !== null}
-      onOpenChange={(open) => !open && setTarget(null)}
-    >
+    <AlertDialog open={target !== null} onOpenChange={(open) => !open && setTarget(null)}>
       <AlertDialogContent>
         {target && (
           <>
             <AlertDialogTitle>Delete task?</AlertDialogTitle>
             <AlertDialogDescription>
-              <span className="font-medium text-foreground">{target.title}</span> will be moved
-              to the trash. You can undo this from the toast for the next 10 seconds.
+              <span className="font-medium text-foreground">{target.title}</span> will be moved to
+              the trash. You can undo this from the toast for the next 10 seconds.
             </AlertDialogDescription>
             <AlertDialogFooter>
               <AlertDialogCancel disabled={deleteTask.isPending}>Cancel</AlertDialogCancel>

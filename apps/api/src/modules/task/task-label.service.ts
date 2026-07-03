@@ -25,7 +25,7 @@ export const taskLabelService = {
 
     await prisma.$transaction(async (tx) => {
       await taskLabelRepo.assign(taskId, labelId);
-      const current = (task.labelsDeprecated as LegacyLabelName[]) ?? [];
+      const current = task.labelsDeprecated ?? [];
       if (!current.includes(label.name)) {
         await tx.task.update({
           where: { id: taskId },
@@ -54,7 +54,7 @@ export const taskLabelService = {
 
     await prisma.$transaction(async (tx) => {
       await taskLabelRepo.unassign(taskId, labelId);
-      const current = (task.labelsDeprecated as LegacyLabelName[]) ?? [];
+      const current = task.labelsDeprecated ?? [];
       await tx.task.update({
         where: { id: taskId },
         data: { labelsDeprecated: current.filter((n) => n !== label.name) },

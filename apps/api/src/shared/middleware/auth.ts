@@ -58,8 +58,8 @@ export function requireWorkspaceRole(roles: UserRole[]) {
     if (!member) throw new UnauthorizedError('Not a member');
     if (!roles.includes(member.role as UserRole)) throw new UnauthorizedError('Insufficient role');
 
-    c.set('auth', { ...auth, user: { ...auth.user } } as AuthContext);
-    (c as Context & { workspaceRole: string }).workspaceRole = member.role as string;
+    c.set('auth', { ...auth, user: { ...auth.user } });
+    (c as Context & { workspaceRole: string }).workspaceRole = member.role;
     (c as Context & { workspaceId: string }).workspaceId = workspaceId;
     await next();
   };

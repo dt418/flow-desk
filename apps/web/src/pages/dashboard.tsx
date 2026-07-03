@@ -6,13 +6,7 @@ import { api } from '@/lib/api';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn, formatDate } from '@/lib/utils';
@@ -44,10 +38,7 @@ const PRIORITY_BAR: Record<string, string> = {
   URGENT: 'bg-red-500',
 };
 
-const PRIORITY_VARIANT: Record<
-  string,
-  'outline' | 'secondary' | 'warning' | 'destructive'
-> = {
+const PRIORITY_VARIANT: Record<string, 'outline' | 'secondary' | 'warning' | 'destructive'> = {
   LOW: 'outline',
   MEDIUM: 'secondary',
   HIGH: 'warning',
@@ -167,11 +158,7 @@ function TaskRow({ task, workspaceSlug }: { task: TaskRow; workspaceSlug?: strin
       {due ? (
         <Badge
           variant={
-            due.tone === 'overdue'
-              ? 'destructive'
-              : due.tone === 'today'
-                ? 'warning'
-                : 'secondary'
+            due.tone === 'overdue' ? 'destructive' : due.tone === 'today' ? 'warning' : 'secondary'
           }
           className="tabular-nums"
         >

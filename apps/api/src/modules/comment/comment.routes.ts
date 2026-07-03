@@ -48,7 +48,7 @@ commentRouter.post('/', async (c) => {
 
 commentRouter.patch('/:id', async (c) => {
   const auth = c.get('auth');
-  const id = c.req.param('id')!;
+  const id = c.req.param('id');
   const body = updateCommentSchema.parse(await c.req.json());
   const comment = await svc.updateComment(prisma, auth.user.id, id, body);
   return c.json({ comment });
@@ -56,7 +56,7 @@ commentRouter.patch('/:id', async (c) => {
 
 commentRouter.delete('/:id', async (c) => {
   const auth = c.get('auth');
-  const id = c.req.param('id')!;
+  const id = c.req.param('id');
   await svc.deleteComment(prisma, auth.user.id, id);
   return c.json({ ok: true });
 });

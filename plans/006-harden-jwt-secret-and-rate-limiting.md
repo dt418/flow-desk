@@ -10,18 +10,23 @@
 Multiple security hardening issues in environment configuration, rate limiting, and Docker defaults. Each individually is MED severity, but together they represent a weak security posture for self-hosted deployments.
 
 ### S2: JWT_SECRET public default
+
 `docker-compose.yml:50,90` falls back to `change-me-to-a-32-char-random-string-please` when `JWT_SECRET` env var is unset. `env.ts:9` only enforces `min(32)` — the default passes. Operator who omits the env var runs production with a repo-published secret → attacker forges tokens for any user.
 
 ### S10: SKIP_RATE_LIMIT bypass
+
 `env.ts:38-41` defines `SKIP_RATE_LIMIT`. `rate-limit.ts:25` checks `if (env.NODE_ENV === 'test' || env.SKIP_RATE_LIMIT) return next()`. No production guard — accidental env setting disables ALL rate limits.
 
 ### S11: X-Forwarded-For spoofing
+
 `rate-limit.ts:13-19` trusts XFF first hop unconditionally. Attacker rotates XFF to bypass IP-keyed auth rate limits (login, register, refresh).
 
 ### S16: WORKSPACE_INVITE rate limit defined but never applied
+
 `rate-limit-policies.ts:12` defines `WORKSPACE_INVITE: {windowSec:60, max:5}`. `workspace.routes.ts:144-163` invite handler has no `rateLimit(...)`.
 
 ### S17: Postgres/Redis ports exposed + default password
+
 `docker-compose.yml:13-14,27-28` expose ports without 127.0.0.1 bind. `:9` — `POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-flowdesk}`.
 
 ## Solution
@@ -35,12 +40,14 @@ Multiple security hardening issues in environment configuration, rate limiting, 
 ## Scope
 
 ### In Scope
+
 - `/home/thanh/flow-desk/apps/api/src/shared/lib/env.ts` — JWT_SECRET production check, SKIP_RATE_LIMIT production guard, TRUST_PROXY_HOPS
 - `/home/thanh/flow-desk/apps/api/src/shared/middleware/rate-limit.ts` — trust proxy config, use TRUST_PROXY_HOPS
 - `/home/thanh/flow-desk/apps/api/src/modules/workspace/workspace.routes.ts` — apply WORKSPACE_INVITE rate limit
 - `/home/thanh/flow-desk/docker-compose.yml` — remove JWT_SECRET default, bind ports to 127.0.0.1, remove POSTGRES_PASSWORD default
 
 ### Out of Scope
+
 - Rate-limit INCR/EXPIRE atomicity (P5 — separate plan)
 - Auth module tests (T1 — separate plan)
 - OAuth state cookie fixes (S12 — can be batched with S2 fix in auth.routes)
@@ -55,11 +62,13 @@ Multiple security hardening issues in environment configuration, rate limiting, 
 Read the file. Find all occurrences of `JWT_SECRET` (at least lines 50 and 90).
 
 **Current**:
+
 ```yaml
 JWT_SECRET: ${JWT_SECRET:-change-me-to-a-32-char-random-string-please}
 ```
 
 **Replace with** (no default — must be set explicitly):
+
 ```yaml
 JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set in .env}
 ```
@@ -70,11 +79,13 @@ The `:?` syntax causes docker-compose to fail with an error if the variable is u
 **Verification**: `cd /home/thanh/flow-desk && pnpm --filter @flow-desk/api typecheck` → exit 0
 
 **Current code at ~line 9**:
+
 ```typescript
 JWT_SECRET: z.string().min(32),
 ```
 
 **Replace with** (add known-default rejection in production):
+
 ```typescript
 JWT_SECRET: z.string().min(32).refine(
   (secret) => {
@@ -96,6 +107,7 @@ JWT_SECRET: z.string().min(32).refine(
 **Verification**: `cd /home/thanh/flow-desk && pnpm --filter @flow-desk/api typecheck` → exit 0
 
 **Current code at ~line 25**:
+
 ```typescript
 if (env.NODE_ENV === 'test' || env.SKIP_RATE_LIMIT) {
   return next();
@@ -103,6 +115,7 @@ if (env.NODE_ENV === 'test' || env.SKIP_RATE_LIMIT) {
 ```
 
 **Replace with**:
+
 ```typescript
 if (env.NODE_ENV === 'test' || (env.SKIP_RATE_LIMIT && env.NODE_ENV !== 'production')) {
   return next();
@@ -115,6 +128,7 @@ if (env.NODE_ENV === 'test' || (env.SKIP_RATE_LIMIT && env.NODE_ENV !== 'product
 **Verification**: `cd /home/thanh/flow-desk && pnpm --filter @flow-desk/api typecheck` → exit 0
 
 Add a new env var:
+
 ```typescript
 TRUST_PROXY_HOPS: z.coerce.number().int().min(0).default(0),
 ```
@@ -125,6 +139,7 @@ Add it to the env schema. In production, default 0 means "don't trust XFF". Set 
 **Verification**: `cd /home/thanh/flow-desk && pnpm --filter @flow-desk/api typecheck` → exit 0
 
 **Current code at ~line 13-19** (getClientIp function):
+
 ```typescript
 function getClientIp(c: Context): string {
   const xff = c.req.header('x-forwarded-for');
@@ -136,6 +151,7 @@ function getClientIp(c: Context): string {
 ```
 
 **Replace with** (only trust XFF when TRUST_PROXY_HOPS > 0):
+
 ```typescript
 function getClientIp(c: Context): string {
   if (env.TRUST_PROXY_HOPS > 0) {
@@ -148,15 +164,16 @@ function getClientIp(c: Context): string {
     const realIp = c.req.header('x-real-ip');
     if (realIp) return realIp;
   }
-  return c.req.header('x-forwarded-for')?.split(',')[0].trim() 
-    ?? c.req.header('x-real-ip') 
-    ?? 'unknown';
+  return (
+    c.req.header('x-forwarded-for')?.split(',')[0].trim() ?? c.req.header('x-real-ip') ?? 'unknown'
+  );
 }
 ```
 
 Wait, this logic is backwards. When `TRUST_PROXY_HOPS = 0`, we should NOT trust XFF at all and use the direct connection IP. When `TRUST_PROXY_HOPS > 0`, we trust XFF from the Nth hop from the right.
 
 **Corrected**:
+
 ```typescript
 function getClientIp(c: Context): string {
   if (env.TRUST_PROXY_HOPS > 0) {
@@ -170,7 +187,7 @@ function getClientIp(c: Context): string {
     return c.req.header('x-real-ip') ?? 'unknown';
   }
   // No trusted proxy — use the direct socket IP
-  // Hono's c.req.header doesn't expose remote IP directly; 
+  // Hono's c.req.header doesn't expose remote IP directly;
   // fall back to x-real-ip only if behind a trusted proxy (which we're not)
   return 'unknown';
 }
@@ -181,6 +198,7 @@ Actually, this is tricky because Hono on Node.js may not expose the raw socket I
 **Simpler practical approach**: Keep using XFF but only when `TRUST_PROXY_HOPS > 0`. Otherwise, try to get the direct IP from the Node.js socket. If that's not easily accessible in Hono, just require `TRUST_PROXY_HOPS > 0` for any IP extraction and document that rate limiting requires being behind a proxy in production.
 
 **Simplest correct approach**:
+
 ```typescript
 function getClientIp(c: Context): string {
   if (env.TRUST_PROXY_HOPS > 0) {
@@ -225,6 +243,7 @@ Read the file. Find the invite handler at ~line 144-163. Read the imports to see
 **Add the rate limit middleware** to the invite handler. The pattern should match other rate-limited routes in the codebase. Read `apps/api/src/shared/middleware/rate-limit.ts` and `apps/api/src/shared/middleware/rate-limit-policies.ts` to understand the API.
 
 The invite handler likely looks like:
+
 ```typescript
 .post('/:workspaceId/members/invite', requireAuth, requireWorkspaceRole(['OWNER', 'ADMIN']), async (c) => {
   // ... invite logic
@@ -232,6 +251,7 @@ The invite handler likely looks like:
 ```
 
 **Add rate limit**:
+
 ```typescript
 .post(
   '/:workspaceId/members/invite',
@@ -252,25 +272,29 @@ Read how `rateLimit` is called in other routes (e.g., auth routes) to get the ex
 **Verification**: `cd /home/thanh/flow-desk && docker compose config` → ports show 127.0.0.1 bind
 
 **Current**:
+
 ```yaml
 ports:
-  - "5432:5432"  # postgres
-  - "6379:6379"  # redis
+  - '5432:5432' # postgres
+  - '6379:6379' # redis
 ```
 
 **Replace with**:
+
 ```yaml
 ports:
-  - "127.0.0.1:5432:5432"
-  - "127.0.0.1:6379:6379"
+  - '127.0.0.1:5432:5432'
+  - '127.0.0.1:6379:6379'
 ```
 
 **Current**:
+
 ```yaml
 POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-flowdesk}
 ```
 
 **Replace with**:
+
 ```yaml
 POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}
 ```
@@ -281,6 +305,7 @@ POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}
 **Verification**: Read to confirm
 
 Add the new env vars:
+
 ```env
 # Rate limiting / proxy
 TRUST_PROXY_HOPS=0  # Set to 1+ when behind nginx/Cloudflare

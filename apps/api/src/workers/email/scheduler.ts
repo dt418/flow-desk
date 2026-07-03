@@ -92,9 +92,7 @@ export async function checkDigests() {
   for (const ws of settings) {
     const cadence = ws.weeklyDigest ? 'WEEKLY' : 'DAILY';
 
-    const cooldownStart = new Date(
-      now.getTime() - (cadence === 'WEEKLY' ? 7 : 1) * 24 * 3600_000,
-    );
+    const cooldownStart = new Date(now.getTime() - (cadence === 'WEEKLY' ? 7 : 1) * 24 * 3600_000);
 
     const members = await prisma.workspaceMember.findMany({
       where: { workspaceId: ws.workspaceId },

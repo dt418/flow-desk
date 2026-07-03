@@ -41,7 +41,7 @@ attachmentRouter.post('/', async (c) => {
 
 attachmentRouter.get('/:id/download', async (c) => {
   const auth = c.get('auth');
-  const id = c.req.param('id')!;
+  const id = c.req.param('id');
   const { attachment, fileStat, stream } = await svc.getDownloadAttachment(
     prisma,
     auth.user.id,

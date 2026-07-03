@@ -132,12 +132,7 @@ export function ColumnsTab({ workspaceId }: Props) {
             <input type="checkbox" {...register('isDoneColumn')} className="h-4 w-4" />
             Marks tasks done
           </label>
-          <Button
-            type="submit"
-            disabled={isSubmitting}
-            size="sm"
-            className="h-9 px-4"
-          >
+          <Button type="submit" disabled={isSubmitting} size="sm" className="h-9 px-4">
             <Plus className="mr-1.5 h-4 w-4" />
             Add
           </Button>
@@ -210,7 +205,7 @@ export function ColumnsTab({ workspaceId }: Props) {
                             setEditingId(col.id);
                             setEditingName(col.name);
                           }}
-                            className={cn('text-left', canEdit && 'hover:text-primary')}
+                          className={cn('text-left', canEdit && 'hover:text-primary')}
                           title={canEdit ? 'Click to rename' : undefined}
                         >
                           {col.name}
@@ -266,8 +261,8 @@ export function ColumnsTab({ workspaceId }: Props) {
             <AlertDialogDescription>
               {removeTarget && (
                 <>
-                  Column <span className="font-medium text-foreground">{removeTarget.name}</span> will
-                  be removed. Tasks in this column will become orphaned and may be lost.
+                  Column <span className="font-medium text-foreground">{removeTarget.name}</span>{' '}
+                  will be removed. Tasks in this column will become orphaned and may be lost.
                 </>
               )}
             </AlertDialogDescription>
