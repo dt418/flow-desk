@@ -28,6 +28,66 @@
 
 ## Session Log
 
+### 2026-07-05 02:13 — `3a4957c` (main)
+
+- **type:**
+- **msg:**
+- **author:** thanhd
+
+### 2026-07-05 01:55 — `f1c53de` (main)
+
+- **type:**
+- **msg:**
+- **author:** thanhd
+
+### 2026-07-05 01:54 — `094996f` (main)
+
+- **type:**
+- **msg:**
+- **author:** thanhd
+
+### 2026-07-05 01:54 — `3c8c7f3` (main)
+
+- **type:**
+- **msg:**
+- **author:** thanhd
+
+### 2026-07-05 01:39 — `2c7af88` (main)
+
+- **type:**
+- **msg:**
+- **author:** thanhd
+
+### 2026-07-05 01:39 — `2a73c5f` (main)
+
+- **type:**
+- **msg:**
+- **author:** thanhd
+
+### 2026-07-05 01:39 — `c210252` (main)
+
+- **type:**
+- **msg:**
+- **author:** thanhd
+
+### 2026-07-05 01:38 — `100e9f4` (main)
+
+- **type:**
+- **msg:**
+- **author:** thanhd
+
+### 2026-07-05 01:38 — `e42906d` (main)
+
+- **type:**
+- **msg:**
+- **author:** thanhd
+
+### 2026-07-05 01:38 — `98d01bd` (main)
+
+- **type:**
+- **msg:**
+- **author:** thanhd
+
 ### 2026-07-04 20:24 — `dbc5d00` (main)
 
 - **type:** style
@@ -39,6 +99,22 @@
 - **type:**
 - **msg:**
 - **author:** thanhd
+
+### Session 026 — P1-1 Global Search
+
+- **Date**: 2026-07-05
+- **Goal**: Implement global full-text search (ROADMAP.md Phase 1, item P1-1) per plan `docs/superpowers/plans/2026-07-05-global-search.md`.
+- **Completed**: tsvector generated columns + GIN on Task/Comment/Attachment; shared search schemas; search API module (repo/service/routes); 8 integration tests; web SearchPalette with Cmd+K + 200ms debounce + keyboard nav; 4 web component tests; AppShell wiring.
+- **Fixes discovered during testing**:
+  - `search.repository.ts`: comma+JOIN precedence trap — explicit JOIN binds to last comma FROM-item (the `plainto_tsquery` subselect), not the table → `CROSS JOIN LATERAL plainto_tsquery(...) AS q`.
+  - `migration.sql`: default tsvector tokenizer keeps `invoice-2026.xlsx` as ONE lexeme (hyphens/dots don't split) → `regexp_replace(field, '[^a-zA-Z0-9]+', ' ', 'g')` before `to_tsvector` on all 3 columns.
+  - `tests/setup/db.ts`: `prisma db push` can't express `GENERATED ALWAYS AS ... STORED` (Unsupported("tsvector") becomes plain nullable tsvector) AND conflicts with existing generated cols on re-push → switched `migrateTestDb` to `prisma migrate reset --force` (drops+reapplies all migrations incl search_tsvector).
+- **Narrow supporting fixup**: committed untracked `20260704180603_dev` migration (TaskActivity table, missed in db9615a) — was applied to dev DB but never `git add`-ed; would break `migrate deploy` from fresh clone.
+- **Verification**: `pnpm verify` green (typecheck-all + unit-tests + integration-tests 198/198 incl 8 new search + build); `pnpm -r lint` 0 errors; web tests 18/18 incl 4 new SearchPalette; host-side tsx smoke vs dev DB: `GET /api/search?q=auth` → 200 with 3 ranked task hits, `q=documentation` → 2 hits, unauth → 401.
+- **Docker smoke blocked**: API container stuck on `pnpm install` attestations fetch (registry.npmjs.org DNS EAI_AGAIN / CONNECT_TIMEOUT) — environmental network issue, not code. Used host-side tsx run instead.
+- **Risks**: none new. Raw SQL soft-delete filter is the documented gotcha (R-29 mitigation extended to search). Dev DB still has pre-edit migration expression (no regexp_replace) — task/comment search works, attachment filename search needs the edited migration; will apply on next natural dev DB reset.
+- **Commits**: `98d01bd` (activity migration fixup), `e42906d` (Task 1 tsvector), `100e9f4` (Task 2 shared schemas), `c210252` (Task 3 repo), `2a73c5f` (Task 4 service), `2c7af88` (Task 5 routes), `3c8c7f3` (Task 6 tests + 3 fixes), `094996f` (Tasks 7-8 web feature + palette), `f1c53de` (Task 9 web test), `3a4957c` (lint fix).
+- **Next**: P1-2 Saved views/filters (ROADMAP.md Phase 1) or pick from priority-90+ features.
 
 ### Session 025
 

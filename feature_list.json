@@ -1,6 +1,6 @@
 {
   "project": "flow-desk",
-  "last_updated": "2026-07-04",
+  "last_updated": "2026-07-05",
   "f3_active": false,
   "f3_f6_shipped": ["F3", "F4", "F5", "F6"],
   "rules": {
@@ -1176,6 +1176,44 @@
         "Guardrail fixes: turbo.json lint dependsOn ^build, feature_list.json qa-001 stale evidence updated, .github/workflows/ci.yml e2e job added, playwright.config.ts DATABASE_URL from env"
       ],
       "notes": "Greenfield feature. Uses shadcn/ui components (Avatar, Button, EmptyState, Skeleton) with a11y: role=list/listitem, role=status aria-busy for loading, aria-label on Load more button, dateTime on timestamps, AvatarImage alt=''. Activity recording is fire-and-forget (record() catches errors, returns null) so activity failures never break task mutations."
+    },
+    {
+      "id": "P1-1",
+      "priority": 90,
+      "area": "search",
+      "title": "Global full-text search across tasks, comments, and attachments",
+      "user_visible_behavior": "User presses Cmd/Ctrl+K anywhere in the app and types a query; a palette shows matching tasks (by title/description), comments (by content), and attachments (by filename) across all workspaces they are a member of. Clicking a result navigates to its workspace board. GET /api/search?q=&limit=&workspaceId= returns ranked results; cross-workspace access is rejected for non-members; soft-deleted tasks/comments are excluded.",
+      "status": "passing",
+      "verification": [
+        "pnpm --filter @flow-desk/shared build → exit 0",
+        "pnpm --filter @flow-desk/api typecheck → exit 0",
+        "pnpm --filter @flow-desk/api test:integration -- search → 8/8 pass",
+        "pnpm --filter @flow-desk/api test:integration → 198/198 pass (no regression)",
+        "pnpm --filter @flow-desk/web typecheck → exit 0",
+        "pnpm --filter @flow-desk/web build → exit 0",
+        "pnpm --filter @flow-desk/web test -- --run → 18/18 pass (incl. 4 new SearchPalette tests)",
+        "pnpm -r lint → 0 errors 0 warnings",
+        "pnpm verify → green (typecheck-all + unit-tests + integration-tests + build)",
+        "curl 'http://localhost:3001/api/search?q=auth' with auth cookie → 200, { data: [3 task hits] } (host-side tsx smoke vs dev DB)",
+        "curl 'http://localhost:3001/api/search?q=documentation' with auth cookie → 200, { data: [2 task hits] }",
+        "curl 'http://localhost:3001/api/search?q=auth' without cookie → 401"
+      ],
+      "evidence": [
+        "packages/db/prisma/migrations/20260704182043_search_tsvector/migration.sql — GENERATED ALWAYS AS ... STORED tsvector on Task/Comment/Attachment + GIN indexes; regexp_replace normalizes non-alphanumerics to spaces so 'invoice-2026.xlsx' → 'invoice 2026 xlsx' (default tokenizer keeps hyphens/dots glued)",
+        "packages/db/prisma/schema.prisma — searchVector Unsupported(\"tsvector\")? on three models",
+        "packages/shared/src/search.ts — searchQuerySchema, searchResultSchema, searchResponseSchema + types; ./search export wired in package.json + tsup.config.ts + index.ts",
+        "apps/api/src/modules/search/{search.repository,search.service,search.routes,index}.ts — raw SQL with CROSS JOIN LATERAL plainto_tsquery + WorkspaceMember membership join + deletedAt IS NULL filter; workspaceId bound as nullable param ($ws::text IS NULL OR ...)",
+        "apps/api/src/app.ts — app.route('/api/search', searchRouter) with requireAuth + zValidator query guard",
+        "apps/api/tests/integration/search.test.ts — 8 integration tests (task/comment/attachment hits, cross-workspace miss, soft-delete exclusion, workspaceId scope, empty query 400, unauth 401)",
+        "apps/api/tests/setup/db.ts — migrateTestDb switched from 'prisma db push' to 'prisma migrate reset --force' (db push can't express GENERATED columns + conflicts with existing generated cols on re-push)",
+        "apps/api/tests/setup/factories.ts — createComment + createAttachment helpers",
+        "apps/web/src/features/search/{types,schemas,api,hooks,index}.ts — useSearch with 200ms debounce, searchKeys, searchApi.search(q, limit=20)",
+        "apps/web/src/features/search/components/SearchPalette.tsx — Dialog + Input + results list + keyboard nav (ArrowUp/Down/Enter) + role=listbox/option + aria-autocomplete=list + type icons (FileText/MessageSquare/Paperclip)",
+        "apps/web/src/features/search/components/SearchPalette.test.tsx — 4 component tests (renders input, Type-to-search prompt, debounce+results, no-matches message)",
+        "apps/web/src/components/layout/app-shell.tsx — SearchPalette mounted + Cmd/Ctrl+K keydown listener + Search button in sidebar (⌘K kbd)",
+        "Host-side smoke: tsx src/index.ts on :3001 vs dev DB; GET /api/search?q=auth → 200 with 3 ranked task hits; q=documentation → 200 with 2 hits; unauth → 401"
+      ],
+      "notes": "Phase 1 item P1-1 from ROADMAP.md. tsvector columns are GENERATED ALWAYS AS ... STORED (Postgres-maintained, no app triggers). Raw SQL bypasses softDeleteExtension — queries manually filter deletedAt IS NULL + join WorkspaceMember. Search is user-scoped (all member workspaces), optional workspaceId filter. No offset pagination (palettes show top-N; ponytail: offset deferred). Schema hygiene checklist respected: no board-in-names, no new structural fields on Task. Fixes during testing: (1) CROSS JOIN LATERAL instead of comma+JOIN mix (explicit JOIN binds to last comma FROM-item); (2) regexp_replace on all 3 tsvector expressions (default tokenizer kept 'invoice-2026.xlsx' as one lexeme); (3) test DB migrate reset instead of db push (db push can't express GENERATED columns). Docker API container smoke blocked by registry.npmjs.org network errors (EAI_AGAIN/CONNECT_TIMEOUT) during pnpm install attestations — environmental, not code; host-side tsx smoke used instead."
     }
   ]
 }
