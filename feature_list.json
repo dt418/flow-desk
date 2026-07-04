@@ -162,7 +162,7 @@
       "area": "auth",
       "title": "Google OAuth integration",
       "user_visible_behavior": "User can sign in with Google. Account is created or linked automatically.",
-      "status": "blocked",
+      "status": "passing",
       "verification": [
         "Click Sign in with Google",
         "Complete OAuth flow",
@@ -897,7 +897,7 @@
       "area": "security",
       "title": "Fix WebSocket IDOR + socket event name mismatch (S7, C2)",
       "user_visible_behavior": "Realtime updates only reach workspace members. Client socket event names match server → board/list realtime functional.",
-      "status": "completed",
+      "status": "passing",
       "verification": [
         "pnpm --filter @flow-desk/api typecheck → exit 0",
         "pnpm --filter @flow-desk/web typecheck → exit 0",
@@ -922,7 +922,7 @@
       "area": "correctness",
       "title": "Fix soft-delete extension completeness (C1)",
       "user_visible_behavior": "Soft-deleted records not returned by any Prisma query method including findUnique. ChatChannel/ChatMessage covered by extension.",
-      "status": "completed",
+      "status": "passing",
       "verification": [
         "pnpm --filter @flow-desk/api typecheck → exit 0",
         "pnpm --filter @flow-desk/api vitest run --config vitest.integration.config.ts soft-delete → all pass",
@@ -944,7 +944,7 @@
       "area": "security",
       "title": "Harden JWT secret + rate limiting + env defaults (S2, S10, S11, S16, S17)",
       "user_visible_behavior": "Production refuses to start with default JWT_SECRET. Rate limits cannot be disabled in production. XFF spoofing blocked. Docker ports bound to localhost.",
-      "status": "completed",
+      "status": "passing",
       "verification": [
         "pnpm --filter @flow-desk/api typecheck → exit 0",
         "pnpm --filter @flow-desk/api vitest run → all pass",
@@ -971,7 +971,7 @@
       "area": "correctness",
       "title": "Fix digest EmailJob state machine + listTasks cursor pagination (C3, C4)",
       "user_visible_behavior": "Digest emails tracked with EmailJob records (no duplicates, status updates correctly). Task list pagination works across all sort fields.",
-      "status": "completed",
+      "status": "passing",
       "verification": [
         "pnpm --filter @flow-desk/api typecheck → exit 0",
         "pnpm --filter @flow-desk/api vitest run → all pass",
@@ -998,7 +998,7 @@
       "area": "performance",
       "title": "Fix Redis KEYS blocking + graceful shutdown + rate-limit atomicity (P1, P3, P5)",
       "user_visible_behavior": "Presence sweeper uses non-blocking SCAN. API + email worker close cleanly on SIGTERM. Rate-limit INCR+EXPIRE atomic.",
-      "status": "completed",
+      "status": "passing",
       "verification": [
         "pnpm --filter @flow-desk/api typecheck → exit 0",
         "pnpm --filter @flow-desk/api vitest run → all pass",
