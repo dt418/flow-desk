@@ -39,6 +39,7 @@ import { renderMarkdownToHtml } from '@/lib/sanitize';
 import { useCreateTask, useUpdateTask } from '../hooks';
 import type { TaskCardData } from './TaskCard';
 import { TaskChat } from '@/features/chat/components/TaskChat';
+import { ActivityTimeline } from '@/features/activity';
 import { useSuggestAssignee } from '@/features/ai';
 import type { SuggestAssigneeSuggestion } from '@/features/ai';
 import { cn } from '@/lib/utils';
@@ -154,7 +155,7 @@ export function TaskEditModal({
   const update = useUpdateTask(workspaceId);
   const suggestAssignee = useSuggestAssignee(workspaceId);
   const isEdit = Boolean(initial);
-  const [tab, setTab] = React.useState<'details' | 'chat'>('details');
+  const [tab, setTab] = React.useState<'details' | 'chat' | 'activity'>('details');
   const [aiSuggestions, setAiSuggestions] = React.useState<SuggestAssigneeSuggestion[] | null>(
     null,
   );
@@ -313,6 +314,19 @@ export function TaskEditModal({
                 )}
               >
                 Chat
+              </button>
+              <button
+                type="button"
+                onClick={() => setTab('activity')}
+                aria-current={tab === 'activity' ? 'page' : undefined}
+                className={cn(
+                  'rounded-md px-2.5 py-1 font-medium transition-colors',
+                  tab === 'activity'
+                    ? 'bg-muted text-foreground'
+                    : 'text-muted-foreground hover:text-foreground',
+                )}
+              >
+                Activity
               </button>
             </div>
           )}
@@ -658,6 +672,12 @@ export function TaskEditModal({
         {tab === 'chat' && initial && (
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
             <TaskChat taskId={initial.id} />
+          </div>
+        )}
+
+        {tab === 'activity' && initial && (
+          <div className="min-h-0 flex-1 overflow-y-auto p-5">
+            <ActivityTimeline taskId={initial.id} />
           </div>
         )}
       </DialogContent>

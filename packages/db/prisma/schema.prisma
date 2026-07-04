@@ -57,6 +57,25 @@ enum AttachmentType {
   OTHER
 }
 
+enum ActivityAction {
+  CREATED
+  TITLE_CHANGED
+  DESCRIPTION_CHANGED
+  STATUS_CHANGED
+  PRIORITY_CHANGED
+  COLUMN_CHANGED
+  ASSIGNEE_CHANGED
+  DUE_DATE_CHANGED
+  MOVED
+  RESTORED
+  SUBTASK_CREATED
+  DEPENDENCY_CREATED
+  DEPENDENCY_DELETED
+  COMMENT_ADDED
+  LABEL_ADDED
+  LABEL_REMOVED
+}
+
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
@@ -77,6 +96,7 @@ model User {
   refreshTokens    RefreshToken[]
   chatMessages     ChatMessage[]
   notificationPreferences UserNotificationPreference[]
+  activities        TaskActivity[]      @relation("UserActivities")
 
   @@index([email])
   @@index([deletedAt])
@@ -171,6 +191,7 @@ model Task {
   comments     Comment[]
   attachments  Attachment[]
   assignments  TaskLabelAssignment[] @relation("TaskAssignments")
+  activities   TaskActivity[]        @relation("TaskActivities")
 
   @@index([workspaceId, deletedAt])
   @@index([columnId])
@@ -191,6 +212,24 @@ model TaskDependency {
 
   @@unique([blockingTaskId, blockedTaskId])
   @@index([blockedTaskId])
+}
+
+model TaskActivity {
+  id        String         @id @default(cuid())
+  taskId    String
+  userId    String
+  action    ActivityAction
+  field     String?
+  oldValue  String?
+  newValue  String?
+  metadata  Json?
+  createdAt DateTime       @default(now())
+
+  task Task @relation("TaskActivities", fields: [taskId], references: [id], onDelete: Cascade)
+  user User @relation("UserActivities", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([taskId, createdAt(sort: Desc)])
+  @@index([userId])
 }
 
 model TaskLabelAssignment {

@@ -657,18 +657,19 @@
       "user_visible_behavior": "Running `pnpm test`, `pnpm typecheck`, and `pnpm lint` from the repo root all exit 0 with no failures. The full Turbo pipeline completes 4/4 (typecheck), 3/3 (lint), 4/4 (test) tasks as successful.",
       "status": "passing",
       "verification": [
-        "pnpm typecheck → exit 0, Tasks: 4 successful, 4 total, no TS errors, FULL TURBO cache hit",
-        "pnpm lint → exit 0, Tasks: 3 successful, 3 total, all per-app lint scripts run placeholders",
-        "pnpm test → exit 0, Tasks: 4 successful, 4 total (placeholder echo in all 3 packages; no real test suite yet — documented in scope notes)",
-        "rtk lint failure isolated as a user-side wrapper bug, not a repo issue (rtk lint = direct ESLint with no config in repo → OOMs)"
+        "pnpm typecheck → exit 0, all 6 workspace projects green (db, env, shared, api, web)",
+        "pnpm lint → exit 0, eslint flat config (eslint.config.mjs) 0 errors 0 warnings across api/web/shared",
+        "pnpm test → exit 0, api unit (190 tests) + web vitest (10 tests) + shared vitest all pass",
+        "pnpm exec eslint . → 0 warnings (130 warnings cleaned up in commit 0310f21)"
       ],
       "evidence": [
-        "apps/api/src/index.ts: cast `server as HttpServer` at the call to `createSocketServer` (line 65) — fixes pre-existing TS2345 from commit 7bc6776 where `@hono/node-server`'s `serve()` returns `ServerType` (union of Http1Server | Http2Server | Server) but socket.io's `new Server()` expects `http.Server`",
-        "apps/api/src/index.ts: added `import type { Server as HttpServer } from 'node:http'` to support the cast",
-        "apps/api/package.json (unchanged in this commit): per-app lint script is `echo 'api: lint placeholder'` — same pattern as `echo 'api: no tests yet'` and web/shared",
-        "Live re-run of all three commands after the cast fix: pnpm typecheck 4/4 success (cached), pnpm lint 3/3 success, pnpm test 4/4 success"
+        "apps/api/package.json: lint = `eslint src/`, test:unit = `vitest run --config vitest.config.ts`, test:integration = `vitest run --config vitest.integration.config.ts`",
+        "apps/web/package.json: lint = `eslint src/`, test = `vitest run`",
+        "packages/shared/package.json: lint = `eslint src/`, test = `pnpm exec vitest run`",
+        "eslint.config.mjs: flat config with @eslint/js + typescript-eslint recommended, no-unused-vars warn, no-explicit-any warn, consistent-type-imports error, test file override for no-explicit-any off",
+        "lefthook.yml: pre-commit runs secrets + prettier --check + eslint + per-package typecheck on staged files; pre-push runs full typecheck + unit tests + integration tests + build"
       ],
-      "notes": "Pre-existing typecheck failure found during post-scripts-001 verification (user request: 'test make sure all green'). rtk lint wrapper bug is out of repo scope — user's ~/.local/bin/rtk runs ESLint directly with no config in this monorepo and OOMs; the project's actual lint command (`pnpm lint` → turbo run lint → placeholder echos) is green. No real test suite exists in this repo yet (all 3 packages have placeholder `echo 'no tests yet'`); green-by-vacuum, not green-by-coverage."
+      "notes": "Updated 2026-07-04: evidence refreshed — scripts are now real eslint+vitest (not placeholder echo). 130 eslint warnings cleaned in commit 0310f21. 2-layer guardrail (lefthook + CI) in commits 219ca6d + 7d5c840."
     },
     {
       "id": "F2",
@@ -1149,6 +1150,32 @@
         "e2e/workspace-switcher-create.spec.ts (NEW, 38 lines) — loginViaUI → board → switcher → 'new workspace' → dialog → fill → submit → waitForURL /board/"
       ],
       "notes": "Bug fix — single-file change in app-shell.tsx. Root cause: dialog only lived in dashboard.tsx with local state; switcher's onCreateWorkspace navigated to '/' without opening dialog. Fix moves dialog to AppShell for global access from switcher."
+    },
+    {
+      "id": "activity-log",
+      "priority": 95,
+      "area": "feature",
+      "title": "Task activity log — record + display per-task activity timeline",
+      "user_visible_behavior": "Every mutation on a task (create, update fields, move, restore, subtask, dependency, comment) records a TaskActivity row. TaskEditModal has a third 'Activity' tab showing a paginated timeline (avatar, user, action label, old→new diff, relative timestamp). Uses shadcn Avatar, Button, EmptyState, Skeleton with a11y roles (list, status, aria-labels).",
+      "status": "passing",
+      "verification": [
+        "pnpm -r typecheck → exit 0 (all 6 workspace projects)",
+        "pnpm exec eslint . → 0 warnings, 0 errors",
+        "pnpm exec prettier --check . → pass",
+        "pnpm test → 190/190 api integration + 102/102 api unit + 14/14 web unit pass",
+        "pnpm build → all 4 packages built"
+      ],
+      "evidence": [
+        "packages/db/prisma/schema.prisma — ActivityAction enum (16 values) + TaskActivity model (id, taskId, userId, action, field?, oldValue?, newValue?, metadata?, createdAt; relations Task+User; indexes @@index([taskId, createdAt(sort: Desc)]), @@index([userId]))",
+        "packages/shared/src/task.ts — activityActionSchema, taskActivitySchema, taskActivityWithUserSchema, listTaskActivityQuerySchema + types",
+        "apps/api/src/modules/activity/{activity.repository,activity.service,activity.routes,activity.test,index}.ts — NEW module: create/listByTask repo, record+list service (assertMembership), GET /api/tasks/:id/activity route, 5 unit tests",
+        "apps/api/src/modules/task/task.service.ts — activityService.record() calls in create/update(recordUpdateDiff helper)/restore/move/createSubtask/createDependency/deleteDependency; deleteDependency signature changed to (userId, id)",
+        "apps/api/src/modules/comment/comment.service.ts — records COMMENT_ADDED on non-chat createComment",
+        "apps/web/src/features/activity/{types,api,hooks,schemas,index,components/ActivityTimeline,components/ActivityTimeline.test}.ts(x) — NEW feature: useTaskActivity (useInfiniteQuery), ActivityTimeline (Avatar+EmptyState+Skeleton, role=list, aria-labels), 4 component tests",
+        "apps/web/src/features/task/components/TaskEditModal.tsx — third 'activity' tab button + ActivityTimeline content block",
+        "Guardrail fixes: turbo.json lint dependsOn ^build, feature_list.json qa-001 stale evidence updated, .github/workflows/ci.yml e2e job added, playwright.config.ts DATABASE_URL from env"
+      ],
+      "notes": "Greenfield feature. Uses shadcn/ui components (Avatar, Button, EmptyState, Skeleton) with a11y: role=list/listitem, role=status aria-busy for loading, aria-label on Load more button, dateTime on timestamps, AvatarImage alt=''. Activity recording is fire-and-forget (record() catches errors, returns null) so activity failures never break task mutations."
     }
   ]
 }

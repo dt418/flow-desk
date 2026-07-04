@@ -9,6 +9,7 @@ import { BadRequestError, NotFoundError } from '../../shared/errors';
 import { assertMembership } from '../../shared/lib/access';
 import { emitToTask, emitToUser, safeEmit } from '../../shared/lib/socket-events';
 import { decodeCursor, encodeCursor } from '@flow-desk/shared/pagination';
+import { activityService } from '../activity';
 import * as repo from './comment.repository';
 
 const MENTION_REGEX = /@([a-zA-Z0-9_-]+)/g;
@@ -128,6 +129,16 @@ export async function createComment(
     commentId: comment.id,
     taskId: body.taskId,
   });
+
+  if (!body.isChat) {
+    await activityService.record({
+      taskId: body.taskId,
+      userId,
+      action: 'COMMENT_ADDED',
+      metadata: { commentId: comment.id },
+    });
+  }
+
   return comment;
 }
 

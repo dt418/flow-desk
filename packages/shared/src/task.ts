@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { cuidSchema, nameSchema, optionalString, paginationSchema, colorHexSchema } from './common';
+import { CursorPaginationQuery } from './pagination';
 
 export const taskPrioritySchema = z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']);
 export type TaskPriority = z.infer<typeof taskPrioritySchema>;
@@ -180,3 +181,48 @@ export type TaskMention = z.infer<typeof taskMentionSchema>;
 export const TASK_LABELS_MAX = 20;
 export const TASK_TITLE_MAX = 100;
 export const TASK_DESCRIPTION_MAX = 10_000;
+
+export const activityActionSchema = z.enum([
+  'CREATED',
+  'TITLE_CHANGED',
+  'DESCRIPTION_CHANGED',
+  'STATUS_CHANGED',
+  'PRIORITY_CHANGED',
+  'COLUMN_CHANGED',
+  'ASSIGNEE_CHANGED',
+  'DUE_DATE_CHANGED',
+  'MOVED',
+  'RESTORED',
+  'SUBTASK_CREATED',
+  'DEPENDENCY_CREATED',
+  'DEPENDENCY_DELETED',
+  'COMMENT_ADDED',
+  'LABEL_ADDED',
+  'LABEL_REMOVED',
+]);
+export type ActivityAction = z.infer<typeof activityActionSchema>;
+
+export const taskActivitySchema = z.object({
+  id: cuidSchema,
+  taskId: cuidSchema,
+  userId: cuidSchema,
+  action: activityActionSchema,
+  field: z.string().nullable(),
+  oldValue: z.string().nullable(),
+  newValue: z.string().nullable(),
+  metadata: z.unknown().nullable(),
+  createdAt: z.string(),
+});
+export type TaskActivity = z.infer<typeof taskActivitySchema>;
+
+export const taskActivityWithUserSchema = taskActivitySchema.extend({
+  user: z.object({
+    id: cuidSchema,
+    name: z.string(),
+    avatarUrl: z.string().nullable(),
+  }),
+});
+export type TaskActivityWithUser = z.infer<typeof taskActivityWithUserSchema>;
+
+export const listTaskActivityQuerySchema = CursorPaginationQuery;
+export type ListTaskActivityQuery = z.infer<typeof listTaskActivityQuerySchema>;

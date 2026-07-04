@@ -35,7 +35,9 @@ export default defineConfig({
       env: {
         PORT: String(PORT_API),
         NODE_ENV: 'test',
-        DATABASE_URL: `postgresql://flowdesk:flowdesk@127.0.0.1:${process.env.DB_PORT ?? 5432}/flowdesk_test?schema=public`,
+        DATABASE_URL:
+          process.env.DATABASE_URL ??
+          `postgresql://flowdesk:flowdesk@127.0.0.1:${process.env.DB_PORT ?? 5432}/flowdesk_test?schema=public`,
         REDIS_URL: process.env.E2E_REDIS_URL ?? 'redis://127.0.0.1:6379',
         SKIP_RATE_LIMIT: '1',
       },

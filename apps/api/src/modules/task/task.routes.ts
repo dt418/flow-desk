@@ -14,6 +14,7 @@ import { taskService, listTasksQuerySchema } from './task.service';
 import { prisma } from '../../shared/lib/prisma';
 import { assertMembership } from '../../shared/lib/access';
 import * as commentSvc from '../comment/comment.service';
+import { activityService } from '../activity';
 import { NotFoundError } from '../../shared/errors';
 
 export const taskRouter = new Hono();
@@ -69,6 +70,15 @@ taskRouter.get('/:id/chat', async (c) => {
   return c.json({ data: chatResult.data, nextCursor: chatResult.nextCursor });
 });
 
+taskRouter.get('/:id/activity', async (c) => {
+  const auth = c.get('auth');
+  const id = c.req.param('id');
+  const cursor = c.req.query('cursor') ?? undefined;
+  const limit = Math.min(parseInt(c.req.query('limit') ?? '20'), 100);
+  const result = await activityService.list(auth.user.id, id, { cursor, limit });
+  return c.json({ data: result.data, nextCursor: result.nextCursor });
+});
+
 taskRouter.delete('/:id', async (c) => {
   const auth = c.get('auth');
   const id = c.req.param('id');
@@ -113,6 +123,6 @@ taskRouter.delete('/dependencies/:id', async (c) => {
     throw new NotFoundError('Task dependency');
   }
   await assertMembership(dep.blockingTask.workspaceId, auth.user.id);
-  await taskService.deleteDependency(depId);
+  await taskService.deleteDependency(auth.user.id, depId);
   return c.json({ ok: true });
 });

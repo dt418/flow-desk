@@ -17,6 +17,7 @@ import { emitToTask, emitToWorkspace, emitToUser, safeEmit } from '../../shared/
 import { logger } from '../../shared/lib/logger';
 import { BadRequestError, ConflictError, NotFoundError } from '../../shared/errors';
 import * as repo from './task.repository';
+import { activityService } from '../activity';
 import { createTaskAssignmentNotification } from '../notification/notification.service';
 import { handleTaskAssignedEmail } from '../notification/notification-email.service';
 
@@ -146,6 +147,12 @@ export const taskService = {
       event: 'task:created',
       taskId: task.id,
     });
+    await activityService.record({
+      taskId: task.id,
+      userId,
+      action: 'CREATED',
+      newValue: task.title,
+    });
     if (task.assigneeId && task.assigneeId !== userId) {
       await handleAssigneeChange(userId, null, task);
     }
@@ -183,6 +190,7 @@ export const taskService = {
       event: 'task:updated',
       taskId: task.id,
     });
+    await recordUpdateDiff(userId, existing, task);
     await handleAssigneeChange(userId, previousAssigneeId, task);
     return task;
   },
@@ -218,6 +226,7 @@ export const taskService = {
       event: 'task:restored',
       taskId: id,
     });
+    await activityService.record({ taskId: id, userId, action: 'RESTORED' });
     return task;
   },
 
@@ -328,6 +337,23 @@ export const taskService = {
       event: 'task:moved',
       taskId: id,
     });
+    if (!isSameColumn) {
+      await activityService.record({
+        taskId: id,
+        userId,
+        action: 'COLUMN_CHANGED',
+        field: 'columnId',
+        oldValue: sourceColumnId,
+        newValue: body.columnId,
+      });
+    }
+    await activityService.record({
+      taskId: id,
+      userId,
+      action: 'MOVED',
+      field: 'position',
+      metadata: { fromColumn: sourceColumnId, toColumn: body.columnId, position: body.position },
+    });
     return movedTask;
   },
 
@@ -365,6 +391,13 @@ export const taskService = {
     safeEmit(() => emitToTask(parent.id, 'task:subtask:created', { task: subtask }), {
       event: 'task:subtask:created',
       parentTaskId: parent.id,
+    });
+    await activityService.record({
+      taskId: parent.id,
+      userId,
+      action: 'SUBTASK_CREATED',
+      newValue: subtask.title,
+      metadata: { subtaskId: subtask.id },
     });
     return subtask;
   },
@@ -408,13 +441,124 @@ export const taskService = {
       () => emitToWorkspace(blocking.workspaceId, 'task:dependency:added', { dependency: dep }),
       { event: 'task:dependency:added', dependencyId: dep.id },
     );
+    await activityService.record({
+      taskId: body.blockedTaskId,
+      userId,
+      action: 'DEPENDENCY_CREATED',
+      metadata: { dependencyId: dep.id, blockingTaskId: body.blockingTaskId },
+    });
     return dep;
   },
 
-  async deleteDependency(id: string) {
-    await repo.deleteDependency(prisma, id);
+  async deleteDependency(userId: string, id: string) {
+    const dep = await repo.deleteDependency(prisma, id);
+    await activityService.record({
+      taskId: dep.blockedTaskId,
+      userId,
+      action: 'DEPENDENCY_DELETED',
+      metadata: { dependencyId: id, blockingTaskId: dep.blockingTaskId },
+    });
   },
 };
+
+async function recordUpdateDiff(
+  userId: string,
+  existing: {
+    id: string;
+    title: string;
+    description: string | null;
+    priority: string;
+    status: string;
+    columnId: string;
+    assigneeId: string | null;
+    dueDate: Date | null;
+  },
+  updated: {
+    id: string;
+    title: string;
+    description: string | null;
+    priority: string;
+    status: string;
+    columnId: string;
+    assigneeId: string | null;
+    dueDate: Date | null;
+  },
+) {
+  const diffs: Array<{
+    action:
+      | 'TITLE_CHANGED'
+      | 'DESCRIPTION_CHANGED'
+      | 'STATUS_CHANGED'
+      | 'PRIORITY_CHANGED'
+      | 'COLUMN_CHANGED'
+      | 'ASSIGNEE_CHANGED'
+      | 'DUE_DATE_CHANGED';
+    field: string;
+    oldValue: string | null;
+    newValue: string | null;
+  }> = [];
+  if (existing.title !== updated.title)
+    diffs.push({
+      action: 'TITLE_CHANGED',
+      field: 'title',
+      oldValue: existing.title,
+      newValue: updated.title,
+    });
+  if ((existing.description ?? null) !== (updated.description ?? null))
+    diffs.push({
+      action: 'DESCRIPTION_CHANGED',
+      field: 'description',
+      oldValue: existing.description,
+      newValue: updated.description,
+    });
+  if (existing.priority !== updated.priority)
+    diffs.push({
+      action: 'PRIORITY_CHANGED',
+      field: 'priority',
+      oldValue: existing.priority,
+      newValue: updated.priority,
+    });
+  if (existing.status !== updated.status)
+    diffs.push({
+      action: 'STATUS_CHANGED',
+      field: 'status',
+      oldValue: existing.status,
+      newValue: updated.status,
+    });
+  if (existing.columnId !== updated.columnId)
+    diffs.push({
+      action: 'COLUMN_CHANGED',
+      field: 'columnId',
+      oldValue: existing.columnId,
+      newValue: updated.columnId,
+    });
+  if ((existing.assigneeId ?? null) !== (updated.assigneeId ?? null))
+    diffs.push({
+      action: 'ASSIGNEE_CHANGED',
+      field: 'assigneeId',
+      oldValue: existing.assigneeId,
+      newValue: updated.assigneeId,
+    });
+  const oldDue = existing.dueDate?.toISOString() ?? null;
+  const newDue = updated.dueDate?.toISOString() ?? null;
+  if (oldDue !== newDue)
+    diffs.push({
+      action: 'DUE_DATE_CHANGED',
+      field: 'dueDate',
+      oldValue: oldDue,
+      newValue: newDue,
+    });
+  for (const d of diffs) {
+    await activityService.record({
+      taskId: updated.id,
+      userId,
+      action: d.action,
+      field: d.field,
+      oldValue: d.oldValue,
+      newValue: d.newValue,
+    });
+  }
+}
 
 async function handleAssigneeChange(
   userId: string,

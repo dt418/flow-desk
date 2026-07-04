@@ -133,3 +133,66 @@ jobs:
           JWT_SECRET: ci-test-secret-32-chars-minimum-for-jwt!!
           LLM_API_KEY: sk-placeholder
           SKIP_RATE_LIMIT: '1'
+
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DATABASE_URL: postgresql://flowdesk:postgres@localhost:5432/flowdesk_test?schema=public
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: flowdesk
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: flowdesk
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "sh -c 'pg_isready -U flowdesk'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "sh -c 'redis-cli ping'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - name: Cache turbo
+        uses: actions/cache@v4
+        with:
+          path: .turbo/cache
+          key: turbo-e2e-${{ github.sha }}
+          restore-keys: |
+            turbo-e2e-
+      - run: pnpm --filter @flow-desk/shared build
+      - name: Generate prisma client
+        run: pnpm --filter @flow-desk/api db:generate
+        env:
+          FLOW_DESK_DB_MODE: local
+      - name: Create flowdesk_test database + push schema
+        run: |
+          PGPASSWORD=postgres psql -h localhost -U flowdesk -d postgres -c "CREATE DATABASE flowdesk_test;"
+          pnpm exec prisma db push --accept-data-loss --schema=packages/db/prisma/schema.prisma
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Run E2E tests
+        run: pnpm exec playwright test
+        env:
+          REDIS_URL: redis://localhost:6379
+          NODE_ENV: test
+          JWT_SECRET: ci-test-secret-32-chars-minimum-for-jwt!!
+          LLM_API_KEY: sk-placeholder
+          SKIP_RATE_LIMIT: '1'

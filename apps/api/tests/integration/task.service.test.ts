@@ -451,7 +451,7 @@ describe('task.service', () => {
         blockingTaskId: taskId,
         blockedTaskId: t2.id,
       });
-      await taskService.deleteDependency(dep.id);
+      await taskService.deleteDependency(ownerId, dep.id);
       const after = await prisma.taskDependency.findUnique({ where: { id: dep.id } });
       expect(after).toBeNull();
     });
