@@ -102,3 +102,35 @@ export async function getAuthCookie(prisma: PrismaClient, userId: string): Promi
   const token = signAccessToken({ userId: user.id, email: user.email });
   return `access_token=${token}`;
 }
+
+export async function createComment(
+  prisma: PrismaClient,
+  taskId: string,
+  authorId: string,
+  content: string = 'Test comment',
+): Promise<{ id: string; content: string }> {
+  const c = await prisma.comment.create({
+    data: { taskId, authorId, content },
+  });
+  return { id: c.id, content: c.content };
+}
+
+export async function createAttachment(
+  prisma: PrismaClient,
+  taskId: string,
+  uploadedById: string,
+  filename: string = 'report.pdf',
+): Promise<{ id: string; filename: string }> {
+  const a = await prisma.attachment.create({
+    data: {
+      taskId,
+      uploadedById,
+      filename,
+      mimeType: 'application/pdf',
+      size: 1024,
+      type: 'DOCUMENT',
+      storagePath: `/data/${filename}`,
+    },
+  });
+  return { id: a.id, filename: a.filename };
+}

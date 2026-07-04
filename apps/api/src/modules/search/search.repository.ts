@@ -20,6 +20,8 @@ export interface SearchResultRow {
 // and join WorkspaceMember for membership. workspaceId bound as nullable param:
 // ($ws::text IS NULL OR ...) keeps it fully parameterized (no rawUnsafe, no
 // injection surface). ponytail: offset pagination deferred; palettes show top-N.
+// CROSS JOIN LATERAL computes the tsquery once per row; avoids the comma+JOIN
+// precedence trap (explicit JOIN binds to last comma FROM-item, not the table).
 export async function searchTasks(
   p: typeof prisma,
   input: SearchInput,
@@ -33,7 +35,8 @@ export async function searchTasks(
       t.id AS "taskId",
       t.title AS title,
       ts_rank(t."searchVector", q) AS rank
-    FROM "Task" t, plainto_tsquery('english', ${input.q}) q
+    FROM "Task" t
+    CROSS JOIN LATERAL plainto_tsquery('english', ${input.q}) AS q
     WHERE t."searchVector" @@ q
       AND t."deletedAt" IS NULL
       AND (${ws}::text IS NULL OR t."workspaceId" = ${ws})
@@ -59,7 +62,8 @@ export async function searchComments(
       t.id AS "taskId",
       LEFT(c.content, 200) AS title,
       ts_rank(c."searchVector", q) AS rank
-    FROM "Comment" c, plainto_tsquery('english', ${input.q}) q
+    FROM "Comment" c
+    CROSS JOIN LATERAL plainto_tsquery('english', ${input.q}) AS q
     JOIN "Task" t ON t.id = c."taskId"
     WHERE c."searchVector" @@ q
       AND c."deletedAt" IS NULL
@@ -87,7 +91,8 @@ export async function searchAttachments(
       t.id AS "taskId",
       a.filename AS title,
       ts_rank(a."searchVector", q) AS rank
-    FROM "Attachment" a, plainto_tsquery('english', ${input.q}) q
+    FROM "Attachment" a
+    CROSS JOIN LATERAL plainto_tsquery('english', ${input.q}) AS q
     JOIN "Task" t ON t.id = a."taskId"
     WHERE a."searchVector" @@ q
       AND t."deletedAt" IS NULL

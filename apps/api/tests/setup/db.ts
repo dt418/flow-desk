@@ -60,7 +60,13 @@ export async function resetTestDb(prisma: PrismaClient) {
 
 export async function migrateTestDb() {
   const { execSync } = await import('node:child_process');
-  execSync('pnpm exec prisma db push', {
+  // Use migrate reset (not db push) so the search_tsvector migration's
+  // GENERATED ALWAYS AS ... STORED columns + GIN indexes are applied.
+  // prisma db push can't express GENERATED columns (Unsupported("tsvector")
+  // becomes a plain nullable tsvector) and also conflicts with existing
+  // generated columns on re-push. Reset drops+recreates+applies all migrations
+  // idempotently. Runs once per test run in beforeAll.
+  execSync('pnpm exec prisma migrate reset --force', {
     env: { ...process.env, DATABASE_URL: TEST_DB_URL },
     cwd: WORKSPACE_ROOT,
     stdio: 'inherit',
