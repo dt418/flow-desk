@@ -12,6 +12,8 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { WorkspaceSwitcher } from '@/features/workspace';
 import { WorkspaceCreateDialog } from '@/components/ui/workspace-create-dialog';
+import { Search as SearchIcon } from 'lucide-react';
+import { SearchPalette } from '@/features/search';
 import { cn, initials } from '@/lib/utils';
 
 interface WorkspaceSummary {
@@ -33,6 +35,18 @@ export function AppShell() {
   const qc = useQueryClient();
   useSocket();
   const [createOpen, setCreateOpen] = React.useState(false);
+  const [searchOpen, setSearchOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setSearchOpen(true);
+      }
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   const workspaces = useQuery({
     queryKey: ['workspaces'],
@@ -72,6 +86,16 @@ export function AppShell() {
             onCreateWorkspace={onCreateWorkspace}
             variant="sidebar"
           />
+          <button
+            type="button"
+            onClick={() => setSearchOpen(true)}
+            className="flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            aria-label="Open search (Ctrl+K)"
+          >
+            <SearchIcon className="size-4" aria-hidden />
+            <span>Search…</span>
+            <kbd className="ml-auto text-xs">⌘K</kbd>
+          </button>
         </div>
 
         <nav className="flex-1 space-y-1 overflow-y-auto px-2" aria-label="Primary">
@@ -153,6 +177,7 @@ export function AppShell() {
         onOpenChange={setCreateOpen}
         onCreated={(ws) => navigate(`/board/${ws.id}`)}
       />
+      <SearchPalette open={searchOpen} onOpenChange={setSearchOpen} />
     </div>
   );
 }
