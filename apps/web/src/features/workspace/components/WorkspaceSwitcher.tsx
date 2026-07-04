@@ -14,7 +14,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { cn, initials } from '@/lib/utils';
 import { useWorkspaceRole, workspaceKeys } from '../hooks';
 import { workspaceApi } from '../api';
-import type { WorkspaceListEntry } from '../types';
 
 interface Props {
   currentWorkspaceId?: string;

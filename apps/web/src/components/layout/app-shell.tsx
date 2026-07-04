@@ -1,7 +1,7 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as React from 'react';
-import { LogOut, Moon, Sun, Plus } from 'lucide-react';
+import { LogOut, Moon, Sun } from 'lucide-react';
 import type { ApiError } from '@/lib/api';
 import { api } from '@/lib/api';
 import { useAuth } from '@/features/auth';

@@ -38,7 +38,6 @@ import {
 import { ApiError } from '@/lib/api';
 import type { MemberRow } from '../types';
 import type { UserRole } from '@flow-desk/shared/user';
-import { cn } from '@/lib/utils';
 
 const inviteSchema = z.object({
   email: z.string().email('Enter a valid email'),

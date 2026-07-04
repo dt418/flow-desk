@@ -1,6 +1,5 @@
-import { prisma } from '../../shared/lib/prisma';
 import { workspaceRepo } from './workspace.repository';
-import { BadRequestError, ForbiddenError, ConflictError, NotFoundError } from '../../shared/errors';
+import { BadRequestError } from '../../shared/errors';
 import { assertRole } from '../../shared/lib/access';
 import type { CursorPaginationQuery } from '@flow-desk/shared/pagination';
 import { decodeCursor, encodeCursor } from '@flow-desk/shared/pagination';

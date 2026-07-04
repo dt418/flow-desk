@@ -29,8 +29,6 @@ export function renderDigestEmail(input: DigestInput): EmailContent {
   const safeDigestUrl = htmlEscape(input.digestUrl);
 
   const itemLines: string[] = input.items.map((it) => {
-    const safeTitle = htmlEscape(it.taskTitle);
-    const safeUrl = htmlEscape(it.taskUrl);
     const safeWorkspace = htmlEscape(it.workspaceName);
     const due = formatDueLine(it.dueAt);
     return `  • [${it.priority}] ${it.taskTitle} (${safeWorkspace}) — ${due}\n    ${it.taskUrl}`;

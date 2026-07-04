@@ -1,7 +1,7 @@
 import type { prisma } from '../../shared/lib/prisma';
 type PrismaClient = typeof prisma;
-import type { CreateLabelInput, UpdateLabelInput, LabelColor } from '@flow-desk/shared';
-import { ConflictError, BadRequestError, ForbiddenError, NotFoundError } from '../../shared/errors';
+import type { CreateLabelInput, UpdateLabelInput } from '@flow-desk/shared';
+import { NotFoundError } from '../../shared/errors';
 import { ErrorCode, withCode } from '../../shared/errors/codes';
 import * as repo from './label.repository';
 import { assertMembership, assertRole } from '../../shared/lib/access';

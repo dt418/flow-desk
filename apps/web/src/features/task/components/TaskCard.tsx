@@ -11,7 +11,7 @@ import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 import { cn, initials } from '@/lib/utils';
 import { INTERACTIVE_SELECTOR, NoCardClick } from '@/components/ui/kanban';
 import { TaskLabelSelect } from './TaskLabelSelect';
-import { PRIORITY_BAR, PRIORITY_DOT, shortId, relativeDate, PriorityDot } from '../utils';
+import { PRIORITY_BAR, shortId, relativeDate, PriorityDot } from '../utils';
 
 export interface TaskCardData {
   id: string;

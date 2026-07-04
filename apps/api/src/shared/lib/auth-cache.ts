@@ -1,6 +1,5 @@
 import { redis } from './redis';
 import { prisma } from './prisma';
-import { logger } from './logger';
 
 const AUTH_CACHE_TTL = 30;
 const MEMBER_CACHE_TTL = 30;

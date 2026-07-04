@@ -1,7 +1,7 @@
 import type { prisma } from '../../shared/lib/prisma';
 type PrismaClient = typeof prisma;
 import type { CreateChannelInput, UpdateChannelInput } from './chat.schema';
-import { BadRequestError, NotFoundError, ConflictError } from '../../shared/errors';
+import { NotFoundError, ConflictError } from '../../shared/errors';
 import { assertMembership } from '../../shared/lib/access';
 import * as repo from './chat.repository';
 

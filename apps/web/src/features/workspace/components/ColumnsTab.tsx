@@ -29,7 +29,6 @@ import {
 } from '@/components/ui/alert-dialog';
 import { ApiError } from '@/lib/api';
 import type { Column } from '@flow-desk/shared/workspace';
-import type { UserRole } from '@flow-desk/shared/user';
 import type { ColumnWithCount } from '../types';
 import { cn } from '@/lib/utils';
 

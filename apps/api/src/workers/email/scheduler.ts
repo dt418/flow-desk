@@ -5,6 +5,7 @@ import { enqueueEmail } from './queue';
 
 const CHECK_INTERVAL_MS = 60_000;
 const DIGEST_COOLDOWN_MS = 12 * 3600_000;
+void DIGEST_COOLDOWN_MS;
 
 let intervalId: ReturnType<typeof setInterval> | null = null;
 

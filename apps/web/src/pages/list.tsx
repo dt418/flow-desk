@@ -14,6 +14,7 @@ import { useTaskDelete } from '@/features/task';
 import { useMembers, useColumns } from '@/features/workspace';
 import { TaskEditModal, NewTaskModal } from '@/features/task/components/TaskEditModal';
 import { PRIORITY_DOT, STATUS_TONE, PriorityDot } from '@/features/task/utils';
+void PRIORITY_DOT;
 
 interface TaskRow {
   id: string;

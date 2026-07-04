@@ -1,5 +1,5 @@
 import { prisma } from '../../shared/lib/prisma';
-import { enqueueEmail, emailQueue, EmailJobData } from './queue';
+import { enqueueEmail, emailQueue } from './queue';
 import type { Prisma } from '@flowdesk/db';
 
 export async function scheduleDelayed(

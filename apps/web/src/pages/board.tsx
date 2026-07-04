@@ -5,17 +5,16 @@ import { toast } from 'sonner';
 import { api, ApiError } from '@/lib/api';
 import { boardResponseSchema } from '@/features/task/schemas';
 import { Kanban, KanbanCard, KanbanColumn } from '@/components/ui/kanban';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { cn } from '@/lib/utils';
 import { NewTaskModal, TaskCard, TaskEditModal, useTaskDelete } from '@/features/task';
 import { useMembers, useUpdateColumn } from '@/features/workspace';
 import { useRealtime } from '@/features/realtime/useRealtime';
 import { setMoveInProgress } from '@/features/realtime/move-progress';
 import { EmptyBoardState, PresenceBar } from '@/features/board';
 import { PRIORITY_BAR, PriorityDot } from '@/features/task/utils';
+void PRIORITY_BAR;
+void PriorityDot;
 
 interface Task {
   id: string;

@@ -9,7 +9,6 @@ import {
   createTask,
 } from '../setup/factories';
 import { taskService } from '../../src/modules/task/task.service';
-import { prisma as db } from '../../src/shared/lib/prisma';
 import { emailQueue } from '../../src/workers/email/queue';
 
 describe('notification → email flow', () => {
@@ -94,6 +93,7 @@ describe('notification → email flow', () => {
       title: 'Assigned on create',
       assigneeId,
     });
+    void newTask;
 
     const notifs = await prisma.notification.findMany({
       where: { userId: assigneeId },

@@ -5,8 +5,6 @@ import { prisma } from '../../shared/lib/prisma';
 import { clearWorkspaceLabelsCache } from '../label/label.cache';
 import { taskLabelRepo } from './task-label.repository';
 
-type LegacyLabelName = string;
-
 export const taskLabelService = {
   async assign(workspaceId: string, taskId: string, labelId: string, userId: string) {
     await assertMembership(workspaceId, userId);

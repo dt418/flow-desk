@@ -1,13 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { getTestPrisma } from '../setup/integration';
-import {
-  cleanDatabase,
-  createUser,
-  createWorkspace,
-  addMember,
-  createColumn,
-  createTask,
-} from '../setup/factories';
+import { cleanDatabase, createUser } from '../setup/factories';
 import * as svc from '../../src/modules/notification/notification.service';
 import { prisma as db } from '../../src/shared/lib/prisma';
 

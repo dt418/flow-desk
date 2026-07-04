@@ -1,7 +1,7 @@
 import type { Context, Next } from 'hono';
 import { getCookie } from 'hono/cookie';
 import type { UserRole } from '@flowdesk/db';
-import { verifyAccessToken, signAccessToken } from '../lib/jwt';
+import { verifyAccessToken } from '../lib/jwt';
 import { UnauthorizedError } from '../errors';
 import { getCachedUser, getCachedMembership } from '../lib/auth-cache';
 import type { AccessTokenPayload } from '../lib/jwt';

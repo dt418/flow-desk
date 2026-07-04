@@ -5,7 +5,6 @@ import {
   createUser,
   createWorkspace,
   addMember,
-  createColumn,
   createTask,
   getAuthCookie,
 } from '../setup/factories';

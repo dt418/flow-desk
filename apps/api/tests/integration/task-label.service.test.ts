@@ -10,11 +10,11 @@ import {
 } from '../setup/factories';
 import { taskLabelService } from '../../src/modules/task/task-label.service';
 import { taskLabelRepo } from '../../src/modules/task/task-label.repository';
-import { ConflictError, NotFoundError } from '../../src/shared/errors';
+import { NotFoundError } from '../../src/shared/errors';
 
 describe('task-label.service', () => {
   let prisma: ReturnType<typeof getTestPrisma>;
-  let ownerId: string, memberId: string, outsiderId: string, wid: string, w2id: string;
+  let ownerId: string, outsiderId: string, wid: string, w2id: string;
   let taskId: string, labelId: string, w2LabelId: string;
 
   beforeEach(async () => {
@@ -24,7 +24,7 @@ describe('task-label.service', () => {
     const member = await createUser(prisma, 'member@test.com');
     const outsider = await createUser(prisma, 'outsider@test.com');
     ownerId = owner.id;
-    memberId = member.id;
+    void member;
     outsiderId = outsider.id;
 
     const w = await createWorkspace(prisma, owner.id, 'WS1');

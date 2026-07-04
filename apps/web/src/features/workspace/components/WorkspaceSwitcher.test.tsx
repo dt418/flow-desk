@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import { MemoryRouter } from 'react-router-dom';
 import { WorkspaceSwitcher } from './WorkspaceSwitcher';
 
 // Mock the API client so the switcher's workspace list query resolves with fixtures.
@@ -39,31 +39,12 @@ const wsB = {
   _count: { members: 2, tasks: 3 },
 };
 
-function renderSwitcher(props?: Partial<React.ComponentProps<typeof WorkspaceSwitcher>>) {
-  const onCreateWorkspace = vi.fn();
-  const navigate = vi.fn();
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
-  });
-
-  const utils = render(
-    <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={['/board/ws-a']}>
-        <Routes>
-          <Route path="/board/:workspaceId" element={<div>board</div>} />
-          <Route path="*" element={<div>fallback</div>} />
-        </Routes>
-      </MemoryRouter>
-    </QueryClientProvider>,
-  );
-
-  return { onCreateWorkspace, navigate, ...utils };
-}
-
 function renderWithSwitcher(
   props?: Partial<React.ComponentProps<typeof WorkspaceSwitcher>>,
   list: unknown[] = [wsA, wsB],
 ) {
+  void props;
+  void list;
   const onCreateWorkspace = vi.fn();
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },

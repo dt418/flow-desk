@@ -1,5 +1,4 @@
 import { Hono } from 'hono';
-import type { UserRole } from '@flowdesk/db';
 import {
   createWorkspaceSchema,
   updateWorkspaceSchema,
@@ -96,7 +95,6 @@ workspaceRouter.patch(
   requireWorkspaceRole(['OWNER', 'ADMIN']),
   async (c) => {
     const id = c.req.param('workspaceId');
-    const auth = c.get('auth');
     const body = updateWorkspaceSchema.parse(await c.req.json());
     const existing = await prisma.workspace.findFirst({ where: { id, deletedAt: null } });
     if (!existing) throw new NotFoundError('Workspace not found');

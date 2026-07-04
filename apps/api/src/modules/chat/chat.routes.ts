@@ -69,6 +69,6 @@ chatRouter.delete('/:id', zValidator('param', channelParamSchema), async (c) => 
   return c.json({ ok: true });
 });
 
-chatRouter.onError((err, c) => {
+chatRouter.onError((err, _c) => {
   throw err;
 });

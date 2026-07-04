@@ -1,4 +1,3 @@
-import type { Prisma } from '@flowdesk/db';
 import type { prisma } from '../../shared/lib/prisma';
 type PrismaClient = typeof prisma;
 import type { ListNotificationsQuery, MarkReadInput } from '@flow-desk/shared/notification';

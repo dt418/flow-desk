@@ -212,6 +212,7 @@ describe('chat integration', () => {
         content: 'With author',
         mentionedUserIds: [],
       });
+      void msg;
       const result = await messageSvc.listMessages(db, ownerId, channelId, {
         channelId,
         limit: 50,

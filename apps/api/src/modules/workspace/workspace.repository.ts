@@ -1,5 +1,5 @@
 import { prisma } from '../../shared/lib/prisma';
-import type { Prisma, Workspace } from '@flowdesk/db';
+import type { Prisma } from '@flowdesk/db';
 
 export const workspaceRepo = {
   findById: (id: string) => prisma.workspace.findFirst({ where: { id, deletedAt: null } }),

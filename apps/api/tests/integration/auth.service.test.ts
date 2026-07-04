@@ -185,12 +185,11 @@ describe('Auth refresh token flow', () => {
 
 describe('OAuth verified_email check', () => {
   let prisma: ReturnType<typeof getTestPrisma>;
-  let app: ReturnType<typeof buildApp>;
 
   beforeEach(async () => {
     prisma = getTestPrisma();
     await cleanDatabase(prisma);
-    app = buildApp();
+    buildApp();
   });
 
   it('rejects OAuth callback when Google email is not verified', async () => {

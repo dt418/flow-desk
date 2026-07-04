@@ -13,10 +13,6 @@ import * as svc from './comment.service';
 export const commentRouter = new Hono();
 commentRouter.use('*', requireAuth());
 
-const isChatQuery = z.object({
-  chat: z.coerce.boolean().optional(),
-});
-
 commentRouter.get(
   '/',
   zValidator('query', listCommentsQuerySchema, (result, c) => {

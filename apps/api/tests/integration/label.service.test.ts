@@ -9,17 +9,14 @@ import {
   createColumn,
 } from '../setup/factories';
 import * as svc from '../../src/modules/label/label.service';
-import {
-  ConflictError,
-  BadRequestError,
-  ForbiddenError,
-  NotFoundError,
-} from '../../src/shared/errors';
+import { ConflictError, ForbiddenError, BadRequestError } from '../../src/shared/errors';
+void ForbiddenError;
 
 describe('label.service', () => {
   let prisma: ReturnType<typeof getTestPrisma>;
   let ownerId: string, memberId: string, outsiderId: string, wid: string;
   let taskId: string, labelId: string;
+  void memberId;
 
   beforeEach(async () => {
     prisma = getTestPrisma();

@@ -171,19 +171,6 @@ function TaskRow({ task, workspaceSlug }: { task: TaskRow; workspaceSlug?: strin
   );
 }
 
-function TaskSkeletonRow() {
-  return (
-    <div className="flex items-center gap-3 px-3 py-2">
-      <Skeleton className="h-8 w-[3px]" />
-      <div className="flex-1 space-y-1.5">
-        <Skeleton className="h-3.5 w-3/4" />
-        <Skeleton className="h-2.5 w-1/4" />
-      </div>
-      <Skeleton className="h-4 w-12" />
-    </div>
-  );
-}
-
 export default function DashboardPage() {
   const navigate = useNavigate();
   const [createOpen, setCreateOpen] = React.useState(false);

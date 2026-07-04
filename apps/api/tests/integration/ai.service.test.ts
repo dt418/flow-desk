@@ -14,7 +14,7 @@ import { BadRequestError, NotFoundError } from '../../src/shared/errors';
 
 describe('ai.service', () => {
   let prisma: ReturnType<typeof getTestPrisma>;
-  let ownerId: string, memberId: string, outsiderId: string;
+  let ownerId: string, outsiderId: string;
   let wid: string;
   let colTodo: { id: string };
 
@@ -25,7 +25,7 @@ describe('ai.service', () => {
     const member = await createUser(prisma, 'member@test.com');
     const outsider = await createUser(prisma, 'outsider@test.com');
     ownerId = owner.id;
-    memberId = member.id;
+    void member;
     outsiderId = outsider.id;
     const w = await createWorkspace(prisma, owner.id);
     wid = w.id;

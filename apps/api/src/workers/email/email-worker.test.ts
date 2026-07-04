@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const mockQueueAdd = vi.fn().mockResolvedValue({ id: 'job-1' });
 const mockJobRemove = vi.fn().mockResolvedValue(undefined);
@@ -51,8 +51,6 @@ vi.mock('../../shared/lib/prisma', () => ({
   },
   env: { REDIS_URL: 'redis://localhost:6379', LOG_LEVEL: 'info', NODE_ENV: 'test' },
 }));
-
-import { Queue, Worker } from 'bullmq';
 
 describe('email worker', () => {
   describe('queue', () => {

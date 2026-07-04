@@ -6,6 +6,7 @@ const mockFindMessage = vi.fn();
 const mockCreateMessage = vi.fn();
 const mockUpdateMessage = vi.fn();
 const mockDeleteMessage = vi.fn();
+void mockDeleteMessage;
 
 const mockPrisma = {
   chatChannel: {
@@ -80,6 +81,7 @@ const mockMessage = {
 
 const mockDeletedChannel = { ...mockChannel, deletedAt: new Date() };
 const mockDeletedMessage = { ...mockMessage, deletedAt: new Date() };
+void mockDeletedMessage;
 
 describe('chat message service', () => {
   beforeEach(() => {

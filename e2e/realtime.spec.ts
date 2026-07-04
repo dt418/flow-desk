@@ -66,6 +66,7 @@ test.describe('Realtime label sync @realtime', () => {
     });
     expect(createRes.ok).toBeTruthy();
     const { task: createdTask } = await createRes.json();
+    void createdTask;
 
     // User B should see the new task appear on the board (via Socket.IO invalidation)
     await expect(page2.getByText('Realtime sync test task')).toBeVisible({ timeout: 10_000 });

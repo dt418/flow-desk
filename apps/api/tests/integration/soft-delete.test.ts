@@ -40,7 +40,7 @@ describe('soft-delete gap audit (R-29)', () => {
     };
   }
 
-  async function setupMember(workspaceId: string, ownerId: string) {
+  async function setupMember(workspaceId: string, _ownerId: string) {
     const m = await createUser(prisma);
     await addMember(prisma, workspaceId, m.id, 'MEMBER');
     return { memberId: m.id, memberCookie: await getAuthCookie(prisma, m.id) };
@@ -338,7 +338,7 @@ describe('soft-delete gap audit (R-29)', () => {
     });
 
     it('findUnique returns null for soft-deleted ChatChannel', async () => {
-      const { ownerId, wid } = await setupOwnerWorkspace();
+      const { wid } = await setupOwnerWorkspace();
       const channel = await prisma.chatChannel.create({
         data: { workspaceId: wid, name: 'chan-' + crypto.randomUUID() },
       });
