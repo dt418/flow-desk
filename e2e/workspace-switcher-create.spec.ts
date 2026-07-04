@@ -1,10 +1,7 @@
 import { test, expect, loginViaUI } from './fixtures';
 
 test.describe('Workspace switcher → create workspace @smoke', () => {
-  test('opens create dialog from a board page via sidebar switcher', async ({
-    page,
-    seedUser,
-  }) => {
+  test('opens create dialog from a board page via sidebar switcher', async ({ page, seedUser }) => {
     await loginViaUI(page, seedUser.email, seedUser.password);
 
     // Land on a board page (not the dashboard) so we prove the dialog opens
@@ -13,7 +10,9 @@ test.describe('Workspace switcher → create workspace @smoke', () => {
     await expect(page.getByRole('heading', { name: /board/i })).toBeVisible();
 
     // Open the workspace switcher dropdown in the sidebar.
-    const switcherTrigger = page.locator('aside').getByRole('button', { name: seedUser.workspaceName });
+    const switcherTrigger = page
+      .locator('aside')
+      .getByRole('button', { name: seedUser.workspaceName });
     await switcherTrigger.click();
 
     // Click "New workspace" in the dropdown.

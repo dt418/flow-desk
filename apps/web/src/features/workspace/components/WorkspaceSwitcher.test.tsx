@@ -24,8 +24,20 @@ import { api } from '@/lib/api';
 
 const mockApi = vi.mocked(api);
 
-const wsA = { id: 'ws-a', name: 'Acme', slug: 'acme', role: 'OWNER' as const, _count: { members: 1, tasks: 0 } };
-const wsB = { id: 'ws-b', name: 'Beta Corp', slug: 'beta', role: 'MEMBER' as const, _count: { members: 2, tasks: 3 } };
+const wsA = {
+  id: 'ws-a',
+  name: 'Acme',
+  slug: 'acme',
+  role: 'OWNER' as const,
+  _count: { members: 1, tasks: 0 },
+};
+const wsB = {
+  id: 'ws-b',
+  name: 'Beta Corp',
+  slug: 'beta',
+  role: 'MEMBER' as const,
+  _count: { members: 2, tasks: 3 },
+};
 
 function renderSwitcher(props?: Partial<React.ComponentProps<typeof WorkspaceSwitcher>>) {
   const onCreateWorkspace = vi.fn();
