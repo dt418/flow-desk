@@ -104,6 +104,9 @@ COMMIT_SHA_PRE="$(git rev-parse --short HEAD)"
 } >> claude-progress.md
 
 # ─── commit + push ───────────────────────────────────────────────────────
+echo "==> formatting artifacts (prettier)"
+pnpm exec prettier --write feature_list.json claude-progress.md
+
 echo "==> staging artifacts"
 git add feature_list.json claude-progress.md
 
