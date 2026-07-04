@@ -37,6 +37,16 @@ If baseline verification is already failing, fix that first. Do not stack new fe
 - Do **not** silently change verification rules during implementation.
 - Prefer durable repo artifacts over chat summaries.
 
+## Caveman Auto-Toggle (Planning Workflow)
+
+Caveman compression auto-toggles around Superpowers phases to save tokens without hurting clarity where it matters:
+
+- **Brainstorming / requirements gathering**: full verbosity — clarifying questions and design tradeoffs stay readable.
+- **`writing-plans` / `executing-plans` output**: caveman full compression on.
+- **Human-facing output after execution** (commit messages, PR descriptions, `claude-progress.md` session records, `feature_list.json` evidence/notes): normal verbosity — these are read outside the session.
+
+Manual `/caveman` and `/normal mode` override at any time.
+
 ## Engineering Pipeline (Non-Negotiable)
 
 Before writing any feature code, ensure artifacts exist:
@@ -103,6 +113,17 @@ apps/web/src/pages/          # Route-level components only (thin shells)
 - Explicit `@relation` names on both sides.
 - Never drop columns in a single migration — deprecate first.
 - Additive migrations only in production.
+
+### Future-Sprint Schema Hygiene (don't paint into corners)
+
+Phase 1–2 work must not bake in assumptions that block Epic/Sprint/Board models later. Checklist for every task/board query this phase:
+
+- **No `board` in names.** Query/repo/service names use `workspace`, not `board` (`getColumnsByWorkspace`, `listTasksByWorkspace`). A future `Board` model slots in as an additional scope, not a rename.
+- **Structural fields stay minimal.** Touch only `Task.columnId` and `Task.parentTaskId` for structure. No `Task.epicId`, `Task.sprintId`, `Task.boardId` until their UI ships.
+- **Filter by parameter, not hardcoded scope.** `listTasks(workspaceId, filters)` not `listTasksForWorkspaceX()` baked into SQL. A future `boardId` arg extends the signature instead of forcing a rewrite.
+- **Epic = `parentTaskId` reuse.** Epic→Story→Subtask is a depth/generalization of the existing self-ref, not a new model now. No separate `Epic` relation; future story UI adds a `type` discriminator.
+- **Sprint + estimation deferred together.** No `Sprint` table, no `storyPoints`/`estimate` column until sprint+estimation UI ships together (one without the other feels broken).
+- **Migration stays additive.** Future Board/Epic/Sprint = new tables + nullable FKs + `@@index`, never a rewrite of existing task queries.
 
 ### Socket.IO Rules
 
