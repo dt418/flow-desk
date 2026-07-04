@@ -14,6 +14,7 @@ export default defineConfig({
     'src/pagination.ts',
     'src/chat.ts',
     'src/notification-preferences.ts',
+    'src/search.ts',
   ],
   format: ['cjs', 'esm'],
   dts: true,

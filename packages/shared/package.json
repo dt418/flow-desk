@@ -71,6 +71,11 @@
       "types": "./dist/notification-preferences.d.ts",
       "import": "./dist/notification-preferences.mjs",
       "require": "./dist/notification-preferences.js"
+    },
+    "./search": {
+      "types": "./dist/search.d.ts",
+      "import": "./dist/search.mjs",
+      "require": "./dist/search.js"
     }
   },
   "scripts": {

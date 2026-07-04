@@ -10,3 +10,4 @@ export * from './notification-preferences';
 export * from './attachment';
 export * from './label';
 export * from './pagination';
+export * from './search';
