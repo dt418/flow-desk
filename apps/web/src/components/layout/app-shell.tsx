@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { WorkspaceSwitcher } from '@/features/workspace';
+import { WorkspaceCreateDialog } from '@/components/ui/workspace-create-dialog';
 import { cn, initials } from '@/lib/utils';
 
 interface WorkspaceSummary {
@@ -31,6 +32,7 @@ export function AppShell() {
   const { theme, toggle } = useTheme();
   const qc = useQueryClient();
   useSocket();
+  const [createOpen, setCreateOpen] = React.useState(false);
 
   const workspaces = useQuery({
     queryKey: ['workspaces'],
@@ -44,7 +46,7 @@ export function AppShell() {
   }, []);
 
   const onCreateWorkspace = () => {
-    navigate('/');
+    setCreateOpen(true);
   };
 
   const onLogout = async () => {
@@ -145,6 +147,12 @@ export function AppShell() {
       <main id="main" className="flex-1 overflow-auto" aria-label="Main content">
         <Outlet />
       </main>
+
+      <WorkspaceCreateDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        onCreated={(ws) => navigate(`/board/${ws.id}`)}
+      />
     </div>
   );
 }

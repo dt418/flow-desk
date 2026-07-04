@@ -1,6 +1,6 @@
 {
   "project": "flow-desk",
-  "last_updated": "2026-07-03",
+  "last_updated": "2026-07-04",
   "f3_active": false,
   "f3_f6_shipped": ["F3", "F4", "F5", "F6"],
   "rules": {
@@ -1131,6 +1131,24 @@
         "Base commit: 732acb4"
       ],
       "notes": "Plans only, no code changes yet. Execution order: Batch 1 (009-015 parallel S-effort), Batch 2 (016-020 M-effort), Batch 3 (021-022 after 020)."
+    },
+    {
+      "id": "workspace-switcher-create",
+      "priority": 96,
+      "area": "polish",
+      "title": "Fix: workspace switcher 'New workspace' opens create dialog",
+      "user_visible_behavior": "Clicking 'New workspace' in the workspace switcher (sidebar or header dropdown, empty state) opens the WorkspaceCreateDialog instead of navigating to '/'. On submit, user is navigated to the new workspace's board.",
+      "status": "passing",
+      "verification": [
+        "pnpm -r typecheck → exit 0 (all 6 workspace projects)",
+        "pnpm test -- --run in apps/web → 10/10 pass (4 new WorkspaceSwitcher tests + 6 existing dialog tests)"
+      ],
+      "evidence": [
+        "apps/web/src/components/layout/app-shell.tsx — added WorkspaceCreateDialog import, createOpen state, onCreateWorkspace setCreateOpen(true), <WorkspaceCreateDialog onCreated navigate `/board/${ws.id}`>",
+        "apps/web/src/features/workspace/components/WorkspaceSwitcher.test.tsx (NEW, 4 tests) — empty-state button click, sidebar dropdown menuitem click, header dropdown menuitem click, omit-onCreateWorkspace case",
+        "e2e/workspace-switcher-create.spec.ts (NEW, 38 lines) — loginViaUI → board → switcher → 'new workspace' → dialog → fill → submit → waitForURL /board/"
+      ],
+      "notes": "Bug fix — single-file change in app-shell.tsx. Root cause: dialog only lived in dashboard.tsx with local state; switcher's onCreateWorkspace navigated to '/' without opening dialog. Fix moves dialog to AppShell for global access from switcher."
     }
   ]
 }

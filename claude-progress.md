@@ -5,7 +5,7 @@
 - **Repository root**: `/home/thanh/flow-desk`
 - **Standard startup path**: `./init.sh` (pnpm install + shared build + git hook install) then `docker compose up -d`
 - **Standard verification path**: `pnpm --filter @flow-desk/shared build` + curl API endpoints + `bash scripts/prisma-exec.sh <args>` for prisma
-- **Highest priority unfinished feature**: none (35 features + F7 + E2E passing + kanban-sprint-1 passing + post-F8 dev/seed fixes + audit-002 passing)
+- **Highest priority unfinished feature**: none (35 features + F7 + E2E passing + kanban-sprint-1 passing + post-F8 dev/seed fixes + audit-002 passing + workspace-switcher-create fix passing)
 - **Active branch**: `main` in `/home/thanh/flow-desk` (F7 merged, F8 implemented, post-F8 fixes committed)
 - **Post-F8 fixes (session 019)**: (a) dev startup race condition — `turbo.json` dev task `dependsOn: [^build, ^db:generate]` + `tsup.config.ts` `clean: false` (prevents `MODULE_NOT_FOUND` + `EADDRINUSE` when shared rebuilds under `--watch`); (b) seed cleanup — `packages/db/prisma/seed.ts` added `deleteMany` for `ChatMessage`, `ChatChannel`, `UserNotificationPreference`, `WorkspaceNotificationSetting`, `EmailJob` before workspace deletion (fixes P2003 FK constraint violation on re-seed after F7 models added); (c) force-exit timer regression — `apps/api/src/index.ts` 10s `setTimeout` was at module level (fired unconditionally 10s after every startup, killing the API in dev mode); moved inside `shutdown()` function so it only fires during actual SIGTERM/SIGINT (commit `89c0233`, regression from AUD-008)
 - **Prisma**: **7.8.0**
@@ -27,6 +27,26 @@
 - **Security note**: `LLM_API_KEY` (sk-80c6f26e1...) was pasted in chat once during session 006. Recommend rotating the key at the provider. Key is in `.env`/`.env.local` (gitignored). Pre-commit hook blocks future leaks.
 
 ## Session Log
+
+### Session 025
+
+- **Date**: 2026-07-04
+- **Goal**: Fix "bug: cannot create new workspace from workspace switcher" — switcher's "New workspace" action only navigated to `/` without opening the create dialog.
+- **Root cause**: `WorkspaceCreateDialog` only lived in `apps/web/src/pages/dashboard.tsx` with local state. `apps/web/src/components/layout/app-shell.tsx` passed `onCreateWorkspace={() => navigate('/')}` to `WorkspaceSwitcher` — never opened the dialog.
+- **Fix** (single-file, `apps/web/src/components/layout/app-shell.tsx`):
+  - Added `import { WorkspaceCreateDialog } from '@/components/ui/workspace-create-dialog'`
+  - Added `const [createOpen, setCreateOpen] = React.useState(false)`
+  - Changed `onCreateWorkspace` to `() => setCreateOpen(true)`
+  - Rendered `<WorkspaceCreateDialog open={createOpen} onOpenChange={setCreateOpen} onCreated={(ws) => navigate(`/board/${ws.id}`)} />` after `<Outlet/>`
+- **Tests added**:
+  - Unit: `apps/web/src/features/workspace/components/WorkspaceSwitcher.test.tsx` (4 tests, all pass) — mocks `@/lib/api`, covers empty-state button + sidebar dropdown menuitem + header dropdown menuitem + omit-onCreateWorkspace. Uses QueryClientProvider + MemoryRouter pattern from workspace-create-dialog.test.tsx.
+  - E2E: `e2e/workspace-switcher-create.spec.ts` (38 lines) — loginViaUI → board page → click switcher → click "new workspace" menuitem → assert dialog → fill name → submit → waitForURL `/board/`. Not run live (playwright inline compile, no tsconfig for e2e).
+- **Verification run**:
+  - `pnpm -r typecheck` → green across all 6 workspace projects (db, env, shared, api, web)
+  - `pnpm test -- --run` in apps/web → 10/10 pass (4 new switcher + 6 existing dialog)
+- **Artifacts updated**: `app-shell.tsx` (fix), `WorkspaceSwitcher.test.tsx` (new), `workspace-switcher-create.spec.ts` (new), `claude-progress.md`, `feature_list.json`
+- **Risks remaining**: none new (R-24 carry-forward)
+- **Next best step**: Pick from priority-95+ features or next audit plan
 
 ### 2026-07-03 23:46 — `e95f514` (main)
 
