@@ -1,11 +1,23 @@
 # FlowDesk lefthook configuration
 #
-# Install:  pnpm setup:lefthook  (or:  lefthook install)
-# Bypass:   git commit --no-verify / git push --no-verify
+# Install:  pnpm setup:lefthook  (or:  pnpm exec lefthook install)
 # Run all:  pnpm verify
 #
-# pre-commit:  fast gates (<15s) — secret scan + per-package typecheck
-# pre-push:    heavier gates (<90s) — full typecheck + BE integration tests + web build
+# ┌─────────────┬──────────────┬──────────────────────────────────────────┐
+# │ Layer       │ Bypassable?  │ Purpose                                  │
+# ├─────────────┼──────────────┼──────────────────────────────────────────┤
+# │ pre-commit  │ YES (--no-   │ Fast feedback (<15s): secret scan +      │
+# │             │   verify)    │ format + lint + per-package typecheck    │
+# │             │              │ on staged files only                     │
+# │ pre-push    │ YES (--no-   │ Heavier gates (<90s): full typecheck +   │
+# │             │   verify)    │ all unit tests + api integration + build │
+# │ CI (GitHub) │ NO           │ Unbypassable gate on push/PR to main:    │
+# │             │              │ full pipeline via turbo, required for    │
+# │             │              │ merge via branch protection              │
+# └─────────────┴──────────────┴──────────────────────────────────────────┘
+#
+# Local hooks are convenience only. CI is the source of truth.
+# Never use --no-verify to skip a failing hook — fix the underlying issue.
 
 pre-commit:
   parallel: true
@@ -35,9 +47,9 @@ pre-push:
   commands:
     typecheck-all:
       run: pnpm typecheck
-    test-api:
-      run: pnpm --filter @flow-desk/api test:integration
     unit-tests:
-      run: pnpm --filter @flow-desk/api test:unit
-    build-web:
-      run: pnpm --filter @flow-desk/web build
+      run: pnpm --filter @flow-desk/api test:unit && pnpm --filter @flow-desk/web test && pnpm --filter @flow-desk/shared test
+    integration-tests:
+      run: pnpm --filter @flow-desk/api test:integration
+    build:
+      run: pnpm build

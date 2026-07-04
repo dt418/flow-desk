@@ -37,7 +37,8 @@
     "setup:hooks": "lefthook install && echo 'lefthook installed (managed via lefthook.yml)'",
     "setup:lefthook": "lefthook install && echo 'lefthook installed (managed via lefthook.yml)'",
     "check:secrets": ".githooks/pre-commit",
-    "verify": "lefthook run pre-commit && lefthook run pre-push"
+    "verify": "lefthook run pre-commit && lefthook run pre-push",
+    "ship": "bash scripts/ship.sh"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
