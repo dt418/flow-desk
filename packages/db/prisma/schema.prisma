@@ -176,6 +176,7 @@ model Task {
   createdById  String
   version      Int          @default(0)
   labelsDeprecated String[]  @default([])
+  searchVector    Unsupported("tsvector")? @map("searchVector")
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
   deletedAt    DateTime?
@@ -274,6 +275,7 @@ model Comment {
   mentionedUserIds String[] @default([])
   isChat           Boolean  @default(false)
   editedAt         DateTime?
+  searchVector     Unsupported("tsvector")? @map("searchVector")
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
   deletedAt        DateTime?
@@ -312,6 +314,7 @@ model Attachment {
   mimeType     String
   size         Int
   type         AttachmentType
+  searchVector Unsupported("tsvector")? @map("searchVector")
   storagePath  String
   createdAt    DateTime       @default(now())
 
