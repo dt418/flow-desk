@@ -16,12 +16,10 @@ pre-commit:
       run: bash .githooks/pre-commit
     format-check:
       glob: '*.{ts,tsx,js,jsx,json,md,css,yml,yaml}'
-      run: pnpm format:check
-      stage_fixed: true
-    eslint:
+      run: pnpm exec prettier --check {staged_files}
+    eslint-check:
       glob: '*.{ts,tsx}'
-      run: pnpm eslint .
-      stage_fixed: true
+      run: pnpm exec eslint {staged_files}
     typecheck-shared:
       glob: 'packages/shared/src/**/*.ts'
       run: pnpm --filter @flow-desk/shared typecheck
