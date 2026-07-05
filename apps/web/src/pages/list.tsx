@@ -14,6 +14,8 @@ import { useTaskDelete } from '@/features/task';
 import { useMembers, useColumns } from '@/features/workspace';
 import { TaskEditModal, NewTaskModal } from '@/features/task/components/TaskEditModal';
 import { PRIORITY_DOT, STATUS_TONE, PriorityDot } from '@/features/task/utils';
+import { SavedViewsBar } from '@/features/saved-filter/components/SavedViewsBar';
+import type { SavedFilterQuery } from '@flow-desk/shared/saved-filter';
 void PRIORITY_DOT;
 
 interface TaskRow {
@@ -108,6 +110,7 @@ export default function ListPage() {
   const qc = useQueryClient();
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
   const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>('ALL');
+  const [activeViewId, setActiveViewId] = useState<string | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [newModalOpen, setNewModalOpen] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
@@ -131,6 +134,24 @@ export default function ListPage() {
   const wsColumns = Array.isArray(wsColumnsData)
     ? wsColumnsData
     : ((wsColumnsData as { data: Array<{ id: string; name: string }> } | undefined)?.data ?? []);
+
+  // Build current query from filter state for save/load
+  const currentQuery: SavedFilterQuery = {
+    ...(statusFilter !== 'ALL' ? { status: statusFilter as SavedFilterQuery['status'] } : {}),
+    ...(priorityFilter !== 'ALL' ? { priority: priorityFilter as SavedFilterQuery['priority'] } : {}),
+  };
+
+  const handleLoadView = (_viewId: string, query: SavedFilterQuery) => {
+    setActiveViewId(_viewId);
+    setStatusFilter((query.status as StatusFilter) ?? 'ALL');
+    setPriorityFilter((query.priority as PriorityFilter) ?? 'ALL');
+  };
+
+  const handleClearView = () => {
+    setActiveViewId(null);
+    setStatusFilter('ALL');
+    setPriorityFilter('ALL');
+  };
 
   const handleEdit = (taskId: string) => {
     setSelectedTaskId(taskId);
@@ -329,6 +350,14 @@ export default function ListPage() {
             value={priorityFilter}
             onChange={(v) => setPriorityFilter(v as PriorityFilter)}
             options={priorityOptions}
+          />
+          <div className="h-4 w-px bg-border" role="separator" />
+          <SavedViewsBar
+            workspaceId={workspaceId}
+            activeViewId={activeViewId}
+            currentQuery={currentQuery}
+            onLoadView={handleLoadView}
+            onClearView={handleClearView}
           />
           <div className="flex items-center rounded-md border border-border bg-card p-0.5 text-xs">
             <Link

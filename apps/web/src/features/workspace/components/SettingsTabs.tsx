@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { Settings, Users, Columns3, AlertTriangle, Tag } from 'lucide-react';
+import { Settings, Users, Columns3, AlertTriangle, Tag, Bookmark } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useWorkspaceRole } from '../hooks';
 import { canDeleteWorkspace, canManageColumns, canManageMembers } from './role';
 
-type TabId = 'general' | 'members' | 'columns' | 'labels' | 'danger';
+type TabId = 'general' | 'members' | 'columns' | 'labels' | 'views' | 'danger';
 
 interface TabDef {
   id: TabId;
@@ -31,6 +31,12 @@ const TABS: TabDef[] = [
     id: 'labels',
     label: 'Labels',
     icon: Tag,
+    visible: () => true,
+  },
+  {
+    id: 'views',
+    label: 'Saved views',
+    icon: Bookmark,
     visible: () => true,
   },
   {

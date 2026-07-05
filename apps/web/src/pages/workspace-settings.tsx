@@ -10,6 +10,7 @@ import {
   DangerZoneTab,
 } from '@/features/workspace';
 import { LabelManagerPage } from '@/features/label';
+import { SavedViewsManager } from '@/features/saved-filter/components/SavedViewsManager';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { initials } from '@/features/workspace/components/role';
@@ -56,6 +57,7 @@ export default function WorkspaceSettingsPage() {
           members: <MembersTab workspaceId={workspaceId} />,
           columns: <ColumnsTab workspaceId={workspaceId} />,
           labels: <LabelManagerPage workspaceId={workspaceId} embedded />,
+          views: <SavedViewsManager workspaceId={workspaceId} />,
           danger: <DangerZoneTab workspaceId={workspaceId} />,
         }}
       </SettingsTabs>
