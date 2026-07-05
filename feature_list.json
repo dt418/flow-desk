@@ -2,7 +2,12 @@
   "project": "flow-desk",
   "last_updated": "2026-07-05",
   "f3_active": false,
-  "f3_f6_shipped": ["F3", "F4", "F5", "F6"],
+  "f3_f6_shipped": [
+    "F3",
+    "F4",
+    "F5",
+    "F6"
+  ],
   "rules": {
     "single_active_feature": true,
     "passing_requires_evidence": true,
@@ -1214,6 +1219,40 @@
         "Host-side smoke: tsx src/index.ts on :3001 vs dev DB; GET /api/search?q=auth → 200 with 3 ranked task hits; q=documentation → 200 with 2 hits; unauth → 401"
       ],
       "notes": "Phase 1 item P1-1 from ROADMAP.md. tsvector columns are GENERATED ALWAYS AS ... STORED (Postgres-maintained, no app triggers). Raw SQL bypasses softDeleteExtension — queries manually filter deletedAt IS NULL + join WorkspaceMember. Search is user-scoped (all member workspaces), optional workspaceId filter. No offset pagination (palettes show top-N; ponytail: offset deferred). Schema hygiene checklist respected: no board-in-names, no new structural fields on Task. Fixes during testing: (1) CROSS JOIN LATERAL instead of comma+JOIN mix (explicit JOIN binds to last comma FROM-item); (2) regexp_replace on all 3 tsvector expressions (default tokenizer kept 'invoice-2026.xlsx' as one lexeme); (3) test DB migrate reset instead of db push (db push can't express GENERATED columns). Docker API container smoke blocked by registry.npmjs.org network errors (EAI_AGAIN/CONNECT_TIMEOUT) during pnpm install attestations — environmental, not code; host-side tsx smoke used instead."
+    },
+    {
+      "id": "P1-2",
+      "priority": 90,
+      "area": "saved-filters",
+      "title": "Saved views and filters — save, load, and manage filter presets per workspace",
+      "user_visible_behavior": "User can save current filter settings (status, priority) as a named view. Saved views appear in a dropdown on the list page for quick loading. Non-members cannot see private views; shared views are visible to all workspace members. Users can rename, toggle shared/private, and delete saved views from the workspace settings 'Saved views' tab.",
+      "status": "passing",
+      "verification": [
+        "pnpm --filter @flow-desk/shared build → exit 0",
+        "pnpm --filter @flow-desk/api typecheck → exit 0",
+        "pnpm --filter @flow-desk/api lint → exit 0",
+        "pnpm --filter @flow-desk/api test:integration -- saved-filter → 9/9 pass",
+        "pnpm --filter @flow-desk/api test:integration → 207/207 pass (no regression)",
+        "pnpm --filter @flow-desk/web typecheck → exit 0",
+        "pnpm --filter @flow-desk/web lint → exit 0",
+        "pnpm --filter @flow-desk/web test -- --run → 23/23 pass (incl. 5 saved-filter tests)",
+        "pnpm --filter @flow-desk/web build → exit 0"
+      ],
+      "evidence": [
+        "packages/db/prisma/migrations/20260705085351_saved_filter/migration.sql — SavedFilter model + partial unique index WHERE deletedAt IS NULL",
+        "packages/shared/src/saved-filter.ts — savedFilterQuerySchema, savedFilterSchema, createSavedFilterSchema, updateSavedFilterSchema, savedFilterListResponseSchema",
+        "apps/api/src/modules/saved-filter/{saved-filter.repository,saved-filter.service,saved-filter.routes,index}.ts — CRUD at /api/workspaces/:wid/saved-filters, assertMembership guard, duplicate-name 409, owner-only patch/delete",
+        "apps/api/src/shared/lib/prisma-extension.ts — SavedFilter in SOFT_DELETE_MODELS (softDeleteExtension auto-filters deletedAt)",
+        "packages/db/src/prisma-extension.ts — synced ChatChannel/ChatMessage/SavedFilter into SOFT_DELETE_MODELS (pre-existing drift from F7 chat work)",
+        "apps/api/tests/integration/saved-filter.test.ts — 9 integration tests (create+list, duplicate 409, isShared visible to members, private hidden from members, owner-only patch 404 for non-owner, owner patch+delete, soft-deleted name reuse, non-member 400, unauth 401)",
+        "apps/web/src/features/saved-filter/{api,hooks,types,schemas,index}.ts — web feature module with useSavedFilters, useCreate/Update/Delete hooks + cache invalidation",
+        "apps/web/src/features/saved-filter/components/SavedViewsBar.tsx — list page toolbar: view selector dropdown + save dialog + divider",
+        "apps/web/src/features/saved-filter/components/SavedViewsManager.tsx — settings page: inline rename, toggle shared/private, delete with AlertDialog",
+        "apps/web/src/pages/list.tsx — SavedViewsBar integrated into header bar between filter selects and Board/List toggle",
+        "apps/web/src/pages/workspace-settings.tsx + SettingsTabs.tsx — 'Saved views' tab added with Bookmark icon",
+        "apps/web/src/features/saved-filter/components/SavedViewsBar.test.tsx — 4 component tests",
+        "apps/web/src/features/saved-filter/components/SavedViewsManager.test.tsx — 1 component test"
+      ]
     }
   ]
 }

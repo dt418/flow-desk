@@ -28,6 +28,78 @@
 
 ## Session Log
 
+### 2026-07-05 09:36 — `41b1d54` (main)
+
+- **type:**
+- **msg:**
+- **author:** thanhd
+
+### 2026-07-05 09:34 — `92f0444` (main)
+
+- **type:**
+- **msg:**
+- **author:** thanhd
+
+### 2026-07-05 09:31 — `8112205` (main)
+
+- **type:**
+- **msg:**
+- **author:** thanhd
+
+### 2026-07-05 09:23 — `12c6f6f` (main)
+
+- **type:**
+- **msg:**
+- **author:** thanhd
+
+### 2026-07-05 08:59 — `a8090fb` (main)
+
+- **type:**
+- **msg:**
+- **author:** thanhd
+
+### 2026-07-05 08:59 — `44db2f8` (main)
+
+- **type:**
+- **msg:**
+- **author:** thanhd
+
+### 2026-07-05 08:58 — `6e6a7e9` (main)
+
+- **type:**
+- **msg:**
+- **author:** thanhd
+
+### 2026-07-05 08:56 — `3c54033` (main)
+
+- **type:**
+- **msg:**
+- **author:** thanhd
+
+### 2026-07-05 08:55 — `78def7f` (main)
+
+- **type:**
+- **msg:**
+- **author:** thanhd
+
+### 2026-07-05 08:54 — `2fe98e0` (main)
+
+- **type:**
+- **msg:**
+- **author:** thanhd
+
+### 2026-07-05 02:23 — `7dcbd5e` (main)
+
+- **type:**
+- **msg:**
+- **author:** thanhd
+
+### 2026-07-05 02:18 — `f9f3294` (main)
+
+- **type:**
+- **msg:**
+- **author:** thanhd
+
 ### 2026-07-05 02:18 — `bb08190` (main)
 
 - **type:**
@@ -718,3 +790,64 @@
 - **Verify gate**: typecheck ✓, lint ✓, format:check ✓, test ✓, build ✓
 - **Base commit**: 219ca6d
 - **Artifact**: feature_list.json updated (target marked passing)
+
+---
+
+## Session 027 — P1-2 Saved Views/Filters Implementation (SDD-driven)
+
+**Date**: 2026-07-05
+**Branch**: `main`
+**Feature**: P1-2 Saved Views/Filters
+
+### What was done
+
+Executed the full 10-task P1-2 plan via Subagent-Driven Development (inline execution — subagents returned empty, fell back to main thread with SDD structure preserved).
+
+**Task 1: Prisma migration** — SavedFilter model + partial unique index `WHERE "deletedAt" IS NULL` for soft-delete-safe unique name constraint. Applied via direct psql (prisma migrate dev timed out from stuck zombie processes). Registered in softDeleteExtension SOFT_DELETE_MODELS.
+
+**Task 2: Shared schemas** — `packages/shared/src/saved-filter.ts` with savedFilterQuerySchema, savedFilterSchema, createSavedFilterSchema, updateSavedFilterSchema, savedFilterListResponseSchema. Wired in package.json + tsup.config.ts + index.ts.
+
+**Task 3: Repository** — `saved-filter.repository.ts` with listVisible (owned OR shared), findOwnedById (owner-only for edits), create (duplicate-name check), update, remove. Used raw SQL for listVisible to avoid softDeleteExtension bypass.
+
+**Task 4: Service** — `saved-filter.service.ts` with list/create/update/remove + DRY toResult helper.
+
+**Task 5: Routes + register** — CRUD routes at `/api/workspaces/:wid/saved-filters` with requireAuth + assertMembership guard + zValidator. Registered in app.ts.
+
+**Task 6: Integration tests** — 9 tests covering create+list, duplicate 409, isShared visible to members, private hidden from members, owner-only patch 404 for non-owner, owner patch+delete, soft-deleted name reuse, non-member 400, unauth 401.
+
+**Discovery: pre-existing softDeleteExtension drift** — `packages/db/src/prisma-extension.ts` (used by module-level prisma singleton via `@flowdesk/db`) was missing `ChatChannel`, `ChatMessage`, AND `SavedFilter` from SOFT_DELETE_MODELS. The `apps/api/src/shared/lib/prisma-extension.ts` copy (used by test prisma) had them. This caused module prisma to NOT filter soft-deleted SavedFilters. Fixed by syncing the db copy. Pre-existing bug from F7 chat work.
+
+**Task 7: Web feature module** — api.ts (CRUD with shared schema validation), hooks.ts (useSavedFilters query, useCreate/Update/Delete mutations with cache invalidation), types.ts + schemas.ts re-exports.
+
+**Task 8: Web UI** — SavedViewsBar (list page toolbar: view selector dropdown + save dialog + divider), SavedViewsManager (settings page: inline rename, toggle shared/private, delete with AlertDialog). Integrated into list.tsx and workspace-settings.tsx with new 'Saved views' tab.
+
+**Task 9: Web component tests** — 5 tests: SavedViewsBar (4: renders save button + selector, default option, shows active view from cached data, opens save dialog), SavedViewsManager (1: empty state).
+
+**Task 10: Feature tracking** — P1-2 added to feature_list.json (passing). Session 027 record below.
+
+### Commits
+
+1. `2fe98e0` — Task 1: migration + prisma schema
+2. `78def7f` — Task 2: shared schemas
+3. `6e6a7e9` — Task 3: repository (amended for schema.prisma + import fixes)
+4. `44db2f8` — Task 4: service
+5. `a8090fb` — Task 5: routes + register
+6. `12c6f6f` — Task 6: integration tests + extension sync + lint fixes
+7. `2fe98e0` (via pnpm verify pre-commit) — Task 7: web feature module
+8. `92f0444` — Task 8: UI components
+9. `41b1d54` — Task 9: web component tests
+10. `feature_list.json` update — Task 10
+
+### Verified
+
+- `pnpm --filter @flow-desk/api typecheck` → exit 0
+- `pnpm --filter @flow-desk/api lint` → exit 0
+- `pnpm --filter @flow-desk/api test:integration` → 207/207 pass (198 existing + 9 new)
+- `pnpm --filter @flow-desk/web typecheck` → exit 0
+- `pnpm --filter @flow-desk/web lint` → exit 0
+- `pnpm --filter @flow-desk/web test -- --run` → 23/23 pass (18 existing + 5 new)
+- `pnpm --filter @flow-desk/web build` → exit 0
+
+### Risk/Bug found
+
+**Pre-existing softDeleteExtension drift (CRITICAL)** — `packages/db/src/prisma-extension.ts` was missing ChatChannel, ChatMessage, and SavedFilter from SOFT_DELETE_MODELS. The module-level prisma singleton (used by ALL route handlers) did NOT filter soft-deleted records for these models. This means soft-deleted chat channels, chat messages, and saved filters could be returned by queries that use the module prisma. The test prisma (via `apps/api/src/shared/lib/prisma-extension.ts`) had the correct set, so tests passed but production behavior was wrong. Fixed in commit 12c6f6f. **All features using soft-delete for ChatChannel, ChatMessage, or SavedFilter should be verified after this fix.**
