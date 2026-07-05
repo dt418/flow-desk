@@ -1,4 +1,4 @@
-export { taskApi } from './api';
+export { taskApi, exportTasksCsv } from './api';
 export { taskKeys, useCreateTask, useUpdateTask, useDeleteTask, useRestoreTask } from './hooks';
 export { useTaskDelete } from './hooks/useTaskDelete';
 export type { Task } from './types';

@@ -875,3 +875,80 @@ Executed the full 10-task P1-2 plan via Subagent-Driven Development (inline exec
 ### Risk/Bug found
 
 **Pre-existing softDeleteExtension drift (CRITICAL)** — `packages/db/src/prisma-extension.ts` was missing ChatChannel, ChatMessage, and SavedFilter from SOFT_DELETE_MODELS. The module-level prisma singleton (used by ALL route handlers) did NOT filter soft-deleted records for these models. This means soft-deleted chat channels, chat messages, and saved filters could be returned by queries that use the module prisma. The test prisma (via `apps/api/src/shared/lib/prisma-extension.ts`) had the correct set, so tests passed but production behavior was wrong. Fixed in commit 12c6f6f. **All features using soft-delete for ChatChannel, ChatMessage, or SavedFilter should be verified after this fix.**
+
+---
+
+## Session 028 — P1-3 CSV Export Implementation
+
+**Date**: 2026-07-05
+**Branch**: `main`
+**Feature**: P1-3 CSV Export (ROADMAP Phase 1, priority 88)
+**Base commit**: 616df35
+
+### What was done
+
+Executed the full 7-task P1-3 plan inline (sequential — feature is ~0.5d, no subagent parallelism needed). Followed the Superpowers workflow manually (brainstorming → design spec → plan → execute → verify) since the named `brainstorming`/`writing-plans`/`executing-plans`/`subagent-driven-development` skills are not installed in this environment; mirrored the existing `docs/superpowers/{specs,plans}/` file format.
+
+**Brainstorming** — 4-question grill (one question at a time, recommended answer each, explicit approval gates). Locks:
+- D1 Route shape: `GET /api/tasks/export?workspaceId=…&<filters>` (query-param-scoped, NOT ROADMAP-literal path-scoped `/api/workspaces/:id/tasks/export`). Reason: AGENTS.md "Future-Sprint Schema Hygiene" checklist explicitly forbids baking workspace-as-scope into the URL. "Same filter signature as the list endpoint" (ROADMAP) satisfied literally.
+- D2 Schema reuse: `listTasksQuerySchema.omit({ cursor: true, limit: true })`. Keep `sortBy`/`sortOrder` (serializer ignores, shape stays unified, drift-proof).
+- D3 Route registration order: `GET /api/tasks/export` MUST register before `GET /api/tasks/:id` in taskRouter, else `export` swallowed as `:id` param.
+- D4 Access control: `assertMembership(query.workspaceId, userId)` — already query-param-driven, reuse, no second code path.
+
+Additional locks from user review: (1) dueDate null guard is explicit ternary `task.dueDate ? task.dueDate.toISOString() : ''`, no coercion; (2) schema citation (`schema.prisma:238`) lives as a code comment at the export mapping site, not only in the plan doc; (3) CSV escaping runs on the JOINED labels string (after `join(';')`), not per-label.
+
+Column set (6, ROADMAP-literal): `Status, Title, Assignee Email, Priority, Due Date, Labels`. Enum as-is (round-trippable), email not name (unique key), ISO UTC due date, labels from `TaskLabelAssignment` join (NOT `labelsDeprecated`). RFC 4180 escaping, UTF-8 BOM, `\r\n` line endings.
+
+Streaming: one `findMany` + `ReadableStream` from async generator over in-memory array + `c.body(stream)`. CSV string never materialized whole. True PG cursor row-streaming rejected (YAGNI for P1-3 scope, belongs in P4-5).
+
+Web: one "Export CSV" button in list page toolbar after `SavedViewsBar`; exports current filter state (manual or saved-view-loaded); `window.location.href` triggers browser download via `Content-Disposition`.
+
+**Task 1+2 (combined): Backend service** — `apps/api/src/modules/task/task.service.ts`: added `exportTasksQuerySchema = listTasksQuerySchema.omit({cursor:true, limit:true})` + `ExportTasksQuery` type; extracted `buildTaskWhere(query)` shared helper (one filter path for `list` + `exportTasks` — refactored `list()` to call it); added `csvEscapeField` (RFC 4180) + `serializeTaskCsvRow` (labels from join with schema.prisma:238 comment, dueDate explicit ternary, enum as-is); added `exportTasks(query, userId)` to `taskService` object.
+
+**Plan adjustment from spec (recorded in notes):** `exportTasksQuerySchema` placed in the service (not `packages/shared/src/task.ts` as the plan originally specified). Reason: the route's active `listTasksQuerySchema` is the service-local one extending `CursorPaginationQuery`; the shared package's `listTasksQuerySchema` extends `paginationSchema` (page/pageSize) and is unused by the route. Putting the export schema in shared would have created a second filter shape — the exact drift D2 was designed to prevent. One source of truth in the service is lazier and more correct. No shared-package change needed; web client doesn't import the schema (it just builds URLSearchParams).
+
+**Task 3: Backend route** — `apps/api/src/modules/task/task.routes.ts`: added `GET /export` registered AFTER `GET /` and BEFORE `GET /:id` (verified line 49 < line 90 — D3 constraint satisfied). `zValidator('query', exportTasksQuerySchema)` guard; fetches workspace slug for filename; `ReadableStream` from `start(controller)` yields BOM (`\uFEFF`) + header row + one CSV line per task via `serializeTaskCsvRow`; sets `Content-Type: text/csv; charset=utf-8` + `Content-Disposition: attachment; filename="tasks-{slug}-{yyyyMMddHHmm}.csv"`; `c.body(stream)`.
+
+**Task 4: Backend integration tests** — `apps/api/tests/integration/task-export.test.ts`: 13 tests — all-tasks count + headers, status filter, priority filter, assigneeId filter (excludes unassigned), empty result header-only, unassigned empty email, null dueDate empty, 2 labels semicolon-joined, comma-in-label quoted, RFC 4180 title escaping (comma + embedded quote), non-member 400, missing workspaceId 400, BOM first 3 bytes (0xEF 0xBB 0xBF).
+
+**Task 5: Web wiring** — `apps/web/src/features/task/api.ts`: added `exportTasksCsv(params)` — builds URLSearchParams (workspaceId + status/priority when not ALL), `window.location.href = URL`. `apps/web/src/features/task/index.ts`: re-exports `exportTasksCsv`. `apps/web/src/pages/list.tsx`: "Export CSV" `<Button>` with `Download` lucide icon in toolbar after `SavedViewsBar`, onClick calls `exportTasksCsv({workspaceId, status: statusFilter, priority: priorityFilter})`.
+
+**Task 6: Web test** — `apps/web/src/features/task/export-tasks-csv.test.ts`: 3 tests — workspaceId-only when ALL, includes status+priority when set, omits status when ALL but includes priority. Mocks `window.location` via `Object.defineProperty` (jsdom's `location` is non-writable). Button is inline in list.tsx (not a separate `ExportCsvButton` component) — tested the `exportTasksCsv` function directly, no component extraction just for testing (ponytail: don't extract a component just for a test).
+
+**Task 7: Feature tracking + verify** — added P1-3 entry to `feature_list.json` (status: passing, full verification + evidence arrays). This session record appended to `claude-progress.md`.
+
+### Commits
+
+Staged only P1-3 files (the dirty `apps/web/src/features/task/components/TaskEditModal.tsx` — a pre-existing uncommitted Tabs refactor from before this session — was deliberately NOT staged, per the plan's explicit `git add` list). Commit message follows Conventional Commits.
+
+### Verified
+
+- `pnpm --filter @flow-desk/shared build` → exit 0
+- `pnpm --filter @flow-desk/api typecheck` → exit 0
+- `pnpm --filter @flow-desk/api lint` → exit 0 (0 errors, 0 warnings on P1-3 files)
+- `pnpm --filter @flow-desk/api test:unit` → 102/102 pass
+- `pnpm --filter @flow-desk/api test:integration` → 220/220 pass (207 existing + 13 new `task-export.test.ts`)
+- `pnpm --filter @flow-desk/web typecheck` → exit 0
+- `pnpm --filter @flow-desk/web lint` → 0 errors (1 pre-existing warning in dirty `TaskEditModal.tsx`, not P1-3)
+- `pnpm --filter @flow-desk/web test -- --run` → 26/26 pass (23 existing + 3 new `export-tasks-csv.test.ts`)
+- `pnpm --filter @flow-desk/web build` → exit 0 (6.78s)
+- `pnpm exec prettier --check` on P1-3 files → pass (after `--write` on 3 files: task.routes.ts, task-export.test.ts, list.tsx)
+- Host-side smoke (tsx API on :3000 vs dev DB, demo@flow-desk.app auth):
+  - `curl 'http://localhost:3000/api/tasks/export?workspaceId=<demo>'` → 200, `text/csv; charset=utf-8`, `Content-Disposition: attachment; filename="tasks-demo-lhklhl-2026-07-05T1219.csv"`, 3774 bytes, 73 lines (header + 72 tasks), BOM present (`ef bb bf`)
+  - Row 1: `IN_PROGRESS,Design landing page,,HIGH,2026-07-01T15:26:41.279Z,frontend;backend` — enum as-is, empty assignee email (unassigned), ISO UTC due date, semicolon-joined labels from join table
+  - Row 2: `TODO,Subtask: Spec out requirements,,LOW,,` — empty due date + empty labels (explicit null guards)
+  - Filtered `status=IN_REVIEW` → 2 rows; `priority=HIGH` → 7 rows
+  - Missing `workspaceId` → 400 `INVALID_QUERY` (Zod); unauth (no cookie) → 401 `UNAUTHORIZED`
+
+### Risk/Bug found
+
+None. Read-only feature — no schema change, no migration, no new model, no new dependencies, no `any` types. The only hazard (route order, D3) was caught in the plan and verified post-implementation (grep confirmed `/export` line 49 < `/:id` line 90).
+
+### Unresolved / deferred
+
+- Dirty `apps/web/src/features/task/components/TaskEditModal.tsx` left untouched (pre-existing uncommitted Tabs/Separator refactor, 12 insertions / 46 deletions). Not P1-3 scope. Should be committed standalone or discarded in a follow-up.
+- ROADMAP route wording amended-by-decision: `/api/tasks/export?workspaceId=` (query-param) instead of `/api/workspaces/:id/tasks/export` (path-scoped) to honor the schema-hygiene checklist. ROADMAP.md itself not edited this session — the design spec records the amendment; ROADMAP should be updated to mark P1-3 shipped in a follow-up doc-sync commit (as was done for P1-1/P1-2 in commit a846d03).
+
+### Next best step
+
+- P1-4 Outgoing webhooks (ROADMAP priority 87, ~1d, no dependencies — reuses shipped `TaskActivity` event stream). Or sync ROADMAP/TASKS/RISKS/CHANGELOG for P1-3 first (doc-sync commit).

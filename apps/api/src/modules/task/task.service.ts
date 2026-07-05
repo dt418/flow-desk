@@ -35,28 +35,74 @@ export const listTasksQuerySchema = CursorPaginationQuery.extend({
 });
 export type ListTasksQuery = z.infer<typeof listTasksQuerySchema>;
 
+// Export accepts the same filter shape as list, minus cursor pagination.
+// sortBy/sortOrder are kept (serializer ignores them) so both endpoints
+// accept one shape and cannot drift.
+export const exportTasksQuerySchema = listTasksQuerySchema.omit({
+  cursor: true,
+  limit: true,
+});
+export type ExportTasksQuery = z.infer<typeof exportTasksQuerySchema>;
+
+// Shared filter builder for list + export — one filter path, no drift.
+function buildTaskWhere(query: ExportTasksQuery): Prisma.TaskWhereInput {
+  return {
+    workspaceId: query.workspaceId,
+    ...(query.columnId ? { columnId: query.columnId } : {}),
+    ...(query.status ? { status: query.status } : {}),
+    ...(query.priority ? { priority: query.priority } : {}),
+    ...(query.assigneeId ? { assigneeId: query.assigneeId } : {}),
+    ...(query.search ? { title: { contains: query.search, mode: 'insensitive' } } : {}),
+    ...(query.dueBefore || query.dueAfter
+      ? {
+          dueDate: {
+            ...(query.dueBefore ? { lte: new Date(query.dueBefore) } : {}),
+            ...(query.dueAfter ? { gte: new Date(query.dueAfter) } : {}),
+          },
+        }
+      : {}),
+  };
+}
+
+// RFC 4180: wrap in quotes + double embedded quotes iff field has , " \r \n
+function csvEscapeField(s: string): string {
+  if (/[",\r\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  return s;
+}
+
+// Row shape produced by exportTasks' findMany include.
+type ExportTaskRow = {
+  status: string;
+  title: string;
+  priority: string;
+  dueDate: Date | null;
+  assignee: { email: string } | null;
+  assignments: { label: { name: string } }[];
+};
+
+export function serializeTaskCsvRow(task: ExportTaskRow): string {
+  // Canonical source = TaskLabelAssignment join (schema.prisma:238).
+  // labelsDeprecated is the F2 dual-write legacy array kept for migration
+  // safety — do not read from it here; it can leak stale label names.
+  const labels = task.assignments.map((a) => a.label.name).join(';');
+  const fields = [
+    task.status,
+    task.title,
+    task.assignee?.email ?? '',
+    task.priority,
+    task.dueDate ? task.dueDate.toISOString() : '',
+    labels,
+  ];
+  return fields.map(csvEscapeField).join(',') + '\r\n';
+}
+
 type TaskStatusLike = TaskStatus;
 
 export const taskService = {
   async list(query: ListTasksQuery, userId: string) {
     await assertMembership(query.workspaceId, userId);
 
-    const where: Prisma.TaskWhereInput = {
-      workspaceId: query.workspaceId,
-      ...(query.columnId ? { columnId: query.columnId } : {}),
-      ...(query.status ? { status: query.status } : {}),
-      ...(query.priority ? { priority: query.priority } : {}),
-      ...(query.assigneeId ? { assigneeId: query.assigneeId } : {}),
-      ...(query.search ? { title: { contains: query.search, mode: 'insensitive' } } : {}),
-      ...(query.dueBefore || query.dueAfter
-        ? {
-            dueDate: {
-              ...(query.dueBefore ? { lte: new Date(query.dueBefore) } : {}),
-              ...(query.dueAfter ? { gte: new Date(query.dueAfter) } : {}),
-            },
-          }
-        : {}),
-    };
+    const where = buildTaskWhere(query);
 
     const order: 'asc' | 'desc' = query.sortOrder ?? 'asc';
     const primarySortField = query.sortBy ?? 'position';
@@ -116,6 +162,19 @@ export const taskService = {
           })
         : null;
     return { data, nextCursor };
+  },
+
+  async exportTasks(query: ExportTasksQuery, userId: string) {
+    await assertMembership(query.workspaceId, userId);
+    const where = buildTaskWhere(query);
+    return prisma.task.findMany({
+      where,
+      include: {
+        assignee: { select: { email: true } },
+        assignments: { include: { label: { select: { name: true } } } },
+      },
+      orderBy: [{ position: 'asc' }, { id: 'asc' }],
+    });
   },
 
   async create(userId: string, body: CreateTaskInput) {

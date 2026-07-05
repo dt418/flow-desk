@@ -2,7 +2,7 @@ import { Link, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ColumnDef } from '@tanstack/react-table';
 import { useMemo, useState } from 'react';
-import { ChevronDown, Pencil, Plus, Trash2 } from 'lucide-react';
+import { ChevronDown, Download, Pencil, Plus, Trash2 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { DataTable } from '@/components/ui/data-table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn, formatDate, initials } from '@/lib/utils';
-import { useTaskDelete } from '@/features/task';
+import { useTaskDelete, exportTasksCsv } from '@/features/task';
 import { useMembers, useColumns } from '@/features/workspace';
 import { TaskEditModal, NewTaskModal } from '@/features/task/components/TaskEditModal';
 import { PRIORITY_DOT, STATUS_TONE, PriorityDot } from '@/features/task/utils';
@@ -138,7 +138,9 @@ export default function ListPage() {
   // Build current query from filter state for save/load
   const currentQuery: SavedFilterQuery = {
     ...(statusFilter !== 'ALL' ? { status: statusFilter as SavedFilterQuery['status'] } : {}),
-    ...(priorityFilter !== 'ALL' ? { priority: priorityFilter as SavedFilterQuery['priority'] } : {}),
+    ...(priorityFilter !== 'ALL'
+      ? { priority: priorityFilter as SavedFilterQuery['priority'] }
+      : {}),
   };
 
   const handleLoadView = (_viewId: string, query: SavedFilterQuery) => {
@@ -359,6 +361,22 @@ export default function ListPage() {
             onLoadView={handleLoadView}
             onClearView={handleClearView}
           />
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-8 gap-1 text-xs"
+            onClick={() =>
+              exportTasksCsv({
+                workspaceId,
+                status: statusFilter,
+                priority: priorityFilter,
+              })
+            }
+          >
+            <Download className="h-3.5 w-3.5" />
+            Export CSV
+          </Button>
           <div className="flex items-center rounded-md border border-border bg-card p-0.5 text-xs">
             <Link
               to={`/board/${workspaceId}`}

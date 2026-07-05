@@ -37,3 +37,20 @@ export const taskApi = {
     });
   },
 };
+
+/**
+ * Trigger a CSV download for the current filter set. The browser handles the
+ * download via the response's Content-Disposition: attachment header. Cookies
+ * travel with the same-origin navigation. Server-side filtered — exports the
+ * full filtered set, not the rendered paginated subset.
+ */
+export function exportTasksCsv(params: {
+  workspaceId: string;
+  status?: string;
+  priority?: string;
+}): void {
+  const qs = new URLSearchParams({ workspaceId: params.workspaceId });
+  if (params.status && params.status !== 'ALL') qs.set('status', params.status);
+  if (params.priority && params.priority !== 'ALL') qs.set('priority', params.priority);
+  window.location.href = `/api/tasks/export?${qs.toString()}`;
+}

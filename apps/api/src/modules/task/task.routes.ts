@@ -10,7 +10,12 @@ import {
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
 import { requireAuth } from '../../shared/middleware/auth';
-import { taskService, listTasksQuerySchema } from './task.service';
+import {
+  taskService,
+  listTasksQuerySchema,
+  exportTasksQuerySchema,
+  serializeTaskCsvRow,
+} from './task.service';
 import { prisma } from '../../shared/lib/prisma';
 import { assertMembership } from '../../shared/lib/access';
 import * as commentSvc from '../comment/comment.service';
@@ -45,6 +50,49 @@ taskRouter.post('/', async (c) => {
   const body = createTaskSchema.parse(await c.req.json());
   return c.json({ task: await taskService.create(auth.user.id, body) }, 201);
 });
+
+taskRouter.get(
+  '/export',
+  zValidator('query', exportTasksQuerySchema, (result, c) => {
+    if (!result.success) {
+      return c.json({ code: 'INVALID_QUERY', details: result.error.flatten() }, 400);
+    }
+    return undefined;
+  }),
+  async (c) => {
+    const auth = c.get('auth');
+    const query = c.req.valid('query');
+    const rows = await taskService.exportTasks(query, auth.user.id);
+
+    // Filename: tasks-{slug}-{yyyyMMddHHmm}.csv (slug fallback to workspaceId)
+    const ws = await prisma.workspace.findUnique({
+      where: { id: query.workspaceId },
+      select: { slug: true },
+    });
+    const slug = ws?.slug ?? query.workspaceId;
+    const stamp = new Date().toISOString().replace(/[:.]/g, '').slice(0, 15);
+    const filename = `tasks-${slug}-${stamp}.csv`;
+
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream<Uint8Array>({
+      start(controller) {
+        // UTF-8 BOM so Excel opens UTF-8 non-ASCII correctly
+        controller.enqueue(encoder.encode('\uFEFF'));
+        controller.enqueue(
+          encoder.encode('Status,Title,Assignee Email,Priority,Due Date,Labels\r\n'),
+        );
+        for (const row of rows) {
+          controller.enqueue(encoder.encode(serializeTaskCsvRow(row)));
+        }
+        controller.close();
+      },
+    });
+
+    c.header('Content-Type', 'text/csv; charset=utf-8');
+    c.header('Content-Disposition', `attachment; filename="${filename}"`);
+    return c.body(stream);
+  },
+);
 
 taskRouter.get('/:id', async (c) => {
   const auth = c.get('auth');
