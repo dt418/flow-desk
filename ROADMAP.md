@@ -16,6 +16,8 @@ Items are feature-list-schema-compatible. `/plan-feature` pulls one unstarted it
 - Activity log (`db9615a` — `TaskActivity` model, `ActivityAction` enum, `/api/tasks/:id/activity`, `ActivityTimeline` tab). Feeds Phase 2 automation + Phase 1 webhooks.
 - Email infra (F7 — BullMQ + Nodemailer/Resend + per-user prefs + digest). Phase 2 expands _event coverage_, not infra.
 - Lint + web test scaffolding (`qa-001`, refreshed 2026-07-04 — real eslint/vitest, 130 warnings cleaned, lefthook + CI guardrails, 3 web test files / 10 tests passing).
+- **P1-1 Global search** (session 026 — tsvector + GIN + CROSS JOIN LATERAL + Cmd+K palette + 8 integration + 4 web tests).
+- **P1-2 Saved views/filters** (session 027 — SavedFilter CRUD + SavedViewsBar + SavedViewsManager + 9 integration + 5 web tests; fixed R-43 softDeleteExtension drift).
 
 ---
 
@@ -23,7 +25,7 @@ Items are feature-list-schema-compatible. `/plan-feature` pulls one unstarted it
 
 Front-loads portfolio artifacts a reviewer can try in 2 minutes each. No `Board`/`Epic`/`Sprint` models touched (schema-hygiene checklist respected). Total ~4.5d.
 
-### P1-1 — Global search (tsvector + GIN)
+### P1-1 — Global search (tsvector + GIN) ✅ shipped
 
 - **priority**: 90
 - **dependencies**: none
@@ -35,7 +37,7 @@ Front-loads portfolio artifacts a reviewer can try in 2 minutes each. No `Board`
 - **rough effort**: 1d
 - **acceptance seed**: search "report" returns tasks with "report" in title/description + comments mentioning it; cross-workspace results rejected for non-members.
 
-### P1-2 — Saved views / filters
+### P1-2 — Saved views / filters ✅ shipped
 
 - **priority**: 89
 - **dependencies**: none
@@ -253,3 +255,12 @@ Includes the schema-hygiene payoff: `Board` model lands here, after every checkl
 
 - **#2 Automation-first**: front-loads rules engine before search/saved-views. Rejected — webhooks (automation input) land in Phase 1 anyway, so #2's only real difference is reordering a heavier 3-4d item earlier with no cheap-set companion. Risks clever-but-annoying-for-daily-use.
 - **#3 Search-first minimal**: Phase 1 = search + saved-views only, everything else pushed right. Rejected — leaves webhooks/2FA/CSV (all cheap, ~2.5d total) sitting idle. False economy; smallest phase 1 isn't cheapest-unlocks-most.
+
+---
+
+## Risk register additions (P1-2)
+
+| ID | Risk | Likelihood | Impact | Mitigation |
+| --- | --- | --- | --- | --- |
+| R-43 (resolved) | **softDeleteExtension drift** — packages/db copy missing models vs apps/api copy; module prisma doesn't soft-delete-filter affected models | High | High | Synced packages/db/src/prisma-extension.ts to match apps/api copy (commit 12c6f6f); pre-existing from F7 |
+| R-44 | **Partial unique index not in Prisma schema** — SavedFilter name uniqueness requires raw SQL `CREATE UNIQUE INDEX ... WHERE deletedAt IS NULL`; Prisma @@unique can't express partial indexes | Medium | Low | Manual migration SQL; schema.prisma can't validate; future resets must use `migrate deploy` |
