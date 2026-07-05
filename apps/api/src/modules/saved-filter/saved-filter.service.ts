@@ -1,4 +1,4 @@
-import { prisma } from '../../shared/lib/prisma';
+import type { prisma } from '../../shared/lib/prisma';
 import type {
   CreateSavedFilterInput,
   UpdateSavedFilterInput,

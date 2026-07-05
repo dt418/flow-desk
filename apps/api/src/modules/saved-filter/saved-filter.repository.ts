@@ -1,4 +1,4 @@
-import { prisma } from '../../shared/lib/prisma';
+import type { prisma } from '../../shared/lib/prisma';
 import type { Prisma } from '@flowdesk/db';
 import type { SavedFilterQuery } from '@flow-desk/shared/saved-filter';
 

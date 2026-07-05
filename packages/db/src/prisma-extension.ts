@@ -7,6 +7,9 @@ const SOFT_DELETE_MODELS = new Set<string>([
   'TaskLabel',
   'TaskLabelAssignment',
   'Comment',
+  'ChatChannel',
+  'ChatMessage',
+  'SavedFilter',
 ]);
 
 type ReadArgs = { where?: Record<string, unknown> };
