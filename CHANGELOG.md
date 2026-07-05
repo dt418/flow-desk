@@ -68,3 +68,50 @@ All notable changes to FlowDesk.
 ## Earlier sessions
 
 See `claude-progress.md` and `git log --oneline` for sessions 001-010.
+
+## P1-1: Global Search (Session 026)
+
+### What changed
+
+**Backend:**
+- `packages/db/prisma/migrations/20260704182043_search_tsvector/migration.sql` — GENERATED ALWAYS AS ... STORED tsvector on Task (title+description), Comment (content), Attachment (filename) + GIN indexes; `regexp_replace` normalizes non-alphanumerics to spaces so `invoice-2026.xlsx` → `invoice 2026 xlsx`
+- `packages/shared/src/search.ts` — searchQuerySchema, searchResultSchema, searchResponseSchema
+- `apps/api/src/modules/search/{search.repository,search.service,search.routes,index}.ts` — raw SQL with CROSS JOIN LATERAL plainto_tsquery + WorkspaceMember membership join + deletedAt IS NULL filter
+- `apps/api/src/app.ts` — `app.route('/api/search', searchRouter)`
+
+**Frontend:**
+- `apps/web/src/features/search/{api,hooks,types,schemas,index}.ts` — search API client + useSearch hook with 200ms debounce
+- `apps/web/src/features/search/components/SearchPalette.tsx` — Cmd+K palette in AppShell
+
+### Verified
+
+- `pnpm --filter @flow-desk/api test:integration -- search` → 8/8 pass
+- `pnpm --filter @flow-desk/web test -- --run` → 18/18 pass (incl. 4 SearchPalette tests)
+- Host-side smoke: `q=auth` → 3 task hits, `q=documentation` → 2 task hits
+
+## P1-2: Saved Views/Filters (Session 027)
+
+### What changed
+
+**Backend:**
+- `packages/db/prisma/migrations/20260705085351_saved_filter/migration.sql` — SavedFilter model + partial unique index `WHERE deletedAt IS NULL`
+- `packages/shared/src/saved-filter.ts` — savedFilterQuerySchema, savedFilterSchema, createSavedFilterSchema, updateSavedFilterSchema
+- `apps/api/src/modules/saved-filter/{saved-filter.repository,saved-filter.service,saved-filter.routes,index}.ts` — CRUD at /api/workspaces/:wid/saved-filters with assertMembership guard
+- `packages/db/src/prisma-extension.ts` — synced ChatChannel/ChatMessage/SavedFilter into SOFT_DELETE_MODELS (pre-existing drift fix)
+
+**Frontend:**
+- `apps/web/src/features/saved-filter/{api,hooks,types,schemas,index}.ts` — web feature module with useSavedFilters, useCreate/Update/Delete hooks
+- `apps/web/src/features/saved-filter/components/SavedViewsBar.tsx` — list page toolbar: view selector + save dialog
+- `apps/web/src/features/saved-filter/components/SavedViewsManager.tsx` — settings page: inline rename, toggle shared/private, delete with AlertDialog
+- `apps/web/src/pages/list.tsx` — SavedViewsBar integrated into header bar
+- `apps/web/src/pages/workspace-settings.tsx` — 'Saved views' tab added
+
+### Verified
+
+- `pnpm --filter @flow-desk/api test:integration -- saved-filter` → 9/9 pass
+- `pnpm --filter @flow-desk/web test -- --run` → 23/23 pass (incl. 5 saved-filter tests)
+- Host-side smoke: list empty, create full SavedFilter, re-list shows it, delete returns ok:true
+
+### Bug fixed
+
+**R-43: softDeleteExtension drift** — packages/db/src/prisma-extension.ts was missing ChatChannel/ChatMessage/SavedFilter. Module prisma did not soft-delete-filter these models. Fixed by syncing the db copy to match the apps/api copy (commit 12c6f6f).
