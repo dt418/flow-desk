@@ -9,6 +9,7 @@ const SOFT_DELETE_MODELS = new Set<string>([
   'Comment',
   'ChatChannel',
   'ChatMessage',
+  'SavedFilter',
 ]);
 
 type ReadArgs = { where?: Record<string, unknown> };
