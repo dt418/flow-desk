@@ -76,6 +76,11 @@
       "types": "./dist/search.d.ts",
       "import": "./dist/search.mjs",
       "require": "./dist/search.js"
+    },
+    "./saved-filter": {
+      "types": "./dist/saved-filter.d.ts",
+      "import": "./dist/saved-filter.mjs",
+      "require": "./dist/saved-filter.js"
     }
   },
   "scripts": {

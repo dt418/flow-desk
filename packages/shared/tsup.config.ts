@@ -15,6 +15,7 @@ export default defineConfig({
     'src/chat.ts',
     'src/notification-preferences.ts',
     'src/search.ts',
+    'src/saved-filter.ts',
   ],
   format: ['cjs', 'esm'],
   dts: true,
