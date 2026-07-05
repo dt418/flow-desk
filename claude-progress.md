@@ -28,6 +28,30 @@
 
 ## Session Log
 
+### 2026-07-05 09:46 — `a846d03` (main)
+
+- **type:** docs
+- **msg:** mark P1-1 + P1-2 as shipped in ROADMAP + add R-43/R-44
+- **author:** thanhd
+
+### 2026-07-05 09:45 — `3f8a11b` (main)
+
+- **type:** docs
+- **msg:** sync TASKS, RISKS, CHANGELOG for P1-1 Global Search + P1-2 Saved Views
+- **author:** thanhd
+
+### 2026-07-05 09:42 — `1a6a3e2` (main)
+
+- **type:** chore
+- **msg:** P1-2 smoke test evidence added to feature_list.json
+- **author:** thanhd
+
+### 2026-07-05 09:39 — `43634d7` (main)
+
+- **type:** chore
+- **msg:** P1-2 lint fixes + feature tracking
+- **author:** thanhd
+
 ### 2026-07-05 09:36 — `41b1d54` (main)
 
 - **type:**
