@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const mockTaskActivityCreate = vi.fn();
 const mockTaskFindFirst = vi.fn();
+const mockTaskFindUnique = vi.fn();
 const mockTaskActivityFindMany = vi.fn();
 
 const mockPrisma = {
@@ -11,6 +12,7 @@ const mockPrisma = {
   },
   task: {
     findFirst: mockTaskFindFirst,
+    findUnique: mockTaskFindUnique,
   },
 };
 
@@ -32,6 +34,14 @@ vi.mock('../../shared/lib/prisma', () => ({
 
 vi.mock('../../shared/lib/access', () => ({
   assertMembership: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock('../webhook/webhook.repository', () => ({
+  listActiveByWorkspace: vi.fn().mockResolvedValue([]),
+}));
+
+vi.mock('../../workers/webhook/queue', () => ({
+  webhookQueue: { add: vi.fn().mockResolvedValue(undefined) },
 }));
 
 vi.mock('../../shared/errors', () => ({
@@ -66,6 +76,7 @@ describe('activity service', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockTaskActivityCreate.mockResolvedValue(mockActivity);
+    mockTaskFindUnique.mockResolvedValue({ workspaceId: 'ws-1' });
   });
 
   describe('record', () => {

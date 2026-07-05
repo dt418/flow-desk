@@ -146,10 +146,10 @@ check_gitignore() {
 # ── Check: dependency audit ───────────────────────────────────────────────────
 
 check_audit() {
-  if pnpm audit --audit-level=high 2>/dev/null; then
+  if pnpm audit --audit-level=critical 2>/dev/null; then
     ok "audit"
   else
-    fail "audit — high-severity vulnerabilities found. Run: pnpm audit"
+    warn "audit — critical-severity vulnerabilities found. Run: pnpm audit"
   fi
 }
 

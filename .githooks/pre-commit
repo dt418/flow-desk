@@ -208,19 +208,30 @@ fi
 # Ensure critical patterns are in .gitignore.
 
 REQUIRED_GITIGNORE_PATTERNS=(
-  '\.env$'
-  '\.env\.local$'
+  '.env'
+  '.env.local'
+  '.env.*.local'
   'node_modules'
-  '\.turbo'
+  '.turbo'
   'dist'
   'coverage'
   '.DS_Store'
-  '\.log$'
+  '*.log'
 )
 
 gitignore_violations=0
+# Collect all .gitignore files in the repo
+ALL_GITIGNORES=$(find . -name '.gitignore' -not -path '*/node_modules/*' -not -path '*/.turbo/*' 2>/dev/null)
 for pattern in "${REQUIRED_GITIGNORE_PATTERNS[@]}"; do
-  if ! grep -qF "$pattern" .gitignore 2>/dev/null; then
+  found=0
+  while IFS= read -r gi; do
+    [ -z "$gi" ] && continue
+    if grep -qF "$pattern" "$gi" 2>/dev/null; then
+      found=1
+      break
+    fi
+  done <<< "$ALL_GITIGNORES"
+  if [ "$found" -eq 0 ]; then
     warn "Missing .gitignore pattern: $pattern"
     gitignore_violations=$((gitignore_violations + 1))
   fi

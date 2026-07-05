@@ -52,7 +52,7 @@ test.describe('Realtime label sync @realtime', () => {
       headers: { cookie },
     });
     const columnsData = await columnsRes.json();
-    const firstColumnId = columnsData.data[0].id;
+    const firstColumnId = columnsData.columns[0].id;
 
     // User A creates a task via API
     const createRes = await fetch(`${apiBase}/api/tasks`, {
@@ -123,8 +123,8 @@ test.describe('Realtime label sync @realtime', () => {
       headers: { cookie },
     });
     const columnsData = await columnsRes.json();
-    const col1Id = columnsData.data[0].id;
-    const col2Id = columnsData.data[1].id;
+    const col1Id = columnsData.columns[0].id;
+    const col2Id = columnsData.columns[1].id;
 
     // Create task in column 1
     const createRes = await fetch(`${apiBase}/api/tasks`, {
