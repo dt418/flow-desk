@@ -20,6 +20,7 @@ import { chatRouter } from './modules/chat/chat.routes';
 import { chatMessageRouter } from './modules/chat/chat.message.routes';
 import { prefsRouter } from './modules/notification-preferences/notification-preferences.routes';
 import { searchRouter } from './modules/search/search.routes';
+import { savedFilterRouter } from './modules/saved-filter/saved-filter.routes';
 
 const WRITE_METHODS = new Set(['POST', 'PATCH', 'PUT', 'DELETE']);
 const writeRateLimit = rateLimit({ scope: 'writes', windowSec: 60, max: 60, keyBy: 'user' });
@@ -72,6 +73,7 @@ export function buildApp(): Hono {
   app.route('/api/workspaces/:wid/channels/:channelId/messages', chatMessageRouter);
   app.route('/api/notification-preferences', prefsRouter);
   app.route('/api/search', searchRouter);
+  app.route('/api/workspaces/:wid/saved-filters', savedFilterRouter);
 
   app.onError(errorHandler);
   app.notFound((c) => c.json({ message: 'Not Found' }, 404));
