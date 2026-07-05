@@ -97,6 +97,7 @@ model User {
   chatMessages     ChatMessage[]
   notificationPreferences UserNotificationPreference[]
   activities        TaskActivity[]      @relation("UserActivities")
+  savedFilters      SavedFilter[]        @relation("SavedFilterOwner")
 
   @@index([email])
   @@index([deletedAt])
@@ -121,6 +122,7 @@ model Workspace {
   channels ChatChannel[]                        @relation("WorkspaceChannels")
   notificationSetting WorkspaceNotificationSetting?
   userNotificationPreferences UserNotificationPreference[]
+  savedFilters                SavedFilter[]      @relation("SavedFilterWorkspace")
 
   @@index([slug])
   @@index([ownerId])
@@ -323,6 +325,29 @@ model Attachment {
 
   @@index([taskId])
   @@index([uploadedById])
+}
+
+model SavedFilter {
+  id          String   @id @default(cuid())
+  userId      String
+  workspaceId String
+  name        String
+  query       Json
+  isShared    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+
+  user      User       @relation("SavedFilterOwner", fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace   @relation("SavedFilterWorkspace", fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, userId])
+  @@index([userId])
+  @@index([workspaceId])
+  @@index([deletedAt])
+  // @@unique([workspaceId, userId, name]) is a partial unique index in the
+  // migration (WHERE "deletedAt" IS NULL) — Prisma can't express partial
+  // unique indexes, so it's enforced via raw SQL in the migration only.
 }
 
 model RefreshToken {
