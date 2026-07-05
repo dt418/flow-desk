@@ -8,6 +8,9 @@ test.describe('Board card actions (drag/drop conflict with Edit/Delete) @bugfix'
     await loginViaUI(page, seedUser.email, seedUser.password);
     await page.goto(`/board/${seedUser.workspaceId}`);
 
+    // Wait for board columns to load before interacting.
+    await expect(page.locator('[data-column-id]').first()).toBeVisible({ timeout: 10_000 });
+
     // Seed a task so we can target the kebab directly.
     await page
       .getByRole('button', { name: /new task/i })

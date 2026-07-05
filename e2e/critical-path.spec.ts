@@ -11,6 +11,9 @@ test.describe('Critical path @smoke', () => {
     await page.goto(`/board/${seedUser.workspaceId}`);
     await expect(page.getByRole('heading', { name: /board/i })).toBeVisible();
 
+    // Wait for board columns to load before interacting.
+    await expect(page.locator('[data-column-id]').first()).toBeVisible({ timeout: 10_000 });
+
     await page.getByRole('button', { name: /new task/i }).click();
     await page.getByLabel('Title').fill('Ship F2');
     await page.getByRole('button', { name: /create task/i }).click();

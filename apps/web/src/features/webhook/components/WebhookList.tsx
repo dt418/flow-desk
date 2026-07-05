@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { Webhook } from '@flow-desk/shared/webhook';
+import type { Webhook } from '@flow-desk/shared/webhook';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { MoreVertical } from 'lucide-react';

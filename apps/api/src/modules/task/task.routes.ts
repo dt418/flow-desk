@@ -25,6 +25,15 @@ import { NotFoundError } from '../../shared/errors';
 export const taskRouter = new Hono();
 taskRouter.use('*', requireAuth());
 
+/** Map Prisma's `labelsDeprecated` field to the API-facing `labels` field. */
+function mapLabels<T extends Record<string, unknown> | null>(
+  task: T,
+): T extends null ? null : Omit<NonNullable<T>, 'labelsDeprecated'> & { labels: string[] } {
+  if (task === null) return null as never;
+  const { labelsDeprecated, ...rest } = task as T & { labelsDeprecated?: string[] };
+  return { ...rest, labels: labelsDeprecated ?? [] } as never;
+}
+
 taskRouter.get(
   '/',
   zValidator('query', listTasksQuerySchema, (result, c) => {
@@ -48,7 +57,7 @@ taskRouter.get(
 taskRouter.post('/', async (c) => {
   const auth = c.get('auth');
   const body = createTaskSchema.parse(await c.req.json());
-  return c.json({ task: await taskService.create(auth.user.id, body) }, 201);
+  return c.json({ task: mapLabels(await taskService.create(auth.user.id, body)) }, 201);
 });
 
 taskRouter.get(
@@ -97,14 +106,14 @@ taskRouter.get(
 taskRouter.get('/:id', async (c) => {
   const auth = c.get('auth');
   const id = c.req.param('id');
-  return c.json({ task: await taskService.get(auth.user.id, id) });
+  return c.json({ task: mapLabels(await taskService.get(auth.user.id, id)) });
 });
 
 taskRouter.patch('/:id', async (c) => {
   const auth = c.get('auth');
   const id = c.req.param('id');
   const body = updateTaskSchema.parse(await c.req.json());
-  return c.json({ task: await taskService.update(auth.user.id, id, body) });
+  return c.json({ task: mapLabels(await taskService.update(auth.user.id, id, body)) });
 });
 
 taskRouter.get('/:id/chat', async (c) => {
@@ -138,20 +147,20 @@ taskRouter.post('/:id/move', async (c) => {
   const auth = c.get('auth');
   const id = c.req.param('id');
   const body = moveTaskSchema.parse(await c.req.json());
-  return c.json({ task: await taskService.move(auth.user.id, id, body) });
+  return c.json({ task: mapLabels(await taskService.move(auth.user.id, id, body)) });
 });
 
 taskRouter.post('/:id/restore', async (c) => {
   const auth = c.get('auth');
   const id = c.req.param('id');
-  return c.json({ task: await taskService.restore(auth.user.id, id) });
+  return c.json({ task: mapLabels(await taskService.restore(auth.user.id, id)) });
 });
 
 taskRouter.post('/:id/subtasks', async (c) => {
   const auth = c.get('auth');
   const id = c.req.param('id');
   const body = createSubtaskSchema.parse(await c.req.json());
-  return c.json({ task: await taskService.createSubtask(auth.user.id, id, body) }, 201);
+  return c.json({ task: mapLabels(await taskService.createSubtask(auth.user.id, id, body)) }, 201);
 });
 
 taskRouter.post('/dependencies', async (c) => {

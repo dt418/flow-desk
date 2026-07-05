@@ -28,6 +28,18 @@
 
 ## Session Log
 
+### 2026-07-05 22:13 — `d36ee71` (main)
+
+- **type:** fix
+- **msg:** CI failures — activity test mocks, realtime e2e, guardrails audit level
+- **author:** thanhd
+
+### 2026-07-05 22:02 — `860768e` (main)
+
+- **type:** feat
+- **msg:** guardrails, webhooks, saved-views fixes, CI repair
+- **author:** thanhd
+
 ### 2026-07-05 19:23 — `a7ad24e` (main)
 
 - **type:** chore

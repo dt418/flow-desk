@@ -49,16 +49,16 @@ pnpm verify
 
 This executes both pre-commit and pre-push lefthook hooks and ensures:
 
-| Check              | Command                            | What it catches                     |
-| ------------------ | ---------------------------------- | ----------------------------------- |
-| Secret scan        | `bash .githooks/pre-commit`        | Accidental credential commits       |
-| Format             | `pnpm format:check`                | Prettier style drift                |
-| Lint               | `pnpm lint`                        | Code quality / unused imports       |
-| Typecheck          | `pnpm typecheck`                   | Type errors across all packages     |
-| Unit tests         | `pnpm --filter ... test:unit`      | Logic regressions                   |
-| Integration tests  | `pnpm --filter ... test:integration`| API contract / DB regressions      |
-| Build              | `pnpm build`                       | Compilation / bundling failures     |
-| Docs alignment     | Manual review                      | `feature_list.json`, `claude-progress.md` consistent |
+| Check             | Command                              | What it catches                                      |
+| ----------------- | ------------------------------------ | ---------------------------------------------------- |
+| Secret scan       | `bash .githooks/pre-commit`          | Accidental credential commits                        |
+| Format            | `pnpm format:check`                  | Prettier style drift                                 |
+| Lint              | `pnpm lint`                          | Code quality / unused imports                        |
+| Typecheck         | `pnpm typecheck`                     | Type errors across all packages                      |
+| Unit tests        | `pnpm --filter ... test:unit`        | Logic regressions                                    |
+| Integration tests | `pnpm --filter ... test:integration` | API contract / DB regressions                        |
+| Build             | `pnpm build`                         | Compilation / bundling failures                      |
+| Docs alignment    | Manual review                        | `feature_list.json`, `claude-progress.md` consistent |
 
 If any check fails, **fix the failure first** — do not commit partial work on top of a broken state.
 
@@ -87,12 +87,12 @@ Automated safety checks that run in CI and locally. The goal: catch bad state be
 
 The `guardrails` job in `.github/workflows/ci.yml` runs on every push/PR to `main`:
 
-| Check | What it does | Fail/Warn |
-|-------|-------------|-----------|
-| `pnpm audit` | Catches high-severity dependency vulnerabilities | FAIL |
-| gitignore coverage | Ensures `.env`, `node_modules`, `dist`, etc. are ignored | FAIL |
-| `--no-verify` detection | Warns if recent commits used `--no-verify` | WARN |
-| console.log in source | Flags `console.log` in non-test source files | WARN |
+| Check                   | What it does                                             | Fail/Warn |
+| ----------------------- | -------------------------------------------------------- | --------- |
+| `pnpm audit`            | Catches high-severity dependency vulnerabilities         | FAIL      |
+| gitignore coverage      | Ensures `.env`, `node_modules`, `dist`, etc. are ignored | FAIL      |
+| `--no-verify` detection | Warns if recent commits used `--no-verify`               | WARN      |
+| console.log in source   | Flags `console.log` in non-test source files             | WARN      |
 
 ### What runs locally (`pnpm guardrails`)
 
@@ -104,14 +104,14 @@ pnpm guardrails audit    # one category
 
 Categories: `secrets`, `large-files`, `lockfile`, `gitignore`, `audit`, `console`
 
-| Check | Threshold | Action |
-|-------|-----------|--------|
-| Secret scan | Any match | FAIL — fix before commit |
-| Large files | > 1MB | FAIL — use Git LFS or compress |
-| Lockfile sync | `package.json` changed without `pnpm-lock.yaml` | FAIL — run `pnpm install` |
-| Gitignore | Missing patterns for `.env`, `node_modules`, etc. | FAIL — add pattern |
-| Dependency audit | High-severity CVE | FAIL — update/patch |
-| console.log | In non-test `.ts`/`.tsx` source | FAIL — use `logger` |
+| Check            | Threshold                                         | Action                         |
+| ---------------- | ------------------------------------------------- | ------------------------------ |
+| Secret scan      | Any match                                         | FAIL — fix before commit       |
+| Large files      | > 1MB                                             | FAIL — use Git LFS or compress |
+| Lockfile sync    | `package.json` changed without `pnpm-lock.yaml`   | FAIL — run `pnpm install`      |
+| Gitignore        | Missing patterns for `.env`, `node_modules`, etc. | FAIL — add pattern             |
+| Dependency audit | High-severity CVE                                 | FAIL — update/patch            |
+| console.log      | In non-test `.ts`/`.tsx` source                   | FAIL — use `logger`            |
 
 ### Enforcement layers
 

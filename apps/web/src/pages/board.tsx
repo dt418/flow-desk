@@ -182,6 +182,20 @@ export default function BoardPage() {
     return null;
   }, [selectedTaskId, orderedColumns]);
 
+  const modalColumns = React.useMemo(
+    () => orderedColumns.map(({ meta }) => ({ id: meta.id, name: meta.name })),
+    [orderedColumns],
+  );
+
+  const modalMembers = React.useMemo(
+    () =>
+      (membersQuery.data ?? []).map((m) => ({
+        id: m.user.id,
+        name: m.user.name,
+      })),
+    [membersQuery.data],
+  );
+
   return (
     <div className="flex h-full flex-col">
       <header className="flex shrink-0 items-center justify-between border-b border-border bg-background/80 px-6 py-3 backdrop-blur">
@@ -295,12 +309,9 @@ export default function BoardPage() {
           setCreateColumnId(null);
         }}
         workspaceId={workspaceId}
-        columns={orderedColumns.map(({ meta }) => ({ id: meta.id, name: meta.name }))}
+        columns={modalColumns}
         defaultColumnId={createColumnId ?? orderedColumns[0]?.meta.id ?? ''}
-        members={(membersQuery.data ?? []).map((m) => ({
-          id: m.user.id,
-          name: m.user.name,
-        }))}
+        members={modalMembers}
       />
 
       <TaskEditModal
@@ -310,11 +321,8 @@ export default function BoardPage() {
           setSelectedTaskId(null);
         }}
         workspaceId={workspaceId}
-        columns={orderedColumns.map(({ meta }) => ({ id: meta.id, name: meta.name }))}
-        members={(membersQuery.data ?? []).map((m) => ({
-          id: m.user.id,
-          name: m.user.name,
-        }))}
+        columns={modalColumns}
+        members={modalMembers}
         initial={selectedTask as unknown as Parameters<typeof TaskEditModal>[0]['initial']}
       />
       {taskDelete.dialog}
