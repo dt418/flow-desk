@@ -28,6 +28,12 @@
 
 ## Session Log
 
+### 2026-07-05 22:43 — `41178df` (main)
+
+- **type:** fix
+- **msg:** labelsDeprecated→labels mapping, memoize board props, stabilize e2e tests
+- **author:** thanhd
+
 ### 2026-07-05 22:13 — `d36ee71` (main)
 
 - **type:** fix

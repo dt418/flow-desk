@@ -9,7 +9,12 @@ const sockets = new Map<FlowDeskNamespace, Socket>();
 
 function getSocket(ns: FlowDeskNamespace): Socket {
   const existing = sockets.get(ns);
-  if (existing && existing.connected) return existing;
+  if (existing && (existing.connected || (!existing.connected && !existing.disconnected)))
+    return existing;
+  if (existing) {
+    existing.removeAllListeners();
+    existing.disconnect();
+  }
 
   const apiUrl = import.meta.env.VITE_API_URL ?? '';
   const accessToken = (() => {

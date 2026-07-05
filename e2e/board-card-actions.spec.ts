@@ -7,9 +7,7 @@ test.describe('Board card actions (drag/drop conflict with Edit/Delete) @bugfix'
   }) => {
     await loginViaUI(page, seedUser.email, seedUser.password);
     await page.goto(`/board/${seedUser.workspaceId}`);
-
-    // Wait for board columns to load before interacting.
-    await expect(page.locator('[data-column-id]').first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('heading', { name: /board/i })).toBeVisible({ timeout: 15_000 });
 
     // Seed a task so we can target the kebab directly.
     await page
@@ -49,6 +47,11 @@ test.describe('Board card actions (drag/drop conflict with Edit/Delete) @bugfix'
     await card.hover();
     await kebab.click();
     await menu.getByRole('menuitem', { name: /delete/i }).click();
+
+    // Delete opens a confirmation dialog — click "Delete task" to confirm.
+    const confirmDialog = page.getByRole('alertdialog', { name: /delete task/i });
+    await expect(confirmDialog).toBeVisible({ timeout: 5_000 });
+    await confirmDialog.getByRole('button', { name: /delete task/i }).click();
 
     // Delete fires toast — no DragOverlay ghost.
     const toasts = page.locator('[data-sonner-toast]');
