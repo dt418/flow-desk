@@ -16,6 +16,7 @@ export default defineConfig({
     'src/notification-preferences.ts',
     'src/search.ts',
     'src/saved-filter.ts',
+    'src/webhook.ts',
   ],
   format: ['cjs', 'esm'],
   dts: true,

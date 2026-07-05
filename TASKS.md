@@ -176,14 +176,14 @@
 
 ### Epic: Full-text search across tasks, comments, and attachments
 
-| Story | Tasks | Estimate | Status |
-| --- | --- | --- | --- |
-| **P1-1**: Global search API + UI | tsvector indexes, search SQL, search service, search routes, search palette (Cmd+K), hooks, 8 integration + 4 web tests | 1d | passing |
+| Story                            | Tasks                                                                                                                   | Estimate | Status  |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | -------- | ------- |
+| **P1-1**: Global search API + UI | tsvector indexes, search SQL, search service, search routes, search palette (Cmd+K), hooks, 8 integration + 4 web tests | 1d       | passing |
 
 ## Sprint 20: Saved Views/Filters (Session 027)
 
 ### Epic: Save, load, and manage filter presets per workspace
 
-| Story | Tasks | Estimate | Status |
-| --- | --- | --- | --- |
-| **P1-2**: Saved views CRUD | SavedFilter migration, shared schemas, repository, service, routes, 9 integration tests, web feature module, SavedViewsBar + SavedViewsManager UI, 5 web tests | 1d | passing |
+| Story                      | Tasks                                                                                                                                                          | Estimate | Status  |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ------- |
+| **P1-2**: Saved views CRUD | SavedFilter migration, shared schemas, repository, service, routes, 9 integration tests, web feature module, SavedViewsBar + SavedViewsManager UI, 5 web tests | 1d       | passing |

@@ -27,6 +27,8 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Separator } from '@/components/ui/separator';
 import {
   Select,
   SelectContent,
@@ -124,10 +126,6 @@ const QUICK_DATE_OFFSETS: { label: string; days: number | null }[] = [
   { label: 'Tomorrow', days: 1 },
   { label: 'Next week', days: 7 },
 ];
-
-function FieldDivider() {
-  return <div className="border-t border-border" />;
-}
 
 function SectionLabel({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
@@ -282,176 +280,174 @@ export function TaskEditModal({
         className="flex max-h-[85vh] w-full flex-col gap-0 rounded-xl p-0 sm:max-w-2xl"
         aria-describedby="task-edit-desc"
       >
-        {/* Header */}
-        <DialogHeader className="flex-row items-center justify-between border-b border-border px-5 py-3">
-          <DialogTitle className="text-sm font-semibold tracking-tight">
-            {isEdit ? 'Edit task' : 'New task'}
-          </DialogTitle>
-          {isEdit && (
-            <div className="flex items-center gap-1 text-xs">
-              <button
-                type="button"
-                onClick={() => setTab('details')}
-                aria-current={tab === 'details' ? 'page' : undefined}
-                className={cn(
-                  'rounded-md px-2.5 py-1 font-medium transition-colors',
-                  tab === 'details'
-                    ? 'bg-muted text-foreground'
-                    : 'text-muted-foreground hover:text-foreground',
-                )}
-              >
-                Details
-              </button>
-              <button
-                type="button"
-                onClick={() => setTab('chat')}
-                aria-current={tab === 'chat' ? 'page' : undefined}
-                className={cn(
-                  'rounded-md px-2.5 py-1 font-medium transition-colors',
-                  tab === 'chat'
-                    ? 'bg-muted text-foreground'
-                    : 'text-muted-foreground hover:text-foreground',
-                )}
-              >
-                Chat
-              </button>
-              <button
-                type="button"
-                onClick={() => setTab('activity')}
-                aria-current={tab === 'activity' ? 'page' : undefined}
-                className={cn(
-                  'rounded-md px-2.5 py-1 font-medium transition-colors',
-                  tab === 'activity'
-                    ? 'bg-muted text-foreground'
-                    : 'text-muted-foreground hover:text-foreground',
-                )}
-              >
-                Activity
-              </button>
-            </div>
-          )}
-        </DialogHeader>
-        <DialogDescription id="task-edit-desc" className="sr-only">
-          {isEdit ? 'Edit task details' : 'Create a new task'}
-        </DialogDescription>
+        <Tabs
+          value={tab}
+          onValueChange={(v) => setTab(v as typeof tab)}
+          className="flex min-h-0 flex-1 flex-col"
+        >
+          {/* Header */}
+          <DialogHeader className="flex-row items-center justify-between border-b border-border px-5 py-3">
+            <DialogTitle className="text-sm font-semibold tracking-tight">
+              {isEdit ? 'Edit task' : 'New task'}
+            </DialogTitle>
+            {isEdit && (
+              <TabsList variant="line" className="text-xs">
+                <TabsTrigger value="details">Details</TabsTrigger>
+                <TabsTrigger value="chat">Chat</TabsTrigger>
+                <TabsTrigger value="activity">Activity</TabsTrigger>
+              </TabsList>
+            )}
+          </DialogHeader>
+          <DialogDescription id="task-edit-desc" className="sr-only">
+            {isEdit ? 'Edit task details' : 'Create a new task'}
+          </DialogDescription>
 
-        {tab === 'details' && (
-          <form
-            onSubmit={on_submit}
-            onKeyDown={handleFormKeyDown}
-            className="flex min-h-0 flex-1 flex-col"
-          >
-            <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-5">
-              {/* Title — highest priority */}
-              <Input
-                {...register('title')}
-                autoFocus
-                onKeyDown={handleTitleKeyDown}
-                placeholder="What needs to happen?"
-                aria-label="Task title"
-                aria-invalid={Boolean(errors.title)}
-                className="h-11 border-transparent bg-transparent px-0 text-base font-medium shadow-none focus-visible:border-transparent focus-visible:ring-0"
-              />
-              {errors.title && (
-                <p className="-mt-2 text-xs text-destructive" role="status">
-                  {errors.title.message}
-                </p>
-              )}
-
-              {/* Description */}
-              {previewDescription ? (
-                <div className="min-h-[44px] rounded-md border border-border bg-card px-3 py-2 text-sm leading-relaxed text-muted-foreground">
-                  {watchDescription.trim() ? (
-                    <div
-                      className="prose prose-sm prose-invert max-w-none [&_a]:text-primary [&_code]:rounded [&_code]:bg-muted [&_code]:px-1 [&_h1]:mb-1 [&_h2]:mb-1 [&_h3]:mb-1 [&_p]:mb-1.5 [&_ul]:mb-1.5"
-                      dangerouslySetInnerHTML={{
-                        __html: renderMarkdownToHtml(watchDescription),
-                      }}
-                    />
-                  ) : (
-                    <span className="text-muted-foreground">No description</span>
-                  )}
-                </div>
-              ) : (
-                <textarea
-                  {...register('description')}
-                  rows={2}
-                  placeholder="Add a description…"
-                  aria-label="Task description"
-                  className="w-full resize-y rounded-md border border-input bg-transparent px-3 py-2 text-sm leading-relaxed text-foreground placeholder:text-muted-foreground outline-none transition-colors focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring/40"
+          {tab === 'details' && (
+            <form
+              onSubmit={on_submit}
+              onKeyDown={handleFormKeyDown}
+              className="flex min-h-0 flex-1 flex-col"
+            >
+              <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-5">
+                {/* Title — highest priority */}
+                <Input
+                  {...register('title')}
+                  autoFocus
+                  onKeyDown={handleTitleKeyDown}
+                  placeholder="What needs to happen?"
+                  aria-label="Task title"
+                  aria-invalid={Boolean(errors.title)}
+                  className="h-11 border-transparent bg-transparent px-0 text-base font-medium shadow-none focus-visible:border-transparent focus-visible:ring-0"
                 />
-              )}
-              <button
-                type="button"
-                onClick={() => setPreviewDescription((v) => !v)}
-                className="mt-1 inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
-                aria-label={previewDescription ? 'Edit description' : 'Preview description'}
-              >
-                {previewDescription ? (
-                  <>
-                    <EyeOff className="h-3 w-3" /> Edit
-                  </>
-                ) : (
-                  <>
-                    <Eye className="h-3 w-3" /> Preview
-                  </>
+                {errors.title && (
+                  <p className="-mt-2 text-xs text-destructive" role="status">
+                    {errors.title.message}
+                  </p>
                 )}
-              </button>
 
-              <FieldDivider />
-
-              {/* Column + Status */}
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <div className="space-y-1.5">
-                  <SectionLabel className="flex items-center gap-1.5">
-                    <Columns3 className="h-3 w-3" /> Column
-                  </SectionLabel>
-                  <Controller
-                    name="columnId"
-                    control={control}
-                    render={({ field }) => (
-                      <Select value={field.value} onValueChange={field.onChange}>
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Pick a column" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {columns.map((c) => (
-                            <SelectItem key={c.id} value={c.id}>
-                              {c.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                {/* Description */}
+                {previewDescription ? (
+                  <div className="min-h-[44px] rounded-md border border-border bg-card px-3 py-2 text-sm leading-relaxed text-muted-foreground">
+                    {watchDescription.trim() ? (
+                      <div
+                        className="prose prose-sm prose-invert max-w-none [&_a]:text-primary [&_code]:rounded [&_code]:bg-muted [&_code]:px-1 [&_h1]:mb-1 [&_h2]:mb-1 [&_h3]:mb-1 [&_p]:mb-1.5 [&_ul]:mb-1.5"
+                        dangerouslySetInnerHTML={{
+                          __html: renderMarkdownToHtml(watchDescription),
+                        }}
+                      />
+                    ) : (
+                      <span className="text-muted-foreground">No description</span>
                     )}
+                  </div>
+                ) : (
+                  <textarea
+                    {...register('description')}
+                    rows={2}
+                    placeholder="Add a description…"
+                    aria-label="Task description"
+                    className="w-full resize-y rounded-md border border-input bg-transparent px-3 py-2 text-sm leading-relaxed text-foreground placeholder:text-muted-foreground outline-none transition-colors focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring/40"
                   />
+                )}
+                <button
+                  type="button"
+                  onClick={() => setPreviewDescription((v) => !v)}
+                  className="mt-1 inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+                  aria-label={previewDescription ? 'Edit description' : 'Preview description'}
+                >
+                  {previewDescription ? (
+                    <>
+                      <EyeOff className="h-3 w-3" /> Edit
+                    </>
+                  ) : (
+                    <>
+                      <Eye className="h-3 w-3" /> Preview
+                    </>
+                  )}
+                </button>
+
+                <Separator />
+
+                {/* Column + Status */}
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <SectionLabel className="flex items-center gap-1.5">
+                      <Columns3 className="h-3 w-3" /> Column
+                    </SectionLabel>
+                    <Controller
+                      name="columnId"
+                      control={control}
+                      render={({ field }) => (
+                        <Select value={field.value} onValueChange={field.onChange}>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Pick a column" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {columns.map((c) => (
+                              <SelectItem key={c.id} value={c.id}>
+                                {c.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <SectionLabel className="flex items-center gap-1.5">
+                      <CircleDot className="h-3 w-3" /> Status
+                    </SectionLabel>
+                    <Controller
+                      name="status"
+                      control={control}
+                      render={({ field }) => (
+                        <Select value={field.value} onValueChange={field.onChange}>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Pick status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {(
+                              [
+                                'BACKLOG',
+                                'TODO',
+                                'IN_PROGRESS',
+                                'IN_REVIEW',
+                                'DONE',
+                                'BLOCKED',
+                              ] as const
+                            ).map((s) => (
+                              <SelectItem key={s} value={s}>
+                                <span className="flex items-center gap-2">
+                                  <span className={cn('h-2 w-2 rounded-full', STATUS_TONE[s])} />
+                                  {s.replace('_', ' ')}
+                                </span>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                  </div>
                 </div>
+
+                {/* Priority */}
                 <div className="space-y-1.5">
                   <SectionLabel className="flex items-center gap-1.5">
-                    <CircleDot className="h-3 w-3" /> Status
+                    <Flag className="h-3 w-3" /> Priority
                   </SectionLabel>
                   <Controller
-                    name="status"
+                    name="priority"
                     control={control}
                     render={({ field }) => (
                       <Select value={field.value} onValueChange={field.onChange}>
                         <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Pick status" />
+                          <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {(
-                            [
-                              'BACKLOG',
-                              'TODO',
-                              'IN_PROGRESS',
-                              'IN_REVIEW',
-                              'DONE',
-                              'BLOCKED',
-                            ] as const
-                          ).map((s) => (
-                            <SelectItem key={s} value={s}>
+                          {(['LOW', 'MEDIUM', 'HIGH', 'URGENT'] as const).map((p) => (
+                            <SelectItem key={p} value={p}>
                               <span className="flex items-center gap-2">
-                                <span className={cn('h-2 w-2 rounded-full', STATUS_TONE[s])} />
-                                {s.replace('_', ' ')}
+                                <span className={cn('h-2 w-2 rounded-full', PRIORITY_TONE[p])} />
+                                {p.charAt(0) + p.slice(1).toLowerCase()}
                               </span>
                             </SelectItem>
                           ))}
@@ -460,226 +456,198 @@ export function TaskEditModal({
                     )}
                   />
                 </div>
-              </div>
 
-              {/* Priority */}
-              <div className="space-y-1.5">
-                <SectionLabel className="flex items-center gap-1.5">
-                  <Flag className="h-3 w-3" /> Priority
-                </SectionLabel>
-                <Controller
-                  name="priority"
-                  control={control}
-                  render={({ field }) => (
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger className="w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {(['LOW', 'MEDIUM', 'HIGH', 'URGENT'] as const).map((p) => (
-                          <SelectItem key={p} value={p}>
-                            <span className="flex items-center gap-2">
-                              <span className={cn('h-2 w-2 rounded-full', PRIORITY_TONE[p])} />
-                              {p.charAt(0) + p.slice(1).toLowerCase()}
-                            </span>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-              </div>
+                <Separator />
 
-              <FieldDivider />
-
-              {/* Assignee + Due Date */}
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <SectionLabel className="flex items-center gap-1.5">
-                      <User className="h-3 w-3" /> Assignee
-                    </SectionLabel>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="xs"
-                      onClick={handleSuggest}
-                      disabled={suggestAssignee.isPending || members.length === 0}
-                      className="gap-1 text-xs text-primary hover:text-primary/80"
-                      title="AI-suggest assignee based on workload"
-                    >
-                      {suggestAssignee.isPending ? (
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                      ) : (
-                        <Sparkles className="h-3 w-3" />
-                      )}
-                      {suggestAssignee.isPending ? 'Thinking…' : 'Suggest'}
-                    </Button>
-                  </div>
-                  <Controller
-                    name="assigneeId"
-                    control={control}
-                    render={({ field }) => {
-                      const selected = members.find((m) => m.id === field.value);
-                      return (
-                        <Select value={field.value ?? ''} onValueChange={field.onChange}>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Unassigned">
-                              {selected && selected.name ? (
-                                <span className="flex items-center gap-2">
-                                  <MemberAvatar
-                                    name={selected.name}
-                                    avatarUrl={selected.avatarUrl}
-                                  />
-                                  <span>{selected.name}</span>
-                                </span>
-                              ) : (
-                                <span className="text-muted-foreground">Unassigned</span>
-                              )}
-                            </SelectValue>
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="">Unassigned</SelectItem>
-                            {members.map((m) => (
-                              <SelectItem key={m.id} value={m.id}>
-                                <span className="flex items-center gap-2">
-                                  <MemberAvatar name={m.name} avatarUrl={m.avatarUrl} />
-                                  <span>{m.name}</span>
-                                </span>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      );
-                    }}
-                  />
-                  {aiSuggestions && (
-                    <div className="space-y-1 pt-1">
-                      {aiSuggestions.map((s) => {
-                        const member = members.find((m) => m.id === s.userId);
-                        return (
-                          <button
-                            key={s.userId}
-                            type="button"
-                            onClick={() => {
-                              setValue('assigneeId', s.userId, { shouldValidate: true });
-                              setAiSuggestions(null);
-                            }}
-                            className="flex w-full items-center justify-between rounded-md border border-border bg-card px-2 py-1.5 text-left transition-colors hover:border-primary/40 hover:bg-primary/5"
-                            title={`Assign to ${member?.name ?? 'this user'}`}
-                          >
-                            <span className="text-xs font-medium text-foreground">
-                              {member?.name ?? s.userId.slice(0, 8)}
-                            </span>
-                            <span className="max-w-[160px] truncate text-xs text-muted-foreground">
-                              {s.reason}
-                            </span>
-                          </button>
-                        );
-                      })}
-                      {suggestAssignee.data?.fallback && (
-                        <p className="text-[11px] text-[var(--warning)]">
-                          Rule-based (AI unavailable)
-                        </p>
-                      )}
+                {/* Assignee + Due Date */}
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <SectionLabel className="flex items-center gap-1.5">
+                        <User className="h-3 w-3" /> Assignee
+                      </SectionLabel>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="xs"
+                        onClick={handleSuggest}
+                        disabled={suggestAssignee.isPending || members.length === 0}
+                        className="gap-1 text-xs text-primary hover:text-primary/80"
+                        title="AI-suggest assignee based on workload"
+                      >
+                        {suggestAssignee.isPending ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <Sparkles className="h-3 w-3" />
+                        )}
+                        {suggestAssignee.isPending ? 'Thinking…' : 'Suggest'}
+                      </Button>
                     </div>
-                  )}
-                </div>
-                <div className="space-y-1.5">
-                  <SectionLabel className="flex items-center gap-1.5">
-                    <Calendar className="h-3 w-3" /> Due date
-                  </SectionLabel>
-                  <Controller
-                    name="dueDate"
-                    control={control}
-                    render={({ field }) => (
-                      <div className="space-y-1.5">
-                        <DatePicker
-                          value={field.value}
-                          onChange={field.onChange}
-                          placeholder="Pick a date"
-                        />
-                        <div className="flex flex-wrap items-center gap-1">
-                          {QUICK_DATE_OFFSETS.map((q) => {
-                            const d = new Date();
-                            d.setDate(d.getDate() + (q.days ?? 0));
-                            const value = toDateInputValue(d);
-                            const active = field.value === value;
-                            return (
-                              <button
-                                key={q.label}
-                                type="button"
-                                onClick={() => field.onChange(value)}
-                                className={cn(
-                                  'rounded-md border px-2 py-0.5 text-xs font-medium transition-colors',
-                                  active
-                                    ? 'border-primary/50 bg-primary/10 text-primary'
-                                    : 'border-border bg-card text-muted-foreground hover:border-muted-foreground/50 hover:text-foreground',
+                    <Controller
+                      name="assigneeId"
+                      control={control}
+                      render={({ field }) => {
+                        const selected = members.find((m) => m.id === field.value);
+                        return (
+                          <Select value={field.value ?? ''} onValueChange={field.onChange}>
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Unassigned">
+                                {selected && selected.name ? (
+                                  <span className="flex items-center gap-2">
+                                    <MemberAvatar
+                                      name={selected.name}
+                                      avatarUrl={selected.avatarUrl}
+                                    />
+                                    <span>{selected.name}</span>
+                                  </span>
+                                ) : (
+                                  <span className="text-muted-foreground">Unassigned</span>
                                 )}
-                              >
-                                {q.label}
-                              </button>
-                            );
-                          })}
-                        </div>
+                              </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="">Unassigned</SelectItem>
+                              {members.map((m) => (
+                                <SelectItem key={m.id} value={m.id}>
+                                  <span className="flex items-center gap-2">
+                                    <MemberAvatar name={m.name} avatarUrl={m.avatarUrl} />
+                                    <span>{m.name}</span>
+                                  </span>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        );
+                      }}
+                    />
+                    {aiSuggestions && (
+                      <div className="space-y-1 pt-1">
+                        {aiSuggestions.map((s) => {
+                          const member = members.find((m) => m.id === s.userId);
+                          return (
+                            <button
+                              key={s.userId}
+                              type="button"
+                              onClick={() => {
+                                setValue('assigneeId', s.userId, { shouldValidate: true });
+                                setAiSuggestions(null);
+                              }}
+                              className="flex w-full items-center justify-between rounded-md border border-border bg-card px-2 py-1.5 text-left transition-colors hover:border-primary/40 hover:bg-primary/5"
+                              title={`Assign to ${member?.name ?? 'this user'}`}
+                            >
+                              <span className="text-xs font-medium text-foreground">
+                                {member?.name ?? s.userId.slice(0, 8)}
+                              </span>
+                              <span className="max-w-[160px] truncate text-xs text-muted-foreground">
+                                {s.reason}
+                              </span>
+                            </button>
+                          );
+                        })}
+                        {suggestAssignee.data?.fallback && (
+                          <p className="text-[11px] text-[var(--warning)]">
+                            Rule-based (AI unavailable)
+                          </p>
+                        )}
                       </div>
                     )}
-                  />
+                  </div>
+                  <div className="space-y-1.5">
+                    <SectionLabel className="flex items-center gap-1.5">
+                      <Calendar className="h-3 w-3" /> Due date
+                    </SectionLabel>
+                    <Controller
+                      name="dueDate"
+                      control={control}
+                      render={({ field }) => (
+                        <div className="space-y-1.5">
+                          <DatePicker
+                            value={field.value}
+                            onChange={field.onChange}
+                            placeholder="Pick a date"
+                          />
+                          <div className="flex flex-wrap items-center gap-1">
+                            {QUICK_DATE_OFFSETS.map((q) => {
+                              const d = new Date();
+                              d.setDate(d.getDate() + (q.days ?? 0));
+                              const value = toDateInputValue(d);
+                              const active = field.value === value;
+                              return (
+                                <button
+                                  key={q.label}
+                                  type="button"
+                                  onClick={() => field.onChange(value)}
+                                  className={cn(
+                                    'rounded-md border px-2 py-0.5 text-xs font-medium transition-colors',
+                                    active
+                                      ? 'border-primary/50 bg-primary/10 text-primary'
+                                      : 'border-border bg-card text-muted-foreground hover:border-muted-foreground/50 hover:text-foreground',
+                                  )}
+                                >
+                                  {q.label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    />
+                  </div>
                 </div>
               </div>
+
+              {/* Footer — sticky, always visible */}
+              <div className="flex items-center justify-end gap-2 border-t border-border px-5 py-3">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={onClose}
+                  size="sm"
+                  className="h-9 px-3"
+                >
+                  Cancel
+                </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button type="submit" disabled={isSubmitting} size="sm" className="h-9 px-4">
+                      {isSubmitting
+                        ? isEdit
+                          ? 'Saving…'
+                          : 'Creating…'
+                        : isEdit
+                          ? 'Save'
+                          : 'Create task'}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" sideOffset={6}>
+                    <span className="flex items-center gap-1.5">
+                      <kbd className="rounded border border-border bg-muted px-1 font-mono text-[10px] text-muted-foreground">
+                        {isMac ? '⌘' : 'Ctrl'}
+                      </kbd>
+                      <span className="text-muted-foreground">+</span>
+                      <kbd className="rounded border border-border bg-muted px-1 font-mono text-[10px] text-muted-foreground">
+                        ↵
+                      </kbd>
+                      <span className="text-muted-foreground">to submit</span>
+                    </span>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+            </form>
+          )}
+
+          {tab === 'chat' && initial && (
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+              <TaskChat taskId={initial.id} />
             </div>
+          )}
 
-            {/* Footer — sticky, always visible */}
-            <div className="flex items-center justify-end gap-2 border-t border-border px-5 py-3">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={onClose}
-                size="sm"
-                className="h-9 px-3"
-              >
-                Cancel
-              </Button>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button type="submit" disabled={isSubmitting} size="sm" className="h-9 px-4">
-                    {isSubmitting
-                      ? isEdit
-                        ? 'Saving…'
-                        : 'Creating…'
-                      : isEdit
-                        ? 'Save'
-                        : 'Create task'}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="top" sideOffset={6}>
-                  <span className="flex items-center gap-1.5">
-                    <kbd className="rounded border border-border bg-muted px-1 font-mono text-[10px] text-muted-foreground">
-                      {isMac ? '⌘' : 'Ctrl'}
-                    </kbd>
-                    <span className="text-muted-foreground">+</span>
-                    <kbd className="rounded border border-border bg-muted px-1 font-mono text-[10px] text-muted-foreground">
-                      ↵
-                    </kbd>
-                    <span className="text-muted-foreground">to submit</span>
-                  </span>
-                </TooltipContent>
-              </Tooltip>
+          {tab === 'activity' && initial && (
+            <div className="min-h-0 flex-1 overflow-y-auto p-5">
+              <ActivityTimeline taskId={initial.id} />
             </div>
-          </form>
-        )}
-
-        {tab === 'chat' && initial && (
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-            <TaskChat taskId={initial.id} />
-          </div>
-        )}
-
-        {tab === 'activity' && initial && (
-          <div className="min-h-0 flex-1 overflow-y-auto p-5">
-            <ActivityTimeline taskId={initial.id} />
-          </div>
-        )}
+          )}
+        </Tabs>
       </DialogContent>
     </Dialog>
   );

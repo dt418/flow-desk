@@ -65,10 +65,9 @@ describe('SearchPalette', () => {
     renderPalette();
     const input = screen.getByRole('textbox', { name: 'Search query' });
     await user.type(input, 'report');
-    await waitFor(
-      () => expect(screen.getByText('Report draft')).toBeInTheDocument(),
-      { timeout: 2000 },
-    );
+    await waitFor(() => expect(screen.getByText('Report draft')).toBeInTheDocument(), {
+      timeout: 2000,
+    });
     expect(mockApi).toHaveBeenCalledWith(
       '/api/search?q=report&limit=20',
       expect.objectContaining({ schema: expect.anything() }),

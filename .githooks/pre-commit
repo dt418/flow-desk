@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
-# Pre-commit hook: block accidental secret commits.
+# Pre-commit hook: block accidental secret commits + guardrails.
 #
-# Two layers of defense:
+# Three layers of defense:
 #   1. Block staged files matching .env* or known secret paths.
 #   2. Grep staged content for high-entropy secret patterns.
+#   3. Block large files (>1MB) and check gitignore coverage.
 #
 # Install: pnpm setup:hooks   (or:  git config core.hooksPath .githooks)
 # Bypass (emergency only):    git commit --no-verify
+# Run all guardrails:        pnpm guardrails
 
 set -euo pipefail
 
@@ -177,4 +179,56 @@ if [ "$content_violations" -gt 0 ]; then
 fi
 
 ok "pre-commit secret check passed"
+
+# --- Layer 3: file size guard --------------------------------------------------
+# Block files > 1MB from being committed.
+
+MAX_FILE_SIZE=$((1024 * 1024))  # 1 MB
+large_file_violations=0
+
+for file in $STAGED_FILES; do
+  case "$file" in
+    node_modules/*|dist/*|.turbo/*|pnpm-lock.yaml|*.min.js|*.min.css) continue ;;
+  esac
+  if [ -f "$file" ]; then
+    file_size=$(wc -c < "$file" 2>/dev/null || echo 0)
+    if [ "$file_size" -gt "$MAX_FILE_SIZE" ]; then
+      size_kb=$((file_size / 1024))
+      warn "Large file: $file (${size_kb}KB > 1024KB). Use Git LFS or compress."
+      large_file_violations=$((large_file_violations + 1))
+    fi
+  fi
+done
+
+if [ "$large_file_violations" -gt 0 ]; then
+  fail "Refusing to commit $large_file_violations large file(s). Use Git LFS: git lfs track '*'"
+fi
+
+# --- Layer 4: gitignore audit --------------------------------------------------
+# Ensure critical patterns are in .gitignore.
+
+REQUIRED_GITIGNORE_PATTERNS=(
+  '\.env$'
+  '\.env\.local$'
+  'node_modules'
+  '\.turbo'
+  'dist'
+  'coverage'
+  '.DS_Store'
+  '\.log$'
+)
+
+gitignore_violations=0
+for pattern in "${REQUIRED_GITIGNORE_PATTERNS[@]}"; do
+  if ! grep -qF "$pattern" .gitignore 2>/dev/null; then
+    warn "Missing .gitignore pattern: $pattern"
+    gitignore_violations=$((gitignore_violations + 1))
+  fi
+done
+
+if [ "$gitignore_violations" -gt 0 ]; then
+  fail "Missing $gitignore_violations .gitignore pattern(s). Add them before committing."
+fi
+
+ok "pre-commit guardrails passed"
 exit 0

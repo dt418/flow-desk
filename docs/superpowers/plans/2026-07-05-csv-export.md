@@ -35,19 +35,23 @@
 ## File Structure
 
 **Shared (packages/shared):**
+
 - `packages/shared/src/task.ts` — Modify: add `exportTasksQuerySchema = listTasksQuerySchema.omit({cursor:true, limit:true})` + type export.
 
 **Backend (apps/api):**
+
 - `apps/api/src/modules/task/task.service.ts` — Modify: extract `buildTaskWhere(query)` shared by `list`+`exportTasks`; add `exportTasks(query, userId)`; add `csvEscapeField(s)` + `serializeTaskCsvRow(task)`.
 - `apps/api/src/modules/task/task.routes.ts` — Modify: add `GET /export` BEFORE `GET /:id`; `zValidator('query', exportTasksQuerySchema)`; stream response.
 - `apps/api/tests/integration/task-export.test.ts` — Create: 13 integration tests.
 
 **Frontend (apps/web):**
+
 - `apps/web/src/features/task/api.ts` — Modify: add `exportTasksCsv(params)` — build URL, `window.location.href = url`.
 - `apps/web/src/pages/list.tsx` — Modify: add "Export CSV" `<Button>` in toolbar after `SavedViewsBar`; onClick calls `exportTasksCsv({workspaceId, status, priority})`.
 - `apps/web/src/features/task/components/ExportCsvButton.test.tsx` — Create: 2 component tests.
 
 **Artifacts:**
+
 - `feature_list.json` — Modify: add `P1-3` entry, set `in_progress` then `passing`.
 - `claude-progress.md` — Modify: append Session 028 record.
 
@@ -78,7 +82,15 @@
 
 - [ ] **2.1** In `apps/api/src/modules/task/task.service.ts`, extract shared `where` builder. Current `list()` builds `where: Prisma.TaskWhereInput` inline (lines ~44-60). Extract to:
   ```ts
-  function buildTaskWhere(query: { columnId?: string; status?: TaskStatus; priority?: TaskPriority; assigneeId?: string; search?: string; dueBefore?: string; dueAfter?: string }): Prisma.TaskWhereInput {
+  function buildTaskWhere(query: {
+    columnId?: string;
+    status?: TaskStatus;
+    priority?: TaskPriority;
+    assigneeId?: string;
+    search?: string;
+    dueBefore?: string;
+    dueAfter?: string;
+  }): Prisma.TaskWhereInput {
     return {
       workspaceId: query.workspaceId,
       ...(query.columnId ? { columnId: query.columnId } : {}),
@@ -86,7 +98,14 @@
       ...(query.priority ? { priority: query.priority } : {}),
       ...(query.assigneeId ? { assigneeId: query.assigneeId } : {}),
       ...(query.search ? { title: { contains: query.search, mode: 'insensitive' } } : {}),
-      ...(query.dueBefore || query.dueAfter ? { dueDate: { ...(query.dueBefore ? { lte: new Date(query.dueBefore) } : {}), ...(query.dueAfter ? { gte: new Date(query.dueAfter) } : {}) } } : {}),
+      ...(query.dueBefore || query.dueAfter
+        ? {
+            dueDate: {
+              ...(query.dueBefore ? { lte: new Date(query.dueBefore) } : {}),
+              ...(query.dueAfter ? { gte: new Date(query.dueAfter) } : {}),
+            },
+          }
+        : {}),
     };
   }
   ```
@@ -103,7 +122,9 @@
   ```ts
   // Task shape: prisma.task.findMany with include { assignee: {select:{email:true}}, assignments: { include: { label: { select: { name: true } } } } }
   function serializeTaskCsvRow(task: {
-    status: string; title: string; priority: string;
+    status: string;
+    title: string;
+    priority: string;
     dueDate: Date | null;
     assignee: { email: string } | null;
     assignments: { label: { name: string } }[];
@@ -111,7 +132,7 @@
     // Canonical source = TaskLabelAssignment join (schema.prisma:238).
     // labelsDeprecated is the F2 dual-write legacy array kept for migration
     // safety — do not read from it here; it can leak stale label names.
-    const labels = task.assignments.map(a => a.label.name).join(';');
+    const labels = task.assignments.map((a) => a.label.name).join(';');
     const fields = [
       task.status,
       task.title,
@@ -151,6 +172,7 @@
 
 - [ ] **3.1** In `apps/api/src/modules/task/task.routes.ts`, import `exportTasksQuerySchema`, `serializeTaskCsvRow` from service. Import `z` if not already.
 - [ ] **3.2** Register `GET /export` AFTER `GET /` (line 23) and BEFORE `GET /:id` (line 49):
+
   ```ts
   taskRouter.get(
     '/export',
@@ -177,7 +199,9 @@
           // UTF-8 BOM so Excel opens UTF-8 correctly
           controller.enqueue(encoder.encode('\uFEFF'));
           // Header row
-          controller.enqueue(encoder.encode('Status,Title,Assignee Email,Priority,Due Date,Labels\r\n'));
+          controller.enqueue(
+            encoder.encode('Status,Title,Assignee Email,Priority,Due Date,Labels\r\n'),
+          );
           for (const row of rows) {
             controller.enqueue(encoder.encode(serializeTaskCsvRow(row)));
           }
@@ -191,6 +215,7 @@
     },
   );
   ```
+
 - [ ] **3.3** Confirm `prisma` import already at top of routes file (it is — used by other handlers). If not, import from `../../shared/lib/prisma`.
 - [ ] **3.4** Confirm route order by reading file: `GET /` → `GET /export` → `GET /:id`. Run `grep -n "taskRouter.get\|taskRouter.post" task.routes.ts | head -5` and verify `/export` line number < `/:id` line number.
 

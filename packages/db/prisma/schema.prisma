@@ -123,6 +123,7 @@ model Workspace {
   notificationSetting WorkspaceNotificationSetting?
   userNotificationPreferences UserNotificationPreference[]
   savedFilters                SavedFilter[]      @relation("SavedFilterWorkspace")
+  webhooks                    Webhook[]          @relation("WebhookWorkspaces")
 
   @@index([slug])
   @@index([ownerId])
@@ -230,6 +231,7 @@ model TaskActivity {
 
   task Task @relation("TaskActivities", fields: [taskId], references: [id], onDelete: Cascade)
   user User @relation("UserActivities", fields: [userId], references: [id], onDelete: Cascade)
+  deliveries WebhookDelivery[] @relation("WebhookDeliveries")
 
   @@index([taskId, createdAt(sort: Desc)])
   @@index([userId])
@@ -442,4 +444,42 @@ model EmailJob {
   updatedAt   DateTime @updatedAt
   @@index([userId, status])
   @@index([scheduledAt])
+}
+
+model Webhook {
+  id          String   @id @default(cuid())
+  workspaceId String
+  url         String
+  secret      String
+  events      String[]
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+
+  workspace   Workspace          @relation("WebhookWorkspaces", fields: [workspaceId], references: [id], onDelete: Cascade)
+  deliveries  WebhookDelivery[]  @relation("WebhookDeliveries")
+
+  @@index([workspaceId, isActive])
+  @@index([workspaceId, deletedAt])
+}
+
+model WebhookDelivery {
+  id            String   @id @default(cuid())
+  webhookId     String
+  activityId    String
+  status        String
+  attemptCount  Int      @default(0)
+  responseCode  Int?
+  responseBody  String?
+  deliveredAt   DateTime?
+  error         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  webhook  Webhook      @relation("WebhookDeliveries", fields: [webhookId], references: [id], onDelete: Cascade)
+  activity TaskActivity @relation("WebhookDeliveries", fields: [activityId], references: [id], onDelete: Cascade)
+
+  @@index([webhookId, createdAt])
+  @@index([status, createdAt])
 }

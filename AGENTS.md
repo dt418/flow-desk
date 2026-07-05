@@ -37,6 +37,124 @@ If baseline verification is already failing, fix that first. Do not stack new fe
 - Do **not** silently change verification rules during implementation.
 - Prefer durable repo artifacts over chat summaries.
 
+## Pre-Commit Gate (Non-Negotiable)
+
+**Every commit must pass the full gate. No exceptions. No `--no-verify`.**
+
+Before staging or committing, run:
+
+```bash
+pnpm verify
+```
+
+This executes both pre-commit and pre-push lefthook hooks and ensures:
+
+| Check              | Command                            | What it catches                     |
+| ------------------ | ---------------------------------- | ----------------------------------- |
+| Secret scan        | `bash .githooks/pre-commit`        | Accidental credential commits       |
+| Format             | `pnpm format:check`                | Prettier style drift                |
+| Lint               | `pnpm lint`                        | Code quality / unused imports       |
+| Typecheck          | `pnpm typecheck`                   | Type errors across all packages     |
+| Unit tests         | `pnpm --filter ... test:unit`      | Logic regressions                   |
+| Integration tests  | `pnpm --filter ... test:integration`| API contract / DB regressions      |
+| Build              | `pnpm build`                       | Compilation / bundling failures     |
+| Docs alignment     | Manual review                      | `feature_list.json`, `claude-progress.md` consistent |
+
+If any check fails, **fix the failure first** — do not commit partial work on top of a broken state.
+
+Single-package quick-check (before full `pnpm verify`):
+
+```bash
+pnpm --filter @flow-desk/api lint && pnpm --filter @flow-desk/api typecheck
+pnpm --filter @flow-desk/web lint && pnpm --filter @flow-desk/web typecheck
+pnpm --filter @flow-desk/shared lint && pnpm --filter @flow-desk/shared typecheck
+```
+
+Formatting fix shortcut:
+
+```bash
+pnpm format          # writes fixes
+pnpm format:check    # verifies (CI uses this)
+```
+
+**Rule of thumb**: if `pnpm verify` would pass locally, CI will pass. If you skip it, CI will catch it — and the next agent wastes time fixing it.
+
+## Guardrails
+
+Automated safety checks that run in CI and locally. The goal: catch bad state before it becomes a commit, PR, or deploy.
+
+### What runs in CI (unbypassable)
+
+The `guardrails` job in `.github/workflows/ci.yml` runs on every push/PR to `main`:
+
+| Check | What it does | Fail/Warn |
+|-------|-------------|-----------|
+| `pnpm audit` | Catches high-severity dependency vulnerabilities | FAIL |
+| gitignore coverage | Ensures `.env`, `node_modules`, `dist`, etc. are ignored | FAIL |
+| `--no-verify` detection | Warns if recent commits used `--no-verify` | WARN |
+| console.log in source | Flags `console.log` in non-test source files | WARN |
+
+### What runs locally (`pnpm guardrails`)
+
+```bash
+pnpm guardrails          # all checks
+pnpm guardrails secrets  # one category
+pnpm guardrails audit    # one category
+```
+
+Categories: `secrets`, `large-files`, `lockfile`, `gitignore`, `audit`, `console`
+
+| Check | Threshold | Action |
+|-------|-----------|--------|
+| Secret scan | Any match | FAIL — fix before commit |
+| Large files | > 1MB | FAIL — use Git LFS or compress |
+| Lockfile sync | `package.json` changed without `pnpm-lock.yaml` | FAIL — run `pnpm install` |
+| Gitignore | Missing patterns for `.env`, `node_modules`, etc. | FAIL — add pattern |
+| Dependency audit | High-severity CVE | FAIL — update/patch |
+| console.log | In non-test `.ts`/`.tsx` source | FAIL — use `logger` |
+
+### Enforcement layers
+
+```
+Layer 1: pnpm guardrails (pre-commit)     → blocks bad state locally
+Layer 2: lefthook (format+lint+typecheck)  → blocks code quality drift
+Layer 3: pnpm verify (pre-push)           → full gate before push
+Layer 4: CI guardrails job                → unbypassable on main
+Layer 5: CI quality+tests+build           → full validation
+```
+
+**No layer is bypassable.** If you use `--no-verify`, CI will catch it. If CI is bypassed, branch protection blocks merge.
+
+### Gitignore required patterns
+
+```gitignore
+# Secrets — NEVER commit these
+.env
+.env.local
+.env.*.local
+
+# Build artifacts
+dist
+build
+.turbo
+
+# Dependencies
+node_modules
+
+# IDE/OS
+.vscode
+.idea
+.DS_Store
+
+# Coverage
+coverage
+
+# Logs
+*.log
+```
+
+If any pattern is missing, `pnpm guardrails gitignore` will flag it and CI will fail.
+
 ## Caveman Auto-Toggle (Planning Workflow)
 
 Caveman compression auto-toggles around Superpowers phases to save tokens without hurting clarity where it matters:
@@ -180,6 +298,7 @@ Before ending:
 - ❌ Poll where WebSocket/SSE works.
 - ❌ Store secrets in env vars accessible to frontend bundle.
 - ❌ Praise approaches that create debt. Challenge them.
+- ❌ Commit without running `pnpm verify` first.
 
 ## Golden Rule
 

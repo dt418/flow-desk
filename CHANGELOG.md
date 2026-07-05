@@ -74,12 +74,14 @@ See `claude-progress.md` and `git log --oneline` for sessions 001-010.
 ### What changed
 
 **Backend:**
+
 - `packages/db/prisma/migrations/20260704182043_search_tsvector/migration.sql` — GENERATED ALWAYS AS ... STORED tsvector on Task (title+description), Comment (content), Attachment (filename) + GIN indexes; `regexp_replace` normalizes non-alphanumerics to spaces so `invoice-2026.xlsx` → `invoice 2026 xlsx`
 - `packages/shared/src/search.ts` — searchQuerySchema, searchResultSchema, searchResponseSchema
 - `apps/api/src/modules/search/{search.repository,search.service,search.routes,index}.ts` — raw SQL with CROSS JOIN LATERAL plainto_tsquery + WorkspaceMember membership join + deletedAt IS NULL filter
 - `apps/api/src/app.ts` — `app.route('/api/search', searchRouter)`
 
 **Frontend:**
+
 - `apps/web/src/features/search/{api,hooks,types,schemas,index}.ts` — search API client + useSearch hook with 200ms debounce
 - `apps/web/src/features/search/components/SearchPalette.tsx` — Cmd+K palette in AppShell
 
@@ -94,12 +96,14 @@ See `claude-progress.md` and `git log --oneline` for sessions 001-010.
 ### What changed
 
 **Backend:**
+
 - `packages/db/prisma/migrations/20260705085351_saved_filter/migration.sql` — SavedFilter model + partial unique index `WHERE deletedAt IS NULL`
 - `packages/shared/src/saved-filter.ts` — savedFilterQuerySchema, savedFilterSchema, createSavedFilterSchema, updateSavedFilterSchema
 - `apps/api/src/modules/saved-filter/{saved-filter.repository,saved-filter.service,saved-filter.routes,index}.ts` — CRUD at /api/workspaces/:wid/saved-filters with assertMembership guard
 - `packages/db/src/prisma-extension.ts` — synced ChatChannel/ChatMessage/SavedFilter into SOFT_DELETE_MODELS (pre-existing drift fix)
 
 **Frontend:**
+
 - `apps/web/src/features/saved-filter/{api,hooks,types,schemas,index}.ts` — web feature module with useSavedFilters, useCreate/Update/Delete hooks
 - `apps/web/src/features/saved-filter/components/SavedViewsBar.tsx` — list page toolbar: view selector + save dialog
 - `apps/web/src/features/saved-filter/components/SavedViewsManager.tsx` — settings page: inline rename, toggle shared/private, delete with AlertDialog

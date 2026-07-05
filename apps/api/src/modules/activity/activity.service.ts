@@ -2,6 +2,8 @@ import { prisma } from '../../shared/lib/prisma';
 import { assertMembership } from '../../shared/lib/access';
 import { NotFoundError } from '../../shared/errors';
 import * as repo from './activity.repository';
+import * as webhookRepo from '../webhook/webhook.repository';
+import { webhookQueue } from '../../workers/webhook/queue';
 import type { ActivityAction } from '@flow-desk/shared/task';
 import type { TaskActivity } from '@flowdesk/db';
 
@@ -17,7 +19,39 @@ export interface RecordInput {
 
 export async function record(input: RecordInput): Promise<TaskActivity | null> {
   try {
-    return await repo.create(prisma, input);
+    const activity = await repo.create(prisma, input);
+
+    // Fan-out to webhooks
+    if (activity) {
+      const task = await prisma.task.findUnique({
+        where: { id: activity.taskId },
+        select: { workspaceId: true },
+      });
+
+      if (task) {
+        const webhooks = await webhookRepo.listActiveByWorkspace(prisma, task.workspaceId);
+
+        for (const webhook of webhooks) {
+          if (webhook.events.includes(activity.action)) {
+            await webhookQueue.add('webhook', {
+              webhookId: webhook.id,
+              activityId: activity.id,
+              webhookUrl: webhook.url,
+              webhookSecret: webhook.secret,
+              activity: {
+                action: activity.action,
+                field: activity.field ?? undefined,
+                oldValue: activity.oldValue ?? undefined,
+                newValue: activity.newValue ?? undefined,
+                metadata: activity.metadata as Record<string, unknown>,
+              },
+            });
+          }
+        }
+      }
+    }
+
+    return activity;
   } catch {
     return null;
   }

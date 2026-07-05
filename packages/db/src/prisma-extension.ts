@@ -10,6 +10,8 @@ const SOFT_DELETE_MODELS = new Set<string>([
   'ChatChannel',
   'ChatMessage',
   'SavedFilter',
+  'Webhook',
+  'WebhookDelivery',
 ]);
 
 type ReadArgs = { where?: Record<string, unknown> };

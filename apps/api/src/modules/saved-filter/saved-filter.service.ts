@@ -23,11 +23,7 @@ function toResult(row: Awaited<ReturnType<typeof repo.create>>) {
   };
 }
 
-export async function list(
-  prisma: PrismaClient,
-  userId: string,
-  workspaceId: string,
-) {
+export async function list(prisma: PrismaClient, userId: string, workspaceId: string) {
   await assertMembership(workspaceId, userId);
   const rows = await repo.listVisible(prisma, userId, workspaceId);
   return { data: rows.map(toResult) };

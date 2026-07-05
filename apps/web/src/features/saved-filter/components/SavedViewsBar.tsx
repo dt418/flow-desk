@@ -11,10 +11,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  useSavedFilters,
-  useCreateSavedFilter,
-} from '../hooks';
+import { useSavedFilters, useCreateSavedFilter } from '../hooks';
 import type { SavedFilterQuery } from '@flow-desk/shared/saved-filter';
 
 /**
@@ -140,12 +137,7 @@ export function SavedViewsBar({
               />
             </div>
             <div className="flex justify-end gap-2">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => setSaveOpen(false)}
-              >
+              <Button type="button" variant="ghost" size="sm" onClick={() => setSaveOpen(false)}>
                 Cancel
               </Button>
               <Button

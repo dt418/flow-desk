@@ -49,7 +49,16 @@ describe('SavedViewsBar', () => {
     const qc = makeQueryClient();
     qc.setQueryData(['saved-filters', 'w1'], {
       data: [
-        { id: 'sf1', name: 'Urgent only', query: { priority: 'URGENT' }, isShared: false, userId: 'u1', workspaceId: 'w1', createdAt: '', updatedAt: '' },
+        {
+          id: 'sf1',
+          name: 'Urgent only',
+          query: { priority: 'URGENT' },
+          isShared: false,
+          userId: 'u1',
+          workspaceId: 'w1',
+          createdAt: '',
+          updatedAt: '',
+        },
       ],
     });
     render(

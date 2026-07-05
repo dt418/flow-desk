@@ -260,7 +260,7 @@ Includes the schema-hygiene payoff: `Board` model lands here, after every checkl
 
 ## Risk register additions (P1-2)
 
-| ID | Risk | Likelihood | Impact | Mitigation |
-| --- | --- | --- | --- | --- |
-| R-43 (resolved) | **softDeleteExtension drift** — packages/db copy missing models vs apps/api copy; module prisma doesn't soft-delete-filter affected models | High | High | Synced packages/db/src/prisma-extension.ts to match apps/api copy (commit 12c6f6f); pre-existing from F7 |
-| R-44 | **Partial unique index not in Prisma schema** — SavedFilter name uniqueness requires raw SQL `CREATE UNIQUE INDEX ... WHERE deletedAt IS NULL`; Prisma @@unique can't express partial indexes | Medium | Low | Manual migration SQL; schema.prisma can't validate; future resets must use `migrate deploy` |
+| ID              | Risk                                                                                                                                                                                          | Likelihood | Impact | Mitigation                                                                                               |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | ------ | -------------------------------------------------------------------------------------------------------- |
+| R-43 (resolved) | **softDeleteExtension drift** — packages/db copy missing models vs apps/api copy; module prisma doesn't soft-delete-filter affected models                                                    | High       | High   | Synced packages/db/src/prisma-extension.ts to match apps/api copy (commit 12c6f6f); pre-existing from F7 |
+| R-44            | **Partial unique index not in Prisma schema** — SavedFilter name uniqueness requires raw SQL `CREATE UNIQUE INDEX ... WHERE deletedAt IS NULL`; Prisma @@unique can't express partial indexes | Medium     | Low    | Manual migration SQL; schema.prisma can't validate; future resets must use `migrate deploy`              |

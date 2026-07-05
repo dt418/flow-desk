@@ -425,10 +425,7 @@ export async function findOwnedById(
   });
 }
 
-export async function findById(
-  prisma: PrismaClient,
-  id: string,
-): Promise<SavedFilterRow | null> {
+export async function findById(prisma: PrismaClient, id: string): Promise<SavedFilterRow | null> {
   return prisma.savedFilter.findUnique({ where: { id } });
 }
 
@@ -497,11 +494,7 @@ import { assertMembership } from '../../shared/lib/access';
 import { NotFoundError, ForbiddenError, ConflictError } from '../../shared/errors';
 import * as repo from './saved-filter.repository';
 
-export async function list(
-  prisma: PrismaClient,
-  userId: string,
-  workspaceId: string,
-) {
+export async function list(prisma: PrismaClient, userId: string, workspaceId: string) {
   await assertMembership(workspaceId, userId);
   const rows = await repo.listVisible(prisma, userId, workspaceId);
   return {
@@ -1081,15 +1074,11 @@ import { savedFilterListResponseSchema, savedFilterSchema } from './schemas';
 
 export const savedFilterApi = {
   list(workspaceId: string) {
-    return api<{ data: SavedFilter[] }>(
-      `/api/workspaces/${workspaceId}/saved-filters`,
-      { schema: savedFilterListResponseSchema },
-    );
+    return api<{ data: SavedFilter[] }>(`/api/workspaces/${workspaceId}/saved-filters`, {
+      schema: savedFilterListResponseSchema,
+    });
   },
-  create(
-    workspaceId: string,
-    body: { name: string; query: unknown; isShared: boolean },
-  ) {
+  create(workspaceId: string, body: { name: string; query: unknown; isShared: boolean }) {
     return api<SavedFilter>(`/api/workspaces/${workspaceId}/saved-filters`, {
       method: 'POST',
       json: body,
@@ -1108,10 +1097,9 @@ export const savedFilterApi = {
     });
   },
   delete(workspaceId: string, id: string) {
-    return api<{ ok: boolean }>(
-      `/api/workspaces/${workspaceId}/saved-filters/${id}`,
-      { method: 'DELETE' },
-    );
+    return api<{ ok: boolean }>(`/api/workspaces/${workspaceId}/saved-filters/${id}`, {
+      method: 'DELETE',
+    });
   },
 };
 ```
@@ -1242,7 +1230,13 @@ Create `apps/web/src/features/saved-filter/components/SaveFilterDialog.tsx`:
 
 ```tsx
 import * as React from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -1354,11 +1348,7 @@ interface LoadFilterDropdownProps {
   onManage: () => void;
 }
 
-export function LoadFilterDropdown({
-  workspaceId,
-  onApply,
-  onManage,
-}: LoadFilterDropdownProps) {
+export function LoadFilterDropdown({ workspaceId, onApply, onManage }: LoadFilterDropdownProps) {
   const { data, isLoading } = useSavedFilters(workspaceId);
   const filters = data?.data ?? [];
 
@@ -1420,11 +1410,7 @@ interface ManageFiltersDialogProps {
   workspaceId: string;
 }
 
-export function ManageFiltersDialog({
-  open,
-  onOpenChange,
-  workspaceId,
-}: ManageFiltersDialogProps) {
+export function ManageFiltersDialog({ open, onOpenChange, workspaceId }: ManageFiltersDialogProps) {
   const { data } = useSavedFilters(workspaceId);
   const updateMut = useUpdateSavedFilter(workspaceId);
   const deleteMut = useDeleteSavedFilter(workspaceId);
@@ -1482,11 +1468,7 @@ export function ManageFiltersDialog({
                     <Button size="sm" onClick={saveEdit} disabled={updateMut.isPending}>
                       Save
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => setEditingId(null)}
-                    >
+                    <Button size="sm" variant="ghost" onClick={() => setEditingId(null)}>
                       Cancel
                     </Button>
                   </>
@@ -1703,7 +1685,11 @@ describe('SaveFilterDialog', () => {
       '/api/workspaces/ws-test/saved-filters',
       expect.objectContaining({
         method: 'POST',
-        json: { name: 'Hot queue', query: { status: 'IN_REVIEW', priority: 'HIGH' }, isShared: false },
+        json: {
+          name: 'Hot queue',
+          query: { status: 'IN_REVIEW', priority: 'HIGH' },
+          isShared: false,
+        },
       }),
     );
   });

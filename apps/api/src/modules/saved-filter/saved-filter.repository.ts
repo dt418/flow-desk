@@ -67,10 +67,7 @@ export async function findOwnedById(
   });
 }
 
-export async function findById(
-  prisma: PrismaClient,
-  id: string,
-): Promise<SavedFilterRow | null> {
+export async function findById(prisma: PrismaClient, id: string): Promise<SavedFilterRow | null> {
   return prisma.savedFilter.findUnique({ where: { id } });
 }
 

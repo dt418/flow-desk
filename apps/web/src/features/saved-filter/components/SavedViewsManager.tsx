@@ -95,11 +95,7 @@ export function SavedViewsManager({ workspaceId }: { workspaceId: string }) {
               className="flex items-center gap-1 text-xs text-muted-foreground shrink-0"
               title={view.isShared ? 'Shared with team' : 'Private'}
             >
-              {view.isShared ? (
-                <Eye className="h-3.5 w-3.5" />
-              ) : (
-                <EyeOff className="h-3.5 w-3.5" />
-              )}
+              {view.isShared ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
               {view.isShared ? 'Shared' : 'Private'}
             </span>
 

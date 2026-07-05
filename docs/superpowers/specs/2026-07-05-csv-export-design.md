@@ -16,7 +16,7 @@ List page (`apps/web/src/pages/list.tsx`) has filters, saved views, and a data t
 
 `GET /api/tasks/export?workspaceId=…&<filters>` under the existing `taskRouter` in `apps/api/src/modules/task/`.
 
-**Not** `/api/workspaces/:id/tasks/export` (ROADMAP literal). Reason: AGENTS.md "Future-Sprint Schema Hygiene" checklist explicitly forbids baking workspace-as-scope into the URL — "Filter by parameter, not hardcoded scope. `listTasks(workspaceId, filters)` not `listTasksForWorkspaceX()` baked into SQL. A future `boardId` arg extends the signature instead of forcing a rewrite." The existing list endpoint `GET /api/tasks?workspaceId=…` already follows the query-param pattern; export matches it. "Same filter signature as the list endpoint" (ROADMAP) is satisfied *literally*, not approximated. Board (`/api/workspaces/:wid/board`) earns path-scoping because it's a distinct aggregate (columns + tasks); export is just `listTasks` with a different output serializer.
+**Not** `/api/workspaces/:id/tasks/export` (ROADMAP literal). Reason: AGENTS.md "Future-Sprint Schema Hygiene" checklist explicitly forbids baking workspace-as-scope into the URL — "Filter by parameter, not hardcoded scope. `listTasks(workspaceId, filters)` not `listTasksForWorkspaceX()` baked into SQL. A future `boardId` arg extends the signature instead of forcing a rewrite." The existing list endpoint `GET /api/tasks?workspaceId=…` already follows the query-param pattern; export matches it. "Same filter signature as the list endpoint" (ROADMAP) is satisfied _literally_, not approximated. Board (`/api/workspaces/:wid/board`) earns path-scoping because it's a distinct aggregate (columns + tasks); export is just `listTasks` with a different output serializer.
 
 ROADMAP wording amended-by-decision: behavior identical, route shape changed to honor the written checklist rule.
 
@@ -63,14 +63,14 @@ export const exportTasksQuerySchema = listTasksQuerySchema.omit({ cursor: true, 
    // Canonical source = TaskLabelAssignment join (schema.prisma:238).
    // labelsDeprecated is the F2 dual-write legacy array kept for migration
    // safety — do not read from it here; it can leak stale label names.
-   const labels = task.assignments.map(a => a.label.name).join(';');
+   const labels = task.assignments.map((a) => a.label.name).join(';');
    const fields = [
-     task.status,                                    // enum as-is
-     task.title,                                     // escaped
-     task.assignee?.email ?? '',                     // empty when unassigned
-     task.priority,                                  // enum as-is
+     task.status, // enum as-is
+     task.title, // escaped
+     task.assignee?.email ?? '', // empty when unassigned
+     task.priority, // enum as-is
      task.dueDate ? task.dueDate.toISOString() : '', // explicit null guard, no coercion
-     labels,                                         // joined THEN escaped as one field
+     labels, // joined THEN escaped as one field
    ];
    return fields.map(csvEscapeField).join(',') + '\r\n';
    ```
@@ -93,14 +93,14 @@ Add `exportTasksQuerySchema = listTasksQuerySchema.omit({ cursor: true, limit: t
 Status, Title, Assignee Email, Priority, Due Date, Labels
 ```
 
-| Column          | Source                                  | Null/empty handling                  | Format            |
-| --------------- | --------------------------------------- | ------------------------------------ | ----------------- |
-| Status          | `Task.status` enum                      | never null                           | enum as-is (`IN_PROGRESS` etc.) |
-| Title           | `Task.title`                            | never empty (Zod min on create)      | CSV-escaped       |
-| Assignee Email  | `Task.assignee.email`                   | `''` when `assigneeId` null          | email string      |
-| Priority        | `Task.priority` enum                    | never null                           | enum as-is (`HIGH` etc.) |
-| Due Date        | `Task.dueDate`                          | `''` when null (explicit ternary)    | ISO 8601 UTC      |
-| Labels          | `TaskLabelAssignment` → `TaskLabel.name` | `''` when none                       | `;`-joined, escaped as one field after join |
+| Column         | Source                                   | Null/empty handling               | Format                                      |
+| -------------- | ---------------------------------------- | --------------------------------- | ------------------------------------------- |
+| Status         | `Task.status` enum                       | never null                        | enum as-is (`IN_PROGRESS` etc.)             |
+| Title          | `Task.title`                             | never empty (Zod min on create)   | CSV-escaped                                 |
+| Assignee Email | `Task.assignee.email`                    | `''` when `assigneeId` null       | email string                                |
+| Priority       | `Task.priority` enum                     | never null                        | enum as-is (`HIGH` etc.)                    |
+| Due Date       | `Task.dueDate`                           | `''` when null (explicit ternary) | ISO 8601 UTC                                |
+| Labels         | `TaskLabelAssignment` → `TaskLabel.name` | `''` when none                    | `;`-joined, escaped as one field after join |
 
 **Not included** (out of scope, P4-5's job): ID, Workspace, Created, Updated, Assignee Name, Description.
 
@@ -141,6 +141,7 @@ True row-streaming via PG cursor rejected: requires raw SQL `DECLARE CURSOR`/`FE
 ## Testing
 
 **Integration (`apps/api/tests/integration/task-export.test.ts`)**:
+
 - Export all tasks in Demo workspace → 200, `text/csv`, header + N rows, row count matches `findMany` count.
 - Filter by `status=IN_REVIEW` → only IN_REVIEW rows.
 - Filter by `priority=HIGH` → only HIGH rows.
@@ -156,6 +157,7 @@ True row-streaming via PG cursor rejected: requires raw SQL `DECLARE CURSOR`/`FE
 - Cross-workspace filter (workspaceId=A, task in B) → no leak (filter is workspaceId-scoped).
 
 **Web component (`apps/web/src/features/task/components/ExportCsvButton.test.tsx`)**:
+
 - Renders button.
 - Click builds correct URL with current filter params.
 - Click triggers navigation/download (mock `window.location` or anchor click).

@@ -12,6 +12,39 @@ env:
   TURBO_VERSION: '2.1.3'
 
 jobs:
+  guardrails:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - run: pnpm audit --audit-level=high
+      - name: Check gitignore coverage
+        run: |
+          for pattern in ".env" ".env.local" "node_modules" ".turbo" "dist" "coverage" ".DS_Store"; do
+            if ! grep -qF "$pattern" .gitignore; then
+              echo "::error::Missing gitignore pattern: $pattern"
+              exit 1
+            fi
+          done
+          echo "✓ gitignore patterns OK"
+      - name: Check no-verify in recent commits
+        run: |
+          if git log --format='%B' -5 | grep -q '\-\-no\-verify'; then
+            echo "::warning::Found --no-verify in recent commit messages"
+          fi
+      - name: Check for console.log in source
+        run: |
+          violations=$(grep -rE 'console\.(log|debug|info)\(' apps/api/src apps/web/src packages/shared/src \
+            --include='*.ts' --include='*.tsx' \
+            --exclude='*.test.*' --exclude='*.spec.*' \
+            --exclude='*worker*' \
+            -l 2>/dev/null || true)
+          if [ -n "$violations" ]; then
+            echo "::warning::console.log found in source files:"
+            echo "$violations"
+          fi
+
   quality:
     runs-on: ubuntu-latest
     timeout-minutes: 15

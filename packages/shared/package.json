@@ -81,6 +81,11 @@
       "types": "./dist/saved-filter.d.ts",
       "import": "./dist/saved-filter.mjs",
       "require": "./dist/saved-filter.js"
+    },
+    "./webhook": {
+      "types": "./dist/webhook.d.ts",
+      "import": "./dist/webhook.mjs",
+      "require": "./dist/webhook.js"
     }
   },
   "scripts": {

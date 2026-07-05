@@ -96,14 +96,14 @@ export const test = base.extend<{
     { auto: true },
   ],
   db: [
-    async (_args, use) => {
+    async ({}, use) => {
       await cleanDatabase(prisma);
       await use();
       await cleanDatabase(prisma);
     },
     { auto: true, scope: 'worker' },
   ],
-  seedUser: async (_args, use) => {
+  seedUser: async ({}, use) => {
     const password = 'e2epass123';
     const email = `e2e-${Date.now()}@flow-desk.app`;
     const user = await createUser(prisma, email, 'E2E User');
@@ -120,7 +120,7 @@ export const test = base.extend<{
       workspaceName: ws.name,
     });
   },
-  apiContext: async (_args, use) => {
+  apiContext: async ({}, use) => {
     const baseURL = process.env.API_BASE_URL ?? 'http://localhost:3000';
     await use({ baseURL });
   },
