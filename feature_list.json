@@ -1236,7 +1236,11 @@
         "pnpm --filter @flow-desk/web typecheck → exit 0",
         "pnpm --filter @flow-desk/web lint → exit 0",
         "pnpm --filter @flow-desk/web test -- --run → 23/23 pass (incl. 5 saved-filter tests)",
-        "pnpm --filter @flow-desk/web build → exit 0"
+        "pnpm --filter @flow-desk/web build → exit 0",
+        "curl 'http://localhost:3001/api/workspaces/:wid/saved-filters' with auth cookie -> 200, {data: []} (host-side tsx smoke vs dev DB)",
+        "curl POST create -> 201, full SavedFilter object with nested query",
+        "curl re-list -> 200, {data: [created filter]}",
+        "curl DELETE -> 200, {ok: true}"
       ],
       "evidence": [
         "packages/db/prisma/migrations/20260705085351_saved_filter/migration.sql — SavedFilter model + partial unique index WHERE deletedAt IS NULL",
