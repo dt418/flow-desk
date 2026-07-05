@@ -28,6 +28,12 @@
 
 ## Session Log
 
+### 2026-07-05 19:22 — `f7b74c4` (main)
+
+- **type:**
+- **msg:**
+- **author:** thanhd
+
 ### 2026-07-05 09:46 — `a846d03` (main)
 
 - **type:** docs
@@ -890,6 +896,7 @@ Executed the full 10-task P1-2 plan via Subagent-Driven Development (inline exec
 Executed the full 7-task P1-3 plan inline (sequential — feature is ~0.5d, no subagent parallelism needed). Followed the Superpowers workflow manually (brainstorming → design spec → plan → execute → verify) since the named `brainstorming`/`writing-plans`/`executing-plans`/`subagent-driven-development` skills are not installed in this environment; mirrored the existing `docs/superpowers/{specs,plans}/` file format.
 
 **Brainstorming** — 4-question grill (one question at a time, recommended answer each, explicit approval gates). Locks:
+
 - D1 Route shape: `GET /api/tasks/export?workspaceId=…&<filters>` (query-param-scoped, NOT ROADMAP-literal path-scoped `/api/workspaces/:id/tasks/export`). Reason: AGENTS.md "Future-Sprint Schema Hygiene" checklist explicitly forbids baking workspace-as-scope into the URL. "Same filter signature as the list endpoint" (ROADMAP) satisfied literally.
 - D2 Schema reuse: `listTasksQuerySchema.omit({ cursor: true, limit: true })`. Keep `sortBy`/`sortOrder` (serializer ignores, shape stays unified, drift-proof).
 - D3 Route registration order: `GET /api/tasks/export` MUST register before `GET /api/tasks/:id` in taskRouter, else `export` swallowed as `:id` param.
