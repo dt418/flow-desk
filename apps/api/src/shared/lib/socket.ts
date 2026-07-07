@@ -18,6 +18,7 @@ import {
   typingStartSchema,
   typingStopSchema,
   messageReadSchema,
+  messageSendSchema,
 } from '../../modules/realtime/schemas';
 
 const CHAT_PRESENCE_PREFIX = 'chat:presence:';
@@ -276,6 +277,51 @@ export function createSocketServer(httpServer: HttpServer) {
           const { prisma } = await import('./prisma');
           await markRead(prisma, userId, data.workspaceId, data.channelId, data.messageId);
         }),
+      );
+
+      socket.on(
+        'message:send',
+        async (
+          data: unknown,
+          ack?: (r: { ok: boolean; message?: unknown; error?: string }) => void,
+        ) => {
+          const rl = await socketRateLimit(`evt:message-send:${userId}`, 60, 20);
+          if (!rl.allowed) {
+            ack?.({ ok: false, error: 'rate_limit' });
+            return;
+          }
+          const parsed = messageSendSchema.safeParse(data);
+          if (!parsed.success) {
+            ack?.({ ok: false, error: 'validation' });
+            return;
+          }
+          const d = parsed.data;
+          try {
+            const { prisma } = await import('./prisma');
+            const { sendMessage } = await import('../../modules/chat/chat.message.service');
+            const channel = await prisma.chatChannel.findUnique({
+              where: { id: d.channelId, deletedAt: null },
+              select: { workspaceId: true },
+            });
+            if (!channel) {
+              ack?.({ ok: false, error: 'channel_not_found' });
+              return;
+            }
+            const message = await sendMessage(prisma, userId, channel.workspaceId, d.channelId, {
+              channelId: d.channelId,
+              content: d.content,
+              mentionedUserIds: d.mentionedUserIds,
+              clientMessageId: d.clientMessageId,
+            });
+            const payload = { channelId: d.channelId, message };
+            io.of('/collab').to(`conversation:${d.channelId}`).emit(SOCKET_EVENTS.MessageNew, payload);
+            io.of('/collab').to(`user:${userId}`).emit(SOCKET_EVENTS.MessageNew, payload);
+            ack?.({ ok: true, message });
+          } catch (err) {
+            logger.error({ err }, 'message:send failed');
+            ack?.({ ok: false, error: 'internal' });
+          }
+        },
       );
 
       socket.on('disconnect', async () => {

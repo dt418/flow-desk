@@ -75,6 +75,8 @@ export async function createChannel(
   const result = {
     id: channel.id,
     workspaceId: channel.workspaceId,
+    scope: channel.scope,
+    taskId: channel.taskId,
     name: channel.name,
     description: channel.description,
     isPrivate: channel.isPrivate,
@@ -113,6 +115,8 @@ export async function updateChannel(
   const result = {
     id: channel.id,
     workspaceId: channel.workspaceId,
+    scope: channel.scope,
+    taskId: channel.taskId,
     name: channel.name,
     description: channel.description,
     isPrivate: channel.isPrivate,

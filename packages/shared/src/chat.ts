@@ -107,7 +107,7 @@ export type ChatMessageWithAuthor = z.infer<typeof chatMessageWithAuthorSchema>;
 
 // List queries
 export const listChannelsQuerySchema = CursorPaginationQuery.extend({
-  workspaceId: cuidSchema,
+  workspaceId: cuidSchema.optional(),
   scope: channelScopeSchema.optional(),
 });
 export type ListChannelsQuery = z.infer<typeof listChannelsQuerySchema>;

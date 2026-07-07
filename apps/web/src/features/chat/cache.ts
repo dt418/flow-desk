@@ -6,15 +6,20 @@ function toChannelWithLatest(channel: ChannelView): ChannelWithLatest {
   return { ...channel, latestMessage: null };
 }
 
+type ChannelsCache = { data: ChannelWithLatest[] };
+
 export function patchChannelInList(
   qc: QueryClient,
   workspaceId: string,
   channelId: string,
   patch: Partial<Pick<ChannelWithLatest, 'name' | 'description'>>,
 ) {
-  qc.setQueryData(chatKeys.channels(workspaceId), (old: ChannelWithLatest[] | undefined) => {
+  qc.setQueryData(chatKeys.channels(workspaceId), (old: ChannelsCache | undefined) => {
     if (!old) return old;
-    return old.map((ch) => (ch.id === channelId ? { ...ch, ...patch } : ch));
+    return {
+      ...old,
+      data: old.data.map((ch) => (ch.id === channelId ? { ...ch, ...patch } : ch)),
+    };
   });
 }
 
@@ -23,9 +28,9 @@ export function appendChannelToList(
   workspaceId: string,
   channel: ChannelView,
 ) {
-  qc.setQueryData(chatKeys.channels(workspaceId), (old: ChannelWithLatest[] | undefined) => {
-    if (!old) return [toChannelWithLatest(channel)];
-    return [...old, toChannelWithLatest(channel)];
+  qc.setQueryData(chatKeys.channels(workspaceId), (old: ChannelsCache | undefined) => {
+    if (!old) return { data: [toChannelWithLatest(channel)] };
+    return { ...old, data: [...old.data, toChannelWithLatest(channel)] };
   });
 }
 
@@ -34,9 +39,9 @@ export function removeChannelFromList(
   workspaceId: string,
   channelId: string,
 ) {
-  qc.setQueryData(chatKeys.channels(workspaceId), (old: ChannelWithLatest[] | undefined) => {
+  qc.setQueryData(chatKeys.channels(workspaceId), (old: ChannelsCache | undefined) => {
     if (!old) return old;
-    return old.filter((ch) => ch.id !== channelId);
+    return { ...old, data: old.data.filter((ch) => ch.id !== channelId) };
   });
 }
 
