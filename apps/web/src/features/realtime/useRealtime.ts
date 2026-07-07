@@ -32,7 +32,9 @@ export function useRealtime(workspaceId: string, taskId?: string) {
 
   useEffect(() => {
     if (!workspaceId) return;
-    joinWorkspace(socket, workspaceId);
+    const join = () => joinWorkspace(socket, workspaceId);
+    join();
+    socket.on('connect', join);
 
     const invalidateBoard = () =>
       qc.invalidateQueries({ queryKey: realtimeKeys.board(workspaceId) });
@@ -67,6 +69,7 @@ export function useRealtime(workspaceId: string, taskId?: string) {
     handlers.push(['task:labels-changed', invalidateBoard] as const);
 
     return () => {
+      socket.off('connect', join);
       leaveWorkspace(socket, workspaceId);
       for (const [evt, handler] of handlers) socket.off(evt, handler);
     };
@@ -75,7 +78,9 @@ export function useRealtime(workspaceId: string, taskId?: string) {
   useEffect(() => {
     if (!taskId) return;
     const commentsKey = realtimeKeys.comments(taskId);
-    joinTask(socket, taskId);
+    const join = () => joinTask(socket, taskId);
+    join();
+    socket.on('connect', join);
 
     const invalidateComments = () => qc.invalidateQueries({ queryKey: commentsKey });
     const commentHandlers = (
@@ -87,6 +92,7 @@ export function useRealtime(workspaceId: string, taskId?: string) {
     });
 
     return () => {
+      socket.off('connect', join);
       leaveTask(socket, taskId);
       for (const [evt, handler] of commentHandlers) socket.off(evt, handler);
     };

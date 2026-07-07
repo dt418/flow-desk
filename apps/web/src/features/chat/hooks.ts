@@ -127,8 +127,11 @@ export function useChatRealtime(wid: string, activeChannelId: string | null) {
 
   useEffect(() => {
     if (!wid) return;
-    socket.emit('join-workspace', { workspaceId: wid });
+    const join = () => socket.emit('join-workspace', { workspaceId: wid });
+    join();
+    socket.on('connect', join);
     return () => {
+      socket.off('connect', join);
       socket.emit('leave-workspace', { workspaceId: wid });
     };
   }, [socket, wid]);
