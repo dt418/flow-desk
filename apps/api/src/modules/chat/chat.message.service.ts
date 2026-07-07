@@ -134,7 +134,7 @@ export async function sendMessage(
 
   safeEmit(
     () =>
-      emitToRoom('/collab', `workspace:${channel.workspaceId}`, 'message:new', {
+      emitToRoom('/collab', `conversation:${channelId}`, 'message:new', {
         channelId,
         message: {
           id: message.id,
@@ -204,7 +204,7 @@ export async function updateMessage(
 
   safeEmit(
     () =>
-      emitToRoom('/collab', `workspace:${channel.workspaceId}`, 'message:updated', {
+      emitToRoom('/collab', `conversation:${channelId}`, 'message:updated', {
         channelId,
         message: {
           id: message.id,
@@ -250,7 +250,7 @@ export async function deleteMessage(
 
   safeEmit(
     () =>
-      emitToRoom('/collab', `workspace:${channel.workspaceId}`, 'message:deleted', {
+      emitToRoom('/collab', `conversation:${channelId}`, 'message:deleted', {
         channelId,
         messageId,
       }),
