@@ -53,7 +53,43 @@
 - **Risks remaining**: none new. R-24 (ai-001 LLM latency UX) is the only material carry-forward.
 - **Next best step**: Run `pnpm verify` to confirm lefthook gate green before committing; then commit with conventional message (`chore(dx): pnpm dev one-command + docker-compose DRY`).
 
+## Session 029 — realtime chat refactor (Phase 0)
+
+- **Date**: 2026-07-07
+- **Goal**: Refactor chat realtime layer to production-ready (Slack/Discord/Linear) matching the user's spec
+- **Completed**:
+  - Comprehensive audit: 14 CRIT, 26 HIGH, 14 MED, 30+ LOW findings across server / client / infra
+  - Plan: docs/superpowers/plans/2026-07-07-realtime-chat-refactor.md (4 phases, ~50 tasks)
+  - ADR-007-realtime-reliability.md (room model, event catalog, dedupe, ACK, typing/presence/read-receipts)
+  - REALTIME-AUDIT.md (full findings table)
+  - feature_list.json row added; claude-progress.md updated
+- **Next best step**: Execute Phase 1 task 1.1 (add clientMessageId to shared chat schema) via subagent
+
 ## Session Log
+
+### 2026-07-07 19:43 — `19cfd96` (main)
+
+- **type:**
+- **msg:**
+- **author:** thanhd
+
+### 2026-07-07 19:02 — `dc24d48` (main)
+
+- **type:**
+- **msg:**
+- **author:** thanhd
+
+### 2026-07-07 18:53 — `c0148d1` (main)
+
+- **type:**
+- **msg:**
+- **author:** thanhd
+
+### 2026-07-07 18:47 — `2366a5b` (main)
+
+- **type:**
+- **msg:**
+- **author:** thanhd
 
 ### 2026-07-07 18:24 — `b11ac30` (main)
 
