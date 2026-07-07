@@ -6,6 +6,7 @@ import { redis } from './redis';
 import { verifyAccessToken } from './jwt';
 import { logger } from './logger';
 import { env } from './prisma';
+import { parseCookieToken } from './cookie';
 import { attachPresenceHandlers } from '../../modules/realtime/realtime.gateway';
 import { SOCKET_EVENTS } from '@flow-desk/shared/socket-events';
 import {
@@ -41,10 +42,7 @@ async function socketRateLimit(
   return { allowed: count <= max, retryAfterMs };
 }
 
-async function broadcastChatPresence(
-  io: SocketServer,
-  channelId: string,
-): Promise<void> {
+async function broadcastChatPresence(io: SocketServer, channelId: string): Promise<void> {
   const viewers = await redis.smembers(CHAT_PRESENCE_KEY(channelId));
   io.of('/collab').to(`conversation:${channelId}`).emit('presence:update', {
     channelId,
@@ -52,8 +50,17 @@ async function broadcastChatPresence(
   });
 }
 
-export function withValidation<T>(schema: ZodSchema<T>, handler: (data: T, socket: Socket) => void) {
-  return (data: unknown, socket: Socket) => {
+// ponytail: small Zod wrapper for socket.io handlers. The earlier version
+// assumed `socket` was the second arg of the handler — socket.io v4 passes
+// `(payload, ack)`, so the `socket.emit` inside it threw
+// `Cannot read properties of undefined`, breaking the event loop and
+// sometimes killing subsequent emits. Returns a function that takes the
+// calling socket and returns the (data) handler so emit / join / leave work.
+export function withValidation<T>(
+  schema: ZodSchema<T>,
+  handler: (data: T, socket: Socket) => void | Promise<void>,
+) {
+  return (socket: Socket) => (data: unknown, _ack?: (...args: unknown[]) => void) => {
     const result = schema.safeParse(data);
     if (!result.success) {
       socket.emit(SOCKET_EVENTS.Error, {
@@ -62,7 +69,7 @@ export function withValidation<T>(schema: ZodSchema<T>, handler: (data: T, socke
       });
       return;
     }
-    handler(result.data, socket);
+    return handler(result.data, socket);
   };
 }
 
@@ -82,9 +89,14 @@ export function createSocketServer(httpServer: HttpServer) {
   // /notifications were skipping auth → socket.data.userId stayed undefined
   // → prisma 'userId is missing' on join-workspace.
   const authMiddleware = async (socket: Socket, next: (err?: Error) => void) => {
+    const cookieToken = parseCookieToken(
+      socket.handshake.headers.cookie as string | undefined,
+      'access_token',
+    );
     const token =
       (socket.handshake.auth?.token as string | undefined) ??
       socket.handshake.headers.authorization?.replace(/^Bearer\s+/i, '') ??
+      cookieToken ??
       '';
     try {
       const payload = verifyAccessToken(token);
@@ -136,7 +148,11 @@ export function createSocketServer(httpServer: HttpServer) {
         withValidation(joinWorkspaceSchema, async (data, socket) => {
           const rl = await socketRateLimit(`evt:join-workspace:${userId}`, 60, 10);
           if (!rl.allowed) {
-            socket.emit(SOCKET_EVENTS.Error, { type: 'rate_limit', message: 'Rate limit exceeded', retryAfterMs: rl.retryAfterMs });
+            socket.emit(SOCKET_EVENTS.Error, {
+              type: 'rate_limit',
+              message: 'Rate limit exceeded',
+              retryAfterMs: rl.retryAfterMs,
+            });
             return;
           }
           const { prisma } = await import('./prisma');
@@ -152,14 +168,14 @@ export function createSocketServer(httpServer: HttpServer) {
           if (member) {
             socket.join(`workspace:${data.workspaceId}`);
           }
-        }),
+        })(socket),
       );
 
       socket.on(
         'leave-workspace',
         withValidation(leaveWorkspaceSchema, (data, socket) => {
           socket.leave(`workspace:${data.workspaceId}`);
-        }),
+        })(socket),
       );
 
       socket.on(
@@ -167,7 +183,11 @@ export function createSocketServer(httpServer: HttpServer) {
         withValidation(joinTaskSchema, async (data, socket) => {
           const rl = await socketRateLimit(`evt:join-task:${userId}`, 60, 20);
           if (!rl.allowed) {
-            socket.emit(SOCKET_EVENTS.Error, { type: 'rate_limit', message: 'Rate limit exceeded', retryAfterMs: rl.retryAfterMs });
+            socket.emit(SOCKET_EVENTS.Error, {
+              type: 'rate_limit',
+              message: 'Rate limit exceeded',
+              retryAfterMs: rl.retryAfterMs,
+            });
             return;
           }
           const { prisma } = await import('./prisma');
@@ -188,14 +208,14 @@ export function createSocketServer(httpServer: HttpServer) {
           if (member) {
             socket.join(`task:${data.taskId}`);
           }
-        }),
+        })(socket),
       );
 
       socket.on(
         'leave-task',
         withValidation(leaveTaskSchema, (data, socket) => {
           socket.leave(`task:${data.taskId}`);
-        }),
+        })(socket),
       );
 
       const chatPresenceChannels = new Set<string>();
@@ -205,7 +225,11 @@ export function createSocketServer(httpServer: HttpServer) {
         withValidation(conversationJoinSchema, async (data, socket) => {
           const rl = await socketRateLimit(`evt:conversation-join:${userId}`, 60, 20);
           if (!rl.allowed) {
-            socket.emit(SOCKET_EVENTS.Error, { type: 'rate_limit', message: 'Rate limit exceeded', retryAfterMs: rl.retryAfterMs });
+            socket.emit(SOCKET_EVENTS.Error, {
+              type: 'rate_limit',
+              message: 'Rate limit exceeded',
+              retryAfterMs: rl.retryAfterMs,
+            });
             return;
           }
           const { prisma } = await import('./prisma');
@@ -229,7 +253,7 @@ export function createSocketServer(httpServer: HttpServer) {
             await redis.sadd(CHAT_PRESENCE_KEY(data.channelId), userId);
             await broadcastChatPresence(io, data.channelId);
           }
-        }),
+        })(socket),
       );
 
       socket.on(
@@ -239,7 +263,7 @@ export function createSocketServer(httpServer: HttpServer) {
           chatPresenceChannels.delete(data.channelId);
           await redis.srem(CHAT_PRESENCE_KEY(data.channelId), userId);
           await broadcastChatPresence(io, data.channelId);
-        }),
+        })(socket),
       );
 
       const typingChannels = new Set<string>();
@@ -254,7 +278,7 @@ export function createSocketServer(httpServer: HttpServer) {
             userName: socket.data.userName,
             userAvatar: socket.data.userAvatar,
           });
-        }),
+        })(socket),
       );
 
       socket.on(
@@ -265,18 +289,18 @@ export function createSocketServer(httpServer: HttpServer) {
             channelId: data.channelId,
             userId,
           });
-        }),
+        })(socket),
       );
 
       socket.on(
         'message:read',
-        withValidation(messageReadSchema, async (data) => {
+        withValidation(messageReadSchema, async (data, _socket) => {
           const rl = await socketRateLimit(`evt:message-read:${userId}`, 60, 30);
           if (!rl.allowed) return;
           const { markRead } = await import('../../modules/chat/chat.message.service');
           const { prisma } = await import('./prisma');
           await markRead(prisma, userId, data.workspaceId, data.channelId, data.messageId);
-        }),
+        })(socket),
       );
 
       socket.on(
@@ -314,7 +338,9 @@ export function createSocketServer(httpServer: HttpServer) {
               clientMessageId: d.clientMessageId,
             });
             const payload = { channelId: d.channelId, message };
-            io.of('/collab').to(`conversation:${d.channelId}`).emit(SOCKET_EVENTS.MessageNew, payload);
+            io.of('/collab')
+              .to(`conversation:${d.channelId}`)
+              .emit(SOCKET_EVENTS.MessageNew, payload);
             io.of('/collab').to(`user:${userId}`).emit(SOCKET_EVENTS.MessageNew, payload);
             ack?.({ ok: true, message });
           } catch (err) {

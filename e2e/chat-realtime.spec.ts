@@ -338,7 +338,10 @@ test.describe('Chat realtime @chat @realtime', () => {
 
   test('switch conversation leaves old room', async ({ page, browser, seedUser }) => {
     const cookie = `access_token=${signAccessToken(seedUser.id, seedUser.email)}`;
-    const { user: user2, token: token2 } = await createSecondUser(seedUser.workspaceId, 'leave-room');
+    const { user: user2, token: token2 } = await createSecondUser(
+      seedUser.workspaceId,
+      'leave-room',
+    );
     const { ctx: ctx2, page: page2 } = await setupUserPage(browser, token2);
 
     const ch1 = await createChannel(seedUser.workspaceId, 'leave-ch1');
@@ -396,10 +399,17 @@ test.describe('Chat realtime @chat @realtime', () => {
         if (typeof data === 'string') {
           try {
             const parsed = JSON.parse(data);
-            if (parsed.event === 'chat:message' && (!parsed.data?.content || parsed.data.content === '')) {
-              (window as unknown as { __onValidationError: (d: unknown) => void }).__onValidationError(parsed);
+            if (
+              parsed.event === 'chat:message' &&
+              (!parsed.data?.content || parsed.data.content === '')
+            ) {
+              (
+                window as unknown as { __onValidationError: (d: unknown) => void }
+              ).__onValidationError(parsed);
             }
-          } catch { /* ignore */ }
+          } catch {
+            /* ignore */
+          }
         }
         return origSend.call(this, data);
       };
@@ -462,18 +472,19 @@ test.describe('Chat realtime @chat @realtime', () => {
 
   test('task chat realtime', async ({ page, browser, seedUser }) => {
     const cookie = `access_token=${signAccessToken(seedUser.id, seedUser.email)}`;
-    const { user: user2, token: token2 } = await createSecondUser(seedUser.workspaceId, 'task-chat');
+    const { user: user2, token: token2 } = await createSecondUser(
+      seedUser.workspaceId,
+      'task-chat',
+    );
     const { ctx: ctx2, page: page2 } = await setupUserPage(browser, token2);
 
     const task = await prisma.task.create({
       data: {
         workspaceId: seedUser.workspaceId,
         title: 'Chat RT task',
-        columnId: (
-          await prisma.column.findFirst({
-            where: { workspaceId: seedUser.workspaceId },
-          })
-        )!.id,
+        columnId: (await prisma.column.findFirst({
+          where: { workspaceId: seedUser.workspaceId },
+        }))!.id,
       },
     });
     const channel = await createChannel(seedUser.workspaceId, `task-chat-${task.id}`);
@@ -528,7 +539,9 @@ test.describe('Phase 3', () => {
     const messageText = `puresock-${Date.now()}`;
     await page.evaluate(
       ({ channelId, content }) => {
-        const sock = (window as unknown as { __socket?: { emit: (event: string, data: unknown) => void } }).__socket;
+        const sock = (
+          window as unknown as { __socket?: { emit: (event: string, data: unknown) => void } }
+        ).__socket;
         if (sock) {
           sock.emit('chat:message', {
             channelId,
@@ -576,7 +589,10 @@ test.describe('Phase 3', () => {
 
   test('read receipt flips', async ({ page, browser, seedUser }) => {
     const cookie = `access_token=${signAccessToken(seedUser.id, seedUser.email)}`;
-    const { user: user2, token: token2 } = await createSecondUser(seedUser.workspaceId, 'readreceipt');
+    const { user: user2, token: token2 } = await createSecondUser(
+      seedUser.workspaceId,
+      'readreceipt',
+    );
     const { ctx: ctx2, page: page2 } = await setupUserPage(browser, token2);
 
     const channel = await createChannel(seedUser.workspaceId, 'readreceipt-test');
@@ -621,6 +637,53 @@ test.describe('Phase 3', () => {
 
     await prisma.user.delete({ where: { id: user2.id } });
     await ctx2.close();
+  });
+
+  // Regression: socket auth fell back to handshake auth.token / Authorization
+  // header, but the web app sends the access token as an httpOnly cookie that
+  // JS cannot read. With withCredentials, the browser attaches the cookie on
+  // the WS handshake — the server must read it from headers.cookie or the
+  // socket disconnects silently and message:send times out.
+  // Mirrors the browser path exactly: open a socket.io connection with the
+  // cookie in the handshake and no auth.token.
+  test('cookie-based socket auth sends message (no delivery timeout)', async ({ seedUser }) => {
+    const { io } = await import('socket.io-client');
+    const token = signAccessToken(seedUser.id, seedUser.email);
+    const channel = await createChannel(seedUser.workspaceId, 'cookie-auth-test');
+
+    const socket = io('http://localhost:3000/collab', {
+      transports: ['polling', 'websocket'],
+      extraHeaders: { Cookie: `access_token=${token}` },
+    });
+
+    const ackPromise = new Promise<{ ok: boolean; error?: string }>((resolve, reject) => {
+      const timeout = setTimeout(() => reject(new Error('ack timeout')), 5_000);
+      socket.on('connect', () => {
+        socket.emit('join-workspace', { workspaceId: seedUser.workspaceId });
+        socket.emit('conversation:join', { room: `conversation:${channel.id}` });
+        socket.emit(
+          'message:send',
+          {
+            channelId: channel.id,
+            content: `cookie-auth-${Date.now()}`,
+            clientMessageId: `cookie-auth-${Date.now()}`,
+            mentionedUserIds: [],
+          },
+          (resp: { ok: boolean; error?: string }) => {
+            clearTimeout(timeout);
+            resolve(resp);
+          },
+        );
+      });
+      socket.on('connect_error', (e: Error) => {
+        clearTimeout(timeout);
+        reject(new Error(`connect_error: ${e.message}`));
+      });
+    });
+
+    const ack = await ackPromise;
+    expect(ack.ok).toBe(true);
+    socket.close();
   });
 
   test('channel CRUD appears', async ({ page, browser, seedUser }) => {
