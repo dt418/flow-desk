@@ -10,6 +10,14 @@ import type {
 import { chatApi } from './api';
 import { useNamespacedSocket } from '@/lib/socket';
 import { toast } from 'sonner';
+import {
+  appendChannelToList,
+  patchChannelInList,
+  removeChannelFromList,
+  appendMessageIfNew,
+  replaceMessageById,
+  removeMessageById,
+} from './cache';
 
 export const chatKeys = {
   channels: (wid: string) => ['channels', wid] as const,
@@ -28,8 +36,8 @@ export function useCreateChannel(wid: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (body: CreateChannelInput) => chatApi.createChannel(wid, body),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: chatKeys.channels(wid) });
+    onSuccess: (data) => {
+      appendChannelToList(qc, wid, data.data);
     },
   });
 }
@@ -39,8 +47,8 @@ export function useUpdateChannel(wid: string) {
   return useMutation({
     mutationFn: ({ id, body }: { id: string; body: UpdateChannelInput }) =>
       chatApi.updateChannel(wid, id, body),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: chatKeys.channels(wid) });
+    onSuccess: (data, variables) => {
+      patchChannelInList(qc, wid, variables.id, variables.body);
     },
   });
 }
@@ -49,8 +57,8 @@ export function useDeleteChannel(wid: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => chatApi.deleteChannel(wid, id),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: chatKeys.channels(wid) });
+    onSuccess: (_data, id) => {
+      removeChannelFromList(qc, wid, id);
     },
   });
 }
@@ -127,7 +135,6 @@ export function useSendMessage(
           };
         },
       );
-      qc.invalidateQueries({ queryKey: chatKeys.channels(wid) });
     },
     onError: (_err, _variables, context) => {
       if (context?.clientMessageId) {
@@ -164,8 +171,8 @@ export function useUpdateMessage(wid: string, channelId: string) {
   return useMutation({
     mutationFn: ({ messageId, body }: { messageId: string; body: UpdateChatMessageInput }) =>
       chatApi.updateMessage(wid, channelId, messageId, body),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: chatKeys.messages(wid, channelId) });
+    onSuccess: (data) => {
+      replaceMessageById(qc, wid, channelId, data.data.id, data.data);
     },
     onError: () => {
       toast.error('Failed to update message');
@@ -177,8 +184,8 @@ export function useDeleteMessage(wid: string, channelId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (messageId: string) => chatApi.deleteMessage(wid, channelId, messageId),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: chatKeys.messages(wid, channelId) });
+    onSuccess: (_data, messageId) => {
+      removeMessageById(qc, wid, channelId, messageId);
     },
     onError: () => {
       toast.error('Failed to delete message');
@@ -207,78 +214,17 @@ export function useChatRealtime(wid: string, activeChannelId: string | null) {
     const onNew = (payload: { channelId: string; message: ChatMessageWithAuthor }) => {
       qc.invalidateQueries({ queryKey: chatKeys.channels(wid) });
       if (payload.channelId !== activeChannelId) return;
-      qc.setQueryData(
-        chatKeys.messages(wid, activeChannelId),
-        (
-          old:
-            | { pages: Array<{ data: ChatMessageWithAuthor[]; nextCursor: string | null }> }
-            | undefined,
-        ) => {
-          if (!old) return old;
-          const serverMsg = payload.message;
-          const cid =
-            'clientMessageId' in serverMsg ? (serverMsg as { clientMessageId?: string }).clientMessageId : undefined;
-          if (cid) {
-            return {
-              ...old,
-              pages: old.pages.map((page) => ({
-                ...page,
-                data: page.data.map((m) =>
-                  'clientMessageId' in m && m.clientMessageId === cid ? serverMsg : m,
-                ),
-              })),
-            };
-          }
-          const pages = [...old.pages];
-          if (pages.length > 0) {
-            const first = { ...pages[0]! };
-            pages[0] = { ...first, data: [...first.data, serverMsg] };
-          }
-          return { ...old, pages };
-        },
-      );
+      appendMessageIfNew(qc, wid, activeChannelId, payload.message);
     };
 
     const onUpdated = (payload: { channelId: string; message: ChatMessageWithAuthor }) => {
       if (payload.channelId !== activeChannelId) return;
-      qc.setQueryData(
-        chatKeys.messages(wid, activeChannelId),
-        (
-          old:
-            | { pages: Array<{ data: ChatMessageWithAuthor[]; nextCursor: string | null }> }
-            | undefined,
-        ) => {
-          if (!old) return old;
-          return {
-            ...old,
-            pages: old.pages.map((page) => ({
-              ...page,
-              data: page.data.map((m) => (m.id === payload.message.id ? payload.message : m)),
-            })),
-          };
-        },
-      );
+      replaceMessageById(qc, wid, activeChannelId, payload.message.id, payload.message);
     };
 
     const onDeleted = (payload: { channelId: string; messageId: string }) => {
       if (payload.channelId !== activeChannelId) return;
-      qc.setQueryData(
-        chatKeys.messages(wid, activeChannelId),
-        (
-          old:
-            | { pages: Array<{ data: ChatMessageWithAuthor[]; nextCursor: string | null }> }
-            | undefined,
-        ) => {
-          if (!old) return old;
-          return {
-            ...old,
-            pages: old.pages.map((page) => ({
-              ...page,
-              data: page.data.filter((m) => m.id !== payload.messageId),
-            })),
-          };
-        },
-      );
+      removeMessageById(qc, wid, activeChannelId, payload.messageId);
     };
 
     socket.on('message:new', onNew);
