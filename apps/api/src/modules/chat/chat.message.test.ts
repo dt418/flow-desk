@@ -59,6 +59,7 @@ vi.mock('../../shared/lib/prisma', () => ({
 vi.mock('@flow-desk/shared/pagination', () => ({
   decodeCursor: vi.fn(),
   encodeCursor: vi.fn().mockReturnValue('next-cursor'),
+  CursorPaginationQuery: { extend: vi.fn().mockReturnValue({ parse: vi.fn() }) },
 }));
 
 const now = new Date('2026-06-28T00:00:00Z');
@@ -181,7 +182,7 @@ describe('chat message routes', () => {
 describe('chat message schema', () => {
   it('createChatMessageSchema validates valid input', async () => {
     const { createChatMessageSchema } = await import('@flow-desk/shared/chat');
-    const result = createChatMessageSchema.parse({ content: 'hello' });
+    const result = createChatMessageSchema.parse({ channelId: 'cmramjecb00068lgvh01d3g37', content: 'hello', clientMessageId: 'test-123' });
     expect(result.content).toBe('hello');
     expect(result.mentionedUserIds).toEqual([]);
   });

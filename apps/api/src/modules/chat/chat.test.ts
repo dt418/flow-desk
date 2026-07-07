@@ -177,7 +177,7 @@ describe('chat routes', () => {
 describe('chat schema', () => {
   it('createChannelSchema validates valid input', async () => {
     const { createChannelSchema } = await import('@flow-desk/shared/chat');
-    const result = createChannelSchema.parse({ name: 'general', isPrivate: false });
+    const result = createChannelSchema.parse({ name: 'general', isPrivate: false, workspaceId: 'cmramg4pr000f7ggv657384wv' });
     expect(result.name).toBe('general');
     expect(result.isPrivate).toBe(false);
   });
