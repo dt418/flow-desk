@@ -21,6 +21,7 @@ import { assertMembership } from '../../shared/lib/access';
 import * as commentSvc from '../comment/comment.service';
 import { activityService } from '../activity';
 import { NotFoundError } from '../../shared/errors';
+import * as chatSvc from '../chat/chat.service';
 
 export const taskRouter = new Hono();
 taskRouter.use('*', requireAuth());
@@ -125,6 +126,14 @@ taskRouter.get('/:id/chat', async (c) => {
   const chatQuery = { taskId: id, limit, cursor: c.req.query('cursor') ?? undefined };
   const chatResult = await commentSvc.listComments(prisma, auth.user.id, chatQuery, true);
   return c.json({ data: chatResult.data, nextCursor: chatResult.nextCursor });
+});
+
+taskRouter.post('/:id/task-channel', async (c) => {
+  const auth = c.get('auth');
+  const id = c.req.param('id');
+  const task = await taskService.get(auth.user.id, id);
+  const channel = await chatSvc.getOrCreateTaskChannel(prisma, task.workspaceId, id);
+  return c.json({ data: channel });
 });
 
 taskRouter.get('/:id/activity', async (c) => {

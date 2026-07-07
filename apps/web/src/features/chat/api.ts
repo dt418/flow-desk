@@ -65,4 +65,10 @@ export const chatApi = {
       { method: 'DELETE' },
     );
   },
+
+  getTaskChannel(taskId: string) {
+    return api<{ data: ChannelView }>(`/api/tasks/${encodeURIComponent(taskId)}/task-channel`, {
+      method: 'POST',
+    });
+  },
 };

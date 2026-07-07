@@ -39,9 +39,21 @@ export function create(
     name: string;
     description?: string | null;
     isPrivate: boolean;
+    scope?: string;
+    taskId?: string | null;
   },
 ) {
   return prisma.chatChannel.create({ data });
+}
+
+export function findByScopeAndTask(
+  prisma: PrismaClient,
+  workspaceId: string,
+  taskId: string,
+) {
+  return prisma.chatChannel.findFirst({
+    where: { workspaceId, scope: 'TASK', taskId, deletedAt: null },
+  });
 }
 
 export function update(

@@ -133,3 +133,19 @@ export async function deleteChannel(
   }
   await repo.softDelete(prisma, channelId);
 }
+
+export async function getOrCreateTaskChannel(
+  prisma: PrismaClient,
+  workspaceId: string,
+  taskId: string,
+) {
+  const existing = await repo.findByScopeAndTask(prisma, workspaceId, taskId);
+  if (existing) return existing;
+  return repo.create(prisma, {
+    workspaceId,
+    name: `task-${taskId}`,
+    scope: 'TASK',
+    taskId,
+    isPrivate: false,
+  });
+}

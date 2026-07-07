@@ -1,24 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/features/auth';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { toast } from 'sonner';
 import { cn, initials } from '@/lib/utils';
-
-interface ChatComment {
-  id: string;
-  content: string;
-  authorId: string;
-  createdAt: string;
-  author: {
-    id: string;
-    name: string;
-    avatarUrl: string | null;
-  };
-}
+import { chatApi } from '../api';
+import { useMessages, useSendMessage, useFlattenedMessages } from '../hooks';
+import type { ChannelView } from '../types';
 
 function formatTime(dateStr: string): string {
   return new Date(dateStr).toLocaleTimeString(undefined, {
@@ -33,42 +23,34 @@ interface TaskChatProps {
 
 export function TaskChat({ taskId }: TaskChatProps) {
   const { user } = useAuth();
-  const qc = useQueryClient();
   const [input, setInput] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  const queryKey = ['task-chat', taskId];
-
-  const { data, isLoading, isError, error } = useQuery({
-    queryKey,
-    queryFn: () => api<{ data: ChatComment[] }>(`/api/tasks/${encodeURIComponent(taskId)}/chat`),
+  const { data: channelData, isLoading: channelLoading, isError: channelError } = useQuery({
+    queryKey: ['task-channel', taskId],
+    queryFn: () => chatApi.getTaskChannel(taskId),
     enabled: Boolean(taskId),
   });
 
-  const sendMutation = useMutation({
-    mutationFn: (content: string) =>
-      api<{ data: ChatComment }>('/api/comments', {
-        method: 'POST',
-        json: { taskId, content, isChat: true },
-      }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey });
-      setInput('');
-    },
-    onError: () => toast.error('Failed to send message'),
-  });
+  const channel: ChannelView | undefined = channelData?.data;
+  const wid = channel?.workspaceId ?? '';
+
+  const { data: messagesData, isLoading: messagesLoading, isError: messagesError } = useMessages(wid, channel?.id ?? '');
+  const messages = useFlattenedMessages(messagesData);
+
+  const sendMutation = useSendMessage(wid, channel?.id ?? '', user ?? { id: '', name: '', email: '', avatarUrl: null });
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [data]);
+  }, [messages]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       const trimmed = input.trim();
-      if (trimmed && !sendMutation.isPending) {
-        sendMutation.mutate(trimmed);
+      if (trimmed && !sendMutation.isPending && channel) {
+        sendMutation.mutate({ content: trimmed, channelId: channel.id, mentionedUserIds: [], clientMessageId: crypto.randomUUID() });
       }
     }
   };
@@ -79,6 +61,9 @@ export function TaskChat({ taskId }: TaskChatProps) {
     el.style.height = 'auto';
     el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
   };
+
+  const isLoading = channelLoading || messagesLoading;
+  const isError = channelError || messagesError;
 
   return (
     <div className="flex h-full flex-col">
@@ -94,15 +79,15 @@ export function TaskChat({ taskId }: TaskChatProps) {
             role="alert"
             className="m-3 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive"
           >
-            Failed to load chat: {(error as Error | null)?.message ?? 'unknown error'}
+            Failed to load chat
           </div>
         )}
-        {!isLoading && !isError && (!data?.data || data.data.length === 0) && (
+        {!isLoading && !isError && messages.length === 0 && (
           <div className="flex h-full items-center justify-center p-4">
             <p className="text-xs text-muted-foreground">No messages yet</p>
           </div>
         )}
-        {(data?.data ?? []).map((msg) => (
+        {messages.map((msg) => (
           <div
             key={msg.id}
             className={cn(
@@ -144,7 +129,7 @@ export function TaskChat({ taskId }: TaskChatProps) {
             placeholder="Chat…"
             aria-label="Chat message"
             rows={1}
-            disabled={sendMutation.isPending}
+            disabled={sendMutation.isPending || !channel}
             className="max-h-24 min-h-[32px] flex-1 resize-none rounded-lg border border-input bg-card px-3 py-1.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
           />
           <Button
@@ -152,11 +137,11 @@ export function TaskChat({ taskId }: TaskChatProps) {
             size="sm"
             onClick={() => {
               const trimmed = input.trim();
-              if (trimmed && !sendMutation.isPending) {
-                sendMutation.mutate(trimmed);
+              if (trimmed && !sendMutation.isPending && channel) {
+                sendMutation.mutate({ content: trimmed, channelId: channel.id, mentionedUserIds: [], clientMessageId: crypto.randomUUID() });
               }
             }}
-            disabled={sendMutation.isPending || !input.trim()}
+            disabled={sendMutation.isPending || !input.trim() || !channel}
             className="shrink-0"
           >
             Send
