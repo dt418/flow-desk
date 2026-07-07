@@ -98,11 +98,9 @@ export async function sendMessage(
   });
 
   if (recipientIds.length > 0) {
-    const notifications = await commentRepo.findNotificationsSince(
+    const notifications = await repo.findNotificationsForMessage(
       prisma,
-      recipientIds,
-      'COMMENT_REPLY',
-      message.createdAt,
+      message.id,
     );
     for (const notif of notifications) {
       safeEmit(() => emitToUser(notif.userId, 'notification:new', { notification: notif }), {

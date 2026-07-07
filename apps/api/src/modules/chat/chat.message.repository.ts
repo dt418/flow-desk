@@ -51,3 +51,12 @@ export function updateContent(prisma: PrismaClient, id: string, content: string)
 export function softDelete(prisma: PrismaClient, id: string) {
   return prisma.chatMessage.update({ where: { id }, data: { deletedAt: new Date() } });
 }
+
+export function findNotificationsForMessage(prisma: PrismaClient, messageId: string) {
+  return prisma.notification.findMany({
+    where: {
+      data: { path: ['messageId'], equals: messageId },
+    },
+    orderBy: { createdAt: 'asc' },
+  });
+}
