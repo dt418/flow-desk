@@ -140,6 +140,7 @@ export function useChatRealtime(wid: string, activeChannelId: string | null) {
     if (!activeChannelId || !wid) return;
 
     const onNew = (payload: { channelId: string; message: ChatMessageWithAuthor }) => {
+      qc.invalidateQueries({ queryKey: chatKeys.channels(wid) });
       if (payload.channelId !== activeChannelId) return;
       qc.setQueryData(
         chatKeys.messages(wid, activeChannelId),
@@ -157,7 +158,6 @@ export function useChatRealtime(wid: string, activeChannelId: string | null) {
           return { ...old, pages };
         },
       );
-      qc.invalidateQueries({ queryKey: chatKeys.channels(wid) });
     };
 
     const onUpdated = (payload: { channelId: string; message: ChatMessageWithAuthor }) => {
