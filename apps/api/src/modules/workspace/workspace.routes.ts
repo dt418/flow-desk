@@ -14,6 +14,7 @@ import { requireAuth, requireWorkspaceRole } from '../../shared/middleware/auth'
 import { rateLimit } from '../../shared/middleware/rate-limit';
 import { RATE_LIMITS } from '../../shared/lib/rate-limit-policies';
 import { NotFoundError, ForbiddenError, ConflictError } from '../../shared/errors';
+import { invalidateMembershipCache } from '../../shared/lib/auth-cache';
 import { workspaceService } from './workspace.service';
 import { memberService } from './member.service';
 
@@ -162,6 +163,7 @@ workspaceRouter.post(
     const member = await prisma.workspaceMember.create({
       data: { workspaceId: id, userId: user.id, role: body.role },
     });
+    await invalidateMembershipCache(id, user.id);
     return c.json({ member }, 201);
   },
 );
@@ -190,6 +192,7 @@ workspaceRouter.patch(
       where: { workspaceId_userId: { workspaceId: id, userId } },
       data: { role: body.role },
     });
+    await invalidateMembershipCache(id, userId);
     return c.json({ member });
   },
 );
@@ -212,6 +215,7 @@ workspaceRouter.delete(
     await prisma.workspaceMember.delete({
       where: { workspaceId_userId: { workspaceId: id, userId } },
     });
+    await invalidateMembershipCache(id, userId);
     return c.json({ ok: true });
   },
 );
