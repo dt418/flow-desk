@@ -17,7 +17,11 @@ export function createSocketServer(httpServer: HttpServer) {
   const subClient = redis.duplicate();
   io.adapter(createAdapter(pubClient, subClient));
 
-  io.use(async (socket, next) => {
+  // Auth middleware — apply to EACH namespace. io.use() only covers the
+  // default '/' namespace, which no client connects to; /tasks /collab
+  // /notifications were skipping auth → socket.data.userId stayed undefined
+  // → prisma 'userId is missing' on join-workspace.
+  const authMiddleware = async (socket: Socket, next: (err?: Error) => void) => {
     const token =
       (socket.handshake.auth?.token as string | undefined) ??
       socket.handshake.headers.authorization?.replace(/^Bearer\s+/i, '') ??
@@ -42,13 +46,14 @@ export function createSocketServer(httpServer: HttpServer) {
       logger.warn({ err }, 'socket auth failed');
       next(new Error('unauthorized'));
     }
-  });
+  };
 
   const tasksNs = io.of('/tasks');
   const notificationsNs = io.of('/notifications');
   const collabNs = io.of('/collab');
 
   for (const ns of [tasksNs, notificationsNs, collabNs]) {
+    ns.use(authMiddleware);
     ns.on('connection', (socket) => {
       const userId = socket.data.userId as string;
       socket.join(`user:${userId}`);
