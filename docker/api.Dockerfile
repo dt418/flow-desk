@@ -1,6 +1,7 @@
 FROM node:22-alpine AS base
 RUN corepack enable && corepack prepare pnpm@11.8.0 --activate
 WORKDIR /app
+ENV NODE_OPTIONS="--max-old-space-size=4096"
 
 FROM base AS deps
 COPY .npmrc ./
