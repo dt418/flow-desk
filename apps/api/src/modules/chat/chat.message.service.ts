@@ -273,3 +273,40 @@ export async function deleteMessage(
     logger.warn({ err: deleteResult.error }, 'failed to emit message:deleted');
   }
 }
+
+export async function markRead(
+  prisma: PrismaClient,
+  userId: string,
+  channelId: string,
+  upToMessageId: string,
+) {
+  const channel = await channelRepo.findUnique(prisma, channelId);
+  if (!channel || channel.deletedAt) throw new NotFoundError('Channel not found');
+  await assertMembership(channel.workspaceId, userId);
+
+  const existing = await prisma.chatMessageRead.findUnique({
+    where: { userId_messageId: { userId, messageId: upToMessageId } },
+  });
+
+  const readAt = new Date();
+
+  if (!existing) {
+    await prisma.chatMessageRead.create({
+      data: { userId, channelId, messageId: upToMessageId, readAt },
+    });
+  }
+
+  const readResult = safeEmit(
+    () =>
+      emitToRoom('/collab', `conversation:${channelId}`, 'message:read', {
+        userId,
+        channelId,
+        messageId: upToMessageId,
+        readAt: readAt.toISOString(),
+      }),
+    { event: 'message:read', channelId },
+  );
+  if (!readResult.ok) {
+    logger.warn({ err: readResult.error }, 'failed to emit message:read');
+  }
+}

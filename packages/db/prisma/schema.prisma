@@ -98,6 +98,7 @@ model User {
   notificationPreferences UserNotificationPreference[]
   activities        TaskActivity[]      @relation("UserActivities")
   savedFilters      SavedFilter[]        @relation("SavedFilterOwner")
+  chatMessageReads ChatMessageRead[]
 
   @@index([email])
   @@index([deletedAt])
@@ -395,10 +396,26 @@ model ChatMessage {
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
   deletedAt        DateTime?
+  readBy           ChatMessageRead[]
   @@unique([authorId, clientMessageId])
   @@index([channelId, createdAt])
   @@index([authorId])
   @@index([clientMessageId])
+}
+
+model ChatMessageRead {
+  id        String   @id @default(cuid())
+  userId    String
+  channelId String
+  messageId String
+  readAt    DateTime @default(now())
+
+  user    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, messageId])
+  @@index([channelId])
+  @@index([messageId])
 }
 
 model WorkspaceNotificationSetting {

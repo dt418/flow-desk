@@ -6,6 +6,7 @@ import { Loader2, RefreshCw } from 'lucide-react';
 interface MessageBubbleProps {
   message: ChatMessageWithAuthor;
   isOwn: boolean;
+  readByCount?: number;
   onResend?: (content: string) => void;
 }
 
@@ -26,7 +27,7 @@ function formatDate(dateStr: string): string {
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
-export function MessageBubble({ message, isOwn, onResend }: MessageBubbleProps) {
+export function MessageBubble({ message, isOwn, onResend, readByCount }: MessageBubbleProps) {
   const status = isOwn ? (message as ChatMessageWithAuthor & { status?: string }).status : undefined;
 
   return (
@@ -68,6 +69,9 @@ export function MessageBubble({ message, isOwn, onResend }: MessageBubbleProps) 
               <RefreshCw className="h-3 w-3" />
               Resend
             </button>
+          )}
+          {isOwn && readByCount !== undefined && readByCount > 0 && (
+            <span className="ml-1">Read by {readByCount}</span>
           )}
         </div>
       </div>
