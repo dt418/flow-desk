@@ -69,12 +69,33 @@ export async function sendMessage(
   const recipientIds = mentionedUserIds;
 
   const { message } = await prisma.$transaction(async (tx) => {
-    const msg = await repo.create(tx, {
-      channelId,
-      authorId: userId,
-      content: body.content,
-      mentionedUserIds,
-    });
+    let msg;
+    try {
+      msg = await repo.create(tx, {
+        channelId,
+        authorId: userId,
+        content: body.content,
+        mentionedUserIds,
+        clientMessageId: body.clientMessageId,
+      });
+    } catch (err: unknown) {
+      if (
+        err instanceof Error &&
+        'code' in err &&
+        (err as { code: string }).code === 'P2002' &&
+        body.clientMessageId
+      ) {
+        const existing = await repo.findByAuthorAndClientMessageId(
+          tx,
+          userId,
+          body.clientMessageId,
+        );
+        if (existing) {
+          return { message: existing };
+        }
+      }
+      throw err;
+    }
 
     if (recipientIds.length > 0) {
       await commentRepo.createManyNotifications(

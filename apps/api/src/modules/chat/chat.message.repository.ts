@@ -53,6 +53,17 @@ export function softDelete(prisma: PrismaClient, id: string) {
   return prisma.chatMessage.update({ where: { id }, data: { deletedAt: new Date() } });
 }
 
+export function findByAuthorAndClientMessageId(
+  prisma: PrismaClient,
+  authorId: string,
+  clientMessageId: string,
+) {
+  return prisma.chatMessage.findFirst({
+    where: { authorId, clientMessageId },
+    include: { author: { select: { id: true, name: true, email: true, avatarUrl: true } } },
+  });
+}
+
 export function findNotificationsForMessage(prisma: PrismaClient, messageId: string) {
   return prisma.notification.findMany({
     where: {
