@@ -1,7 +1,7 @@
 import type { prisma } from '../../shared/lib/prisma';
 type PrismaClient = typeof prisma;
 import type { CreateChannelInput, UpdateChannelInput } from '@flow-desk/shared/chat';
-import { NotFoundError, ConflictError } from '../../shared/errors';
+import { NotFoundError, ForbiddenError, ConflictError } from '../../shared/errors';
 import { assertMembership } from '../../shared/lib/access';
 import { emitToRoom } from '../../shared/lib/socket-events';
 import * as repo from './chat.repository';
@@ -34,9 +34,9 @@ export async function getChannel(
   workspaceId: string,
   channelId: string,
 ) {
-  await assertMembership(workspaceId, userId);
+  await repo.findAndValidateChannel(prisma, userId, workspaceId, channelId);
   const channel = await repo.findUniqueRaw(prisma, channelId);
-  if (!channel || channel.deletedAt || channel.workspaceId !== workspaceId) {
+  if (!channel) {
     throw new NotFoundError('Channel not found');
   }
   return {
@@ -96,11 +96,7 @@ export async function updateChannel(
   channelId: string,
   body: UpdateChannelInput,
 ) {
-  await assertMembership(workspaceId, userId);
-  const existing = await repo.findUnique(prisma, channelId);
-  if (!existing || existing.deletedAt || existing.workspaceId !== workspaceId) {
-    throw new NotFoundError('Channel not found');
-  }
+  const existing = await repo.findAndValidateChannel(prisma, userId, workspaceId, channelId);
 
   if (body.name && body.name !== existing.name) {
     const dup = await prisma.chatChannel.findFirst({
@@ -137,11 +133,7 @@ export async function deleteChannel(
   workspaceId: string,
   channelId: string,
 ) {
-  await assertMembership(workspaceId, userId);
-  const existing = await repo.findUnique(prisma, channelId);
-  if (!existing || existing.deletedAt || existing.workspaceId !== workspaceId) {
-    throw new NotFoundError('Channel not found');
-  }
+  await repo.findAndValidateChannel(prisma, userId, workspaceId, channelId);
   await repo.softDelete(prisma, channelId);
   emitToRoom('/collab', `workspace:${workspaceId}`, 'conversation:updated', {
     type: 'deleted',

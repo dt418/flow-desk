@@ -119,16 +119,16 @@ describe('chat integration', () => {
     });
 
     it('sends and lists messages in chronological order', async () => {
-      await messageSvc.sendMessage(db, ownerId, channelId, {
+      await messageSvc.sendMessage(db, ownerId, wid, channelId, {
         content: 'First',
         mentionedUserIds: [],
       });
-      await messageSvc.sendMessage(db, memberId, channelId, {
+      await messageSvc.sendMessage(db, memberId, wid, channelId, {
         content: 'Second',
         mentionedUserIds: [],
       });
 
-      const result = await messageSvc.listMessages(db, ownerId, channelId, {
+      const result = await messageSvc.listMessages(db, ownerId, wid, channelId, {
         channelId,
         limit: 50,
       });
@@ -141,7 +141,7 @@ describe('chat integration', () => {
 
     it('cursor pagination returns correct page', async () => {
       for (let i = 0; i < 5; i++) {
-        await messageSvc.sendMessage(db, ownerId, channelId, {
+        await messageSvc.sendMessage(db, ownerId, wid, channelId, {
           content: `Message ${i}`,
           mentionedUserIds: [],
         });
@@ -152,7 +152,7 @@ describe('chat integration', () => {
       let cursor: string | undefined;
       const pages: string[][] = [];
       for (let i = 0; i < 5; i++) {
-        const result = await messageSvc.listMessages(db, ownerId, channelId, {
+        const result = await messageSvc.listMessages(db, ownerId, wid, channelId, {
           channelId,
           limit: 2,
           cursor,
@@ -175,7 +175,7 @@ describe('chat integration', () => {
         content: 'Original',
         mentionedUserIds: [],
       });
-      const updated = await messageSvc.updateMessage(db, ownerId, channelId, msg.id, {
+      const updated = await messageSvc.updateMessage(db, ownerId, wid, channelId, msg.id, {
         content: 'Edited',
       });
       expect(updated.content).toBe('Edited');
@@ -187,7 +187,7 @@ describe('chat integration', () => {
         mentionedUserIds: [],
       });
       await expect(
-        messageSvc.updateMessage(db, memberId, channelId, msg.id, {
+        messageSvc.updateMessage(db, memberId, wid, channelId, msg.id, {
           content: 'Hacked',
         }),
       ).rejects.toThrow(BadRequestError);
@@ -198,9 +198,9 @@ describe('chat integration', () => {
         content: 'Delete me',
         mentionedUserIds: [],
       });
-      await messageSvc.deleteMessage(db, ownerId, channelId, msg.id);
+      await messageSvc.deleteMessage(db, ownerId, wid, channelId, msg.id);
       // After soft-delete, message should not appear in list
-      const result = await messageSvc.listMessages(db, ownerId, channelId, {
+      const result = await messageSvc.listMessages(db, ownerId, wid, channelId, {
         channelId,
         limit: 50,
       });
@@ -213,7 +213,7 @@ describe('chat integration', () => {
         mentionedUserIds: [],
       });
       void msg;
-      const result = await messageSvc.listMessages(db, ownerId, channelId, {
+      const result = await messageSvc.listMessages(db, ownerId, wid, channelId, {
         channelId,
         limit: 50,
       });
@@ -223,7 +223,7 @@ describe('chat integration', () => {
     });
 
     it('mentioned user receives a notification row', async () => {
-      await messageSvc.sendMessage(db, ownerId, channelId, {
+      await messageSvc.sendMessage(db, ownerId, wid, channelId, {
         content: 'Hey @Member look at this',
         mentionedUserIds: [memberId],
       });
@@ -243,7 +243,7 @@ describe('chat integration', () => {
     });
 
     it('self-mention does not create a notification', async () => {
-      await messageSvc.sendMessage(db, ownerId, channelId, {
+      await messageSvc.sendMessage(db, ownerId, wid, channelId, {
         content: 'talking to myself',
         mentionedUserIds: [ownerId, memberId],
       });

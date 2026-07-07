@@ -123,7 +123,7 @@ describe('IDOR cross-workspace protection', () => {
       isPrivate: false,
     });
 
-    const message = await messageSvc.sendMessage(prisma, ownerA.id, channel.id, {
+    const message = await messageSvc.sendMessage(prisma, ownerA.id, wsA.id, channel.id, {
       content: 'hello @member @outsider',
       mentionedUserIds: [member.id, outsider.id],
     });

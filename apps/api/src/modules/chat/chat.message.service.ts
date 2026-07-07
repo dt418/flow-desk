@@ -17,12 +17,11 @@ import * as repo from './chat.message.repository';
 export async function listMessages(
   prisma: PrismaClient,
   userId: string,
+  workspaceId: string,
   channelId: string,
   query: ListChatMessagesQuery,
 ) {
-  const channel = await channelRepo.findUnique(prisma, channelId);
-  if (!channel || channel.deletedAt) throw new NotFoundError('Channel not found');
-  await assertMembership(channel.workspaceId, userId);
+  const channel = await channelRepo.findAndValidateChannel(prisma, userId, workspaceId, channelId);
 
   const decoded = query.cursor ? decodeCursor(query.cursor) : null;
 
@@ -47,12 +46,11 @@ export async function listMessages(
 export async function sendMessage(
   prisma: PrismaClient,
   userId: string,
+  workspaceId: string,
   channelId: string,
   body: CreateChatMessageInput,
 ) {
-  const channel = await channelRepo.findUnique(prisma, channelId);
-  if (!channel || channel.deletedAt) throw new NotFoundError('Channel not found');
-  await assertMembership(channel.workspaceId, userId);
+  const channel = await channelRepo.findAndValidateChannel(prisma, userId, workspaceId, channelId);
 
   const requestedMentions = body.mentionedUserIds.filter((id) => id !== userId);
   let mentionedUserIds: string[] = [];
@@ -194,13 +192,12 @@ export async function sendMessage(
 export async function updateMessage(
   prisma: PrismaClient,
   userId: string,
+  workspaceId: string,
   channelId: string,
   messageId: string,
   body: UpdateChatMessageInput,
 ) {
-  const channel = await channelRepo.findUnique(prisma, channelId);
-  if (!channel || channel.deletedAt) throw new NotFoundError('Channel not found');
-  await assertMembership(channel.workspaceId, userId);
+  const channel = await channelRepo.findAndValidateChannel(prisma, userId, workspaceId, channelId);
 
   const existing = await repo.findUnique(prisma, messageId);
   if (!existing || existing.deletedAt || existing.channelId !== channelId) {
@@ -244,12 +241,11 @@ export async function updateMessage(
 export async function deleteMessage(
   prisma: PrismaClient,
   userId: string,
+  workspaceId: string,
   channelId: string,
   messageId: string,
 ) {
-  const channel = await channelRepo.findUnique(prisma, channelId);
-  if (!channel || channel.deletedAt) throw new NotFoundError('Channel not found');
-  await assertMembership(channel.workspaceId, userId);
+  const channel = await channelRepo.findAndValidateChannel(prisma, userId, workspaceId, channelId);
 
   const existing = await repo.findUnique(prisma, messageId);
   if (!existing || existing.deletedAt || existing.channelId !== channelId) {
@@ -277,12 +273,11 @@ export async function deleteMessage(
 export async function markRead(
   prisma: PrismaClient,
   userId: string,
+  workspaceId: string,
   channelId: string,
   upToMessageId: string,
 ) {
-  const channel = await channelRepo.findUnique(prisma, channelId);
-  if (!channel || channel.deletedAt) throw new NotFoundError('Channel not found');
-  await assertMembership(channel.workspaceId, userId);
+  const channel = await channelRepo.findAndValidateChannel(prisma, userId, workspaceId, channelId);
 
   const existing = await prisma.chatMessageRead.findUnique({
     where: { userId_messageId: { userId, messageId: upToMessageId } },

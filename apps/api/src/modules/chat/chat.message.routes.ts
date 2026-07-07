@@ -24,9 +24,9 @@ chatMessageRouter.get(
   }),
   async (c) => {
     const auth = c.get('auth');
-    const { channelId } = c.req.valid('param');
+    const { wid, channelId } = c.req.valid('param');
     const query = c.req.valid('query');
-    const result = await svc.listMessages(prisma, auth.user.id, channelId, query);
+    const result = await svc.listMessages(prisma, auth.user.id, wid, channelId, query);
     return c.json({ data: result.data, nextCursor: result.nextCursor });
   },
 );
@@ -36,24 +36,24 @@ chatMessageRouter.post(
   zValidator('param', messageParamsSchema.pick({ wid: true, channelId: true })),
   async (c) => {
     const auth = c.get('auth');
-    const { channelId } = c.req.valid('param');
+    const { wid, channelId } = c.req.valid('param');
     const body = createChatMessageSchema.parse(await c.req.json());
-    const message = await svc.sendMessage(prisma, auth.user.id, channelId, body);
+    const message = await svc.sendMessage(prisma, auth.user.id, wid, channelId, body);
     return c.json({ data: message }, 201);
   },
 );
 
 chatMessageRouter.patch('/:messageId', zValidator('param', messageParamsSchema), async (c) => {
   const auth = c.get('auth');
-  const { channelId, messageId } = c.req.valid('param');
+  const { wid, channelId, messageId } = c.req.valid('param');
   const body = updateChatMessageSchema.parse(await c.req.json());
-  const message = await svc.updateMessage(prisma, auth.user.id, channelId, messageId, body);
+  const message = await svc.updateMessage(prisma, auth.user.id, wid, channelId, messageId, body);
   return c.json({ data: message });
 });
 
 chatMessageRouter.delete('/:messageId', zValidator('param', messageParamsSchema), async (c) => {
   const auth = c.get('auth');
-  const { channelId, messageId } = c.req.valid('param');
-  await svc.deleteMessage(prisma, auth.user.id, channelId, messageId);
+  const { wid, channelId, messageId } = c.req.valid('param');
+  await svc.deleteMessage(prisma, auth.user.id, wid, channelId, messageId);
   return c.json({ ok: true });
 });

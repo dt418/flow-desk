@@ -44,6 +44,7 @@ export const messageSendSchema = z.object({
 });
 
 export const messageReadSchema = z.object({
+  workspaceId: z.string().min(1),
   channelId: z.string().min(1),
   messageId: z.string().min(1),
 });

@@ -104,7 +104,7 @@ describe('chat message service', () => {
     it('sends message successfully', async () => {
       mockCreateMessage.mockResolvedValue(mockMessage);
       const { sendMessage } = await import('./chat.message.service');
-      const result = await sendMessage(mockPrisma as any, 'user-1', 'ch-1', {
+      const result = await sendMessage(mockPrisma as any, 'user-1', 'ws-1', 'ch-1', {
         channelId: 'ch-1',
         content: 'hello',
         mentionedUserIds: [],
@@ -118,7 +118,7 @@ describe('chat message service', () => {
       mockFindChannel.mockResolvedValue(mockDeletedChannel);
       const { sendMessage } = await import('./chat.message.service');
       await expect(
-        sendMessage(mockPrisma as any, 'user-1', 'ch-1', {
+        sendMessage(mockPrisma as any, 'user-1', 'ws-1', 'ch-1', {
           channelId: 'ch-1',
           content: 'hi',
           mentionedUserIds: [],
@@ -132,7 +132,7 @@ describe('chat message service', () => {
     it('returns empty list', async () => {
       mockFindMessages.mockResolvedValue([]);
       const { listMessages } = await import('./chat.message.service');
-      const result = await listMessages(mockPrisma as any, 'user-1', 'ch-1', {
+      const result = await listMessages(mockPrisma as any, 'user-1', 'ws-1', 'ch-1', {
         channelId: 'ch-1',
         limit: 50,
       });
@@ -146,7 +146,7 @@ describe('chat message service', () => {
       mockFindMessage.mockResolvedValue(mockMessage);
       mockUpdateMessage.mockResolvedValue({ ...mockMessage, content: 'updated' });
       const { updateMessage } = await import('./chat.message.service');
-      const result = await updateMessage(mockPrisma as any, 'user-1', 'ch-1', 'msg-1', {
+      const result = await updateMessage(mockPrisma as any, 'user-1', 'ws-1', 'ch-1', 'msg-1', {
         content: 'updated',
       });
       expect(result.content).toBe('updated');
@@ -156,7 +156,7 @@ describe('chat message service', () => {
       mockFindMessage.mockResolvedValue({ ...mockMessage, authorId: 'other-user' });
       const { updateMessage } = await import('./chat.message.service');
       await expect(
-        updateMessage(mockPrisma as any, 'user-1', 'ch-1', 'msg-1', { content: 'x' }),
+        updateMessage(mockPrisma as any, 'user-1', 'ws-1', 'ch-1', 'msg-1', { content: 'x' }),
       ).rejects.toThrow('Cannot edit');
     });
   });
@@ -166,7 +166,7 @@ describe('chat message service', () => {
       mockFindMessage.mockResolvedValue(mockMessage);
       const { deleteMessage } = await import('./chat.message.service');
       await expect(
-        deleteMessage(mockPrisma as any, 'user-1', 'ch-1', 'msg-1'),
+        deleteMessage(mockPrisma as any, 'user-1', 'ws-1', 'ch-1', 'msg-1'),
       ).resolves.toBeUndefined();
     });
   });

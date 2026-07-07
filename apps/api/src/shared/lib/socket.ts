@@ -273,7 +273,7 @@ export function createSocketServer(httpServer: HttpServer) {
           if (!rl.allowed) return;
           const { markRead } = await import('../../modules/chat/chat.message.service');
           const { prisma } = await import('./prisma');
-          await markRead(prisma, userId, data.channelId, data.messageId);
+          await markRead(prisma, userId, data.workspaceId, data.channelId, data.messageId);
         }),
       );
 
@@ -306,9 +306,23 @@ export function createSocketServer(httpServer: HttpServer) {
 }
 
 let sweeperStop: (() => void) | null = null;
+let pubClient: ReturnType<typeof redis.duplicate> | null = null;
+let subClient: ReturnType<typeof redis.duplicate> | null = null;
 
 export function getSweeperStop(): (() => void) | null {
   return sweeperStop;
+}
+
+export function getPubSubClients(): { pubClient: typeof pubClient; subClient: typeof subClient } {
+  return { pubClient, subClient };
+}
+
+export function setPubSubClients(
+  pub: ReturnType<typeof redis.duplicate>,
+  sub: ReturnType<typeof redis.duplicate>,
+) {
+  pubClient = pub;
+  subClient = sub;
 }
 
 export type FlowDeskSocket = Socket;

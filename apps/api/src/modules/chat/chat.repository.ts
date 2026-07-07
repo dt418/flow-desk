@@ -1,5 +1,27 @@
 import type { prisma } from '../../shared/lib/prisma';
 type PrismaClient = typeof prisma;
+import { NotFoundError, ForbiddenError } from '../../shared/errors';
+
+export async function findAndValidateChannel(
+  prisma: PrismaClient,
+  userId: string,
+  workspaceId: string,
+  channelId: string,
+) {
+  const channel = await prisma.chatChannel.findUnique({ where: { id: channelId } });
+  if (!channel || channel.deletedAt || channel.workspaceId !== workspaceId) {
+    throw new NotFoundError('Channel not found');
+  }
+  if (channel.isPrivate) {
+    const member = await prisma.workspaceMember.findUnique({
+      where: { workspaceId_userId: { workspaceId, userId } },
+    });
+    if (!member) {
+      throw new ForbiddenError('You do not have access to this private channel');
+    }
+  }
+  return channel;
+}
 
 export function findByWorkspace(prisma: PrismaClient, workspaceId: string) {
   return prisma.chatChannel.findMany({
