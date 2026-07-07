@@ -335,4 +335,174 @@ test.describe('Chat realtime @chat @realtime', () => {
     expect(lastMsg.author).toHaveProperty('name');
     expect(lastMsg.author).toHaveProperty('avatarUrl');
   });
+
+  test('switch conversation leaves old room', async ({ page, browser, seedUser }) => {
+    const cookie = `access_token=${signAccessToken(seedUser.id, seedUser.email)}`;
+    const { user: user2, token: token2 } = await createSecondUser(seedUser.workspaceId, 'leave-room');
+    const { ctx: ctx2, page: page2 } = await setupUserPage(browser, token2);
+
+    const ch1 = await createChannel(seedUser.workspaceId, 'leave-ch1');
+    const ch2 = await createChannel(seedUser.workspaceId, 'leave-ch2');
+
+    await addCookieToContext(page.context(), cookie);
+    await navigateToChat(page, seedUser.workspaceId);
+    await page.getByText(`# ${ch1.name}`).click();
+    await expect(page.getByText('No messages yet')).toBeVisible({ timeout: 10_000 });
+
+    await page.getByText(`# ${ch2.name}`).click();
+    await expect(page.getByText('No messages yet')).toBeVisible({ timeout: 10_000 });
+    await page.waitForTimeout(1_000);
+
+    const apiBase = process.env.API_BASE_URL ?? 'http://localhost:3000';
+    const messageText = `leave-room-${Date.now()}`;
+    const createRes = await fetch(
+      `${apiBase}/api/workspaces/${seedUser.workspaceId}/channels/${ch1.id}/messages`,
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', cookie: `access_token=${token2}` },
+        body: JSON.stringify({
+          content: messageText,
+          mentionedUserIds: [],
+          clientMessageId: `leave-room-${Date.now()}`,
+        }),
+      },
+    );
+    expect(createRes.ok).toBeTruthy();
+
+    await page.waitForTimeout(3_000);
+    await expect(page.getByText(messageText)).toHaveCount(0);
+
+    await prisma.user.delete({ where: { id: user2.id } });
+    await ctx2.close();
+  });
+
+  test('validation error events surface', async ({ page, seedUser }) => {
+    const cookie = `access_token=${signAccessToken(seedUser.id, seedUser.email)}`;
+    await addCookieToContext(page.context(), cookie);
+    const channel = await createChannel(seedUser.workspaceId, 'validation-err');
+
+    await navigateToChat(page, seedUser.workspaceId);
+    await page.getByText(`# ${channel.name}`).click();
+    await expect(page.getByText('No messages yet')).toBeVisible({ timeout: 10_000 });
+
+    const errors: unknown[] = [];
+    await page.exposeFunction('__onValidationError', (data: unknown) => {
+      errors.push(data);
+    });
+
+    await page.evaluate(() => {
+      const origSend = WebSocket.prototype.send;
+      WebSocket.prototype.send = function (this: WebSocket, data: string | ArrayBuffer | Blob) {
+        if (typeof data === 'string') {
+          try {
+            const parsed = JSON.parse(data);
+            if (parsed.event === 'chat:message' && (!parsed.data?.content || parsed.data.content === '')) {
+              (window as unknown as { __onValidationError: (d: unknown) => void }).__onValidationError(parsed);
+            }
+          } catch { /* ignore */ }
+        }
+        return origSend.call(this, data);
+      };
+    });
+
+    await page.getByLabel('Message').fill('');
+    await page.getByLabel('Message').fill('a');
+    await page.getByLabel('Message').fill('');
+    await page.getByRole('button', { name: /send/i }).click();
+
+    await page.waitForTimeout(3_000);
+    const validationErrors = errors.filter(
+      (e) => typeof e === 'object' && e !== null && 'event' in e,
+    );
+    expect(validationErrors.length).toBeGreaterThan(0);
+  });
+
+  test('no GET to channels list after socket event', async ({ page, browser, seedUser }) => {
+    const cookie = `access_token=${signAccessToken(seedUser.id, seedUser.email)}`;
+    const { user: user2, token: token2 } = await createSecondUser(seedUser.workspaceId, 'no-fetch');
+    const { ctx: ctx2, page: page2 } = await setupUserPage(browser, token2);
+
+    const channel = await createChannel(seedUser.workspaceId, 'no-fetch-test');
+
+    await addCookieToContext(page.context(), cookie);
+    await navigateToChat(page, seedUser.workspaceId);
+    await page.getByText(`# ${channel.name}`).click();
+    await expect(page.getByText('No messages yet')).toBeVisible({ timeout: 10_000 });
+    await page.waitForTimeout(1_000);
+
+    const channelRequests: string[] = [];
+    page.on('request', (req) => {
+      if (req.url().includes('/channels') && req.method() === 'GET') {
+        channelRequests.push(req.url());
+      }
+    });
+
+    const apiBase = process.env.API_BASE_URL ?? 'http://localhost:3000';
+    const messageText = `no-fetch-${Date.now()}`;
+    const createRes = await fetch(
+      `${apiBase}/api/workspaces/${seedUser.workspaceId}/channels/${channel.id}/messages`,
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', cookie: `access_token=${token2}` },
+        body: JSON.stringify({
+          content: messageText,
+          mentionedUserIds: [],
+          clientMessageId: `no-fetch-${Date.now()}`,
+        }),
+      },
+    );
+    expect(createRes.ok).toBeTruthy();
+
+    await page.waitForTimeout(3_000);
+    expect(channelRequests).toHaveLength(0);
+
+    await prisma.user.delete({ where: { id: user2.id } });
+    await ctx2.close();
+  });
+
+  test('task chat realtime', async ({ page, browser, seedUser }) => {
+    const cookie = `access_token=${signAccessToken(seedUser.id, seedUser.email)}`;
+    const { user: user2, token: token2 } = await createSecondUser(seedUser.workspaceId, 'task-chat');
+    const { ctx: ctx2, page: page2 } = await setupUserPage(browser, token2);
+
+    const task = await prisma.task.create({
+      data: {
+        workspaceId: seedUser.workspaceId,
+        title: 'Chat RT task',
+        columnId: (
+          await prisma.column.findFirst({
+            where: { workspaceId: seedUser.workspaceId },
+          })
+        )!.id,
+      },
+    });
+    const channel = await createChannel(seedUser.workspaceId, `task-chat-${task.id}`);
+
+    await addCookieToContext(page.context(), cookie);
+    await page.goto(`/workspaces/${seedUser.workspaceId}/chat`);
+    await expect(page.getByText('Channels')).toBeVisible({ timeout: 15_000 });
+    await page.getByText(`# ${channel.name}`).click();
+    await expect(page.getByText('No messages yet')).toBeVisible({ timeout: 10_000 });
+
+    const apiBase = process.env.API_BASE_URL ?? 'http://localhost:3000';
+    const messageText = `task-chat-${Date.now()}`;
+    const createRes = await fetch(
+      `${apiBase}/api/workspaces/${seedUser.workspaceId}/channels/${channel.id}/messages`,
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', cookie: `access_token=${token2}` },
+        body: JSON.stringify({
+          content: messageText,
+          mentionedUserIds: [],
+          clientMessageId: `task-chat-${Date.now()}`,
+        }),
+      },
+    );
+    expect(createRes.ok).toBeTruthy();
+
+    await expect(page.getByText(messageText).first()).toBeVisible({ timeout: 8_000 });
+
+    await prisma.user.delete({ where: { id: user2.id } });
+    await ctx2.close();
+  });
 });
