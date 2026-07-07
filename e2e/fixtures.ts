@@ -87,9 +87,18 @@ export const test = base.extend<{
   hideDevtools: [
     async ({ page }, use) => {
       await page.addInitScript(() => {
-        const style = document.createElement('style');
-        style.textContent = '.tsqd-parent-container { display: none !important }';
-        document.head.appendChild(style);
+        // ponytail: TanStack devtools mounts into its own shadow DOM, so
+        // light-DOM CSS doesn't reach the SVG ellipse that overlays the
+        // page. Use a MutationObserver to remove the wrapper from the DOM
+        // entirely on every mount.
+        const remove = () => {
+          document.querySelectorAll('.tsqd-parent-container').forEach((el) => el.remove());
+        };
+        remove();
+        new MutationObserver(remove).observe(document.documentElement, {
+          childList: true,
+          subtree: true,
+        });
       });
       await use();
     },

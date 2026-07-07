@@ -24,7 +24,7 @@ createRoot(rootEl).render(
           </BrowserRouter>
         </TooltipProvider>
       </ThemeProvider>
-      {import.meta.env.DEV && (
+      {import.meta.env.DEV && !import.meta.env.VITE_DISABLE_DEVTOOLS && (
         <ReactQueryDevtools initialIsOpen={false} buttonPosition="bottom-right" />
       )}
     </QueryClientProvider>

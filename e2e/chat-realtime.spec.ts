@@ -38,9 +38,17 @@ async function setupUserPage(browser: import('@playwright/test').Browser, token:
   await addCookieToContext(ctx, `access_token=${token}`);
   const p = await ctx.newPage();
   await p.addInitScript(() => {
-    const s = document.createElement('style');
-    s.textContent = '.tsqd-parent-container { display: none !important }';
-    document.head.appendChild(s);
+    // ponytail: TanStack devtools mounts SVG into its own shadow DOM, so
+    // light-DOM CSS doesn't reach the ellipse. Strip the wrapper on every
+    // mutation so nothing overlays the page.
+    const remove = () => {
+      document.querySelectorAll('.tsqd-parent-container').forEach((el) => el.remove());
+    };
+    remove();
+    new MutationObserver(remove).observe(document.documentElement, {
+      childList: true,
+      subtree: true,
+    });
   });
   return { ctx, page: p };
 }
