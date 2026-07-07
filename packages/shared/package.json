@@ -86,6 +86,11 @@
       "types": "./dist/webhook.d.ts",
       "import": "./dist/webhook.mjs",
       "require": "./dist/webhook.js"
+    },
+    "./socket-events": {
+      "types": "./dist/socket-events.d.ts",
+      "import": "./dist/socket-events.mjs",
+      "require": "./dist/socket-events.js"
     }
   },
   "scripts": {
