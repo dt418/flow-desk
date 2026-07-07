@@ -44,7 +44,6 @@ export default function ChatPage() {
   const handleSend = (content: string) => {
     if (!activeChannelId) return;
     sendMessage.mutate({
-      channelId: activeChannelId,
       content,
       mentionedUserIds: [],
       clientMessageId: crypto.randomUUID(),

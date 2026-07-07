@@ -332,7 +332,6 @@ export function createSocketServer(httpServer: HttpServer) {
               return;
             }
             const message = await sendMessage(prisma, userId, channel.workspaceId, d.channelId, {
-              channelId: d.channelId,
               content: d.content,
               mentionedUserIds: d.mentionedUserIds,
               clientMessageId: d.clientMessageId,

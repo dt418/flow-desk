@@ -69,8 +69,11 @@ export const channelWithLatestSchema = channelViewSchema.extend({
 export type ChannelWithLatest = z.infer<typeof channelWithLatestSchema>;
 
 // Messages
+// ponytail: createChatMessageSchema previously required channelId in the
+// body, but the route already provides it via URL param. The service
+// signature takes channelId from the param too. Drop the duplicate — body
+// just needs content + mentions + client dedupe id.
 export const createChatMessageSchema = z.object({
-  channelId: cuidSchema,
   content: nonEmptyString,
   mentionedUserIds: z.array(cuidSchema).max(20).default([]),
   clientMessageId: z.string().min(1).max(64),

@@ -108,7 +108,6 @@ describe('chat message service', () => {
       mockCreateMessage.mockResolvedValue(mockMessage);
       const { sendMessage } = await import('./chat.message.service');
       const result = await sendMessage(mockPrisma as any, 'user-1', 'ws-1', 'ch-1', {
-        channelId: 'ch-1',
         content: 'hello',
         mentionedUserIds: [],
         clientMessageId: 'test-1',
@@ -122,7 +121,6 @@ describe('chat message service', () => {
       const { sendMessage } = await import('./chat.message.service');
       await expect(
         sendMessage(mockPrisma as any, 'user-1', 'ws-1', 'ch-1', {
-          channelId: 'ch-1',
           content: 'hi',
           mentionedUserIds: [],
           clientMessageId: 'test-2',
@@ -185,7 +183,6 @@ describe('chat message schema', () => {
   it('createChatMessageSchema validates valid input', async () => {
     const { createChatMessageSchema } = await import('@flow-desk/shared/chat');
     const result = createChatMessageSchema.parse({
-      channelId: 'cmramjecb00068lgvh01d3g37',
       content: 'hello',
       clientMessageId: 'test-123',
     });

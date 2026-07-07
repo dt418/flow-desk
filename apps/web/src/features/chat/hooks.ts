@@ -197,7 +197,7 @@ export function useSendMessage(
     socket.emit(
       'message:send',
       {
-        channelId: body.channelId,
+        channelId,
         content: body.content,
         clientMessageId: body.clientMessageId,
         mentionedUserIds: body.mentionedUserIds ?? [],
@@ -392,8 +392,5 @@ export function useReadReceipts(channelId: string | null) {
     return () => clearInterval(interval);
   }, [channelId]);
 
-  return useMemo(
-    () => (channelId ? getReadReceipts(channelId) : []),
-    [channelId],
-  );
+  return useMemo(() => (channelId ? getReadReceipts(channelId) : []), [channelId]);
 }

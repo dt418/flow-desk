@@ -27,7 +27,11 @@ export function TaskChat({ taskId }: TaskChatProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  const { data: channelData, isLoading: channelLoading, isError: channelError } = useQuery({
+  const {
+    data: channelData,
+    isLoading: channelLoading,
+    isError: channelError,
+  } = useQuery({
     queryKey: ['task-channel', taskId],
     queryFn: () => chatApi.getTaskChannel(taskId),
     enabled: Boolean(taskId),
@@ -36,10 +40,18 @@ export function TaskChat({ taskId }: TaskChatProps) {
   const channel: ChannelView | undefined = channelData?.data;
   const wid = channel?.workspaceId ?? '';
 
-  const { data: messagesData, isLoading: messagesLoading, isError: messagesError } = useMessages(wid, channel?.id ?? '');
+  const {
+    data: messagesData,
+    isLoading: messagesLoading,
+    isError: messagesError,
+  } = useMessages(wid, channel?.id ?? '');
   const messages = useFlattenedMessages(messagesData);
 
-  const sendMutation = useSendMessage(wid, channel?.id ?? '', user ?? { id: '', name: '', email: '', avatarUrl: null });
+  const sendMutation = useSendMessage(
+    wid,
+    channel?.id ?? '',
+    user ?? { id: '', name: '', email: '', avatarUrl: null },
+  );
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -50,7 +62,11 @@ export function TaskChat({ taskId }: TaskChatProps) {
       e.preventDefault();
       const trimmed = input.trim();
       if (trimmed && !sendMutation.isPending && channel) {
-        sendMutation.mutate({ content: trimmed, channelId: channel.id, mentionedUserIds: [], clientMessageId: crypto.randomUUID() });
+        sendMutation.mutate({
+          content: trimmed,
+          mentionedUserIds: [],
+          clientMessageId: crypto.randomUUID(),
+        });
       }
     }
   };
@@ -138,7 +154,11 @@ export function TaskChat({ taskId }: TaskChatProps) {
             onClick={() => {
               const trimmed = input.trim();
               if (trimmed && !sendMutation.isPending && channel) {
-                sendMutation.mutate({ content: trimmed, channelId: channel.id, mentionedUserIds: [], clientMessageId: crypto.randomUUID() });
+                sendMutation.mutate({
+                  content: trimmed,
+                  mentionedUserIds: [],
+                  clientMessageId: crypto.randomUUID(),
+                });
               }
             }}
             disabled={sendMutation.isPending || !input.trim() || !channel}

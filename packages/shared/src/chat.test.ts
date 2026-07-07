@@ -93,13 +93,12 @@ describe('updateChannelSchema', () => {
 
 describe('createChatMessageSchema', () => {
   it('requires non-empty content', () => {
-    expect(() => createChatMessageSchema.parse({ channelId: VALID_CUID, content: '' })).toThrow();
+    expect(() => createChatMessageSchema.parse({ content: '' })).toThrow();
   });
 
   it('accepts up to 20 mentions', () => {
     const mentions = Array.from({ length: 20 }, () => VALID_CUID);
     const result = createChatMessageSchema.parse({
-      channelId: VALID_CUID,
       content: 'hi @team',
       mentionedUserIds: mentions,
     });
@@ -110,7 +109,6 @@ describe('createChatMessageSchema', () => {
     const mentions = Array.from({ length: 21 }, () => VALID_CUID);
     expect(() =>
       createChatMessageSchema.parse({
-        channelId: VALID_CUID,
         content: 'hi',
         mentionedUserIds: mentions,
       }),
@@ -119,7 +117,6 @@ describe('createChatMessageSchema', () => {
 
   it('defaults mentionedUserIds to []', () => {
     const result = createChatMessageSchema.parse({
-      channelId: VALID_CUID,
       content: 'hello',
     });
     expect(result.mentionedUserIds).toEqual([]);
