@@ -135,6 +135,30 @@ export async function sendMessage(
     { event: 'message:new', channelId },
   );
 
+  safeEmit(
+    () =>
+      emitToUser(userId, 'message:new', {
+        channelId,
+        message: {
+          id: message.id,
+          channelId: message.channelId,
+          authorId: message.authorId,
+          content: message.content,
+          mentionedUserIds: message.mentionedUserIds,
+          createdAt: message.createdAt.toISOString(),
+          updatedAt: message.updatedAt.toISOString(),
+          editedAt: null,
+          author: {
+            id: message.author.id,
+            name: message.author.name,
+            email: message.author.email,
+            avatarUrl: message.author.avatarUrl,
+          },
+        },
+      }),
+    { event: 'message:new', channelId },
+  );
+
   return message;
 }
 
