@@ -5,7 +5,7 @@ import { serve } from '@hono/node-server';
 import { env } from './shared/lib/prisma';
 import { logger } from './shared/lib/logger';
 import { buildApp } from './app';
-import { createSocketServer, getSweeperStop } from './shared/lib/socket';
+import { createSocketServer, getSweeperStop, getPubSubClients } from './shared/lib/socket';
 import { setIo } from './shared/lib/socket-events';
 import { redis } from './shared/lib/redis';
 import { prisma } from './shared/lib/prisma';
@@ -42,7 +42,10 @@ const shutdown = async (signal: string) => {
   const stopSweeper = getSweeperStop();
   if (stopSweeper) stopSweeper();
 
-  // Close Redis
+  // Close Redis (including pub/sub clients used by the socket adapter)
+  const { pubClient, subClient } = getPubSubClients();
+  if (pubClient) await pubClient.quit();
+  if (subClient) await subClient.quit();
   await redis.quit();
 
   // Disconnect Prisma

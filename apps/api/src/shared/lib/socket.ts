@@ -74,6 +74,7 @@ export function createSocketServer(httpServer: HttpServer) {
   const pubClient = redis.duplicate();
   const subClient = redis.duplicate();
   io.adapter(createAdapter(pubClient, subClient));
+  setPubSubClients(pubClient, subClient);
 
   // Auth middleware — apply to EACH namespace. io.use() only covers the
   // default '/' namespace, which no client connects to; /tasks /collab
