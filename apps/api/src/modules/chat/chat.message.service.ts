@@ -127,7 +127,6 @@ export async function sendMessage(
           author: {
             id: message.author.id,
             name: message.author.name,
-            email: message.author.email,
             avatarUrl: message.author.avatarUrl,
           },
         },
@@ -151,7 +150,6 @@ export async function sendMessage(
           author: {
             id: message.author.id,
             name: message.author.name,
-            email: message.author.email,
             avatarUrl: message.author.avatarUrl,
           },
         },
@@ -199,7 +197,6 @@ export async function updateMessage(
           author: {
             id: message.author.id,
             name: message.author.name,
-            email: message.author.email,
             avatarUrl: message.author.avatarUrl,
           },
         },

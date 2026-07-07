@@ -4,6 +4,7 @@ import { cuidSchema, nonEmptyString } from '@flow-desk/shared/common';
 export const createChatMessageSchema = z.object({
   content: nonEmptyString.max(4000),
   mentionedUserIds: z.array(cuidSchema).max(20).default([]),
+  clientMessageId: z.string().optional(),
 });
 export type CreateChatMessageInput = z.infer<typeof createChatMessageSchema>;
 
@@ -31,6 +32,7 @@ export const chatMessageViewSchema = z.object({
   authorId: cuidSchema,
   content: z.string(),
   mentionedUserIds: z.array(cuidSchema),
+  clientMessageId: z.string().nullable().optional(),
   editedAt: z.string().nullable(),
   createdAt: z.string(),
   updatedAt: z.string(),

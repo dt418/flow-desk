@@ -12,7 +12,7 @@ export function findByChannel(
     take: opts.take,
     skip: opts.skip,
     include: {
-      author: { select: { id: true, name: true, email: true, avatarUrl: true } },
+      author: { select: { id: true, name: true, avatarUrl: true } },
     },
   });
 }
@@ -28,12 +28,13 @@ export function create(
     authorId: string;
     content: string;
     mentionedUserIds: string[];
+    clientMessageId?: string;
   },
 ) {
   return prisma.chatMessage.create({
     data,
     include: {
-      author: { select: { id: true, name: true, email: true, avatarUrl: true } },
+      author: { select: { id: true, name: true, avatarUrl: true } },
     },
   });
 }
@@ -43,7 +44,7 @@ export function updateContent(prisma: PrismaClient, id: string, content: string)
     where: { id },
     data: { content, updatedAt: new Date() },
     include: {
-      author: { select: { id: true, name: true, email: true, avatarUrl: true } },
+      author: { select: { id: true, name: true, avatarUrl: true } },
     },
   });
 }
