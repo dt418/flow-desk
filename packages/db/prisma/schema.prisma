@@ -388,11 +388,13 @@ model ChatMessage {
   author          User         @relation(fields: [authorId], references: [id])
   content         String
   mentionedUserIds String[]
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
-  deletedAt       DateTime?
+  clientMessageId  String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  deletedAt        DateTime?
   @@index([channelId, createdAt])
   @@index([authorId])
+  @@index([clientMessageId])
 }
 
 model WorkspaceNotificationSetting {

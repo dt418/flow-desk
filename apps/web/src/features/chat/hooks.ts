@@ -65,11 +65,29 @@ export function useMessages(wid: string, channelId: string) {
   });
 }
 
-export function useSendMessage(wid: string, channelId: string) {
+export function useSendMessage(
+  wid: string,
+  channelId: string,
+  user: { id: string; name: string; email: string; avatarUrl: string | null },
+) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (body: CreateChatMessageInput) => chatApi.sendMessage(wid, channelId, body),
-    onSuccess: (data) => {
+    onMutate: async (body) => {
+      await qc.cancelQueries({ queryKey: chatKeys.messages(wid, channelId) });
+      const optimistic: ChatMessageWithAuthor & { clientMessageId: string; status: 'sending' } = {
+        id: `temp-${body.clientMessageId}`,
+        channelId,
+        authorId: user.id,
+        content: body.content,
+        mentionedUserIds: body.mentionedUserIds ?? [],
+        clientMessageId: body.clientMessageId,
+        editedAt: null,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        author: { id: user.id, name: user.name, email: user.email, avatarUrl: user.avatarUrl },
+        status: 'sending',
+      };
       qc.setQueryData(
         chatKeys.messages(wid, channelId),
         (
@@ -81,14 +99,61 @@ export function useSendMessage(wid: string, channelId: string) {
           const pages = [...old.pages];
           if (pages.length > 0) {
             const first = { ...pages[0]! };
-            pages[0] = { ...first, data: [...first.data, data.data] };
+            pages[0] = { ...first, data: [...first.data, optimistic] };
           }
           return { ...old, pages };
         },
       );
+      return { clientMessageId: body.clientMessageId };
+    },
+    onSuccess: (data, _variables, context) => {
+      qc.setQueryData(
+        chatKeys.messages(wid, channelId),
+        (
+          old:
+            | { pages: Array<{ data: ChatMessageWithAuthor[]; nextCursor: string | null }> }
+            | undefined,
+        ) => {
+          if (!old) return old;
+          const cid = context?.clientMessageId;
+          return {
+            ...old,
+            pages: old.pages.map((page) => ({
+              ...page,
+              data: page.data.map((m) =>
+                cid && 'clientMessageId' in m && m.clientMessageId === cid ? data.data : m,
+              ),
+            })),
+          };
+        },
+      );
       qc.invalidateQueries({ queryKey: chatKeys.channels(wid) });
     },
-    onError: () => {
+    onError: (_err, _variables, context) => {
+      if (context?.clientMessageId) {
+        qc.setQueryData(
+          chatKeys.messages(wid, channelId),
+          (
+            old:
+              | { pages: Array<{ data: ChatMessageWithAuthor[]; nextCursor: string | null }> }
+              | undefined,
+          ) => {
+            if (!old) return old;
+            return {
+              ...old,
+              pages: old.pages.map((page) => ({
+                ...page,
+                data: page.data.map((m) =>
+                  'clientMessageId' in m &&
+                  m.clientMessageId === context.clientMessageId
+                    ? { ...m, status: 'failed' as const }
+                    : m,
+                ),
+              })),
+            };
+          },
+        );
+      }
       toast.error('Failed to send message');
     },
   });
@@ -150,10 +215,24 @@ export function useChatRealtime(wid: string, activeChannelId: string | null) {
             | undefined,
         ) => {
           if (!old) return old;
+          const serverMsg = payload.message;
+          const cid =
+            'clientMessageId' in serverMsg ? (serverMsg as { clientMessageId?: string }).clientMessageId : undefined;
+          if (cid) {
+            return {
+              ...old,
+              pages: old.pages.map((page) => ({
+                ...page,
+                data: page.data.map((m) =>
+                  'clientMessageId' in m && m.clientMessageId === cid ? serverMsg : m,
+                ),
+              })),
+            };
+          }
           const pages = [...old.pages];
           if (pages.length > 0) {
             const first = { ...pages[0]! };
-            pages[0] = { ...first, data: [...first.data, payload.message] };
+            pages[0] = { ...first, data: [...first.data, serverMsg] };
           }
           return { ...old, pages };
         },

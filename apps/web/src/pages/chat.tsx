@@ -26,7 +26,7 @@ export default function ChatPage() {
 
   const channelsQuery = useChannels(workspaceId);
   const messagesQuery = useMessages(workspaceId, activeChannelId ?? '');
-  const sendMessage = useSendMessage(workspaceId, activeChannelId ?? '');
+  const sendMessage = useSendMessage(workspaceId, activeChannelId ?? '', user!);
   const createChannel = useCreateChannel(workspaceId);
 
   useChatRealtime(workspaceId, activeChannelId);
@@ -39,7 +39,12 @@ export default function ChatPage() {
 
   const handleSend = (content: string) => {
     if (!activeChannelId) return;
-    sendMessage.mutate({ channelId: activeChannelId, content, mentionedUserIds: [] });
+    sendMessage.mutate({
+      channelId: activeChannelId,
+      content,
+      mentionedUserIds: [],
+      clientMessageId: crypto.randomUUID(),
+    });
   };
 
   const handleCreate = () => {
