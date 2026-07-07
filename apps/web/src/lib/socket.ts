@@ -14,6 +14,46 @@ const reconnectingSince = new Map<FlowDeskNamespace, number>();
 
 const STUCK_RECONNECT_TIMEOUT_MS = 15000;
 
+// Access token TTL is 15m (JWT_ACCESS_TTL). Refresh well before expiry so a
+// long-lived socket never handshakes with a stale token. Refresh cookies are
+// httpOnly and re-issued by POST /api/auth/refresh (sent via withCredentials).
+const REFRESH_INTERVAL_MS = 10 * 60 * 1000; // every 10m → leaves ≥5m margin
+let lastRefreshAt = 0;
+let refreshTimer: ReturnType<typeof setInterval> | null = null;
+
+function readAccessToken(): string {
+  if (typeof document === 'undefined') return '';
+  const match = document.cookie.match(/(?:^|;\s*)access_token=([^;]+)/);
+  return match ? decodeURIComponent(match[1]!) : '';
+}
+
+// Refresh the access_token cookie before it expires. Credentials: 'include'
+// lets the browser attach the httpOnly refresh_token cookie; the response
+// re-issues a fresh access_token cookie that the socket picks up on reconnect.
+async function refreshSocketToken(): Promise<void> {
+  const now = Date.now();
+  if (now - lastRefreshAt < REFRESH_INTERVAL_MS) return;
+  lastRefreshAt = now;
+
+  const apiUrl = import.meta.env.VITE_API_URL ?? '';
+  try {
+    await fetch(`${apiUrl}/api/auth/refresh`, {
+      method: 'POST',
+      credentials: 'include',
+    });
+  } catch {
+    // Network blip — next tick retries. Don't throw into the interval.
+    lastRefreshAt = 0;
+  }
+}
+
+function ensureRefreshLoop(): void {
+  if (refreshTimer !== null) return;
+  refreshTimer = setInterval(() => {
+    void refreshSocketToken();
+  }, REFRESH_INTERVAL_MS);
+}
+
 function getSocket(ns: FlowDeskNamespace): Socket {
   const existing = sockets.get(ns);
   if (existing) {
@@ -44,11 +84,7 @@ function getSocket(ns: FlowDeskNamespace): Socket {
   }
 
   const apiUrl = import.meta.env.VITE_API_URL ?? '';
-  const accessToken = (() => {
-    if (typeof document === 'undefined') return '';
-    const match = document.cookie.match(/(?:^|;\s*)access_token=([^;]+)/);
-    return match ? decodeURIComponent(match[1]!) : '';
-  })();
+  const accessToken = readAccessToken();
   const socket = io(`${apiUrl}${ns}`, {
     withCredentials: true,
     transports: ['websocket', 'polling'],
@@ -58,12 +94,18 @@ function getSocket(ns: FlowDeskNamespace): Socket {
     reconnectionDelayMax: 30000,
     randomizationFactor: 0.5,
     timeout: 20000,
-    auth: accessToken ? { token: accessToken } : undefined,
+    // Dynamic auth: re-read the latest token on every (re)connect so a
+    // refreshed cookie is used instead of the value captured at creation.
+    auth: () => {
+      const token = readAccessToken();
+      return token ? { token } : {};
+    },
     extraHeaders: accessToken ? { Cookie: `access_token=${accessToken}` } : undefined,
   });
   socket.io.on('reconnect', () => reconnectingSince.delete(ns));
   socket.on('connect', () => reconnectingSince.delete(ns));
   sockets.set(ns, socket);
+  ensureRefreshLoop();
   return socket;
 }
 
