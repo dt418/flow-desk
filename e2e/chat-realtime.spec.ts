@@ -506,3 +506,147 @@ test.describe('Chat realtime @chat @realtime', () => {
     await ctx2.close();
   });
 });
+
+test.describe('Phase 3', () => {
+  test('pure-socket send', async ({ page, browser, seedUser }) => {
+    const cookie = `access_token=${signAccessToken(seedUser.id, seedUser.email)}`;
+    const { user: user2, token: token2 } = await createSecondUser(seedUser.workspaceId, 'puresock');
+    const { ctx: ctx2, page: page2 } = await setupUserPage(browser, token2);
+
+    const channel = await createChannel(seedUser.workspaceId, 'puresock-test');
+
+    await addCookieToContext(page.context(), cookie);
+    await navigateToChat(page, seedUser.workspaceId);
+    await page.getByText(`# ${channel.name}`).click();
+    await expect(page.getByText('No messages yet')).toBeVisible({ timeout: 10_000 });
+
+    await navigateToChat(page2, seedUser.workspaceId);
+    await page2.getByText(`# ${channel.name}`).click();
+    await expect(page2.getByText('No messages yet')).toBeVisible({ timeout: 10_000 });
+    await page.waitForTimeout(1_000);
+
+    const messageText = `puresock-${Date.now()}`;
+    await page.evaluate(
+      ({ channelId, content }) => {
+        const sock = (window as unknown as { __socket?: { emit: (event: string, data: unknown) => void } }).__socket;
+        if (sock) {
+          sock.emit('chat:message', {
+            channelId,
+            content,
+            mentionedUserIds: [],
+            clientMessageId: `puresock-${Date.now()}`,
+          });
+        }
+      },
+      { channelId: channel.id, content: messageText },
+    );
+
+    await expect(page.getByText(messageText)).toBeVisible({ timeout: 8_000 });
+    await expect(page2.getByText(messageText).first()).toBeVisible({ timeout: 8_000 });
+
+    await prisma.user.delete({ where: { id: user2.id } });
+    await ctx2.close();
+  });
+
+  test('typing appears', async ({ page, browser, seedUser }) => {
+    const cookie = `access_token=${signAccessToken(seedUser.id, seedUser.email)}`;
+    const { user: user2, token: token2 } = await createSecondUser(seedUser.workspaceId, 'typing');
+    const { ctx: ctx2, page: page2 } = await setupUserPage(browser, token2);
+
+    const channel = await createChannel(seedUser.workspaceId, 'typing-test');
+
+    await addCookieToContext(page.context(), cookie);
+    await navigateToChat(page, seedUser.workspaceId);
+    await page.getByText(`# ${channel.name}`).click();
+    await expect(page.getByText('No messages yet')).toBeVisible({ timeout: 10_000 });
+
+    await navigateToChat(page2, seedUser.workspaceId);
+    await page2.getByText(`# ${channel.name}`).click();
+    await expect(page2.getByText('No messages yet')).toBeVisible({ timeout: 10_000 });
+
+    await page.getByLabel('Message').focus();
+    await expect(page2.getByText(/is typing/)).toBeVisible({ timeout: 5_000 });
+
+    await page.getByLabel('Message').blur();
+    await expect(page2.getByText(/is typing/)).not.toBeVisible({ timeout: 5_000 });
+
+    await prisma.user.delete({ where: { id: user2.id } });
+    await ctx2.close();
+  });
+
+  test('read receipt flips', async ({ page, browser, seedUser }) => {
+    const cookie = `access_token=${signAccessToken(seedUser.id, seedUser.email)}`;
+    const { user: user2, token: token2 } = await createSecondUser(seedUser.workspaceId, 'readreceipt');
+    const { ctx: ctx2, page: page2 } = await setupUserPage(browser, token2);
+
+    const channel = await createChannel(seedUser.workspaceId, 'readreceipt-test');
+
+    await addCookieToContext(page.context(), cookie);
+    await navigateToChat(page, seedUser.workspaceId);
+    await page.getByText(`# ${channel.name}`).click();
+    await expect(page.getByText('No messages yet')).toBeVisible({ timeout: 10_000 });
+
+    const messageText = `readreceipt-${Date.now()}`;
+    await page.getByLabel('Message').fill(messageText);
+    await page.getByRole('button', { name: /send/i }).click();
+    await expect(page.getByText(messageText)).toBeVisible({ timeout: 5_000 });
+
+    await navigateToChat(page2, seedUser.workspaceId);
+    await page2.getByText(`# ${channel.name}`).click();
+    await expect(page2.getByText(messageText)).toBeVisible({ timeout: 8_000 });
+
+    await expect(page.getByText(/Read by 1/)).toBeVisible({ timeout: 5_000 });
+
+    await prisma.user.delete({ where: { id: user2.id } });
+    await ctx2.close();
+  });
+
+  test('presence count', async ({ page, browser, seedUser }) => {
+    const cookie = `access_token=${signAccessToken(seedUser.id, seedUser.email)}`;
+    const { user: user2, token: token2 } = await createSecondUser(seedUser.workspaceId, 'presence');
+    const { ctx: ctx2, page2 } = await setupUserPage(browser, token2);
+
+    const channel = await createChannel(seedUser.workspaceId, 'presence-test');
+
+    await addCookieToContext(page.context(), cookie);
+    await navigateToChat(page, seedUser.workspaceId);
+    await page.getByText(`# ${channel.name}`).click();
+    await expect(page.getByText('No messages yet')).toBeVisible({ timeout: 10_000 });
+
+    await expect(page.getByText(/1 viewing|2 viewing/)).toBeVisible({ timeout: 5_000 });
+
+    await navigateToChat(page2, seedUser.workspaceId);
+    await page2.getByText(`# ${channel.name}`).click();
+    await expect(page2.getByText('2 viewing')).toBeVisible({ timeout: 8_000 });
+
+    await prisma.user.delete({ where: { id: user2.id } });
+    await ctx2.close();
+  });
+
+  test('channel CRUD appears', async ({ page, browser, seedUser }) => {
+    const cookie = `access_token=${signAccessToken(seedUser.id, seedUser.email)}`;
+    const { user: user2, token: token2 } = await createSecondUser(seedUser.workspaceId, 'crud');
+    const { ctx: ctx2, page2 } = await setupUserPage(browser, token2);
+
+    await addCookieToContext(page.context(), cookie);
+    await navigateToChat(page, seedUser.workspaceId);
+
+    await navigateToChat(page2, seedUser.workspaceId);
+
+    const channelName = `crud-new-${Date.now()}`;
+    const apiBase = process.env.API_BASE_URL ?? 'http://localhost:3000';
+    const createRes = await fetch(`${apiBase}/api/workspaces/${seedUser.workspaceId}/channels`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', cookie },
+      body: JSON.stringify({ name: channelName, isPrivate: false }),
+    });
+    expect(createRes.ok).toBeTruthy();
+
+    await expect(page2.getByText(`# ${channelName}`)).toBeVisible({ timeout: 8_000 });
+
+    await prisma.user.delete({ where: { id: user2.id } });
+    await ctx2.close();
+  });
+
+  // TODO: ACK timeout — needs server-side simulation of non-responding ACK. Skip for now.
+});
