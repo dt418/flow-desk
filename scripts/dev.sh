@@ -40,6 +40,12 @@ if [ ! -f .env ]; then
   exit 1
 fi
 
+# Source .env into this shell so POSTGRES_PORT / REDIS_PORT / etc. are visible
+# to the compose port mapping and our busy-checks. (docker-compose reads .env
+# itself, but $VAR expansions in this script need them exported here.)
+set -a
+. ./.env
+set +a
 # --- DB reset (optional) ---
 if [[ "${1:-}" == "reset" ]]; then
   log "Resetting database..."
@@ -48,29 +54,17 @@ fi
 
 # --- Infrastructure ---
 log "Starting postgres + redis..."
-# Use alternate ports if system services are running on defaults
-POSTGRES_PORT_VAL=${POSTGRES_PORT:-5432}
-REDIS_PORT_VAL=${REDIS_PORT:-6379}
-if ss -tlnp | grep -q ":${POSTGRES_PORT_VAL}"; then
-  POSTGRES_PORT_VAL=5433
-  log "Port 5432 in use → mapping to 5433"
-fi
-if ss -tlnp | grep -q ":${REDIS_PORT_VAL}"; then
-  REDIS_PORT_VAL=6380
-  log "Port 6379 in use → mapping to 6380"
-fi
-POSTGRES_PORT=$POSTGRES_PORT_VAL REDIS_PORT=$REDIS_PORT_VAL docker compose -f "$COMPOSE_FILE" up -d $INFRA_SERVICES
-
-# Update DATABASE_URL + REDIS_URL to match actual ports
-if [ "$POSTGRES_PORT_VAL" != "5432" ]; then
-  sed -i "s|localhost:5432|localhost:${POSTGRES_PORT_VAL}|g" .env
-  log "DATABASE_URL → localhost:${POSTGRES_PORT_VAL}"
-fi
-if [ "$REDIS_PORT_VAL" != "6379" ]; then
-  sed -i "s|localhost:6379|localhost:${REDIS_PORT_VAL}|g" .env
-  sed -i "s|127.0.0.1:6379|127.0.0.1:${REDIS_PORT_VAL}|g" .env
-  log "REDIS_URL → localhost:${REDIS_PORT_VAL}"
-fi
+# Ports come from .env (POSTGRES_PORT / REDIS_PORT). No silent remap, no .env
+# mutation — that sticky sed-rewrite corrupted .env across runs (REDIS_PORT=6379
+# but REDIS_URL=...:6380 from a prior remap) → ECONNREFUSED → ioredis crash →
+# dev tree died. Now: declare ports in .env, and `compose up -d` errors loud if
+# the host-side port bind conflicts with a foreign service.
+PG_PORT=${POSTGRES_PORT:-5432}
+RD_PORT=${REDIS_PORT:-6379}
+# Assert .env URL ports match the compose ports (the exact mismatch that bit us).
+grep -q "localhost:${PG_PORT}/" .env || err ".env DATABASE_URL must use localhost:${PG_PORT} (matches POSTGRES_PORT=${PG_PORT})"
+grep -q ":${RD_PORT}" .env || err ".env REDIS_URL must use :${RD_PORT} (matches REDIS_PORT=${RD_PORT})"
+docker compose -f "$COMPOSE_FILE" up -d $INFRA_SERVICES
 
 log "Waiting for services to be healthy..."
 timeout=30
@@ -97,6 +91,16 @@ FLOW_DESK_DB_MODE=local pnpm --filter @flow-desk/api db:migrate-deploy
 
 log "Seeding database..."
 FLOW_DESK_DB_MODE=local pnpm --filter @flow-desk/api db:seed || log "(seed skipped — DB may already have data)"
+
+# --- Port hygiene ---
+check_port() {
+  local port=$1 name=$2
+  if ss -tlnp 2>/dev/null | grep -q ":${port} "; then
+    err "Port ${port} (${name}) already in use (likely stale dev session) — Find: lsof -i :${port} | Kill: pkill -9 -f 'vite|tsx watch' && pkill -9 -f 'pnpm.*dev' | Then rerun: pnpm dev"
+  fi
+}
+check_port 3000 "API"
+check_port 5173 "Web"
 
 # --- Dev servers ---
 log "Starting dev servers..."
