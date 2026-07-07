@@ -73,6 +73,7 @@ export const createChatMessageSchema = z.object({
   channelId: cuidSchema,
   content: nonEmptyString,
   mentionedUserIds: z.array(cuidSchema).max(20).default([]),
+  clientMessageId: z.string().min(1).max(64),
 });
 export type CreateChatMessageInput = z.infer<typeof createChatMessageSchema>;
 
@@ -87,6 +88,7 @@ export const chatMessageViewSchema = z.object({
   authorId: cuidSchema,
   content: z.string(),
   mentionedUserIds: z.array(cuidSchema),
+  clientMessageId: z.string().optional(),
   editedAt: z.string().nullable(),
   createdAt: z.string(),
   updatedAt: z.string(),
