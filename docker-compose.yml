@@ -1,5 +1,19 @@
 name: flow-desk
 
+x-common-env: &common-env
+  NODE_ENV: production
+  DATABASE_URL: postgresql://${POSTGRES_USER:-flowdesk}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}@postgres:5432/${POSTGRES_DB:-flowdesk}?schema=public
+  REDIS_URL: redis://redis:6379
+  JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set in .env}
+  JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-15m}
+  JWT_REFRESH_TTL: ${JWT_REFRESH_TTL:-7d}
+  LOG_LEVEL: ${LOG_LEVEL:-info}
+  LLM_BASE_URL: ${LLM_BASE_URL:-https://api.openai.com/v1}
+  LLM_API_KEY: ${LLM_API_KEY:-sk-placeholder}
+  LLM_MODEL: ${LLM_MODEL:-gpt-4o-mini}
+  LLM_MAX_TOKENS: ${LLM_MAX_TOKENS:-2048}
+  LLM_TEMPERATURE: ${LLM_TEMPERATURE:-0.7}
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -43,22 +57,11 @@ services:
       redis:
         condition: service_healthy
     environment:
-      NODE_ENV: production
+      <<: *common-env
       PORT: 3000
-      DATABASE_URL: postgresql://${POSTGRES_USER:-flowdesk}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}@postgres:5432/${POSTGRES_DB:-flowdesk}?schema=public
-      REDIS_URL: redis://redis:6379
-      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set in .env}
-      JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-15m}
-      JWT_REFRESH_TTL: ${JWT_REFRESH_TTL:-7d}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:3000}
-      LLM_BASE_URL: ${LLM_BASE_URL:-https://api.openai.com/v1}
-      LLM_API_KEY: ${LLM_API_KEY:-sk-placeholder}
-      LLM_MODEL: ${LLM_MODEL:-gpt-4o-mini}
-      LLM_MAX_TOKENS: ${LLM_MAX_TOKENS:-2048}
-      LLM_TEMPERATURE: ${LLM_TEMPERATURE:-0.7}
       UPLOAD_DIR: /data/attachments
       MAX_UPLOAD_SIZE: ${MAX_UPLOAD_SIZE:-26214400}
-      LOG_LEVEL: ${LOG_LEVEL:-info}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-}
@@ -84,13 +87,7 @@ services:
       redis:
         condition: service_healthy
     environment:
-      NODE_ENV: production
-      DATABASE_URL: postgresql://${POSTGRES_USER:-flowdesk}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}@postgres:5432/${POSTGRES_DB:-flowdesk}?schema=public
-      REDIS_URL: redis://redis:6379
-      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set in .env}
-      JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-15m}
-      JWT_REFRESH_TTL: ${JWT_REFRESH_TTL:-7d}
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:3000}
+      <<: *common-env
       EMAIL_PROVIDER: ${EMAIL_PROVIDER:-nodemailer}
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-587}
@@ -99,12 +96,6 @@ services:
       RESEND_API_KEY: ${RESEND_API_KEY:-}
       DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-noreply@flowdesk.app}
       DEFAULT_FROM_NAME: ${DEFAULT_FROM_NAME:-FlowDesk}
-      LOG_LEVEL: ${LOG_LEVEL:-info}
-      LLM_BASE_URL: ${LLM_BASE_URL:-https://api.openai.com/v1}
-      LLM_API_KEY: ${LLM_API_KEY:-sk-placeholder}
-      LLM_MODEL: ${LLM_MODEL:-gpt-4o-mini}
-      LLM_MAX_TOKENS: ${LLM_MAX_TOKENS:-2048}
-      LLM_TEMPERATURE: ${LLM_TEMPERATURE:-0.7}
 
   web:
     build:

@@ -11,7 +11,7 @@ For new engineers joining the team. Read once, then keep open as a reference. Th
     packages/env/     # Environment variable validation (Zod)
     prisma.config.ts  # Prisma 7 config at repo root (schema path, seed, datasource)
     docker/           # Dockerfiles + nginx config
-    scripts/          # dev-local.sh, docker-up.sh, prisma-exec.sh
+    scripts/          # dev.sh (one-command dev), docker-up.sh, prisma-exec.sh
     docs/             # USER.md, DEV.md, ARCHITECTURE.md, superpowers/specs+plans/
     e2e/              # Playwright E2E (browser-based)
     plans/            # Audit remediation plans
@@ -44,43 +44,37 @@ Verify:
 
 ## Local Dev
 
-Three modes. Pick based on what you have running:
+One command does everything: starts postgres + redis in Docker, runs migrations + seed, then starts api + web + shared on the host with hot-reload.
 
-### Hybrid mode (recommended): Docker services + turbo dev
+    pnpm dev
+    # - starts postgres + redis via Docker (auto-detects port conflicts; 5432→5433, 6379→6380)
+    # - patches .env DATABASE_URL + REDIS_URL to match actual ports
+    # - pnpm install + shared build + prisma generate + migrate deploy + seed
+    # - turbo: shared tsup --watch + api tsx watch + web vite
 
-Starts postgres + redis in Docker, runs api + web + shared on the host via turbo. No local postgres/redis install needed.
+Ctrl-C stops app processes; postgres + redis stay running in Docker. To stop infra: `pnpm stack:dev-down`.
 
-    pnpm stack:dev                 # docker postgres + redis up (auto-detects port conflicts)
-    pnpm dev                       # turbo: shared tsup --watch + api tsx watch + web vite
+Reset DB before starting:
 
-Stop:
+    pnpm dev:reset                 # drop DB volume, then pnpm dev
 
-    pnpm stack:dev-down
+### Raw turbo dev (infra already up)
 
-Requires `.env` with:
+If postgres + redis are already up (Docker or native) and you only want the watch loop:
 
-- `DATABASE_URL=postgresql://flowdesk:postgres@localhost:5432/flowdesk?schema=public`
-- `REDIS_URL=redis://localhost:6390` (or 6379 if no port conflict)
+    pnpm dev:turbo                 # turbo: shared tsup --watch + api tsx watch + web vite
 
-Shared edits → tsup rebuilds dist → api tsx watch restarts. API edits restart within ~1s.
+No `.env` port patching. Use this when the `pnpm dev` wrapper isn't needed.
 
-### Docker hot-reload mode
+### Docker hot-reload mode (no host-side node)
 
-For iteration without host-side node. Binds host source into the api container:
+Binds host source into the api container:
 
     pnpm stack:dev-build           # one-time: bake tsx + tsup into api image
     pnpm stack:dev                 # up postgres + redis + api (bind-mounts apps/api/src + packages/shared/src)
-    # ... edit files on host ...
     pnpm stack:dev-down            # stop the dev stack
 
-### Pure local mode
-
-Requires local postgres on localhost:5432 and redis on localhost:6379 natively.
-
-    pnpm install
-    pnpm dev:local                 # install + shared build + prisma generate + migrate + seed + run api+web
-
-All three modes start shared (`tsup --watch`) + api (`tsx watch`) + web (vite) for hot-reload.
+All modes start shared (`tsup --watch`) + api (`tsx watch`) + web (vite) for hot-reload.
 
 ## Database (Prisma)
 
@@ -188,7 +182,7 @@ Done = implementation done + verification ran + evidence recorded + `./init.sh` 
 ## Common Pitfalls
 
 - `.env` keys in chat or commit messages → **rotate immediately**. Pre-commit secret scan blocks them in commits. Treat leaks as compromised the moment they reach scrollback.
-- Container hostname is `postgres:5432`. Host-side local dev (`pnpm dev:local`) needs `localhost:5432` in `.env`.
+- Container hostname is `postgres:5432`. Host-side local dev (`pnpm dev`) reads `localhost` from `.env`; the `pnpm dev` wrapper auto-rewrites the port in `.env` when it remaps to avoid host conflicts.
 - `apps/api/generated/prisma/` is gitignored. If a checkout "loses" Prisma types, run `pnpm db:generate` first.
 - `pnpm` 11 ignores `public-hoist-pattern` in `.npmrc`. Hoist settings live in `pnpm-workspace.yaml`. `prisma` and `@prisma/*` are public-hoisted on purpose for monorepo Docker builds.
 - Long-running feature branches accumulate symlinks; `pnpm install --no-frozen-lockfile` clears them.

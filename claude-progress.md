@@ -26,7 +26,40 @@
 - **Resolved risks (session 014)**: docker build broken with Prisma 5 + pnpm 11 + lefthook (root causes: (a) `.dockerignore` nested node_modules leak, (b) hoist settings in `.npmrc` ignored by pnpm 11 — both fixed). Also: full Prisma 5→7 migration (generator, config, adapter, imports, dockerfile, prisma-exec, seed ESM bundle).
 - **Security note**: `LLM_API_KEY` (sk-80c6f26e1...) was pasted in chat once during session 006. Recommend rotating the key at the provider. Key is in `.env`/`.env.local` (gitignored). Pre-commit hook blocks future leaks.
 
+### Session 028 — `pnpm dev` one-command wrapper + docker cleanup
+
+- **Date**: 2026-07-07
+- **Goal**: One-command local dev that just works (no manual port juggling, no separate infra start) — best-practice DX. Plus docker/compose housekeeping.
+- **Completed**:
+  - **`scripts/dev.sh`** (new) — starts postgres + redis via `docker compose up -d postgres redis`, auto-detects host port conflicts (5432/6379 in use → remap to 5433/6380), rewrites `.env` `DATABASE_URL`/`REDIS_URL` to match actual ports, runs `pnpm install` + `pnpm --filter @flow-desk/shared build` + `FLOW_DESK_DB_MODE=local db:generate` + `db:migrate-deploy` + `db:seed`, then `pnpm -r --parallel --filter @flow-desk/shared --filter @flow-desk/api --filter @flow-desk/web run dev`. Cleanup trap with `trap -` re-entry guard (fixed infinite "Stopping..." loop). Exports nothing; all env stays in `.env`.
+  - **`package.json`**: `dev` now `bash scripts/dev.sh`; added `dev:turbo` (`turbo run dev`) + `dev:reset` (`bash scripts/dev.sh reset`); removed `dev:local` (deprecated).
+  - **`scripts/dev-local.sh`** — now a 4-line shim that prints a deprecation note and `exec`s `scripts/dev.sh`.
+  - **`docker-compose.yml`**: `x-common-env` YAML anchor dedups DATABASE_URL/REDIS_URL/JWT/LLM/log-level between `api` and `email-worker`; service-specific keys (`PORT`, `CORS_ORIGINS`, `UPLOAD_DIR`, email SMTP, etc.) merge via `<<: *common-env`. `docker compose config --quiet` valid.
+  - **`docker/api.Dockerfile`**: dropped unused `deps` stage; consolidated `COPY apps/api/package.json apps/web/package.json packages/*/package.json ./` into one layer (was 5 separate `COPY` commands).
+  - **`docker/email-worker.Dockerfile`**: same cleanup as api (dropped `deps`, single package.json COPY).
+  - **`docker/web.Dockerfile`**: dropped redundant `deps` stage; build pulls from `shared` + `env-build` directly.
+  - **`docs/DEV.md` / `README.md` / `CHANGELOG.md` / `session-handoff.md`**: rewrote "Local Dev" sections — `pnpm dev` is now the one recommended command; `pnpm dev:turbo` for raw turbo; `pnpm dev:reset` for clean DB; removed the old 3-mode (hybrid/docker-hot/pure-local) split. Temporarily hardcoded port 6379→6380 during iteration was reverted per user instruction — `.env` stays at 6379, and `dev.sh` only remaps via env var when conflict detected (no hardcoded port overrides).
+- **Debugging trail** (caught during live test runs):
+  - `kill 0` re-entry in cleanup trap → infinite "Stopping..." spam → fixed with `trap - EXIT INT TERM` at start of `cleanup()`.
+  - Prisma ran in docker mode (auto-started full stack incl. api/web) → `FLOW_DESK_DB_MODE=local` on all `db:*` calls in `dev.sh`.
+  - `db:migrate:deploy` typo → `db:migrate-deploy` (actual script name).
+  - API crashed `ECONNREFUSED 127.0.0.1:6379` because `.env` REDIS_URL still pointed at default port while docker redis remapped to 6380 → added REDIS_URL rewrite alongside DATABASE_URL.
+  - `pnpm -r --parallel --filter "@a @b @c"` → no such package; must be separate `--filter` flags.
+- **Verification** (live, end-to-end):
+  - `pnpm dev` (backgrounded, 30s sleep) → `curl http://localhost:3000/api/health` returns `{"status":"ok","timestamp":"..."}`; web `curl -o /dev/null` returns HTTP 200.
+  - postgres + redis docker containers healthy on 5433/6380 (host system postgres/redis occupied 5432/6379).
+  - `docker compose config --quiet` → exit 0 (compose YAML valid).
+- **Verified state** bump: 35 features + F7 + E2E + kanban-sprint-1 + audit-002 all passing (no test changes this session — DX only).
+- **Risks remaining**: none new. R-24 (ai-001 LLM latency UX) is the only material carry-forward.
+- **Next best step**: Run `pnpm verify` to confirm lefthook gate green before committing; then commit with conventional message (`chore(dx): pnpm dev one-command + docker-compose DRY`).
+
 ## Session Log
+
+### 2026-07-07 17:52 — `20c3e1d` (main)
+
+- **type:**
+- **msg:**
+- **author:** thanhd
 
 ### 2026-07-05 22:43 — `41178df` (main)
 

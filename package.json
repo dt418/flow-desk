@@ -10,7 +10,8 @@
   },
   "scripts": {
     "build": "turbo run build",
-    "dev": "turbo run dev",
+    "dev": "bash scripts/dev.sh",
+    "dev:turbo": "turbo run dev",
     "typecheck": "turbo run typecheck",
     "lint": "turbo run lint",
     "test": "turbo run test",
@@ -30,7 +31,7 @@
     "stack:dev": "docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d",
     "stack:dev-build": "docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build",
     "stack:dev-down": "docker compose -f docker-compose.yml -f docker-compose.dev.yml down",
-    "dev:local": "bash scripts/dev-local.sh",
+    "dev:reset": "bash scripts/dev.sh reset",
     "prisma": "bash scripts/prisma-exec.sh",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,css,yml,yaml}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,css,yml,yaml}\"",

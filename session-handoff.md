@@ -1,6 +1,6 @@
 # Session Handoff — FlowDesk
 
-**Last session**: 024 (test fixes after audit batch) — 2026-07-03
+**Last session**: 028 (`pnpm dev` one-command wrapper + docker cleanup) — 2026-07-07
 
 **Status**: 35 features + F7 + E2E + kanban-sprint-1 + audit-002 all passing. 97/97 unit tests pass. Realistic seed data loaded (15 users, 6 workspaces, 51 tasks, 60 subtasks, 199 comments, 120 notifications, 16 attachments, 26 labels).
 
@@ -35,5 +35,5 @@
 - Stack: `pnpm stack:up` / `stack:up-build` / `stack:down` / `stack:logs` / `stack:ps`
 - Prisma: `pnpm db:push` / `db:migrate` / `db:seed` / `db:studio` / `db:reset`
 - Build/typecheck/test: `pnpm build` / `pnpm typecheck` / `pnpm test`
-- Local dev (no Docker): `pnpm dev:local`
+- Local dev: `pnpm dev` (one command — infra + migrate + seed + hot reload) / `pnpm dev:reset` (drop DB + dev) / `pnpm dev:turbo` (raw turbo, no host port patching)
 - Hooks: `pnpm setup:lefthook` / `pnpm check:secrets` / `pnpm verify`

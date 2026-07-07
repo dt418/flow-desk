@@ -2,7 +2,32 @@
 
 All notable changes to FlowDesk.
 
-## [Unreleased] — Sessions 011 + 012 + 013
+## [Unreleased] — Session 028 (dev workflow + docker)
+
+### Added — `pnpm dev` one-command wrapper
+
+- `scripts/dev.sh` — starts postgres + redis in Docker (auto-detects port conflicts; falls back to 5432→5433, 6379→6380), patches `.env` `DATABASE_URL` + `REDIS_URL` to match actual ports, runs `pnpm install` + shared build + prisma generate + migrate deploy + seed, then starts `shared tsup --watch` + `api tsx watch` + `web vite` in parallel via turbo. Ctrl-C stops app processes; infra stays running.
+- `pnpm dev:reset` — drops the postgres volume, then runs `pnpm dev` (clean DB).
+- `pnpm dev:turbo` — raw `turbo run dev` for infra-already-up cases (no `.env` patching).
+
+### Changed — Docker stack DRY
+
+- `docker-compose.yml` — `x-common-env` YAML anchor deduplicates shared env (DB/Redis/JWT/LLM/log-level) across `api` and `email-worker`.
+- `docker/api.Dockerfile` + `docker/email-worker.Dockerfile` — dropped unused `deps` stage; cleaner package.json COPY layer.
+- `docker/web.Dockerfile` — dropped redundant `deps` stage; uses `shared` + `env-build` directly.
+
+### Deprecated
+
+- `scripts/dev-local.sh` — redirects `pnpm dev:local` to `scripts/dev.sh` with a deprecation note.
+
+### Verified
+
+- `pnpm dev` → API `GET /api/health` returns `{"status":"ok"}`, web returns HTTP 200, hot-reload confirmed (tsup + tsx watch + vite).
+- `docker compose config --quiet` → valid compose syntax.
+
+---
+
+## [Earlier] — Sessions 011 + 012 + 013
 
 ### Session 013 (this commit)
 

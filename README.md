@@ -74,43 +74,37 @@ cd apps/api && pnpm db:seed      # same wrapper, same auto-detect
 
 ## Local dev
 
-Two modes depending on whether you have local postgres/redis or prefer Docker:
-
-### Hybrid mode (recommended): Docker services + turbo dev
-
-Starts postgres + redis in Docker, runs api + web + shared on the host via turbo. Best of both worlds — no local postgres/redis install needed, and native hot-reload performance.
+One command does everything: starts postgres + redis in Docker, runs migrations + seed, then starts api + web + shared on the host with hot-reload.
 
 ```bash
-# Start postgres + redis via Docker (auto-detects port conflicts)
-pnpm stack:dev            # docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
-# (only postgres + redis come up; api/web run on host via pnpm dev below)
-
-# In a second terminal:
-pnpm dev                  # turbo: shared tsup --watch + api tsx watch + web vite
+pnpm dev
+# - starts postgres + redis via Docker (auto-detects port conflicts; falls back to 5433/6380)
+# - patches .env DATABASE_URL + REDIS_URL to match actual ports
+# - pnpm install + shared build + prisma generate + migrate deploy + seed
+# - turbo: shared tsup --watch + api tsx watch + web vite
 ```
 
 - Web: <http://localhost:5173>
 - API: <http://localhost:3000>
 - Demo creds: `demo@flow-desk.app` / `demo1234`
 
-Requires `.env` with `DATABASE_URL=postgresql://flowdesk:postgres@localhost:5432/flowdesk?schema=public` (note: `postgres` password, not `flowdesk`; and `localhost`, not `docker-hostname`).
+Ctrl-C stops app processes; postgres + redis stay running in Docker. To stop infra: `pnpm stack:dev-down`.
 
-Shared edits (`packages/shared/src/**`) → tsup rebuilds dist → api tsx watch restarts automatically. API edits (`apps/api/src/**`) restart within ~1s.
-
-```bash
-pnpm stack:dev-down       # stop docker services when done
-```
-
-### Pure local mode: no Docker at all
-
-Requires postgres on `localhost:5432` and redis on `localhost:6379` running natively (apt, brew, etc).
+Reset DB before starting:
 
 ```bash
-pnpm install
-pnpm dev:local            # install + shared build + prisma generate + migrate + seed + run api+web
+pnpm dev:reset            # drop DB volume, then pnpm dev
 ```
 
-`dev:local` runs shared (`tsup --watch`) + api (`tsx watch`) + web (vite) in parallel via `pnpm -r --parallel`. Same hot-reload behavior as hybrid mode.
+### Raw turbo dev (no infra management)
+
+If postgres + redis are already up (Docker or native) and you only want the watch loop:
+
+```bash
+pnpm dev:turbo            # turbo: shared tsup --watch + api tsx watch + web vite
+```
+
+No `.env` port patching. Use this when the `pnpm dev` wrapper isn't needed.
 
 ## Dev mode with hot reload in Docker
 
@@ -145,7 +139,7 @@ packages/db/         # Prisma schema + migrations + generated client
 packages/env/        # Environment variable validation (Zod)
 prisma.config.ts     # Prisma 7 config (schema path, seed, datasource)
 docker/              # Dockerfiles + nginx config
-scripts/             # dev-local.sh, docker-up.sh, prisma-exec.sh
+scripts/             # dev.sh (one-command dev), docker-up.sh, prisma-exec.sh
 e2e/                 # Playwright E2E tests
 plans/               # Audit remediation plans
 PRD.md               # Product requirements
@@ -179,6 +173,7 @@ Bypass (emergency): `git commit --no-verify` / `git push --no-verify`.
 
 ## Recent changes
 
+- **Session 028 (dev workflow + docker)**: New `pnpm dev` one-command wrapper (`scripts/dev.sh`) — starts postgres + redis in Docker, patches `.env` ports, runs migrate + seed, then turbo watch loop with hot-reload. Auto port-conflict detection (5432→5433, 6379→6380). Dockerfiles + docker-compose cleaned (DRY `x-common-env` anchor, dropped unused `deps` stage). `dev:local` deprecated (redirects to `pnpm dev`).
 - **Session 025 (dev workflow)**: Fixed integration test env (Redis port 6379→6390, DB password flowdesk→postgres), created `apps/api/.env` symlink, verified 190/190 tests pass. Updated docs with hybrid dev mode (docker services + `pnpm dev`).
 - **Session 024 (test fixes)**: Fixed 7 broken unit tests + docker inspect error from audit batch changes. 97/97 unit tests pass.
 - **Session 023 (improve audit)**: Full /improve audit — 14 plans executed across 3 batches. Email worker, security, performance, tech debt, correctness, test pipeline all improved.
