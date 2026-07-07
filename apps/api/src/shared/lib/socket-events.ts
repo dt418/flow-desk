@@ -53,10 +53,18 @@ export function emitToTask(taskId: string, event: string, payload: EventPayload)
   emitToRoom('/tasks', `task:${taskId}`, event, payload);
 }
 
-export function safeEmit(fn: () => void, ctx: Record<string, unknown>): void {
+type EmitError = { type: 'emit'; event: string; message: string };
+type EmitResult = { ok: true } | { ok: false; error: EmitError };
+
+export function safeEmit(fn: () => void, ctx: Record<string, unknown>): EmitResult {
   try {
     fn();
+    return { ok: true };
   } catch (err) {
-    logger.warn({ err, ...ctx }, 'socket emit failed');
+    const event = typeof ctx.event === 'string' ? ctx.event : 'unknown';
+    return {
+      ok: false,
+      error: { type: 'emit', event, message: err instanceof Error ? err.message : String(err) },
+    };
   }
 }

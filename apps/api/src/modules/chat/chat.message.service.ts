@@ -7,6 +7,7 @@ import type {
 } from '@flow-desk/shared/chat';
 import { BadRequestError, NotFoundError } from '../../shared/errors';
 import { assertMembership } from '../../shared/lib/access';
+import { logger } from '../../shared/lib/logger';
 import { emitToRoom, emitToUser, safeEmit } from '../../shared/lib/socket-events';
 import { decodeCursor, encodeCursor } from '@flow-desk/shared/pagination';
 import * as channelRepo from './chat.repository';
@@ -124,15 +125,18 @@ export async function sendMessage(
       message.id,
     );
     for (const notif of notifications) {
-      safeEmit(() => emitToUser(notif.userId, 'notification:new', { notification: notif }), {
+      const notifResult = safeEmit(() => emitToUser(notif.userId, 'notification:new', { notification: notif }), {
         event: 'notification:new',
         notificationId: notif.id,
         userId: notif.userId,
       });
+      if (!notifResult.ok) {
+        logger.warn({ err: notifResult.error }, 'failed to emit notification:new');
+      }
     }
   }
 
-  safeEmit(
+  const roomResult = safeEmit(
     () =>
       emitToRoom('/collab', `conversation:${channelId}`, 'message:new', {
         channelId,
@@ -154,8 +158,11 @@ export async function sendMessage(
       }),
     { event: 'message:new', channelId },
   );
+  if (!roomResult.ok) {
+    logger.warn({ err: roomResult.error }, 'failed to emit message:new to room');
+  }
 
-  safeEmit(
+  const userResult = safeEmit(
     () =>
       emitToUser(userId, 'message:new', {
         channelId,
@@ -177,6 +184,9 @@ export async function sendMessage(
       }),
     { event: 'message:new', channelId },
   );
+  if (!userResult.ok) {
+    logger.warn({ err: userResult.error }, 'failed to emit message:new to user');
+  }
 
   return message;
 }
@@ -202,7 +212,7 @@ export async function updateMessage(
 
   const message = await repo.updateContent(prisma, messageId, body.content);
 
-  safeEmit(
+  const updateResult = safeEmit(
     () =>
       emitToRoom('/collab', `conversation:${channelId}`, 'message:updated', {
         channelId,
@@ -224,6 +234,9 @@ export async function updateMessage(
       }),
     { event: 'message:updated', channelId, messageId },
   );
+  if (!updateResult.ok) {
+    logger.warn({ err: updateResult.error }, 'failed to emit message:updated');
+  }
 
   return message;
 }
@@ -248,7 +261,7 @@ export async function deleteMessage(
 
   await repo.softDelete(prisma, messageId);
 
-  safeEmit(
+  const deleteResult = safeEmit(
     () =>
       emitToRoom('/collab', `conversation:${channelId}`, 'message:deleted', {
         channelId,
@@ -256,4 +269,7 @@ export async function deleteMessage(
       }),
     { event: 'message:deleted', channelId, messageId },
   );
+  if (!deleteResult.ok) {
+    logger.warn({ err: deleteResult.error }, 'failed to emit message:deleted');
+  }
 }
