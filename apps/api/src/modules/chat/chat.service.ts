@@ -3,6 +3,7 @@ type PrismaClient = typeof prisma;
 import type { CreateChannelInput, UpdateChannelInput } from '@flow-desk/shared/chat';
 import { NotFoundError, ConflictError } from '../../shared/errors';
 import { assertMembership } from '../../shared/lib/access';
+import { emitToRoom } from '../../shared/lib/socket-events';
 import * as repo from './chat.repository';
 
 export async function listChannels(prisma: PrismaClient, userId: string, workspaceId: string) {
@@ -71,7 +72,7 @@ export async function createChannel(
     description: body.description ?? null,
     isPrivate: body.isPrivate,
   });
-  return {
+  const result = {
     id: channel.id,
     workspaceId: channel.workspaceId,
     name: channel.name,
@@ -81,6 +82,11 @@ export async function createChannel(
     updatedAt: channel.updatedAt.toISOString(),
     latestMessage: null,
   };
+  emitToRoom('/collab', `workspace:${workspaceId}`, 'conversation:updated', {
+    type: 'created',
+    channel: result,
+  });
+  return result;
 }
 
 export async function updateChannel(
@@ -108,7 +114,7 @@ export async function updateChannel(
     description: body.description,
     isPrivate: body.isPrivate,
   });
-  return {
+  const result = {
     id: channel.id,
     workspaceId: channel.workspaceId,
     name: channel.name,
@@ -118,6 +124,11 @@ export async function updateChannel(
     updatedAt: channel.updatedAt.toISOString(),
     latestMessage: null,
   };
+  emitToRoom('/collab', `workspace:${workspaceId}`, 'conversation:updated', {
+    type: 'updated',
+    channel: result,
+  });
+  return result;
 }
 
 export async function deleteChannel(
@@ -132,6 +143,10 @@ export async function deleteChannel(
     throw new NotFoundError('Channel not found');
   }
   await repo.softDelete(prisma, channelId);
+  emitToRoom('/collab', `workspace:${workspaceId}`, 'conversation:updated', {
+    type: 'deleted',
+    channelId,
+  });
 }
 
 export async function getOrCreateTaskChannel(
