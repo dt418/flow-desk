@@ -23,6 +23,23 @@ import {
 const CHAT_PRESENCE_PREFIX = 'chat:presence:';
 const CHAT_PRESENCE_KEY = (channelId: string) => `${CHAT_PRESENCE_PREFIX}${channelId}`;
 
+// ponytail: simple Redis INCR rate limit for sockets. No sliding window needed
+// for these guard rails — fixed bucket is enough to block abuse.
+async function socketRateLimit(
+  key: string,
+  windowSec: number,
+  max: number,
+): Promise<{ allowed: boolean; retryAfterMs: number }> {
+  if (env.NODE_ENV === 'test') return { allowed: true, retryAfterMs: 0 };
+  const bucket = Math.floor(Date.now() / 1000 / windowSec);
+  const redisKey = `rl:socket:${key}:${bucket}`;
+  const count = (await redis.incr(redisKey)) as number;
+  if (count === 1) await redis.expire(redisKey, windowSec);
+  const pttl = await redis.pttl(redisKey);
+  const retryAfterMs = pttl > 0 ? pttl : 0;
+  return { allowed: count <= max, retryAfterMs };
+}
+
 async function broadcastChatPresence(
   io: SocketServer,
   channelId: string,
@@ -95,13 +112,31 @@ export function createSocketServer(httpServer: HttpServer) {
 
   for (const ns of [tasksNs, notificationsNs, collabNs]) {
     ns.use(authMiddleware);
-    ns.on('connection', (socket) => {
+    ns.on('connection', async (socket) => {
       const userId = socket.data.userId as string;
+
+      // C14: connection rate limit — 30/min per user per namespace
+      const connLimit = await socketRateLimit(`conn:${ns.name}:${userId}`, 60, 30);
+      if (!connLimit.allowed) {
+        socket.emit(SOCKET_EVENTS.Error, {
+          type: 'rate_limit',
+          message: 'Too many connections',
+          retryAfterMs: connLimit.retryAfterMs,
+        });
+        socket.disconnect(true);
+        return;
+      }
+
       socket.join(`user:${userId}`);
 
       socket.on(
         'join-workspace',
         withValidation(joinWorkspaceSchema, async (data, socket) => {
+          const rl = await socketRateLimit(`evt:join-workspace:${userId}`, 60, 10);
+          if (!rl.allowed) {
+            socket.emit(SOCKET_EVENTS.Error, { type: 'rate_limit', message: 'Rate limit exceeded', retryAfterMs: rl.retryAfterMs });
+            return;
+          }
           const { prisma } = await import('./prisma');
           const member = await prisma.workspaceMember.findUnique({
             where: {
@@ -128,6 +163,11 @@ export function createSocketServer(httpServer: HttpServer) {
       socket.on(
         'join-task',
         withValidation(joinTaskSchema, async (data, socket) => {
+          const rl = await socketRateLimit(`evt:join-task:${userId}`, 60, 20);
+          if (!rl.allowed) {
+            socket.emit(SOCKET_EVENTS.Error, { type: 'rate_limit', message: 'Rate limit exceeded', retryAfterMs: rl.retryAfterMs });
+            return;
+          }
           const { prisma } = await import('./prisma');
           const task = await prisma.task.findUnique({
             where: { id: data.taskId, deletedAt: null },
@@ -161,6 +201,11 @@ export function createSocketServer(httpServer: HttpServer) {
       socket.on(
         'conversation:join',
         withValidation(conversationJoinSchema, async (data, socket) => {
+          const rl = await socketRateLimit(`evt:conversation-join:${userId}`, 60, 20);
+          if (!rl.allowed) {
+            socket.emit(SOCKET_EVENTS.Error, { type: 'rate_limit', message: 'Rate limit exceeded', retryAfterMs: rl.retryAfterMs });
+            return;
+          }
           const { prisma } = await import('./prisma');
           const channel = await prisma.chatChannel.findUnique({
             where: { id: data.channelId, deletedAt: null },
@@ -224,6 +269,8 @@ export function createSocketServer(httpServer: HttpServer) {
       socket.on(
         'message:read',
         withValidation(messageReadSchema, async (data) => {
+          const rl = await socketRateLimit(`evt:message-read:${userId}`, 60, 30);
+          if (!rl.allowed) return;
           const { markRead } = await import('../../modules/chat/chat.message.service');
           const { prisma } = await import('./prisma');
           await markRead(prisma, userId, data.channelId, data.messageId);

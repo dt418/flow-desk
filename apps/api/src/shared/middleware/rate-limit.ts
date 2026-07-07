@@ -20,6 +20,11 @@ const RATE_LIMIT_SCRIPT = `
   return count
 `;
 
+async function getRedisKeyTTL(key: string): Promise<number> {
+  const ttl = await redis.pttl(key);
+  return ttl > 0 ? Math.ceil(ttl / 1000) : 0;
+}
+
 function getClientIp(c: { req: { header: (k: string) => string | undefined } }): string {
   if (env.TRUST_PROXY_HOPS > 0) {
     const xff = c.req.header('x-forwarded-for');
@@ -57,7 +62,8 @@ export function rateLimit(opts: RateLimitOptions): MiddlewareHandler {
     c.header('X-RateLimit-Reset', String(resetEpoch));
 
     if (count > max) {
-      throw new RateLimitError('Too Many Requests', windowSec);
+      const retryAfter = await getRedisKeyTTL(key);
+      throw new RateLimitError('Too Many Requests', retryAfter);
     }
 
     return next();
