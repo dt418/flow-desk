@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery, useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import type {
+  ChannelView,
   ChatMessageWithAuthor,
   CreateChannelInput,
   UpdateChannelInput,
@@ -80,91 +81,112 @@ export function useSendMessage(
   user: { id: string; name: string; email: string; avatarUrl: string | null },
 ) {
   const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (body: CreateChatMessageInput) => chatApi.sendMessage(wid, channelId, body),
-    onMutate: async (body) => {
-      await qc.cancelQueries({ queryKey: chatKeys.messages(wid, channelId) });
-      const optimistic: ChatMessageWithAuthor & { clientMessageId: string; status: 'sending' } = {
-        id: `temp-${body.clientMessageId}`,
-        channelId,
-        authorId: user.id,
+  const { socket } = useNamespacedSocket('/collab');
+  const [isPending, setIsPending] = useState(false);
+
+  const optimisticInsert = (body: CreateChatMessageInput) => {
+    const optimistic: ChatMessageWithAuthor & { clientMessageId: string; status: 'sending' } = {
+      id: `temp-${body.clientMessageId}`,
+      channelId,
+      authorId: user.id,
+      content: body.content,
+      mentionedUserIds: body.mentionedUserIds ?? [],
+      clientMessageId: body.clientMessageId,
+      editedAt: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      author: { id: user.id, name: user.name, email: user.email, avatarUrl: user.avatarUrl },
+      status: 'sending',
+    };
+    qc.setQueryData(
+      chatKeys.messages(wid, channelId),
+      (
+        old:
+          | { pages: Array<{ data: ChatMessageWithAuthor[]; nextCursor: string | null }> }
+          | undefined,
+      ) => {
+        if (!old) return old;
+        const pages = [...old.pages];
+        if (pages.length > 0) {
+          const first = { ...pages[0]! };
+          pages[0] = { ...first, data: [...first.data, optimistic] };
+        }
+        return { ...old, pages };
+      },
+    );
+    return body.clientMessageId;
+  };
+
+  const replaceWithServer = (clientMessageId: string, message: ChatMessageWithAuthor) => {
+    qc.setQueryData(
+      chatKeys.messages(wid, channelId),
+      (
+        old:
+          | { pages: Array<{ data: ChatMessageWithAuthor[]; nextCursor: string | null }> }
+          | undefined,
+      ) => {
+        if (!old) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page) => ({
+            ...page,
+            data: page.data.map((m) =>
+              'clientMessageId' in m && m.clientMessageId === clientMessageId ? message : m,
+            ),
+          })),
+        };
+      },
+    );
+  };
+
+  const markFailed = (clientMessageId: string) => {
+    qc.setQueryData(
+      chatKeys.messages(wid, channelId),
+      (
+        old:
+          | { pages: Array<{ data: ChatMessageWithAuthor[]; nextCursor: string | null }> }
+          | undefined,
+      ) => {
+        if (!old) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page) => ({
+            ...page,
+            data: page.data.map((m) =>
+              'clientMessageId' in m && m.clientMessageId === clientMessageId
+                ? { ...m, status: 'failed' as const }
+                : m,
+            ),
+          })),
+        };
+      },
+    );
+  };
+
+  const mutate = (body: CreateChatMessageInput) => {
+    setIsPending(true);
+    const clientMessageId = optimisticInsert(body);
+    socket.emit(
+      'message:send',
+      {
+        channelId: body.channelId,
         content: body.content,
-        mentionedUserIds: body.mentionedUserIds ?? [],
         clientMessageId: body.clientMessageId,
-        editedAt: null,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        author: { id: user.id, name: user.name, email: user.email, avatarUrl: user.avatarUrl },
-        status: 'sending',
-      };
-      qc.setQueryData(
-        chatKeys.messages(wid, channelId),
-        (
-          old:
-            | { pages: Array<{ data: ChatMessageWithAuthor[]; nextCursor: string | null }> }
-            | undefined,
-        ) => {
-          if (!old) return old;
-          const pages = [...old.pages];
-          if (pages.length > 0) {
-            const first = { ...pages[0]! };
-            pages[0] = { ...first, data: [...first.data, optimistic] };
-          }
-          return { ...old, pages };
-        },
-      );
-      return { clientMessageId: body.clientMessageId };
-    },
-    onSuccess: (data, _variables, context) => {
-      qc.setQueryData(
-        chatKeys.messages(wid, channelId),
-        (
-          old:
-            | { pages: Array<{ data: ChatMessageWithAuthor[]; nextCursor: string | null }> }
-            | undefined,
-        ) => {
-          if (!old) return old;
-          const cid = context?.clientMessageId;
-          return {
-            ...old,
-            pages: old.pages.map((page) => ({
-              ...page,
-              data: page.data.map((m) =>
-                cid && 'clientMessageId' in m && m.clientMessageId === cid ? data.data : m,
-              ),
-            })),
-          };
-        },
-      );
-    },
-    onError: (_err, _variables, context) => {
-      if (context?.clientMessageId) {
-        qc.setQueryData(
-          chatKeys.messages(wid, channelId),
-          (
-            old:
-              | { pages: Array<{ data: ChatMessageWithAuthor[]; nextCursor: string | null }> }
-              | undefined,
-          ) => {
-            if (!old) return old;
-            return {
-              ...old,
-              pages: old.pages.map((page) => ({
-                ...page,
-                data: page.data.map((m) =>
-                  'clientMessageId' in m &&
-                  m.clientMessageId === context.clientMessageId
-                    ? { ...m, status: 'failed' as const }
-                    : m,
-                ),
-              })),
-            };
-          },
-        );
-      }
-      toast.error('Failed to send message');
-    },
-  });
+        mentionedUserIds: body.mentionedUserIds ?? [],
+      },
+      (response: { ok: boolean; message?: ChatMessageWithAuthor; error?: string }) => {
+        if (response.ok && response.message) {
+          replaceWithServer(clientMessageId, response.message);
+        } else {
+          markFailed(clientMessageId);
+          toast.error(response.error ?? 'Failed to send message');
+        }
+        setIsPending(false);
+      },
+    );
+  };
+
+  return { mutate, isPending };
 }
 
 export function useUpdateMessage(wid: string, channelId: string) {
@@ -261,6 +283,29 @@ export function useChatRealtime(wid: string, activeChannelId: string | null) {
       socket.off('message:deleted', onDeleted);
     };
   }, [socket, wid, activeChannelId, qc]);
+
+  useEffect(() => {
+    if (!wid) return;
+
+    const onConversationUpdated = (payload: {
+      type: 'created' | 'updated' | 'deleted';
+      channel?: { id: string; name: string; description: string | null; [key: string]: unknown };
+      channelId?: string;
+    }) => {
+      if (payload.type === 'created' && payload.channel) {
+        appendChannelToList(qc, wid, payload.channel as ChannelView);
+      } else if (payload.type === 'updated' && payload.channel) {
+        patchChannelInList(qc, wid, payload.channel.id, payload.channel);
+      } else if (payload.type === 'deleted' && payload.channelId) {
+        removeChannelFromList(qc, wid, payload.channelId);
+      }
+    };
+
+    socket.on('conversation:updated', onConversationUpdated);
+    return () => {
+      socket.off('conversation:updated', onConversationUpdated);
+    };
+  }, [socket, wid, qc]);
 }
 
 export function useFlattenedMessages(

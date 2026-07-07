@@ -15,6 +15,8 @@ import {
   leaveTaskSchema,
   conversationJoinSchema,
   conversationLeaveSchema,
+  typingStartSchema,
+  typingStopSchema,
 } from '../../modules/realtime/schemas';
 
 export function withValidation<T>(schema: ZodSchema<T>, handler: (data: T, socket: Socket) => void) {
@@ -170,7 +172,40 @@ export function createSocketServer(httpServer: HttpServer) {
         }),
       );
 
+      const typingChannels = new Set<string>();
+
+      socket.on(
+        'typing:start',
+        withValidation(typingStartSchema, (data, socket) => {
+          typingChannels.add(data.channelId);
+          socket.to(`conversation:${data.channelId}`).emit('typing:start', {
+            channelId: data.channelId,
+            userId,
+            userName: socket.data.userName,
+            userAvatar: socket.data.userAvatar,
+          });
+        }),
+      );
+
+      socket.on(
+        'typing:stop',
+        withValidation(typingStopSchema, (data, socket) => {
+          typingChannels.delete(data.channelId);
+          socket.to(`conversation:${data.channelId}`).emit('typing:stop', {
+            channelId: data.channelId,
+            userId,
+          });
+        }),
+      );
+
       socket.on('disconnect', () => {
+        for (const channelId of typingChannels) {
+          socket.to(`conversation:${channelId}`).emit('typing:stop', {
+            channelId,
+            userId,
+          });
+        }
+        typingChannels.clear();
         socket.rooms.forEach((room) => {
           if (room !== socket.id) socket.leave(room);
         });
