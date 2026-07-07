@@ -11,8 +11,10 @@ interface ChannelViewProps {
   hasMore: boolean;
   onLoadMore: () => void;
   onSend: (content: string) => void;
+  onResend: (content: string) => void;
   currentUserId: string;
   sending?: boolean;
+  viewerCount?: number;
 }
 
 export function ChannelView({
@@ -22,8 +24,10 @@ export function ChannelView({
   hasMore,
   onLoadMore,
   onSend,
+  onResend,
   currentUserId,
   sending,
+  viewerCount,
 }: ChannelViewProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const topRef = useRef<HTMLDivElement>(null);
@@ -47,7 +51,14 @@ export function ChannelView({
   return (
     <div className="flex h-full flex-col">
       <header className="shrink-0 border-b border-border px-4 py-3">
-        <h2 className="text-sm font-semibold"># {channel.name}</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold"># {channel.name}</h2>
+          {viewerCount != null && viewerCount > 0 && (
+            <span className="text-xs text-muted-foreground">
+              {viewerCount} {viewerCount === 1 ? 'viewer' : 'viewers'}
+            </span>
+          )}
+        </div>
         {channel.description && (
           <p className="mt-0.5 text-xs text-muted-foreground">{channel.description}</p>
         )}
@@ -81,7 +92,12 @@ export function ChannelView({
         )}
 
         {messages.map((msg) => (
-          <MessageBubble key={msg.id} message={msg} isOwn={msg.authorId === currentUserId} />
+          <MessageBubble
+            key={msg.id}
+            message={msg}
+            isOwn={msg.authorId === currentUserId}
+            onResend={onResend}
+          />
         ))}
         <div ref={bottomRef} />
       </div>

@@ -21,6 +21,24 @@ import {
   removeMessageById,
 } from './cache';
 
+type ReadReceipt = { userId: string; messageId: string; readAt: string };
+const readReceiptsState = new Map<string, ReadReceipt[]>();
+
+function getReadReceipts(channelId: string): ReadReceipt[] {
+  return readReceiptsState.get(channelId) ?? [];
+}
+
+function addReadReceipt(channelId: string, receipt: ReadReceipt) {
+  const arr = readReceiptsState.get(channelId) ?? [];
+  const existing = arr.find(
+    (r) => r.userId === receipt.userId && r.messageId === receipt.messageId,
+  );
+  if (!existing) {
+    arr.push(receipt);
+    readReceiptsState.set(channelId, arr);
+  }
+}
+
 export const chatKeys = {
   channels: (wid: string) => ['channels', wid] as const,
   messages: (wid: string, channelId: string) => ['channels', wid, 'messages', channelId] as const,
@@ -163,9 +181,19 @@ export function useSendMessage(
     );
   };
 
+  const ackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const mutate = (body: CreateChatMessageInput) => {
     setIsPending(true);
     const clientMessageId = optimisticInsert(body);
+
+    if (ackTimeoutRef.current) clearTimeout(ackTimeoutRef.current);
+    ackTimeoutRef.current = setTimeout(() => {
+      markFailed(clientMessageId);
+      setIsPending(false);
+      toast.error('Message delivery timed out');
+    }, 5000);
+
     socket.emit(
       'message:send',
       {
@@ -175,6 +203,7 @@ export function useSendMessage(
         mentionedUserIds: body.mentionedUserIds ?? [],
       },
       (response: { ok: boolean; message?: ChatMessageWithAuthor; error?: string }) => {
+        if (ackTimeoutRef.current) clearTimeout(ackTimeoutRef.current);
         if (response.ok && response.message) {
           replaceWithServer(clientMessageId, response.message);
         } else {
@@ -214,6 +243,31 @@ export function useDeleteMessage(wid: string, channelId: string) {
       toast.error('Failed to delete message');
     },
   });
+}
+
+export function useChatPresence(activeChannelId: string | null) {
+  const [viewers, setViewers] = useState<string[]>([]);
+  const { socket } = useNamespacedSocket('/collab');
+
+  useEffect(() => {
+    if (!activeChannelId) {
+      setViewers([]);
+      return;
+    }
+
+    const onPresenceUpdate = (payload: { channelId: string; viewers: string[] }) => {
+      if (payload.channelId === activeChannelId) {
+        setViewers(payload.viewers);
+      }
+    };
+
+    socket.on('presence:update', onPresenceUpdate);
+    return () => {
+      socket.off('presence:update', onPresenceUpdate);
+    };
+  }, [socket, activeChannelId]);
+
+  return viewers;
 }
 
 export function useChatRealtime(wid: string, activeChannelId: string | null) {
@@ -274,13 +328,25 @@ export function useChatRealtime(wid: string, activeChannelId: string | null) {
       removeMessageById(qc, wid, activeChannelId, payload.messageId);
     };
 
+    const onRead = (payload: {
+      userId: string;
+      channelId: string;
+      messageId: string;
+      readAt: string;
+    }) => {
+      if (payload.channelId !== activeChannelId) return;
+      addReadReceipt(activeChannelId, payload);
+    };
+
     socket.on('message:new', onNew);
     socket.on('message:updated', onUpdated);
     socket.on('message:deleted', onDeleted);
+    socket.on('message:read', onRead);
     return () => {
       socket.off('message:new', onNew);
       socket.off('message:updated', onUpdated);
       socket.off('message:deleted', onDeleted);
+      socket.off('message:read', onRead);
     };
   }, [socket, wid, activeChannelId, qc]);
 

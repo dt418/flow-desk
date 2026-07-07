@@ -7,6 +7,7 @@ import {
   useMessages,
   useSendMessage,
   useChatRealtime,
+  useChatPresence,
   useFlattenedMessages,
 } from '@/features/chat';
 import { ChatSidebar } from '@/features/chat/components/ChatSidebar';
@@ -30,6 +31,7 @@ export default function ChatPage() {
   const createChannel = useCreateChannel(workspaceId);
 
   useChatRealtime(workspaceId, activeChannelId);
+  const viewers = useChatPresence(activeChannelId);
 
   const messages = useFlattenedMessages(messagesQuery.data);
   const channels = channelsQuery.data?.data ?? [];
@@ -45,6 +47,10 @@ export default function ChatPage() {
       mentionedUserIds: [],
       clientMessageId: crypto.randomUUID(),
     });
+  };
+
+  const handleResend = (content: string) => {
+    handleSend(content);
   };
 
   const handleCreate = () => {
@@ -93,8 +99,10 @@ export default function ChatPage() {
           hasMore={hasMore}
           onLoadMore={handleLoadMore}
           onSend={handleSend}
+          onResend={handleResend}
           currentUserId={user?.id ?? ''}
           sending={sendMessage.isPending}
+          viewerCount={viewers.length}
         />
       </div>
 

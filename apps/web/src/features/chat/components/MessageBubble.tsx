@@ -1,10 +1,12 @@
 import type { ChatMessageWithAuthor } from '../types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn, initials } from '@/lib/utils';
+import { Loader2, RefreshCw } from 'lucide-react';
 
 interface MessageBubbleProps {
   message: ChatMessageWithAuthor;
   isOwn: boolean;
+  onResend?: (content: string) => void;
 }
 
 function formatTime(dateStr: string): string {
@@ -24,7 +26,9 @@ function formatDate(dateStr: string): string {
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
-export function MessageBubble({ message, isOwn }: MessageBubbleProps) {
+export function MessageBubble({ message, isOwn, onResend }: MessageBubbleProps) {
+  const status = isOwn ? (message as ChatMessageWithAuthor & { status?: string }).status : undefined;
+
   return (
     <div className={cn('flex gap-2 px-4 py-1.5', isOwn && 'flex-row-reverse')}>
       {!isOwn && (
@@ -47,10 +51,25 @@ export function MessageBubble({ message, isOwn }: MessageBubbleProps) {
         >
           {message.content}
         </div>
-        <span className="mt-0.5 px-1 text-[10px] text-muted-foreground">
-          {formatDate(message.createdAt)}
-          {message.editedAt && ' (edited)'}
-        </span>
+        <div className="mt-0.5 flex items-center gap-1 px-1 text-[10px] text-muted-foreground">
+          <span>
+            {formatDate(message.createdAt)}
+            {message.editedAt && ' (edited)'}
+          </span>
+          {status === 'sending' && (
+            <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+          )}
+          {status === 'failed' && onResend && (
+            <button
+              type="button"
+              onClick={() => onResend(message.content)}
+              className="ml-1 inline-flex items-center gap-0.5 text-destructive hover:underline"
+            >
+              <RefreshCw className="h-3 w-3" />
+              Resend
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
