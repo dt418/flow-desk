@@ -66,31 +66,38 @@ export async function sendMessage(
     mentionedUserIds = members.map((m) => m.userId);
   }
 
-  const message = await repo.create(prisma, {
-    channelId,
-    authorId: userId,
-    content: body.content,
-    mentionedUserIds,
+  const recipientIds = mentionedUserIds;
+
+  const { message } = await prisma.$transaction(async (tx) => {
+    const msg = await repo.create(tx, {
+      channelId,
+      authorId: userId,
+      content: body.content,
+      mentionedUserIds,
+    });
+
+    if (recipientIds.length > 0) {
+      await commentRepo.createManyNotifications(
+        tx,
+        recipientIds.map((rid) => ({
+          userId: rid,
+          type: 'COMMENT_REPLY' as const,
+          title: `You were mentioned in #${channel.name}`,
+          body: body.content.slice(0, 200),
+          data: {
+            channelId,
+            messageId: msg.id,
+            workspaceId: channel.workspaceId,
+            authorId: userId,
+          },
+        })),
+      );
+    }
+
+    return { message: msg };
   });
 
-  const recipientIds = mentionedUserIds;
   if (recipientIds.length > 0) {
-    await commentRepo.createManyNotifications(
-      prisma,
-      recipientIds.map((rid) => ({
-        userId: rid,
-        type: 'COMMENT_REPLY' as const,
-        title: `You were mentioned in #${channel.name}`,
-        body: body.content.slice(0, 200),
-        data: {
-          channelId,
-          messageId: message.id,
-          workspaceId: channel.workspaceId,
-          authorId: userId,
-        },
-      })),
-    );
-
     const notifications = await commentRepo.findNotificationsSince(
       prisma,
       recipientIds,
