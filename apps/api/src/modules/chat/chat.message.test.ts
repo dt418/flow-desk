@@ -104,8 +104,10 @@ describe('chat message service', () => {
       mockCreateMessage.mockResolvedValue(mockMessage);
       const { sendMessage } = await import('./chat.message.service');
       const result = await sendMessage(mockPrisma as any, 'user-1', 'ch-1', {
+        channelId: 'ch-1',
         content: 'hello',
         mentionedUserIds: [],
+        clientMessageId: 'test-1',
       });
       expect(result.id).toBe('msg-1');
       expect(mockCreateMessage).toHaveBeenCalled();
@@ -115,7 +117,12 @@ describe('chat message service', () => {
       mockFindChannel.mockResolvedValue(mockDeletedChannel);
       const { sendMessage } = await import('./chat.message.service');
       await expect(
-        sendMessage(mockPrisma as any, 'user-1', 'ch-1', { content: 'hi', mentionedUserIds: [] }),
+        sendMessage(mockPrisma as any, 'user-1', 'ch-1', {
+          channelId: 'ch-1',
+          content: 'hi',
+          mentionedUserIds: [],
+          clientMessageId: 'test-2',
+        }),
       ).rejects.toThrow('not found');
     });
   });
@@ -125,6 +132,7 @@ describe('chat message service', () => {
       mockFindMessages.mockResolvedValue([]);
       const { listMessages } = await import('./chat.message.service');
       const result = await listMessages(mockPrisma as any, 'user-1', 'ch-1', {
+        channelId: 'ch-1',
         limit: 50,
       });
       expect(result.data).toEqual([]);
@@ -172,14 +180,14 @@ describe('chat message routes', () => {
 
 describe('chat message schema', () => {
   it('createChatMessageSchema validates valid input', async () => {
-    const { createChatMessageSchema } = await import('./chat.message.schema');
+    const { createChatMessageSchema } = await import('@flow-desk/shared/chat');
     const result = createChatMessageSchema.parse({ content: 'hello' });
     expect(result.content).toBe('hello');
     expect(result.mentionedUserIds).toEqual([]);
   });
 
   it('updateChatMessageSchema rejects empty content', async () => {
-    const { updateChatMessageSchema } = await import('./chat.message.schema');
+    const { updateChatMessageSchema } = await import('@flow-desk/shared/chat');
     expect(() => updateChatMessageSchema.parse({ content: '' })).toThrow();
   });
 });

@@ -116,3 +116,16 @@ export const listChatMessagesQuerySchema = CursorPaginationQuery.extend({
   channelId: cuidSchema,
 });
 export type ListChatMessagesQuery = z.infer<typeof listChatMessagesQuerySchema>;
+
+// Route param schemas
+export const channelParamSchema = z.object({
+  wid: cuidSchema,
+  id: cuidSchema,
+});
+
+export const messageParamsSchema = z.object({
+  wid: cuidSchema,
+  channelId: cuidSchema,
+  messageId: cuidSchema,
+});
+export type MessageParams = z.infer<typeof messageParamsSchema>;

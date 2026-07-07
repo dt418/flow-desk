@@ -4,7 +4,7 @@ import type {
   CreateChatMessageInput,
   UpdateChatMessageInput,
   ListChatMessagesQuery,
-} from './chat.message.schema';
+} from '@flow-desk/shared/chat';
 import { BadRequestError, NotFoundError } from '../../shared/errors';
 import { assertMembership } from '../../shared/lib/access';
 import { emitToRoom, emitToUser, safeEmit } from '../../shared/lib/socket-events';

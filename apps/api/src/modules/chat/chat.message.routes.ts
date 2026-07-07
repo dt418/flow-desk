@@ -7,7 +7,7 @@ import {
   updateChatMessageSchema,
   listChatMessagesQuerySchema,
   messageParamsSchema,
-} from './chat.message.schema';
+} from '@flow-desk/shared/chat';
 import * as svc from './chat.message.service';
 
 export const chatMessageRouter = new Hono();

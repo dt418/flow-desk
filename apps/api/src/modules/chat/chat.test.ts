@@ -107,9 +107,11 @@ describe('chat service', () => {
       mockCreate.mockResolvedValue(mockChannel);
       const { createChannel } = await import('./chat.service');
       const result = await createChannel(mockPrisma as any, 'user-1', 'ws-1', {
+        workspaceId: 'ws-1',
         name: 'general',
         description: 'General chat',
         isPrivate: false,
+        scope: 'WORKSPACE',
       });
       expect(result.id).toBe('ch-1');
       expect(result.name).toBe('general');
@@ -125,8 +127,10 @@ describe('chat service', () => {
       const { createChannel } = await import('./chat.service');
       await expect(
         createChannel(mockPrisma as any, 'user-1', 'ws-1', {
+          workspaceId: 'ws-1',
           name: 'general',
           isPrivate: false,
+          scope: 'WORKSPACE',
         }),
       ).rejects.toThrow('Unique constraint');
     });
@@ -172,19 +176,19 @@ describe('chat routes', () => {
 
 describe('chat schema', () => {
   it('createChannelSchema validates valid input', async () => {
-    const { createChannelSchema } = await import('./chat.schema');
+    const { createChannelSchema } = await import('@flow-desk/shared/chat');
     const result = createChannelSchema.parse({ name: 'general', isPrivate: false });
     expect(result.name).toBe('general');
     expect(result.isPrivate).toBe(false);
   });
 
   it('createChannelSchema rejects short name', async () => {
-    const { createChannelSchema } = await import('./chat.schema');
+    const { createChannelSchema } = await import('@flow-desk/shared/chat');
     expect(() => createChannelSchema.parse({ name: 'x' })).toThrow();
   });
 
   it('updateChannelSchema requires at least one field', async () => {
-    const { updateChannelSchema } = await import('./chat.schema');
+    const { updateChannelSchema } = await import('@flow-desk/shared/chat');
     expect(() => updateChannelSchema.parse({})).toThrow();
   });
 });

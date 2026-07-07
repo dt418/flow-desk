@@ -1,6 +1,6 @@
 import type { prisma } from '../../shared/lib/prisma';
 type PrismaClient = typeof prisma;
-import type { CreateChannelInput, UpdateChannelInput } from './chat.schema';
+import type { CreateChannelInput, UpdateChannelInput } from '@flow-desk/shared/chat';
 import { NotFoundError, ConflictError } from '../../shared/errors';
 import { assertMembership } from '../../shared/lib/access';
 import * as repo from './chat.repository';

@@ -7,7 +7,7 @@ import {
   updateChannelSchema,
   channelParamSchema,
   listChannelsQuerySchema,
-} from './chat.schema';
+} from '@flow-desk/shared/chat';
 import * as svc from './chat.service';
 
 export const chatRouter = new Hono();
