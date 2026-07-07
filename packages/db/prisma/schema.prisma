@@ -369,7 +369,7 @@ model RefreshToken {
 model ChatChannel {
   id          String   @id @default(cuid())
   workspaceId String
-  workspace   Workspace @relation("WorkspaceChannels", fields: [workspaceId], references: [id])
+  workspace   Workspace @relation("WorkspaceChannels", fields: [workspaceId], references: [id], onDelete: Cascade)
   name        String
   description String?
   isPrivate   Boolean  @default(false)
@@ -379,7 +379,9 @@ model ChatChannel {
   updatedAt   DateTime @updatedAt
   deletedAt   DateTime?
   messages    ChatMessage[]      @relation("ChannelMessages")
-  @@unique([workspaceId, name])
+  // @@unique([workspaceId, name]) is a partial unique index in the
+  // migration (WHERE "deletedAt" IS NULL) — Prisma can't express partial
+  // unique indexes, so it's enforced via raw SQL in the migration only.
   @@index([workspaceId])
   @@index([taskId])
 }
@@ -387,7 +389,7 @@ model ChatChannel {
 model ChatMessage {
   id              String       @id @default(cuid())
   channelId       String
-  channel         ChatChannel  @relation("ChannelMessages", fields: [channelId], references: [id])
+  channel         ChatChannel  @relation("ChannelMessages", fields: [channelId], references: [id], onDelete: Cascade)
   authorId        String
   author          User         @relation(fields: [authorId], references: [id])
   content         String

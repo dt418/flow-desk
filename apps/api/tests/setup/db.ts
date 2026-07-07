@@ -2,7 +2,7 @@ import { resolve } from 'node:path';
 import { execSync } from 'node:child_process';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../../../../packages/db/generated/client';
-import { softDeleteExtension } from '../../src/shared/lib/prisma-extension';
+import { softDeleteExtension } from '@flowdesk/db';
 
 function detectDbPort(): number {
   const envPort = process.env.TEST_DB_PORT;

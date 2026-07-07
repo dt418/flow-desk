@@ -81,6 +81,45 @@ export const softDeleteExtension = Prisma.defineExtension({
       }) {
         return query(injectDeletedAtNull(args ?? {}, model));
       },
+      async findUnique({
+        model,
+        args,
+        query,
+      }: {
+        model: string | undefined;
+        args: Record<string, unknown>;
+        query: (args: Record<string, unknown>) => unknown;
+      }) {
+        if (!model || !SOFT_DELETE_MODELS.has(model)) {
+          return query(args);
+        }
+        const result = (await query(args)) as Record<string, unknown> | null;
+        if (result && 'deletedAt' in result && result.deletedAt !== null) {
+          return null;
+        }
+        return result;
+      },
+      async findUniqueOrThrow({
+        model,
+        args,
+        query,
+      }: {
+        model: string | undefined;
+        args: Record<string, unknown>;
+        query: (args: Record<string, unknown>) => unknown;
+      }) {
+        if (!model || !SOFT_DELETE_MODELS.has(model)) {
+          return query(args);
+        }
+        const result = (await query(args)) as Record<string, unknown> | null;
+        if (result && 'deletedAt' in result && result.deletedAt !== null) {
+          throw new Prisma.PrismaClientKnownRequestError('Record not found', {
+            code: 'P2025',
+            clientVersion: Prisma.prismaVersion.client,
+          });
+        }
+        return result;
+      },
     },
   },
 });
