@@ -9,8 +9,8 @@ import type {
   UpdateChatMessageInput,
 } from './types';
 import { chatApi } from './api';
-import { useNamespacedSocket } from '@/lib/socket';
-import { SOCKET_EVENTS, SOCKET_ROOMS } from '@flow-desk/shared/socket-events';
+import { useNamespacedSocket, getSocket as getNamespacedSocket } from '@/lib/socket';
+import { SOCKET_EVENTS } from '@flow-desk/shared/socket-events';
 import { toast } from 'sonner';
 import {
   appendChannelToList,
@@ -99,7 +99,7 @@ export function useSendMessage(
   user: { id: string; name: string; email: string; avatarUrl: string | null },
 ) {
   const qc = useQueryClient();
-  const { socket } = useNamespacedSocket('/collab');
+  useNamespacedSocket('/collab');
   const [isPending, setIsPending] = useState(false);
 
   const optimisticInsert = (body: CreateChatMessageInput) => {
@@ -184,6 +184,16 @@ export function useSendMessage(
   const ackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const mutate = (body: CreateChatMessageInput) => {
+    // Always resolve the live socket here — the per-namespace cache may swap
+    // the underlying connection on stuck-reconnect (see socket.ts:getSocket).
+    // Reusing a stale socket reference silently drops the ack.
+    const socket = getNamespacedSocket('/collab');
+
+    if (!socket.connected) {
+      toast.error('Chat is offline. Reconnecting…');
+      return;
+    }
+
     setIsPending(true);
     const clientMessageId = optimisticInsert(body);
 
@@ -194,7 +204,10 @@ export function useSendMessage(
       toast.error('Message delivery timed out');
     }, 5000);
 
-    socket.emit(
+    // Use optional/volatile so the emit is dropped if the socket goes down
+    // before delivery instead of being buffered — a buffered emit would
+    // never receive an ack because the server hasn't seen it.
+    socket.volatile.emit(
       'message:send',
       {
         channelId,
@@ -292,18 +305,18 @@ export function useChatRealtime(wid: string, activeChannelId: string | null) {
 
     if (prevChannelRef.current && prevChannelRef.current !== activeChannelId) {
       socket.emit(SOCKET_EVENTS.ConversationLeave, {
-        room: SOCKET_ROOMS.conversation(prevChannelRef.current),
+        channelId: prevChannelRef.current,
       });
     }
 
     socket.emit(SOCKET_EVENTS.ConversationJoin, {
-      room: SOCKET_ROOMS.conversation(activeChannelId),
+      channelId: activeChannelId,
     });
     prevChannelRef.current = activeChannelId;
 
     return () => {
       socket.emit(SOCKET_EVENTS.ConversationLeave, {
-        room: SOCKET_ROOMS.conversation(activeChannelId),
+        channelId: activeChannelId,
       });
       prevChannelRef.current = null;
     };
@@ -313,7 +326,7 @@ export function useChatRealtime(wid: string, activeChannelId: string | null) {
     if (!activeChannelId || !wid) return;
 
     const onNew = (payload: { channelId: string; message: ChatMessageWithAuthor }) => {
-      qc.invalidateQueries({ queryKey: chatKeys.channels(wid) });
+      qc.invalidateQueries({ queryKey: chatKeys.channels(wid), exact: true });
       if (payload.channelId !== activeChannelId) return;
       appendMessageIfNew(qc, wid, activeChannelId, payload.message);
     };

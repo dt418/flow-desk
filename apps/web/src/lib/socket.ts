@@ -54,7 +54,7 @@ function ensureRefreshLoop(): void {
   }, REFRESH_INTERVAL_MS);
 }
 
-function getSocket(ns: FlowDeskNamespace): Socket {
+export function getSocket(ns: FlowDeskNamespace): Socket {
   const existing = sockets.get(ns);
   if (existing) {
     if (existing.connected) {

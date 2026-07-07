@@ -26,6 +26,21 @@
 - **Resolved risks (session 014)**: docker build broken with Prisma 5 + pnpm 11 + lefthook (root causes: (a) `.dockerignore` nested node_modules leak, (b) hoist settings in `.npmrc` ignored by pnpm 11 — both fixed). Also: full Prisma 5→7 migration (generator, config, adapter, imports, dockerfile, prisma-exec, seed ESM bundle).
 - **Security note**: `LLM_API_KEY` (sk-80c6f26e1...) was pasted in chat once during session 006. Recommend rotating the key at the provider. Key is in `.env`/`.env.local` (gitignored). Pre-commit hook blocks future leaks.
 
+### Session 029 — Chat send "Message delivery timed out" fix
+
+- **Date**: 2026-07-08
+- **Symptom**: `/workspace/{wid}/chat` shows toast `Message delivery timed out` after every send; message is optimistically inserted but never promoted to `real`/`sent`.
+- **Root cause**: `useSendMessage(hooks.ts:102)` captured the `/collab` socket ONCE on mount. The `getSocket` cache (lib/socket.ts:57-110) replaces the underlying socket on stuck-reconnect (`STUCK_RECONNECT_TIMEOUT_MS=15s`). Any `.emit()` on the stale reference was buffered/dropped, so the server's ack callback never fired and the 5s client timeout surfaced "Message delivery timed out".
+- **Fix** (`apps/web/src/features/chat/hooks.ts` + `apps/web/src/lib/socket.ts`):
+  1. Exported `getSocket` from `lib/socket.ts` so feature code resolves the live connection at the moment of use (no stale closure risk).
+  2. `useSendMessage.mutate` now looks up `getNamespacedSocket('/collab')` per call and bails early with `Chat is offline. Reconnecting…` if `!socket.connected`.
+  3. Switched `socket.emit('message:send', …, ack)` → `socket.volatile.emit(…)` so a disconnected socket drops the packet instead of buffering an ack-less message that would time out client-side and yet still land on the server (causing client-bug + ghost server record).
+- **Verification**:
+  - Server-side ack roundtrip confirmed with end-to-end smoke (`/tmp/opencode/smoke.mjs`: login → list workspace → list channel → `socket.emit('message:send', …, ack)` → `ack.ok=true` with `messageId`). Proves backend path is healthy.
+  - `pnpm --filter @flow-desk/web typecheck`: ✓ no errors.
+  - `pnpm --filter @flow-desk/web lint`: 0 new warnings; chat/hooks.ts clean.
+  - `curl http://localhost:5173/src/features/chat/hooks.ts` shows live Vite bundle includes the new `getNamespacedSocket` import and `Chat is offline` toast — HMR picked up cleanly.
+
 ### Session 028 — `pnpm dev` one-command wrapper + docker cleanup
 
 - **Date**: 2026-07-07
@@ -66,6 +81,36 @@
 - **Next best step**: Execute Phase 1 task 1.1 (add clientMessageId to shared chat schema) via subagent
 
 ## Session Log
+
+### 2026-07-08 01:08 — `f6cadcf` (main)
+
+- **type:**
+- **msg:**
+- **author:** thanhd
+
+### 2026-07-08 00:44 — `197e75d` (main)
+
+- **type:**
+- **msg:**
+- **author:** thanhd
+
+### 2026-07-07 23:58 — `2fd3029` (main)
+
+- **type:**
+- **msg:**
+- **author:** thanhd
+
+### 2026-07-07 23:49 — `3feaf5c` (main)
+
+- **type:**
+- **msg:**
+- **author:** thanhd
+
+### 2026-07-07 23:34 — `55344fd` (main)
+
+- **type:**
+- **msg:**
+- **author:** thanhd
 
 ### 2026-07-07 22:06 — `df3a5fa` (main)
 
