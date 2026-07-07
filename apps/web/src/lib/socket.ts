@@ -54,6 +54,7 @@ export function useNamespacedSocket(ns: FlowDeskNamespace) {
     if (socket.connected) setConnected(true);
 
     return () => {
+      startedRef.current = false;
       socket.off('connect', onConnect);
       socket.off('disconnect', onDisconnect);
     };
