@@ -21,7 +21,7 @@ import {
   removeMessageById,
 } from './cache';
 
-type ReadReceipt = { userId: string; messageId: string; readAt: string };
+export type ReadReceipt = { userId: string; messageId: string; readAt: string };
 const readReceiptsState = new Map<string, ReadReceipt[]>();
 
 function getReadReceipts(channelId: string): ReadReceipt[] {
@@ -381,4 +381,19 @@ export function useFlattenedMessages(
     if (!data?.pages) return [];
     return [...data.pages].reverse().flatMap((p) => p.data);
   }, [data]);
+}
+
+export function useReadReceipts(channelId: string | null) {
+  const [, forceUpdate] = useState(0);
+
+  useEffect(() => {
+    if (!channelId) return;
+    const interval = setInterval(() => forceUpdate((n) => n + 1), 2000);
+    return () => clearInterval(interval);
+  }, [channelId]);
+
+  return useMemo(
+    () => (channelId ? getReadReceipts(channelId) : []),
+    [channelId],
+  );
 }

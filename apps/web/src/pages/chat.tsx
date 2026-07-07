@@ -9,6 +9,7 @@ import {
   useChatRealtime,
   useChatPresence,
   useFlattenedMessages,
+  useReadReceipts,
 } from '@/features/chat';
 import { ChatSidebar } from '@/features/chat/components/ChatSidebar';
 import { ChannelView } from '@/features/chat/components/ChannelView';
@@ -32,6 +33,7 @@ export default function ChatPage() {
 
   useChatRealtime(workspaceId, activeChannelId);
   const viewers = useChatPresence(activeChannelId);
+  const readReceipts = useReadReceipts(activeChannelId);
 
   const messages = useFlattenedMessages(messagesQuery.data);
   const channels = channelsQuery.data?.data ?? [];
@@ -103,6 +105,7 @@ export default function ChatPage() {
           currentUserId={user?.id ?? ''}
           sending={sendMessage.isPending}
           viewerCount={viewers.length}
+          readReceipts={readReceipts}
         />
       </div>
 

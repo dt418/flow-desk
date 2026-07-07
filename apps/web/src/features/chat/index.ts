@@ -10,7 +10,9 @@ export {
   useUpdateMessage,
   useDeleteMessage,
   useChatRealtime,
+  useChatPresence,
   useFlattenedMessages,
+  useReadReceipts,
 } from './hooks';
 export { ChatSidebar, ChannelItem } from './components/ChatSidebar';
 export { ChannelView } from './components/ChannelView';

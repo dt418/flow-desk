@@ -17,7 +17,22 @@ import {
   conversationLeaveSchema,
   typingStartSchema,
   typingStopSchema,
+  messageReadSchema,
 } from '../../modules/realtime/schemas';
+
+const CHAT_PRESENCE_PREFIX = 'chat:presence:';
+const CHAT_PRESENCE_KEY = (channelId: string) => `${CHAT_PRESENCE_PREFIX}${channelId}`;
+
+async function broadcastChatPresence(
+  io: SocketServer,
+  channelId: string,
+): Promise<void> {
+  const viewers = await redis.smembers(CHAT_PRESENCE_KEY(channelId));
+  io.of('/collab').to(`conversation:${channelId}`).emit('presence:update', {
+    channelId,
+    viewers,
+  });
+}
 
 export function withValidation<T>(schema: ZodSchema<T>, handler: (data: T, socket: Socket) => void) {
   return (data: unknown, socket: Socket) => {
@@ -141,6 +156,8 @@ export function createSocketServer(httpServer: HttpServer) {
         }),
       );
 
+      const chatPresenceChannels = new Set<string>();
+
       socket.on(
         'conversation:join',
         withValidation(conversationJoinSchema, async (data, socket) => {
@@ -161,14 +178,20 @@ export function createSocketServer(httpServer: HttpServer) {
           });
           if (member) {
             socket.join(`conversation:${data.channelId}`);
+            chatPresenceChannels.add(data.channelId);
+            await redis.sadd(CHAT_PRESENCE_KEY(data.channelId), userId);
+            await broadcastChatPresence(io, data.channelId);
           }
         }),
       );
 
       socket.on(
         'conversation:leave',
-        withValidation(conversationLeaveSchema, (data, socket) => {
+        withValidation(conversationLeaveSchema, async (data, socket) => {
           socket.leave(`conversation:${data.channelId}`);
+          chatPresenceChannels.delete(data.channelId);
+          await redis.srem(CHAT_PRESENCE_KEY(data.channelId), userId);
+          await broadcastChatPresence(io, data.channelId);
         }),
       );
 
@@ -198,7 +221,16 @@ export function createSocketServer(httpServer: HttpServer) {
         }),
       );
 
-      socket.on('disconnect', () => {
+      socket.on(
+        'message:read',
+        withValidation(messageReadSchema, async (data) => {
+          const { markRead } = await import('../../modules/chat/chat.message.service');
+          const { prisma } = await import('./prisma');
+          await markRead(prisma, userId, data.channelId, data.messageId);
+        }),
+      );
+
+      socket.on('disconnect', async () => {
         for (const channelId of typingChannels) {
           socket.to(`conversation:${channelId}`).emit('typing:stop', {
             channelId,
@@ -206,6 +238,13 @@ export function createSocketServer(httpServer: HttpServer) {
           });
         }
         typingChannels.clear();
+        for (const channelId of chatPresenceChannels) {
+          await redis.srem(CHAT_PRESENCE_KEY(channelId), userId);
+          await broadcastChatPresence(io, channelId).catch((err) =>
+            logger.warn({ err }, 'chat presence broadcast failed'),
+          );
+        }
+        chatPresenceChannels.clear();
         socket.rooms.forEach((room) => {
           if (room !== socket.id) socket.leave(room);
         });

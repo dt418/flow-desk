@@ -3,6 +3,7 @@ import type { ChannelView, ChatMessageWithAuthor } from '../types';
 import { MessageBubble } from './MessageBubble';
 import { ChatInput } from './ChatInput';
 import { Skeleton } from '@/components/ui/skeleton';
+import type { ReadReceipt } from '../hooks';
 
 interface ChannelViewProps {
   channel: ChannelView | null;
@@ -15,6 +16,7 @@ interface ChannelViewProps {
   currentUserId: string;
   sending?: boolean;
   viewerCount?: number;
+  readReceipts?: ReadReceipt[];
 }
 
 export function ChannelView({
@@ -28,6 +30,7 @@ export function ChannelView({
   currentUserId,
   sending,
   viewerCount,
+  readReceipts = [],
 }: ChannelViewProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const topRef = useRef<HTMLDivElement>(null);
@@ -91,14 +94,20 @@ export function ChannelView({
           </div>
         )}
 
-        {messages.map((msg) => (
-          <MessageBubble
-            key={msg.id}
-            message={msg}
-            isOwn={msg.authorId === currentUserId}
-            onResend={onResend}
-          />
-        ))}
+        {messages.map((msg) => {
+          const readers = readReceipts.filter((r) => r.messageId === msg.id);
+          const uniqueReaders = new Set(readers.map((r) => r.userId));
+          uniqueReaders.delete(msg.authorId);
+          return (
+            <MessageBubble
+              key={msg.id}
+              message={msg}
+              isOwn={msg.authorId === currentUserId}
+              onResend={onResend}
+              readByCount={msg.authorId === currentUserId ? uniqueReaders.size : undefined}
+            />
+          );
+        })}
         <div ref={bottomRef} />
       </div>
 
