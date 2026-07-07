@@ -7,13 +7,40 @@ export type SocketStatus = 'connected' | 'connecting' | 'disconnected' | 'reconn
 
 const sockets = new Map<FlowDeskNamespace, Socket>();
 
+// ponytail: per-namespace timestamp marking when a socket first entered a
+// reconnecting state. If it stays reconnecting past the threshold we treat it
+// as stuck (never connects, never reaches a clean disconnect) and replace it.
+const reconnectingSince = new Map<FlowDeskNamespace, number>();
+
+const STUCK_RECONNECT_TIMEOUT_MS = 15000;
+
 function getSocket(ns: FlowDeskNamespace): Socket {
   const existing = sockets.get(ns);
-  if (existing && (existing.connected || (!existing.connected && !existing.disconnected)))
-    return existing;
   if (existing) {
-    existing.removeAllListeners();
-    existing.disconnect();
+    if (existing.connected) {
+      reconnectingSince.delete(ns);
+      return existing;
+    }
+
+    const manager = existing.io as unknown as { reconnecting?: boolean; _reconnecting?: boolean };
+    const reconnecting = manager.reconnecting === true || manager._reconnecting === true;
+    if (reconnecting) {
+      const since = reconnectingSince.get(ns);
+      if (since === undefined) {
+        reconnectingSince.set(ns, Date.now());
+      } else if (Date.now() - since > STUCK_RECONNECT_TIMEOUT_MS) {
+        existing.removeAllListeners();
+        existing.io.removeAllListeners();
+        existing.disconnect();
+        sockets.delete(ns);
+        reconnectingSince.delete(ns);
+      } else {
+        return existing;
+      }
+    } else {
+      // Not connected and not actively reconnecting: clean disconnect/connecting.
+      return existing;
+    }
   }
 
   const apiUrl = import.meta.env.VITE_API_URL ?? '';
@@ -34,6 +61,8 @@ function getSocket(ns: FlowDeskNamespace): Socket {
     auth: accessToken ? { token: accessToken } : undefined,
     extraHeaders: accessToken ? { Cookie: `access_token=${accessToken}` } : undefined,
   });
+  socket.io.on('reconnect', () => reconnectingSince.delete(ns));
+  socket.on('connect', () => reconnectingSince.delete(ns));
   sockets.set(ns, socket);
   return socket;
 }
