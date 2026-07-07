@@ -112,9 +112,11 @@ export const listChannelsQuerySchema = CursorPaginationQuery.extend({
 });
 export type ListChannelsQuery = z.infer<typeof listChannelsQuerySchema>;
 
-export const listChatMessagesQuerySchema = CursorPaginationQuery.extend({
-  channelId: cuidSchema,
-});
+// ponytail: listChatMessagesQuerySchema previously required channelId in the
+// query string, but the channelId is in the route param. Web didn't send
+// the duplicate → 400 INVALID_QUERY. Drop the duplicate and let the route
+// param be the single source of truth.
+export const listChatMessagesQuerySchema = CursorPaginationQuery;
 export type ListChatMessagesQuery = z.infer<typeof listChatMessagesQuerySchema>;
 
 // Route param schemas

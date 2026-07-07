@@ -154,11 +154,11 @@ describe('listChannelsQuerySchema', () => {
 });
 
 describe('listChatMessagesQuerySchema', () => {
-  it('requires channelId', () => {
-    expect(() => listChatMessagesQuerySchema.parse({})).toThrow();
+  it('accepts empty query (channelId comes from route param)', () => {
+    expect(() => listChatMessagesQuerySchema.parse({})).not.toThrow();
   });
 
-  it('accepts channelId with optional cursor/limit', () => {
-    expect(() => listChatMessagesQuerySchema.parse({ channelId: VALID_CUID })).not.toThrow();
+  it('accepts cursor and limit', () => {
+    expect(() => listChatMessagesQuerySchema.parse({ cursor: 'abc', limit: '20' })).not.toThrow();
   });
 });

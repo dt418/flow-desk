@@ -48,7 +48,10 @@ vi.mock('../../shared/lib/access', () => ({
 vi.mock('../../shared/lib/socket-events', () => ({
   emitToRoom: vi.fn(),
   emitToUser: vi.fn(),
-  safeEmit: (fn: () => void) => { fn(); return { ok: true as const }; },
+  safeEmit: (fn: () => void) => {
+    fn();
+    return { ok: true as const };
+  },
 }));
 
 vi.mock('../../shared/lib/prisma', () => ({
@@ -133,7 +136,6 @@ describe('chat message service', () => {
       mockFindMessages.mockResolvedValue([]);
       const { listMessages } = await import('./chat.message.service');
       const result = await listMessages(mockPrisma as any, 'user-1', 'ws-1', 'ch-1', {
-        channelId: 'ch-1',
         limit: 50,
       });
       expect(result.data).toEqual([]);
@@ -182,7 +184,11 @@ describe('chat message routes', () => {
 describe('chat message schema', () => {
   it('createChatMessageSchema validates valid input', async () => {
     const { createChatMessageSchema } = await import('@flow-desk/shared/chat');
-    const result = createChatMessageSchema.parse({ channelId: 'cmramjecb00068lgvh01d3g37', content: 'hello', clientMessageId: 'test-123' });
+    const result = createChatMessageSchema.parse({
+      channelId: 'cmramjecb00068lgvh01d3g37',
+      content: 'hello',
+      clientMessageId: 'test-123',
+    });
     expect(result.content).toBe('hello');
     expect(result.mentionedUserIds).toEqual([]);
   });
