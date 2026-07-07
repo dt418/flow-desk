@@ -13,3 +13,7 @@ export const queryClient = new QueryClient({
     },
   },
 });
+
+queryClient.setQueryDefaults(['channels'], {
+  refetchOnWindowFocus: true,
+});
