@@ -17,7 +17,13 @@ const mockPrisma = {
     findUnique: mockFindMessage,
     create: mockCreateMessage,
     update: mockUpdateMessage,
+    findFirst: vi.fn().mockResolvedValue(null),
   },
+  notification: {
+    findMany: vi.fn().mockResolvedValue([]),
+    createMany: vi.fn().mockResolvedValue({ count: 0 }),
+  },
+  $transaction: vi.fn(async (fn: (tx: typeof mockPrisma) => Promise<unknown>) => fn(mockPrisma)),
 };
 
 vi.mock('../../shared/lib/logger', () => ({
