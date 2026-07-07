@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useMutation, useQuery, useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import type {
   ChatMessageWithAuthor,
@@ -9,6 +9,7 @@ import type {
 } from './types';
 import { chatApi } from './api';
 import { useNamespacedSocket } from '@/lib/socket';
+import { SOCKET_EVENTS, SOCKET_ROOMS } from '@flow-desk/shared/socket-events';
 import { toast } from 'sonner';
 import {
   appendChannelToList,
@@ -207,6 +208,30 @@ export function useChatRealtime(wid: string, activeChannelId: string | null) {
       socket.emit('leave-workspace', { workspaceId: wid });
     };
   }, [socket, wid]);
+
+  const prevChannelRef = useRef<string | null>(activeChannelId);
+
+  useEffect(() => {
+    if (!activeChannelId || !wid) return;
+
+    if (prevChannelRef.current && prevChannelRef.current !== activeChannelId) {
+      socket.emit(SOCKET_EVENTS.ConversationLeave, {
+        room: SOCKET_ROOMS.conversation(prevChannelRef.current),
+      });
+    }
+
+    socket.emit(SOCKET_EVENTS.ConversationJoin, {
+      room: SOCKET_ROOMS.conversation(activeChannelId),
+    });
+    prevChannelRef.current = activeChannelId;
+
+    return () => {
+      socket.emit(SOCKET_EVENTS.ConversationLeave, {
+        room: SOCKET_ROOMS.conversation(activeChannelId),
+      });
+      prevChannelRef.current = null;
+    };
+  }, [socket, wid, activeChannelId]);
 
   useEffect(() => {
     if (!activeChannelId || !wid) return;
