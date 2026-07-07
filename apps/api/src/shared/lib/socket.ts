@@ -331,16 +331,13 @@ export function createSocketServer(httpServer: HttpServer) {
               ack?.({ ok: false, error: 'channel_not_found' });
               return;
             }
+            // sendMessage does the realtime emit (message:new to the
+            // conversation room). Don't double-emit here.
             const message = await sendMessage(prisma, userId, channel.workspaceId, d.channelId, {
               content: d.content,
               mentionedUserIds: d.mentionedUserIds,
               clientMessageId: d.clientMessageId,
             });
-            const payload = { channelId: d.channelId, message };
-            io.of('/collab')
-              .to(`conversation:${d.channelId}`)
-              .emit(SOCKET_EVENTS.MessageNew, payload);
-            io.of('/collab').to(`user:${userId}`).emit(SOCKET_EVENTS.MessageNew, payload);
             ack?.({ ok: true, message });
           } catch (err) {
             logger.error({ err }, 'message:send failed');

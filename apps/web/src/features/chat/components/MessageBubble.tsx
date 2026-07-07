@@ -28,7 +28,9 @@ function formatDate(dateStr: string): string {
 }
 
 export function MessageBubble({ message, isOwn, onResend, readByCount }: MessageBubbleProps) {
-  const status = isOwn ? (message as ChatMessageWithAuthor & { status?: string }).status : undefined;
+  const status = isOwn
+    ? (message as ChatMessageWithAuthor & { status?: string }).status
+    : undefined;
 
   return (
     <div className={cn('flex gap-2 px-4 py-1.5', isOwn && 'flex-row-reverse')}>

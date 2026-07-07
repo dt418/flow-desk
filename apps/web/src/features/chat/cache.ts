@@ -23,22 +23,18 @@ export function patchChannelInList(
   });
 }
 
-export function appendChannelToList(
-  qc: QueryClient,
-  workspaceId: string,
-  channel: ChannelView,
-) {
+export function appendChannelToList(qc: QueryClient, workspaceId: string, channel: ChannelView) {
   qc.setQueryData(chatKeys.channels(workspaceId), (old: ChannelsCache | undefined) => {
     if (!old) return { data: [toChannelWithLatest(channel)] };
+    // ponytail: dedupe by id — server can fan-out the same 'created'
+    // event to the same client multiple times when the author is in the
+    // room and the broadcast hits two paths.
+    if (old.data.some((ch) => ch.id === channel.id)) return old;
     return { ...old, data: [...old.data, toChannelWithLatest(channel)] };
   });
 }
 
-export function removeChannelFromList(
-  qc: QueryClient,
-  workspaceId: string,
-  channelId: string,
-) {
+export function removeChannelFromList(qc: QueryClient, workspaceId: string, channelId: string) {
   qc.setQueryData(chatKeys.channels(workspaceId), (old: ChannelsCache | undefined) => {
     if (!old) return old;
     return { ...old, data: old.data.filter((ch) => ch.id !== channelId) };
@@ -66,8 +62,7 @@ export function appendMessageIfNew(
       const exists = old.pages.some((page) =>
         page.data.some(
           (m) =>
-            m.id === message.id ||
-            (cid && 'clientMessageId' in m && m.clientMessageId === cid),
+            m.id === message.id || (cid && 'clientMessageId' in m && m.clientMessageId === cid),
         ),
       );
       if (exists) return old;

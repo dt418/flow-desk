@@ -111,7 +111,12 @@ export function ChannelView({
         <div ref={bottomRef} />
       </div>
 
-      <ChatInput channelId={channel.id} onSend={onSend} disabled={sending} placeholder={`Message #${channel.name}`} />
+      <ChatInput
+        channelId={channel.id}
+        onSend={onSend}
+        disabled={sending}
+        placeholder={`Message #${channel.name}`}
+      />
     </div>
   );
 }

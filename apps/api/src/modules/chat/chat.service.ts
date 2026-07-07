@@ -12,6 +12,8 @@ export async function listChannels(prisma: PrismaClient, userId: string, workspa
   return channels.map((ch) => ({
     id: ch.id,
     workspaceId: ch.workspaceId,
+    scope: ch.scope,
+    taskId: ch.taskId,
     name: ch.name,
     description: ch.description,
     isPrivate: ch.isPrivate,
@@ -21,6 +23,7 @@ export async function listChannels(prisma: PrismaClient, userId: string, workspa
       ? {
           id: ch.messages[0].id,
           authorId: ch.messages[0].authorId,
+          authorName: ch.messages[0].author?.name ?? null,
           content: ch.messages[0].content,
           createdAt: ch.messages[0].createdAt.toISOString(),
         }
@@ -42,6 +45,8 @@ export async function getChannel(
   return {
     id: channel.id,
     workspaceId: channel.workspaceId,
+    scope: channel.scope,
+    taskId: channel.taskId,
     name: channel.name,
     description: channel.description,
     isPrivate: channel.isPrivate,
@@ -51,6 +56,7 @@ export async function getChannel(
       ? {
           id: channel.messages[0].id,
           authorId: channel.messages[0].authorId,
+          authorName: channel.messages[0].author?.name ?? null,
           content: channel.messages[0].content,
           createdAt: channel.messages[0].createdAt.toISOString(),
         }
@@ -66,12 +72,28 @@ export async function createChannel(
 ) {
   await assertMembership(workspaceId, userId);
 
-  const channel = await repo.create(prisma, {
-    workspaceId,
-    name: body.name,
-    description: body.description ?? null,
-    isPrivate: body.isPrivate,
-  });
+  // ponytail: Bug #1 — was dropping body.scope/body.taskId. Task channels
+  // could only be created via getOrCreateTaskChannel. Pass through the
+  // values from the schema so REST POST can create either workspace or
+  // task channels.
+  let channel;
+  try {
+    channel = await repo.create(prisma, {
+      workspaceId,
+      name: body.name,
+      description: body.description ?? null,
+      isPrivate: body.isPrivate,
+      scope: body.scope,
+      taskId: body.taskId ?? null,
+    });
+  } catch (err: unknown) {
+    // Bug #6 — partial unique index on (workspaceId, name) WHERE deletedAt
+    // IS NULL translates to Prisma P2002. Surface as 409 instead of 500.
+    if (err instanceof Error && 'code' in err && (err as { code: string }).code === 'P2002') {
+      throw new ConflictError('A channel with this name already exists');
+    }
+    throw err;
+  }
   const result = {
     id: channel.id,
     workspaceId: channel.workspaceId,
@@ -107,11 +129,19 @@ export async function updateChannel(
     if (dup) throw new ConflictError('A channel with this name already exists');
   }
 
-  const channel = await repo.update(prisma, channelId, {
-    name: body.name,
-    description: body.description,
-    isPrivate: body.isPrivate,
-  });
+  let channel;
+  try {
+    channel = await repo.update(prisma, channelId, {
+      name: body.name,
+      description: body.description,
+      isPrivate: body.isPrivate,
+    });
+  } catch (err: unknown) {
+    if (err instanceof Error && 'code' in err && (err as { code: string }).code === 'P2002') {
+      throw new ConflictError('A channel with this name already exists');
+    }
+    throw err;
+  }
   const result = {
     id: channel.id,
     workspaceId: channel.workspaceId,
@@ -152,11 +182,23 @@ export async function getOrCreateTaskChannel(
 ) {
   const existing = await repo.findByScopeAndTask(prisma, workspaceId, taskId);
   if (existing) return existing;
-  return repo.create(prisma, {
-    workspaceId,
-    name: `task-${taskId}`,
-    scope: 'TASK',
-    taskId,
-    isPrivate: false,
-  });
+  try {
+    return await repo.create(prisma, {
+      workspaceId,
+      name: `task-${taskId}`,
+      scope: 'TASK',
+      taskId,
+      isPrivate: false,
+    });
+  } catch (err: unknown) {
+    // Bug #7 — concurrent calls for the same task both passed the
+    // findFirst check. The unique index on (workspaceId, name) makes the
+    // second insert fail with P2002. Re-read and return the row that
+    // the winner just inserted.
+    if (err instanceof Error && 'code' in err && (err as { code: string }).code === 'P2002') {
+      const winner = await repo.findByScopeAndTask(prisma, workspaceId, taskId);
+      if (winner) return winner;
+    }
+    throw err;
+  }
 }

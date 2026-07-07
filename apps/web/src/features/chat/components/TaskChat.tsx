@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn, initials } from '@/lib/utils';
 import { chatApi } from '../api';
-import { useMessages, useSendMessage, useFlattenedMessages } from '../hooks';
+import { useMessages, useSendMessage, useFlattenedMessages, useChatRealtime } from '../hooks';
 import type { ChannelView } from '../types';
 
 function formatTime(dateStr: string): string {
@@ -52,6 +52,11 @@ export function TaskChat({ taskId }: TaskChatProps) {
     channel?.id ?? '',
     user ?? { id: '', name: '', email: '', avatarUrl: null },
   );
+
+  // ponytail: Bug #5 — TaskChat was missing the realtime hook, so
+  // message:new from other users was invisible until the next refetch.
+  // Subscribe once we have a channel id.
+  useChatRealtime(wid, channel?.id ?? null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });

@@ -31,7 +31,13 @@ export function findByWorkspace(prisma: PrismaClient, workspaceId: string) {
       messages: {
         orderBy: { createdAt: 'desc' },
         take: 1,
-        select: { id: true, authorId: true, content: true, createdAt: true },
+        select: {
+          id: true,
+          authorId: true,
+          content: true,
+          createdAt: true,
+          author: { select: { name: true } },
+        },
       },
     },
   });
@@ -48,7 +54,13 @@ export function findUniqueRaw(prisma: PrismaClient, id: string) {
       messages: {
         orderBy: { createdAt: 'desc' },
         take: 1,
-        select: { id: true, authorId: true, content: true, createdAt: true },
+        select: {
+          id: true,
+          authorId: true,
+          content: true,
+          createdAt: true,
+          author: { select: { name: true } },
+        },
       },
     },
   });
@@ -68,11 +80,7 @@ export function create(
   return prisma.chatChannel.create({ data });
 }
 
-export function findByScopeAndTask(
-  prisma: PrismaClient,
-  workspaceId: string,
-  taskId: string,
-) {
+export function findByScopeAndTask(prisma: PrismaClient, workspaceId: string, taskId: string) {
   return prisma.chatChannel.findFirst({
     where: { workspaceId, scope: 'TASK', taskId, deletedAt: null },
   });

@@ -117,7 +117,7 @@ describe('chat service', () => {
       expect(result.name).toBe('general');
     });
 
-    it('throws on duplicate name (P2002 unique constraint)', async () => {
+    it('translates P2002 duplicate name to ConflictError', async () => {
       const p2002Error = Object.assign(new Error('Unique constraint failed'), {
         code: 'P2002',
         clientVersion: '0.0.0',
@@ -132,7 +132,7 @@ describe('chat service', () => {
           isPrivate: false,
           scope: 'WORKSPACE',
         }),
-      ).rejects.toThrow('Unique constraint');
+      ).rejects.toThrow('already exists');
     });
   });
 
@@ -177,7 +177,11 @@ describe('chat routes', () => {
 describe('chat schema', () => {
   it('createChannelSchema validates valid input', async () => {
     const { createChannelSchema } = await import('@flow-desk/shared/chat');
-    const result = createChannelSchema.parse({ name: 'general', isPrivate: false, workspaceId: 'cmramg4pr000f7ggv657384wv' });
+    const result = createChannelSchema.parse({
+      name: 'general',
+      isPrivate: false,
+      workspaceId: 'cmramg4pr000f7ggv657384wv',
+    });
     expect(result.name).toBe('general');
     expect(result.isPrivate).toBe(false);
   });

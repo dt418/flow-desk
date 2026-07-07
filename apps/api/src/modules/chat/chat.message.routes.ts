@@ -37,8 +37,11 @@ chatMessageRouter.post(
   async (c) => {
     const auth = c.get('auth');
     const { wid, channelId } = c.req.valid('param');
-    const body = createChatMessageSchema.parse(await c.req.json());
-    const message = await svc.sendMessage(prisma, auth.user.id, wid, channelId, body);
+    const parsed = createChatMessageSchema.safeParse(await c.req.json());
+    if (!parsed.success) {
+      return c.json({ code: 'INVALID_BODY', details: parsed.error.flatten() }, 400);
+    }
+    const message = await svc.sendMessage(prisma, auth.user.id, wid, channelId, parsed.data);
     return c.json({ data: message }, 201);
   },
 );
@@ -46,8 +49,18 @@ chatMessageRouter.post(
 chatMessageRouter.patch('/:messageId', zValidator('param', messageParamsSchema), async (c) => {
   const auth = c.get('auth');
   const { wid, channelId, messageId } = c.req.valid('param');
-  const body = updateChatMessageSchema.parse(await c.req.json());
-  const message = await svc.updateMessage(prisma, auth.user.id, wid, channelId, messageId, body);
+  const parsed = updateChatMessageSchema.safeParse(await c.req.json());
+  if (!parsed.success) {
+    return c.json({ code: 'INVALID_BODY', details: parsed.error.flatten() }, 400);
+  }
+  const message = await svc.updateMessage(
+    prisma,
+    auth.user.id,
+    wid,
+    channelId,
+    messageId,
+    parsed.data,
+  );
   return c.json({ data: message });
 });
 

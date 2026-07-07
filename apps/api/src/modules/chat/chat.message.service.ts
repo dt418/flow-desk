@@ -67,73 +67,90 @@ export async function sendMessage(
 
   const recipientIds = mentionedUserIds;
 
-  const { message } = await prisma.$transaction(async (tx) => {
-    let msg;
-    try {
-      msg = await repo.create(tx, {
+  // ponytail: pre-check for an existing dedupe key outside the transaction
+  // so the P2002 path doesn't leave an aborted tx. The unique index is
+  // still the source of truth for the race window between this read and
+  // the create below — caught and retried.
+  if (body.clientMessageId) {
+    const prior = await repo.findByAuthorAndClientMessageId(prisma, userId, body.clientMessageId);
+    if (prior) {
+      // Idempotent retry — return the existing message without re-broadcasting.
+      return prior;
+    }
+  }
+
+  let message;
+  try {
+    // Create the message and the mention notifications atomically. The
+    // notification insert is in the same tx as the message so a partial
+    // failure (e.g. P2002 on the unique clientMessageId) rolls back both
+    // and we recover via the catch below.
+    message = await prisma.$transaction(async (tx) => {
+      const msg = await repo.create(tx, {
         channelId,
         authorId: userId,
         content: body.content,
         mentionedUserIds,
         clientMessageId: body.clientMessageId,
       });
-    } catch (err: unknown) {
-      if (
-        err instanceof Error &&
-        'code' in err &&
-        (err as { code: string }).code === 'P2002' &&
-        body.clientMessageId
-      ) {
-        const existing = await repo.findByAuthorAndClientMessageId(
+      if (recipientIds.length > 0) {
+        await commentRepo.createManyNotifications(
           tx,
-          userId,
-          body.clientMessageId,
+          recipientIds.map((rid) => ({
+            userId: rid,
+            type: 'COMMENT_REPLY' as const,
+            title: `You were mentioned in #${channel.name}`,
+            body: body.content.slice(0, 200),
+            data: {
+              channelId,
+              messageId: msg.id,
+              workspaceId: channel.workspaceId,
+              authorId: userId,
+            },
+          })),
         );
-        if (existing) {
-          return { message: existing };
-        }
       }
-      throw err;
-    }
-
-    if (recipientIds.length > 0) {
-      await commentRepo.createManyNotifications(
-        tx,
-        recipientIds.map((rid) => ({
-          userId: rid,
-          type: 'COMMENT_REPLY' as const,
-          title: `You were mentioned in #${channel.name}`,
-          body: body.content.slice(0, 200),
-          data: {
-            channelId,
-            messageId: msg.id,
-            workspaceId: channel.workspaceId,
-            authorId: userId,
-          },
-        })),
+      return msg;
+    });
+  } catch (err: unknown) {
+    // Race: another request inserted the same (authorId, clientMessageId)
+    // between our pre-check and create. Return that row.
+    if (
+      err instanceof Error &&
+      'code' in err &&
+      (err as { code: string }).code === 'P2002' &&
+      body.clientMessageId
+    ) {
+      const existing = await repo.findByAuthorAndClientMessageId(
+        prisma,
+        userId,
+        body.clientMessageId,
       );
+      if (existing) return existing;
     }
-
-    return { message: msg };
-  });
+    throw err;
+  }
 
   if (recipientIds.length > 0) {
-    const notifications = await repo.findNotificationsForMessage(
-      prisma,
-      message.id,
-    );
+    const notifications = await repo.findNotificationsForMessage(prisma, message.id);
     for (const notif of notifications) {
-      const notifResult = safeEmit(() => emitToUser(notif.userId, 'notification:new', { notification: notif }), {
-        event: 'notification:new',
-        notificationId: notif.id,
-        userId: notif.userId,
-      });
+      const notifResult = safeEmit(
+        () => emitToUser(notif.userId, 'notification:new', { notification: notif }),
+        {
+          event: 'notification:new',
+          notificationId: notif.id,
+          userId: notif.userId,
+        },
+      );
       if (!notifResult.ok) {
         logger.warn({ err: notifResult.error }, 'failed to emit notification:new');
       }
     }
   }
 
+  // ponytail: Bug #2 — was emitting to BOTH conversation:{channelId} room
+  // and user:{userId}. The author is in the room, so they got the
+  // message twice. Room broadcast covers everyone (author + watchers).
   const roomResult = safeEmit(
     () =>
       emitToRoom('/collab', `conversation:${channelId}`, 'message:new', {
@@ -158,32 +175,6 @@ export async function sendMessage(
   );
   if (!roomResult.ok) {
     logger.warn({ err: roomResult.error }, 'failed to emit message:new to room');
-  }
-
-  const userResult = safeEmit(
-    () =>
-      emitToUser(userId, 'message:new', {
-        channelId,
-        message: {
-          id: message.id,
-          channelId: message.channelId,
-          authorId: message.authorId,
-          content: message.content,
-          mentionedUserIds: message.mentionedUserIds,
-          createdAt: message.createdAt.toISOString(),
-          updatedAt: message.updatedAt.toISOString(),
-          editedAt: null,
-          author: {
-            id: message.author.id,
-            name: message.author.name,
-            avatarUrl: message.author.avatarUrl,
-          },
-        },
-      }),
-    { event: 'message:new', channelId },
-  );
-  if (!userResult.ok) {
-    logger.warn({ err: userResult.error }, 'failed to emit message:new to user');
   }
 
   return message;
