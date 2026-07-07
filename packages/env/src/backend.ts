@@ -1,5 +1,29 @@
 import { z } from 'zod';
 
+const TTL_UNIT_SECONDS: Record<string, number> = {
+  s: 1,
+  m: 60,
+  h: 3600,
+  d: 86_400,
+  w: 604_800,
+  y: 31_536_000,
+};
+
+function parseTtlToSeconds(ttl: string): number | null {
+  const match = ttl.trim().match(/^(\d+(?:\.\d+)?)\s*([smhdwy])?$/);
+  if (!match || match[1] === undefined) return null;
+  const value = parseFloat(match[1]);
+  const unit = match[2] ?? 's';
+  const multiplier = TTL_UNIT_SECONDS[unit];
+  if (multiplier === undefined) return null;
+  return value * multiplier;
+}
+
+function isPositiveTtl(ttl: string): boolean {
+  const seconds = parseTtlToSeconds(ttl);
+  return seconds !== null && seconds > 0;
+}
+
 const sharedFields = {
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
 };
@@ -19,8 +43,14 @@ export const backendSchema = z.object({
       }
       return true;
     }, 'JWT_SECRET must not be the default placeholder in production'),
-  JWT_ACCESS_TTL: z.string().default('15m'),
-  JWT_REFRESH_TTL: z.string().default('7d'),
+  JWT_ACCESS_TTL: z
+    .string()
+    .default('15m')
+    .refine(isPositiveTtl, 'JWT_ACCESS_TTL must be a positive, non-zero duration (e.g. "15m")'),
+  JWT_REFRESH_TTL: z
+    .string()
+    .default('7d')
+    .refine(isPositiveTtl, 'JWT_REFRESH_TTL must be a positive, non-zero duration (e.g. "7d")'),
   CORS_ORIGINS: z
     .string()
     .default('http://localhost:5173,http://localhost:3000')
@@ -32,7 +62,12 @@ export const backendSchema = z.object({
   FLOWDESK_GITHUB_CLIENT_SECRET: z.string().optional(),
   FLOWDESK_GITHUB_REDIRECT_URI: z.string().url().optional(),
   LLM_BASE_URL: z.string().url().default('https://api.openai.com/v1'),
-  LLM_API_KEY: z.string().default('sk-placeholder'),
+  LLM_API_KEY: z
+    .string()
+    .refine((key) => {
+      const PLACEHOLDERS = ['', 'sk-placeholder', 'your-key-here', 'changeme'];
+      return !PLACEHOLDERS.includes(key.trim().toLowerCase());
+    }, 'LLM_API_KEY must be set to a real key (no placeholder/default allowed)'),
   LLM_MODEL: z.string().default('gpt-4o-mini'),
   LLM_MAX_TOKENS: z.coerce.number().int().min(1).default(2048),
   LLM_TEMPERATURE: z.coerce.number().min(0).max(2).default(0.7),

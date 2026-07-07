@@ -20,13 +20,17 @@ export function signRefreshToken(payload: RefreshTokenPayload): string {
 }
 
 export function verifyAccessToken(token: string): AccessTokenPayload {
-  const decoded = jwt.verify(token, env.JWT_SECRET) as AccessTokenPayload;
+  const decoded = jwt.verify(token, env.JWT_SECRET) as AccessTokenPayload & jwt.JwtPayload;
+  if (typeof decoded.exp !== 'number') throw new Error('Invalid token: missing exp');
+  if (decoded.exp * 1000 <= Date.now()) throw new Error('Invalid token: expired');
   if (!decoded.userId || !decoded.email) throw new Error('Invalid token payload');
   return decoded;
 }
 
 export function verifyRefreshToken(token: string): RefreshTokenPayload {
-  const decoded = jwt.verify(token, env.JWT_SECRET) as RefreshTokenPayload;
+  const decoded = jwt.verify(token, env.JWT_SECRET) as RefreshTokenPayload & jwt.JwtPayload;
+  if (typeof decoded.exp !== 'number') throw new Error('Invalid token: missing exp');
+  if (decoded.exp * 1000 <= Date.now()) throw new Error('Invalid token: expired');
   if (!decoded.userId || !decoded.tokenId) throw new Error('Invalid token payload');
   return decoded;
 }
