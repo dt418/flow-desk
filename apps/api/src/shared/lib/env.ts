@@ -77,7 +77,7 @@ const envSchema = z.object({
   SKIP_RATE_LIMIT: z
     .string()
     .optional()
-    .transform((v) => v === '1' || v === 'true'),
+    .transform((v) => (v ? v === '1' || v === 'true' : false)),
   TRUST_PROXY_HOPS: z.coerce.number().int().min(0).default(0),
 });
 
