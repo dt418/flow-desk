@@ -1,5 +1,5 @@
 import type { prisma } from '../../shared/lib/prisma';
-type PrismaClient = typeof prisma;
+type PrismaClient = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
 
 export function findByChannel(
   prisma: PrismaClient,
