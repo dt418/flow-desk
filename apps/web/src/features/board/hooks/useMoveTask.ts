@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Socket } from 'socket.io-client';
 import { api } from '@/lib/api';
@@ -69,7 +69,7 @@ interface MutationContext {
 
 export function useMoveTask({ workspaceId, socket: externalSocket }: UseMoveTaskOptions) {
   const qc = useQueryClient();
-  const queryKey = boardKeys.board(workspaceId);
+  const queryKey = useMemo(() => boardKeys.board(workspaceId), [workspaceId]);
   const { socket: defaultSocket } = useNamespacedSocket('/tasks');
   const socket = externalSocket ?? defaultSocket;
 
