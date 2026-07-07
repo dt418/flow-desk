@@ -64,7 +64,12 @@ const envSchema = z.object({
   SMTP_PASSWORD: z.string().optional(),
   RESEND_API_KEY: z.string().optional(),
   LLM_BASE_URL: z.string().url().default('https://api.openai.com/v1'),
-  LLM_API_KEY: z.string().default('sk-placeholder'),
+  LLM_API_KEY: z
+    .string()
+    .refine((key) => {
+      const PLACEHOLDERS = ['', 'sk-placeholder', 'your-key-here', 'changeme'];
+      return !PLACEHOLDERS.includes(key.trim().toLowerCase());
+    }, 'LLM_API_KEY must be set to a real key (no placeholder/default allowed)'),
   LLM_MODEL: z.string().default('gpt-4o-mini'),
   LLM_MAX_TOKENS: z.coerce.number().int().min(1).default(2048),
   LLM_TEMPERATURE: z.coerce.number().min(0).max(2).default(0.7),

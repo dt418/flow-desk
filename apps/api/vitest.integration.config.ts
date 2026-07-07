@@ -19,7 +19,7 @@ export default defineConfig({
       REDIS_URL: process.env.REDIS_URL ?? 'redis://localhost:6379',
       CORS_ORIGINS: 'http://localhost:5173',
       SKIP_RATE_LIMIT: '1',
-      LLM_API_KEY: 'sk-placeholder',
+      LLM_API_KEY: 'sk-test-key-valid',
       UPLOAD_DIR: '/tmp/test-uploads',
     },
   },
