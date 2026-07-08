@@ -93,7 +93,6 @@ export function createSocketServer(httpServer: HttpServer) {
       socket.handshake.headers.cookie as string | undefined,
       'access_token',
     );
-    console.error('AUTH_MW', JSON.stringify({ ns: (socket.nsp?.name ?? ''), cookie: Boolean(socket.handshake.headers.cookie), cookieToken: Boolean(cookieToken), authToken: Boolean(socket.handshake.auth?.token) }));
     const token =
       (socket.handshake.auth?.token as string | undefined) ??
       socket.handshake.headers.authorization?.replace(/^Bearer\s+/i, '') ??

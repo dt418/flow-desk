@@ -80,9 +80,10 @@ export function getSocket(ns: FlowDeskNamespace): Socket {
     }
   }
 
-  console.debug('GETSOCK CREATE', ns, 'apiUrl=', JSON.stringify(SOCKET_API_URL));
   const socket = io(`${SOCKET_API_URL}${ns}`, {
     withCredentials: false,
+    // ponytail: polling only — socket token auth via `auth:{}` handshake,
+    // no httpOnly cookie needed. Add 'websocket' back if latency matters.
     transports: ['polling'],
     autoConnect: true,
     reconnection: true,
@@ -99,12 +100,7 @@ export function getSocket(ns: FlowDeskNamespace): Socket {
   });
   socket.io.on('reconnect', () => reconnectingSince.delete(ns));
   socket.on('connect', () => reconnectingSince.delete(ns));
-  socket.io.on('error', (e) => console.error('MGR_ERR', ns, String(e)));
-  socket.on('connect_error', (e) => console.error('SOCK_CONNECT_ERR', ns, e?.message));
-  socket.on('error', (e) => console.error('SOCK_ERR', ns, String(e)));
   sockets.set(ns, socket);
-  socket.on('connect', () => console.error('SOCK_CONNECTED', ns, socket.id));
-  socket.on('disconnect', (r) => console.error('SOCK_DISCONNECT', ns, r));
   ensureRefreshLoop();
   ensureSocketTokenPrefetch();
   return socket;
