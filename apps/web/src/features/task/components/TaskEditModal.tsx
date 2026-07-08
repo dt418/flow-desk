@@ -19,7 +19,7 @@ import { Input } from '@/components/ui/input';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { initials } from '@/lib/utils';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+
 import {
   Dialog,
   DialogContent,
@@ -267,11 +267,6 @@ export function TaskEditModal({
       on_submit();
     }
   };
-
-  const isMac = React.useMemo(
-    () => typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform),
-    [],
-  );
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
@@ -607,31 +602,15 @@ export function TaskEditModal({
                 >
                   Cancel
                 </Button>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button type="submit" disabled={isSubmitting} size="sm" className="h-9 px-4">
-                      {isSubmitting
-                        ? isEdit
-                          ? 'Saving…'
-                          : 'Creating…'
-                        : isEdit
-                          ? 'Save'
-                          : 'Create task'}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="top" sideOffset={6}>
-                    <span className="flex items-center gap-1.5">
-                      <kbd className="rounded border border-border bg-muted px-1 font-mono text-[10px] text-muted-foreground">
-                        {isMac ? '⌘' : 'Ctrl'}
-                      </kbd>
-                      <span className="text-muted-foreground">+</span>
-                      <kbd className="rounded border border-border bg-muted px-1 font-mono text-[10px] text-muted-foreground">
-                        ↵
-                      </kbd>
-                      <span className="text-muted-foreground">to submit</span>
-                    </span>
-                  </TooltipContent>
-                </Tooltip>
+                <Button type="submit" disabled={isSubmitting} size="sm" className="h-9 px-4">
+                  {isSubmitting
+                    ? isEdit
+                      ? 'Saving…'
+                      : 'Creating…'
+                    : isEdit
+                      ? 'Save'
+                      : 'Create task'}
+                </Button>
               </div>
             </form>
           )}

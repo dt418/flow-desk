@@ -115,25 +115,19 @@ export default function ListPage() {
   const [newModalOpen, setNewModalOpen] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const taskDelete = useTaskDelete(workspaceId);
-  const { data: membersData } = useMembers(workspaceId) as {
-    data:
-      | Array<{ id: string; name: string; email: string }>
-      | { data: Array<{ id: string; name: string; email: string }> }
-      | undefined;
-  };
-  const { data: wsColumnsData } = useColumns(workspaceId) as {
-    data:
-      | Array<{ id: string; name: string }>
-      | { data: Array<{ id: string; name: string }> }
-      | undefined;
-  };
-  const members = Array.isArray(membersData)
-    ? membersData
-    : ((membersData as { data: Array<{ id: string; name: string; email: string }> } | undefined)
-        ?.data ?? []);
-  const wsColumns = Array.isArray(wsColumnsData)
-    ? wsColumnsData
-    : ((wsColumnsData as { data: Array<{ id: string; name: string }> } | undefined)?.data ?? []);
+  const { data: membersData } = useMembers(workspaceId);
+  const { data: wsColumnsData } = useColumns(workspaceId);
+  const members = useMemo(
+    () =>
+      (membersData ?? []).map((m) => ({
+        id: m.user.id,
+        name: m.user.name,
+        email: m.user.email,
+        avatarUrl: m.user.avatarUrl,
+      })),
+    [membersData],
+  );
+  const wsColumns = useMemo(() => wsColumnsData ?? [], [wsColumnsData]);
 
   // Build current query from filter state for save/load
   const currentQuery: SavedFilterQuery = {

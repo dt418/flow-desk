@@ -192,6 +192,7 @@ export default function BoardPage() {
       (membersQuery.data ?? []).map((m) => ({
         id: m.user.id,
         name: m.user.name,
+        avatarUrl: m.user.avatarUrl,
       })),
     [membersQuery.data],
   );
