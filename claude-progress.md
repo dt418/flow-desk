@@ -82,6 +82,18 @@
 
 ## Session Log
 
+### 2026-07-08 22:11 — `8c1e8e0` (main)
+
+- **type:** fix
+- **msg:** remove debug console.error/debug from socket code
+- **author:** thanhd
+
+### 2026-07-08 22:10 — `c859a03` (main)
+
+- **type:** feat
+- **msg:** socket token auth + auto-refresh + plan-feature skill setup
+- **author:** thanhd
+
 ### 2026-07-08 21:48 — `1ecb3c6` (main)
 
 - **type:** chore
