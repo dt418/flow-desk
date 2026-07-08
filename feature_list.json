@@ -1342,6 +1342,24 @@
         "Commits: 3514d23 (cmdk + shadcn Command), 246c645 (CommandPalette component), aabcb74 (exports + app-shell), 952ffc9 (tests + polyfills), 1ecb3c6 (cleanup + old files deleted)"
       ],
       "notes": "Replaces hand-rolled SearchPalette (manual Dialog + keyboard nav) with shadcn Command component (cmdk). No backend changes. Uses existing useSearch hook and workspaceApi.list(). shadcn CLI failed on Node 22 — command.tsx created manually (identical output). Pre-existing 3 failing tests in packages/shared/src/chat.test.ts (schema drift from realtime-chat-refactor) are unrelated."
+    },
+    {
+      "id": "P3-3",
+      "priority": 85,
+      "area": "calendar",
+      "title": "Calendar View — month/week/day grid with DnD rescheduling and realtime sync",
+      "user_visible_behavior": "User can navigate to /calendar/:workspaceId and see tasks displayed on a calendar grid. Month view shows a 7-column grid with task cards on their due dates. Week view shows 7 columns for the current week. Day view shows all tasks for a single day. User can drag tasks between days to reschedule (desktop). Mobile uses tap-to-edit-date. Calendar respects the currently selected Saved View's filters. Navigation (prev/next/today) and view mode switching (month/week/day) via toolbar. Realtime sync via shared useTaskRealtime hook.",
+      "status": "not_started",
+      "verification": [
+        "pnpm --filter @flow-desk/web typecheck → exit 0",
+        "pnpm --filter @flow-desk/web build → exit 0",
+        "pnpm --filter @flow-desk/web test -- --run → all pass (incl. calendar utils + component tests)",
+        "Calendar page renders month grid with tasks from demo workspace",
+        "Drag task to new date → dueDate updated → persists across reload",
+        "Mobile: tap task → drawer with date picker → update dueDate"
+      ],
+      "evidence": [],
+      "notes": "Design spec: docs/superpowers/specs/2026-07-08-calendar-view-design.md. Build from scratch (no big-calendar vendoring). Calendar is a view layer — reuses existing task queries, mutations, realtime, and Saved View filters. Incremental phases: Month → Week → Day. No backend changes needed (existing GET /api/tasks with dueBefore/dueAfter covers data needs). TaskCard is presentation-only; DnD via DraggableTaskCard wrapper. Shared grid interface (CalendarGridProps) for all views."
     }
   ]
 }

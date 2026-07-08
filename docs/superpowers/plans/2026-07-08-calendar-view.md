@@ -21,6 +21,7 @@
 - Zod for all input validation
 - No `any` in TypeScript
 - `pnpm verify` must pass before every commit
+- Before each task's commit step, run `pnpm verify` and fix any failures before committing
 
 ---
 
@@ -1334,4 +1335,180 @@ Mark P3-3 as completed with evidence.
 ```bash
 git add -A
 git commit -m "feat(calendar): complete calendar view implementation"
+```
+
+---
+
+## Task 18: Tests
+
+**Files:**
+- Create: `apps/web/src/features/calendar/utils.test.ts`
+- Create: `apps/web/src/components/calendar/month-grid.test.tsx`
+- Create: `apps/web/src/components/calendar/task-card.test.tsx`
+
+**Interfaces:**
+- Consumes: all calendar components and utils from Tasks 1-17
+
+- [ ] **Step 1: Write date utility unit tests**
+
+```ts
+// apps/web/src/features/calendar/utils.test.ts
+import { describe, it, expect } from 'vitest';
+import { getMonthDays, getWeekDays, formatDateKey, isSameDay } from './utils';
+
+describe('getMonthDays', () => {
+  it('returns 42 days (6 weeks) for a month grid', () => {
+    const days = getMonthDays(new Date(2026, 0, 1)); // Jan 2026
+    expect(days).toHaveLength(42);
+  });
+
+  it('starts from Sunday before the 1st', () => {
+    const days = getMonthDays(new Date(2026, 0, 1)); // Jan 1 is Thursday
+    expect(days[0].getDay()).toBe(0); // Sunday
+  });
+});
+
+describe('getWeekDays', () => {
+  it('returns 7 days', () => {
+    const days = getWeekDays(new Date(2026, 0, 5)); // Monday
+    expect(days).toHaveLength(7);
+  });
+
+  it('starts from Sunday', () => {
+    const days = getWeekDays(new Date(2026, 0, 7)); // Wednesday
+    expect(days[0].getDay()).toBe(0);
+  });
+});
+
+describe('formatDateKey', () => {
+  it('returns YYYY-MM-DD format', () => {
+    expect(formatDateKey(new Date(2026, 0, 5))).toBe('2026-01-05');
+  });
+});
+
+describe('isSameDay', () => {
+  it('returns true for same day different time', () => {
+    const a = new Date(2026, 0, 5, 10, 30);
+    const b = new Date(2026, 0, 5, 18, 45);
+    expect(isSameDay(a, b)).toBe(true);
+  });
+
+  it('returns false for different days', () => {
+    const a = new Date(2026, 0, 5);
+    const b = new Date(2026, 0, 6);
+    expect(isSameDay(a, b)).toBe(false);
+  });
+});
+```
+
+- [ ] **Step 2: Run utility tests**
+
+Run: `pnpm --filter @flow-desk/web test -- utils.test`
+Expected: PASS
+
+- [ ] **Step 3: Write TaskCard component test**
+
+```tsx
+// apps/web/src/components/calendar/task-card.test.tsx
+import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { CalendarTaskCard } from './task-card';
+import type { CalendarTask } from '@/features/calendar/types';
+
+const mockTask: CalendarTask = {
+  id: 'task-1',
+  title: 'Test Task',
+  status: 'TODO',
+  priority: 'HIGH',
+  dueDate: new Date(2026, 0, 5).toISOString(),
+  columnId: 'col-1',
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
+};
+
+describe('CalendarTaskCard', () => {
+  it('renders task title', () => {
+    render(<CalendarTaskCard task={mockTask} />);
+    expect(screen.getByText('Test Task')).toBeDefined();
+  });
+
+  it('calls onClick when clicked', () => {
+    const onClick = vi.fn();
+    render(<CalendarTaskCard task={mockTask} onClick={onClick} />);
+    screen.getByText('Test Task').click();
+    expect(onClick).toHaveBeenCalledOnce();
+  });
+
+  it('renders in compact mode', () => {
+    render(<CalendarTaskCard task={mockTask} compact />);
+    expect(screen.getByText('Test Task')).toBeDefined();
+  });
+});
+```
+
+- [ ] **Step 4: Write MonthGrid component test**
+
+```tsx
+// apps/web/src/components/calendar/month-grid.test.tsx
+import { render, screen } from '@testing-library/react';
+import { describe, it, expect } from 'vitest';
+import { MonthGrid } from './month-grid';
+import type { CalendarTask } from '@/features/calendar/types';
+
+const tasks: CalendarTask[] = [
+  {
+    id: 'task-1',
+    title: 'January Task',
+    status: 'TODO',
+    priority: 'HIGH',
+    dueDate: new Date(2026, 0, 15).toISOString(),
+    columnId: 'col-1',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+];
+
+describe('MonthGrid', () => {
+  it('renders 7 weekday headers', () => {
+    render(
+      <MonthGrid
+        tasks={[]}
+        visibleRange={{ start: new Date(2026, 0, 1), end: new Date(2026, 1, 0) }}
+        onTaskClick={() => {}}
+        onTaskMove={() => {}}
+      />,
+    );
+    expect(screen.getByText('Sun')).toBeDefined();
+    expect(screen.getByText('Sat')).toBeDefined();
+  });
+
+  it('renders task card for task in visible range', () => {
+    render(
+      <MonthGrid
+        tasks={tasks}
+        visibleRange={{ start: new Date(2026, 0, 1), end: new Date(2026, 1, 0) }}
+        onTaskClick={() => {}}
+        onTaskMove={() => {}}
+      />,
+    );
+    expect(screen.getByText('January Task')).toBeDefined();
+  });
+});
+```
+
+- [ ] **Step 5: Run all tests**
+
+Run: `pnpm --filter @flow-desk/web test`
+Expected: PASS
+
+- [ ] **Step 6: Run `pnpm verify`**
+
+Run: `pnpm verify`
+Expected: PASS
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add apps/web/src/features/calendar/utils.test.ts apps/web/src/components/calendar/task-card.test.tsx apps/web/src/components/calendar/month-grid.test.tsx
+git commit -m "test(calendar): add unit and component tests for calendar view"
 ```

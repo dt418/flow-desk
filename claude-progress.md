@@ -5,7 +5,7 @@
 - **Repository root**: `/home/thanh/flow-desk`
 - **Standard startup path**: `./init.sh` (pnpm install + shared build + git hook install) then `docker compose up -d`
 - **Standard verification path**: `pnpm --filter @flow-desk/shared build` + curl API endpoints + `bash scripts/prisma-exec.sh <args>` for prisma
-- **Highest priority unfinished feature**: none (35 features + F7 + E2E passing + kanban-sprint-1 passing + post-F8 dev/seed fixes + audit-002 passing + workspace-switcher-create fix passing)
+- **Highest priority unfinished feature**: P3-3 (Calendar View — design spec written, brainstorming complete, awaiting implementation plan)
 - **Active branch**: `main` in `/home/thanh/flow-desk` (F7 merged, F8 implemented, post-F8 fixes committed)
 - **Post-F8 fixes (session 019)**: (a) dev startup race condition — `turbo.json` dev task `dependsOn: [^build, ^db:generate]` + `tsup.config.ts` `clean: false` (prevents `MODULE_NOT_FOUND` + `EADDRINUSE` when shared rebuilds under `--watch`); (b) seed cleanup — `packages/db/prisma/seed.ts` added `deleteMany` for `ChatMessage`, `ChatChannel`, `UserNotificationPreference`, `WorkspaceNotificationSetting`, `EmailJob` before workspace deletion (fixes P2003 FK constraint violation on re-seed after F7 models added); (c) force-exit timer regression — `apps/api/src/index.ts` 10s `setTimeout` was at module level (fired unconditionally 10s after every startup, killing the API in dev mode); moved inside `shutdown()` function so it only fires during actual SIGTERM/SIGINT (commit `89c0233`, regression from AUD-008)
 - **Prisma**: **7.8.0**
@@ -80,7 +80,35 @@
   - feature_list.json row added; claude-progress.md updated
 - **Next best step**: Execute Phase 1 task 1.1 (add clientMessageId to shared chat schema) via subagent
 
+## Session 030 — Calendar View design brainstorming
+
+- **Date**: 2026-07-08
+- **Goal**: Design Calendar View (P3-3 from ROADMAP.md) — big-calendar-style month/week/day grid for task management
+- **Completed**:
+  - Full brainstorming session: explored codebase (sidebar nav, task routes, hooks, routing, big-calendar source, task types)
+  - User decisions: (A) Month+Week+Day views, (B) Build from scratch (no vendoring), (B) Integrate with Saved Views, (A) Future-proof startDate/endDate interface
+  - Design spec written: `docs/superpowers/specs/2026-07-08-calendar-view-design.md`
+  - Architecture: CalendarProvider (UI state only), shared grid interface, TaskCard presentation-only, DnD via DraggableTaskCard wrapper, reuses existing task queries/mutations/realtime
+  - Key insight: calendar is a **view layer**, not a data domain — composes existing task infrastructure
+  - `taskApi.list` method needs to be added (no `useTasks` hook exists yet — `useCalendarTasks` uses `useQuery` directly)
+  - Incremental phases: Month (foundation+DnD) → Week → Day
+  - feature_list.json updated with P3-3 entry
+- **Verification**: spec self-reviewed for placeholders, contradictions, ambiguity — fixed one ambiguity (useTasks/taskApi.list gap)
+- **Next best step**: User reviews spec, then invoke writing-plans skill for implementation plan
+
 ## Session Log
+
+### 2026-07-08 22:46 — `30895a1` (main)
+
+- **type:** docs
+- **msg:** add calendar view implementation plan
+- **author:** thanhd
+
+### 2026-07-08 22:17 — `119c62a` (main)
+
+- **type:** docs
+- **msg:** update progress log
+- **author:** thanhd
 
 ### 2026-07-08 22:16 — `eec736d` (main)
 
