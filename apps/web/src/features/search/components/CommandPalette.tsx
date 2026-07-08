@@ -14,7 +14,6 @@ import { FileText, MessageSquare, Paperclip, LayoutDashboard, Settings, Sun, Moo
 import { useSearch } from '../hooks';
 import { workspaceApi } from '@/features/workspace';
 import { useTheme } from '@/lib/theme';
-import type { SearchResult } from '../types';
 
 interface CommandPaletteProps {
   open: boolean;

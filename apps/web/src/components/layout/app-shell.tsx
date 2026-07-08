@@ -13,7 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { WorkspaceSwitcher } from '@/features/workspace';
 import { WorkspaceCreateDialog } from '@/components/ui/workspace-create-dialog';
 import { Search as SearchIcon } from 'lucide-react';
-import { SearchPalette } from '@/features/search';
+import { CommandPalette } from '@/features/search';
 import { cn, initials } from '@/lib/utils';
 
 interface WorkspaceSummary {
@@ -177,7 +177,7 @@ export function AppShell() {
         onOpenChange={setCreateOpen}
         onCreated={(ws) => navigate(`/board/${ws.id}`)}
       />
-      <SearchPalette open={searchOpen} onOpenChange={setSearchOpen} />
+      <CommandPalette open={searchOpen} onOpenChange={setSearchOpen} />
     </div>
   );
 }
