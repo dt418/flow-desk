@@ -1,4 +1,5 @@
 ---
+name: plan-feature
 description: Brainstorm, plan, and execute a flow-desk feature end-to-end
 argument-hint: '<feature request>'
 ---

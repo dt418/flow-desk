@@ -22,65 +22,65 @@
 
 ### Backend (apps/api)
 
-| Path | Change | Phase |
-|------|--------|-------|
-| `apps/api/src/modules/realtime/realtime.gateway.ts` | Add conversation room, typing, presence, ack helpers | 1–3 |
-| `apps/api/src/modules/realtime/schemas.ts` (new) | Zod schemas for every socket event payload | 1–2 |
-| `apps/api/src/modules/chat/chat.service.ts` | Add `isPrivate` ACL, role guard, transaction wrap, emit `conversation:updated` | 1, 2, 4 |
-| `apps/api/src/modules/chat/chat.message.service.ts` | Transaction wrap, clientMessageId echo, drop author.email, use `findNotificationsForMessage` | 1 |
-| `apps/api/src/modules/chat/chat.repository.ts` | Drop duplicate latestMessage include; add `findByIdScoped(ws, id)` | 1, 4 |
-| `apps/api/src/modules/chat/chat.message.repository.ts` | Add `findNotificationsForMessage`; drop manual updatedAt | 1, 4 |
-| `apps/api/src/modules/chat/chat.routes.ts` | Replace `.parse()` with `zValidator`; drop `onError` no-op | 4 |
-| `apps/api/src/modules/chat/chat.message.routes.ts` | Same as above; TaskChat routes reuse | 2, 4 |
-| `apps/api/src/modules/chat/task-chat.service.ts` (new) | Task-scoped channel helper | 2 |
-| `apps/api/src/modules/chat/chat.schema.ts` | **DELETE** | 2 |
-| `apps/api/src/modules/chat/chat.message.schema.ts` | **DELETE** | 2 |
-| `apps/api/src/shared/lib/socket.ts` | Add `connection` rate limit, Zod payload validation, error event, sticky-session note, dispose fn | 1, 2, 4 |
-| `apps/api/src/shared/lib/socket-events.ts` | Event-name typed registry; replace `safeEmit` with typed `emit` that surfaces errors | 1, 2 |
-| `apps/api/src/index.ts` | `disposeSocketServer` on shutdown; await `io.close()`; pub/sub `.quit()` | 4 |
-| `apps/api/src/shared/middleware/access.ts` | `assertMembership` returns 403 | 4 |
-| `apps/api/src/shared/middleware/rate-limit.ts` | `retryAfter = resetEpoch - nowSec`; chat-specific policies; cluster hash-tag | 4 |
-| `apps/api/src/shared/lib/prisma-extension.ts` | **DELETE** (use `packages/db` canonical) | 4 |
-| `apps/api/src/shared/middleware/auth.ts` + `auth-cache.ts` | Wire `invalidateMembershipCache` on member add/remove/role-change | 4 |
+| Path                                                       | Change                                                                                            | Phase   |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ------- |
+| `apps/api/src/modules/realtime/realtime.gateway.ts`        | Add conversation room, typing, presence, ack helpers                                              | 1–3     |
+| `apps/api/src/modules/realtime/schemas.ts` (new)           | Zod schemas for every socket event payload                                                        | 1–2     |
+| `apps/api/src/modules/chat/chat.service.ts`                | Add `isPrivate` ACL, role guard, transaction wrap, emit `conversation:updated`                    | 1, 2, 4 |
+| `apps/api/src/modules/chat/chat.message.service.ts`        | Transaction wrap, clientMessageId echo, drop author.email, use `findNotificationsForMessage`      | 1       |
+| `apps/api/src/modules/chat/chat.repository.ts`             | Drop duplicate latestMessage include; add `findByIdScoped(ws, id)`                                | 1, 4    |
+| `apps/api/src/modules/chat/chat.message.repository.ts`     | Add `findNotificationsForMessage`; drop manual updatedAt                                          | 1, 4    |
+| `apps/api/src/modules/chat/chat.routes.ts`                 | Replace `.parse()` with `zValidator`; drop `onError` no-op                                        | 4       |
+| `apps/api/src/modules/chat/chat.message.routes.ts`         | Same as above; TaskChat routes reuse                                                              | 2, 4    |
+| `apps/api/src/modules/chat/task-chat.service.ts` (new)     | Task-scoped channel helper                                                                        | 2       |
+| `apps/api/src/modules/chat/chat.schema.ts`                 | **DELETE**                                                                                        | 2       |
+| `apps/api/src/modules/chat/chat.message.schema.ts`         | **DELETE**                                                                                        | 2       |
+| `apps/api/src/shared/lib/socket.ts`                        | Add `connection` rate limit, Zod payload validation, error event, sticky-session note, dispose fn | 1, 2, 4 |
+| `apps/api/src/shared/lib/socket-events.ts`                 | Event-name typed registry; replace `safeEmit` with typed `emit` that surfaces errors              | 1, 2    |
+| `apps/api/src/index.ts`                                    | `disposeSocketServer` on shutdown; await `io.close()`; pub/sub `.quit()`                          | 4       |
+| `apps/api/src/shared/middleware/access.ts`                 | `assertMembership` returns 403                                                                    | 4       |
+| `apps/api/src/shared/middleware/rate-limit.ts`             | `retryAfter = resetEpoch - nowSec`; chat-specific policies; cluster hash-tag                      | 4       |
+| `apps/api/src/shared/lib/prisma-extension.ts`              | **DELETE** (use `packages/db` canonical)                                                          | 4       |
+| `apps/api/src/shared/middleware/auth.ts` + `auth-cache.ts` | Wire `invalidateMembershipCache` on member add/remove/role-change                                 | 4       |
 
 ### Frontend (apps/web)
 
-| Path | Change | Phase |
-|------|--------|-------|
-| `apps/web/src/lib/socket.ts` | Fix `startedRef` reset in cleanup; stuck-reconnect socket replacement; JWT refresh hook | 1, 4 |
-| `apps/web/src/lib/query-client.ts` | `refetchOnWindowFocus: true` for chat families; per-query defaults | 4 |
-| `apps/web/src/features/chat/hooks.ts` | `clientMessageId` optimistic insert; ACK on `message:send`; switch rooms on `activeChannelId`; typing/presence/read-receipt listeners; pure-socket `useSendMessage` (no REST POST); `setQueryData` only | 1, 2, 3 |
-| `apps/web/src/features/chat/components/ChannelView.tsx` | Stick-to-bottom scroll; "sending"/"failed" status; resend button | 1, 3 |
-| `apps/web/src/features/chat/components/MessageBubble.tsx` | Memoize; `isOwn` gates author label; show read receipts | 3, 4 |
-| `apps/web/src/features/chat/components/ChatInput.tsx` | Emit `typing:start` on focus, `typing:stop` on blur; 200ms throttle | 3 |
-| `apps/web/src/features/chat/components/ChannelItem.tsx` | `useMemo` timeAgo + 60s refresh; unread badge; highlight on `conversation:updated` | 4 |
-| `apps/web/src/features/chat/components/TaskChat.tsx` | Replace with shared `ChatPanel` (unified) | 2 |
-| `apps/web/src/features/chat/components/ChatPanel.tsx` (new) | Unified chat surface (used by channel + task) | 2 |
-| `apps/web/src/features/chat/components/TypingIndicator.tsx` (new) | | 3 |
-| `apps/web/src/features/chat/components/ReadReceipts.tsx` (new) | | 3 |
-| `apps/web/src/features/realtime/useRealtime.ts` | Drop `qc` from deps; re-emit join on `connect` (already done) | 1 |
-| `apps/web/src/pages/chat.tsx` | Use `ChatPanel` | 2 |
+| Path                                                              | Change                                                                                                                                                                                                  | Phase   |
+| ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| `apps/web/src/lib/socket.ts`                                      | Fix `startedRef` reset in cleanup; stuck-reconnect socket replacement; JWT refresh hook                                                                                                                 | 1, 4    |
+| `apps/web/src/lib/query-client.ts`                                | `refetchOnWindowFocus: true` for chat families; per-query defaults                                                                                                                                      | 4       |
+| `apps/web/src/features/chat/hooks.ts`                             | `clientMessageId` optimistic insert; ACK on `message:send`; switch rooms on `activeChannelId`; typing/presence/read-receipt listeners; pure-socket `useSendMessage` (no REST POST); `setQueryData` only | 1, 2, 3 |
+| `apps/web/src/features/chat/components/ChannelView.tsx`           | Stick-to-bottom scroll; "sending"/"failed" status; resend button                                                                                                                                        | 1, 3    |
+| `apps/web/src/features/chat/components/MessageBubble.tsx`         | Memoize; `isOwn` gates author label; show read receipts                                                                                                                                                 | 3, 4    |
+| `apps/web/src/features/chat/components/ChatInput.tsx`             | Emit `typing:start` on focus, `typing:stop` on blur; 200ms throttle                                                                                                                                     | 3       |
+| `apps/web/src/features/chat/components/ChannelItem.tsx`           | `useMemo` timeAgo + 60s refresh; unread badge; highlight on `conversation:updated`                                                                                                                      | 4       |
+| `apps/web/src/features/chat/components/TaskChat.tsx`              | Replace with shared `ChatPanel` (unified)                                                                                                                                                               | 2       |
+| `apps/web/src/features/chat/components/ChatPanel.tsx` (new)       | Unified chat surface (used by channel + task)                                                                                                                                                           | 2       |
+| `apps/web/src/features/chat/components/TypingIndicator.tsx` (new) |                                                                                                                                                                                                         | 3       |
+| `apps/web/src/features/chat/components/ReadReceipts.tsx` (new)    |                                                                                                                                                                                                         | 3       |
+| `apps/web/src/features/realtime/useRealtime.ts`                   | Drop `qc` from deps; re-emit join on `connect` (already done)                                                                                                                                           | 1       |
+| `apps/web/src/pages/chat.tsx`                                     | Use `ChatPanel`                                                                                                                                                                                         | 2       |
 
 ### Shared + DB
 
-| Path | Change | Phase |
-|------|--------|-------|
-| `packages/shared/src/chat.ts` | All chat Zod schemas; `clientMessageId`; `MessageStatus` enum; `conversation:updated` event | 1, 2, 3 |
-| `packages/shared/src/socket-events.ts` (new) | Event name registry + payload type map (client + server consume) | 2 |
-| `packages/db/prisma/schema.prisma` | Add `scope` + `taskId` to `ChatChannel`; `MessageStatus` enum; `ChatMessageRead` model; partial unique index for channel name; `onDelete: Cascade` on channel/workspace, `SetNull` on author; `@@index` additions | 1, 2, 3, 4 |
-| `packages/db/prisma/migrations/20260707_realtime_chat/` (new) | Additive migration for all schema changes | 1, 2, 3, 4 |
-| `packages/db/src/prisma-extension.ts` | Add `findUnique`/`findUniqueOrThrow` overrides for soft-delete (consolidate) | 4 |
+| Path                                                          | Change                                                                                                                                                                                                            | Phase      |
+| ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| `packages/shared/src/chat.ts`                                 | All chat Zod schemas; `clientMessageId`; `MessageStatus` enum; `conversation:updated` event                                                                                                                       | 1, 2, 3    |
+| `packages/shared/src/socket-events.ts` (new)                  | Event name registry + payload type map (client + server consume)                                                                                                                                                  | 2          |
+| `packages/db/prisma/schema.prisma`                            | Add `scope` + `taskId` to `ChatChannel`; `MessageStatus` enum; `ChatMessageRead` model; partial unique index for channel name; `onDelete: Cascade` on channel/workspace, `SetNull` on author; `@@index` additions | 1, 2, 3, 4 |
+| `packages/db/prisma/migrations/20260707_realtime_chat/` (new) | Additive migration for all schema changes                                                                                                                                                                         | 1, 2, 3, 4 |
+| `packages/db/src/prisma-extension.ts`                         | Add `findUnique`/`findUniqueOrThrow` overrides for soft-delete (consolidate)                                                                                                                                      | 4          |
 
 ### Tests + Docs
 
-| Path | Change | Phase |
-|------|--------|-------|
-| `e2e/chat-realtime.spec.ts` (new) | Playwright 2-browser: dedupe, channels list, ACK, typing, presence, read receipts, offline→online | 1, 2, 3 |
-| `docs/superpowers/plans/2026-07-07-realtime-chat-refactor.md` | This plan | 0 |
-| `ADR-007-realtime-reliability.md` | New ADR: room model, event names, dedupe, ACK | 0 |
-| `REALTIME-AUDIT.md` | 100+ findings table | 0 |
-| `feature_list.json` | Add feature row for the refactor with phase gates | 0 |
-| `claude-progress.md` | Session record | end |
+| Path                                                          | Change                                                                                            | Phase   |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ------- |
+| `e2e/chat-realtime.spec.ts` (new)                             | Playwright 2-browser: dedupe, channels list, ACK, typing, presence, read receipts, offline→online | 1, 2, 3 |
+| `docs/superpowers/plans/2026-07-07-realtime-chat-refactor.md` | This plan                                                                                         | 0       |
+| `ADR-007-realtime-reliability.md`                             | New ADR: room model, event names, dedupe, ACK                                                     | 0       |
+| `REALTIME-AUDIT.md`                                           | 100+ findings table                                                                               | 0       |
+| `feature_list.json`                                           | Add feature row for the refactor with phase gates                                                 | 0       |
+| `claude-progress.md`                                          | Session record                                                                                    | end     |
 
 ---
 
@@ -89,6 +89,7 @@
 ### Task 0.1: Write audit + ADR + plan docs
 
 **Files:**
+
 - Create: `docs/superpowers/plans/2026-07-07-realtime-chat-refactor.md` (this file)
 - Create: `ADR-007-realtime-reliability.md`
 - Create: `REALTIME-AUDIT.md`
@@ -332,23 +333,23 @@ Cases: pure-socket send; typing appears; read receipt flips; presence count; cha
 
 ## Phase 4 — Hardening
 
-| # | Task | Maps to |
-|---|------|---------|
-| 4.1 | `assertMembership` returns 403 (not 400) | auth |
-| 4.2 | Private channel ACL | C10 |
-| 4.3 | `onDelete: Cascade` migration | C12 |
-| 4.4 | Partial unique index for active channel names | C6 |
-| 4.5 | Soft-delete extension consolidated to `packages/db` | low |
-| 4.6 | Socket `connection` rate limit + per-event rate limits; `retryAfter = resetEpoch - nowSec` | C14, H16 |
-| 4.7 | `useMoveTask` `queryKey` memoization | H17 |
-| 4.8 | `refetchOnWindowFocus: true` for chat | H25 |
-| 4.9 | Cleanup pub/sub clients + sweeper on shutdown | C7, C9 |
-| 4.10 | JWT refresh hook on socket | H24 |
-| 4.11 | `getSocket` replaces stuck-reconnect sockets | H26 |
-| 4.12 | Member cache invalidation on role change | M12 |
-| 4.13 | `LLM_API_KEY` required (no placeholder) | low |
-| 4.14 | JWT TTL validation | low |
-| 4.15 | Cluster hash-tag in rate-limit Lua | low |
+| #    | Task                                                                                       | Maps to  |
+| ---- | ------------------------------------------------------------------------------------------ | -------- |
+| 4.1  | `assertMembership` returns 403 (not 400)                                                   | auth     |
+| 4.2  | Private channel ACL                                                                        | C10      |
+| 4.3  | `onDelete: Cascade` migration                                                              | C12      |
+| 4.4  | Partial unique index for active channel names                                              | C6       |
+| 4.5  | Soft-delete extension consolidated to `packages/db`                                        | low      |
+| 4.6  | Socket `connection` rate limit + per-event rate limits; `retryAfter = resetEpoch - nowSec` | C14, H16 |
+| 4.7  | `useMoveTask` `queryKey` memoization                                                       | H17      |
+| 4.8  | `refetchOnWindowFocus: true` for chat                                                      | H25      |
+| 4.9  | Cleanup pub/sub clients + sweeper on shutdown                                              | C7, C9   |
+| 4.10 | JWT refresh hook on socket                                                                 | H24      |
+| 4.11 | `getSocket` replaces stuck-reconnect sockets                                               | H26      |
+| 4.12 | Member cache invalidation on role change                                                   | M12      |
+| 4.13 | `LLM_API_KEY` required (no placeholder)                                                    | low      |
+| 4.14 | JWT TTL validation                                                                         | low      |
+| 4.15 | Cluster hash-tag in rate-limit Lua                                                         | low      |
 
 ### Task 4.16: Phase 4 gate + `git tag phase-4-hardening`. `pnpm verify` end-to-end.
 
@@ -362,12 +363,12 @@ Cases: pure-socket send; typing appears; read receipt flips; presence count; cha
 
 ## Risk register
 
-| Risk | Mitigation |
-|------|-----------|
-| Hot-reload during long session loses dev state | Re-run `pnpm --filter ... dev` at phase boundaries |
-| 4-phase scope exceeds context | Each phase shippable independently |
-| Prisma migration breaks seed | seed.ts has chat deleteMany; verify after migration |
-| `safeEmit → typed emit` changes observable behavior | callers handle Result explicitly |
-| Soft-delete consolidation exposes deleted rows | softDeleteExtension already has findUnique override; add unit test |
+| Risk                                                 | Mitigation                                                             |
+| ---------------------------------------------------- | ---------------------------------------------------------------------- |
+| Hot-reload during long session loses dev state       | Re-run `pnpm --filter ... dev` at phase boundaries                     |
+| 4-phase scope exceeds context                        | Each phase shippable independently                                     |
+| Prisma migration breaks seed                         | seed.ts has chat deleteMany; verify after migration                    |
+| `safeEmit → typed emit` changes observable behavior  | callers handle Result explicitly                                       |
+| Soft-delete consolidation exposes deleted rows       | softDeleteExtension already has findUnique override; add unit test     |
 | Rate limit cluster hash-tag breaks single-node Redis | Lua key pattern `{rl}:user:{userId}` ignored as literal in single-node |
-| TaskChat scope migration touches existing channels | `scope` defaults `'WORKSPACE'`; existing rows unchanged |
+| TaskChat scope migration touches existing channels   | `scope` defaults `'WORKSPACE'`; existing rows unchanged                |

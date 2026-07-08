@@ -5,7 +5,8 @@ import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { registerSchema, loginSchema, refreshTokenSchema } from '@flow-desk/shared/auth';
 import { prisma } from '../../shared/lib/prisma';
-import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../../shared/lib/jwt';
+import { signAccessToken, signRefreshToken, verifyRefreshToken, signSocketToken } from '../../shared/lib/jwt';
+import jwt from 'jsonwebtoken';
 import { env } from '../../shared/lib/prisma';
 import { logger } from '../../shared/lib/logger';
 import { requireAuth } from '../../shared/middleware/auth';
@@ -181,6 +182,21 @@ authRouter.get('/me', requireAuth(), async (c) => {
   if (!user) throw new UnauthorizedError('User not found');
   return c.json({ user });
 });
+
+// ponytail: JS-readable socket auth token. Short-lived and scope:'socket' so a
+// leaked client token can't call REST (which needs the httpOnly access cookie).
+// Client stores it in memory and passes it as `auth:{ token }` on the handshake.
+authRouter.get(
+  '/socket-token',
+  rateLimit({ scope: 'auth:socket-token', windowSec: 60, max: 30, keyBy: 'user' }),
+  requireAuth(),
+  async (c) => {
+    const auth = c.get('auth');
+    const token = signSocketToken({ userId: auth.user.id, email: auth.user.email });
+    const decoded = jwt.decode(token) as { exp?: number } | null;
+    return c.json({ token, expiresAt: decoded?.exp ? decoded.exp * 1000 : null });
+  },
+);
 
 authRouter.get('/google', (c) => {
   if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_REDIRECT_URI) {

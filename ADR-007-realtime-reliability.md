@@ -101,33 +101,33 @@ Three layers, single direction of dependency:
 
 ## Room Model
 
-| Room | Purpose | Audience |
-|------|---------|----------|
-| `conversation:{channelId}` | All chat events for a single channel (message:new/update/delete, typing, read receipts, presence) | Users currently viewing that channel |
-| `workspace:{wid}` | Board events (task:create/update/move/delete), workspace-level presence | All workspace members (existing ADR-004 contract) |
-| `user:{userId}` | Per-user notification stream, self-echo of own messages | The owning socket only |
-| `task:{tid}` | Task-scoped chat + typing + presence for a task channel | Users currently viewing that task (Phase 2) |
+| Room                       | Purpose                                                                                           | Audience                                          |
+| -------------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| `conversation:{channelId}` | All chat events for a single channel (message:new/update/delete, typing, read receipts, presence) | Users currently viewing that channel              |
+| `workspace:{wid}`          | Board events (task:create/update/move/delete), workspace-level presence                           | All workspace members (existing ADR-004 contract) |
+| `user:{userId}`            | Per-user notification stream, self-echo of own messages                                           | The owning socket only                            |
+| `task:{tid}`               | Task-scoped chat + typing + presence for a task channel                                           | Users currently viewing that task (Phase 2)       |
 
 `conversation:{channelId}` is new and replaces the broadcast pattern from `/collab` `workspace:{wid}` for chat messages. The other rooms are unchanged from ADR-004.
 
 ## Event Catalog
 
-| Event | Direction | Payload schema | When |
-|-------|-----------|----------------|------|
-| `conversation:join` | C → S | `{ channelId: string }` | User opens a channel; server validates membership and joins `conversation:{channelId}` |
-| `conversation:leave` | C → S | `{ channelId: string }` | User navigates away |
-| `conversation:updated` | S → C | `conversationUpdatedSchema` | Channel created, renamed, deleted, ACL changed, or membership changed |
-| `message:send` | C → S → S | `createChatMessageSchema` (with `clientMessageId`) | User submits a message; server ACKs with `{ ok, message }` or `{ ok: false, error }` |
-| `message:new` | S → C | `chatMessageViewSchema` | New message persisted; emit to `conversation:{channelId}` and `user:{authorId}` (self-echo) |
-| `message:update` | S → C | `chatMessageViewSchema` | Edit persisted; same rooms as `message:new` |
-| `message:delete` | S → C | `{ id: string, channelId: string, clientMessageId?: string }` | Soft-delete persisted; same rooms as `message:new` |
-| `message:read` | C → S → S → C | `{ channelId, upToMessageId, userId, readAt }` | User scrolls past a message; server writes to `ChatMessageRead` and broadcasts to `conversation:{channelId}` |
-| `presence:update` | S → C | `{ channelId, viewers: Array<{ userId, name, avatarUrl }> }` | Per-channel viewer set changes (Phase 3) |
-| `user:online` / `user:offline` | S → C | `{ userId, at }` | Workspace-level presence (existing ADR-004) |
-| `typing:start` | C → S → C | `{ channelId, userId, at }` | First keystroke in the input; server broadcasts to `conversation:{channelId}` excluding sender |
-| `typing:stop` | C → S → C | `{ channelId, userId }` | Input blur, send, or 4s inactivity |
-| `error:emit` | S → C | `{ event: string, code: string, message: string }` | Zod validation failure, service-layer error, ACL denial |
-| `ack` | S → C | `{ event: string, ok: boolean, error?: EmitError }` | Typed response to `message:send` |
+| Event                          | Direction     | Payload schema                                                | When                                                                                                         |
+| ------------------------------ | ------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `conversation:join`            | C → S         | `{ channelId: string }`                                       | User opens a channel; server validates membership and joins `conversation:{channelId}`                       |
+| `conversation:leave`           | C → S         | `{ channelId: string }`                                       | User navigates away                                                                                          |
+| `conversation:updated`         | S → C         | `conversationUpdatedSchema`                                   | Channel created, renamed, deleted, ACL changed, or membership changed                                        |
+| `message:send`                 | C → S → S     | `createChatMessageSchema` (with `clientMessageId`)            | User submits a message; server ACKs with `{ ok, message }` or `{ ok: false, error }`                         |
+| `message:new`                  | S → C         | `chatMessageViewSchema`                                       | New message persisted; emit to `conversation:{channelId}` and `user:{authorId}` (self-echo)                  |
+| `message:update`               | S → C         | `chatMessageViewSchema`                                       | Edit persisted; same rooms as `message:new`                                                                  |
+| `message:delete`               | S → C         | `{ id: string, channelId: string, clientMessageId?: string }` | Soft-delete persisted; same rooms as `message:new`                                                           |
+| `message:read`                 | C → S → S → C | `{ channelId, upToMessageId, userId, readAt }`                | User scrolls past a message; server writes to `ChatMessageRead` and broadcasts to `conversation:{channelId}` |
+| `presence:update`              | S → C         | `{ channelId, viewers: Array<{ userId, name, avatarUrl }> }`  | Per-channel viewer set changes (Phase 3)                                                                     |
+| `user:online` / `user:offline` | S → C         | `{ userId, at }`                                              | Workspace-level presence (existing ADR-004)                                                                  |
+| `typing:start`                 | C → S → C     | `{ channelId, userId, at }`                                   | First keystroke in the input; server broadcasts to `conversation:{channelId}` excluding sender               |
+| `typing:stop`                  | C → S → C     | `{ channelId, userId }`                                       | Input blur, send, or 4s inactivity                                                                           |
+| `error:emit`                   | S → C         | `{ event: string, code: string, message: string }`            | Zod validation failure, service-layer error, ACL denial                                                      |
+| `ack`                          | S → C         | `{ event: string, ok: boolean, error?: EmitError }`           | Typed response to `message:send`                                                                             |
 
 ## Message Send Flow
 
@@ -221,28 +221,28 @@ The `(userId, channelId, messageId)` unique index makes read receipts idempotent
 
 ## Phase Plan
 
-| Phase | Goal | Gate |
-|-------|------|------|
-| **0** | Scope lock, ADR, audit, plan, feature row | Docs reviewed; commit `docs(plan): realtime chat refactor audit + ADR-007 + plan` |
-| **1** | Chat realtime reliability — fix the user-reported symptoms (C1, C3, C4, C5, C13, H1, H2, H3) | `pnpm verify` + `pnpm exec playwright test e2e/chat-realtime.spec.ts` 8 cases; `git tag phase-1-realtime-reliability` |
-| **2** | Event standardization + room model — `SOCKET_EVENTS` / `SOCKET_ROOMS` registry, Zod-validated payloads, switch to `conversation:{id}` room, drop `invalidateQueries` on realtime, delete duplicated chat schemas, unify `TaskChat` via `scope=TASK` | Same as phase 1; `git tag phase-2-events-rooms` |
-| **3** | Optimistic ACK + typing + chat presence + read receipts + `conversation:updated` | Same as phase 2; `git tag phase-3-ack-typing-presence-reads` |
-| **4** | Hardening — 403 ACL, private channels, cascade migration, partial unique index, soft-delete consolidation, socket rate limit, `useMoveTask` memoization, `refetchOnWindowFocus`, pub/sub client cleanup, JWT refresh, `getSocket` stuck-reconnect, member cache invalidation, `LLM_API_KEY` required, JWT TTL validation, cluster hash-tag | `pnpm verify` end-to-end; `git tag phase-4-hardening` |
+| Phase | Goal                                                                                                                                                                                                                                                                                                                                       | Gate                                                                                                                  |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| **0** | Scope lock, ADR, audit, plan, feature row                                                                                                                                                                                                                                                                                                  | Docs reviewed; commit `docs(plan): realtime chat refactor audit + ADR-007 + plan`                                     |
+| **1** | Chat realtime reliability — fix the user-reported symptoms (C1, C3, C4, C5, C13, H1, H2, H3)                                                                                                                                                                                                                                               | `pnpm verify` + `pnpm exec playwright test e2e/chat-realtime.spec.ts` 8 cases; `git tag phase-1-realtime-reliability` |
+| **2** | Event standardization + room model — `SOCKET_EVENTS` / `SOCKET_ROOMS` registry, Zod-validated payloads, switch to `conversation:{id}` room, drop `invalidateQueries` on realtime, delete duplicated chat schemas, unify `TaskChat` via `scope=TASK`                                                                                        | Same as phase 1; `git tag phase-2-events-rooms`                                                                       |
+| **3** | Optimistic ACK + typing + chat presence + read receipts + `conversation:updated`                                                                                                                                                                                                                                                           | Same as phase 2; `git tag phase-3-ack-typing-presence-reads`                                                          |
+| **4** | Hardening — 403 ACL, private channels, cascade migration, partial unique index, soft-delete consolidation, socket rate limit, `useMoveTask` memoization, `refetchOnWindowFocus`, pub/sub client cleanup, JWT refresh, `getSocket` stuck-reconnect, member cache invalidation, `LLM_API_KEY` required, JWT TTL validation, cluster hash-tag | `pnpm verify` end-to-end; `git tag phase-4-hardening`                                                                 |
 
 Each phase is independently shippable. The phase gate is run before advancing.
 
 ## Alternatives Considered
 
-| Alternative | Why Rejected |
-|-------------|--------------|
-| **REST polling** | Latency, bandwidth, server load. No real-time UX. ADR-004 already rejected this. |
-| **SSE (Server-Sent Events)** | One-way only. Can't send `message:send` or `typing:start` from client to server efficiently. |
-| **Long polling** | Slow, high CPU, legacy. ADR-004 already rejected this. |
-| **Event sourcing with a log (Kafka / NATS JetStream)** | Overkill for chat. Chat is fan-out, not stream-replay. The idempotency we need is well-served by the partial unique index on `(authorId, clientMessageId)`. |
+| Alternative                                             | Why Rejected                                                                                                                                                   |
+| ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **REST polling**                                        | Latency, bandwidth, server load. No real-time UX. ADR-004 already rejected this.                                                                               |
+| **SSE (Server-Sent Events)**                            | One-way only. Can't send `message:send` or `typing:start` from client to server efficiently.                                                                   |
+| **Long polling**                                        | Slow, high CPU, legacy. ADR-004 already rejected this.                                                                                                         |
+| **Event sourcing with a log (Kafka / NATS JetStream)**  | Overkill for chat. Chat is fan-out, not stream-replay. The idempotency we need is well-served by the partial unique index on `(authorId, clientMessageId)`.    |
 | **Single shared `workspace:{wid}` room for everything** | Currently used. Bandwidth: every chat author email broadcast to every workspace member (C13). No per-channel fan-out. No way to scope typing or read receipts. |
-| **`safeEmit` keeps swallowing errors** | The "easy" path. Loses information at the trust boundary; no caller compensation; no metric. Replaced with `Result<void, EmitError>` from `emit`. |
-| **REST `POST /channels/:id/messages` kept as fallback** | Two paths to do the same thing. Diverges. The pure-socket model is simpler and faster. |
-| **Soft-delete extension duplicated** (current) | Drift between `apps/api` and `packages/db` copies. Consolidate to `packages/db` (Phase 4.5). |
+| **`safeEmit` keeps swallowing errors**                  | The "easy" path. Loses information at the trust boundary; no caller compensation; no metric. Replaced with `Result<void, EmitError>` from `emit`.              |
+| **REST `POST /channels/:id/messages` kept as fallback** | Two paths to do the same thing. Diverges. The pure-socket model is simpler and faster.                                                                         |
+| **Soft-delete extension duplicated** (current)          | Drift between `apps/api` and `packages/db` copies. Consolidate to `packages/db` (Phase 4.5).                                                                   |
 
 ## Consequences
 

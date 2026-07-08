@@ -82,6 +82,60 @@
 
 ## Session Log
 
+### 2026-07-08 21:48 — `1ecb3c6` (main)
+
+- **type:** chore
+- **msg:** remove old SearchPalette, replaced by CommandPalette
+- **author:** thanhd
+
+### 2026-07-08 21:48 — `c3e8810` (main)
+
+- **type:** chore
+- **msg:** remove old SearchPalette, replaced by CommandPalette
+- **author:** thanhd
+
+### 2026-07-08 21:39 — `952ffc9` (main)
+
+- **type:** test
+- **msg:** add CommandPalette tests and jsdom polyfills
+- **author:** thanhd
+
+### 2026-07-08 21:33 — `aabcb74` (main)
+
+- **type:** feat
+- **msg:** switch SearchPalette to CommandPalette in app-shell
+- **author:** thanhd
+
+### 2026-07-08 21:33 — `1f6762d` (main)
+
+- **type:** feat
+- **msg:** switch SearchPalette to CommandPalette in app-shell
+- **author:** thanhd
+
+### 2026-07-08 21:29 — `246c645` (main)
+
+- **type:** feat
+- **msg:** add CommandPalette component using shadcn Command
+- **author:** thanhd
+
+### 2026-07-08 21:25 — `3514d23` (main)
+
+- **type:** feat
+- **msg:** add cmdk dependency and shadcn Command component
+- **author:** thanhd
+
+### 2026-07-08 21:08 — `e997698` (main)
+
+- **type:**
+- **msg:**
+- **author:** thanhd
+
+### 2026-07-08 02:43 — `d316c43` (main)
+
+- **type:**
+- **msg:**
+- **author:** fdesk
+
 ### 2026-07-08 01:08 — `f6cadcf` (main)
 
 - **type:**

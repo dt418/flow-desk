@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { api } from '@/lib/api';
+import { disconnectAllSockets } from '@/lib/socket';
 
 export interface AuthUser {
   id: string;
@@ -45,6 +46,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
   logout: async () => {
     await api<{ ok: true }>('/api/auth/logout', { method: 'POST' });
+    disconnectAllSockets();
     set({ user: null });
   },
 }));

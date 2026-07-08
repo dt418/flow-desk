@@ -51,6 +51,10 @@ export const backendSchema = z.object({
     .string()
     .default('7d')
     .refine(isPositiveTtl, 'JWT_REFRESH_TTL must be a positive, non-zero duration (e.g. "7d")'),
+  JWT_SOCKET_TTL: z
+    .string()
+    .default('15m')
+    .refine(isPositiveTtl, 'JWT_SOCKET_TTL must be a positive, non-zero duration (e.g. "15m")'),
   CORS_ORIGINS: z
     .string()
     .default('http://localhost:5173,http://localhost:3000')
@@ -62,12 +66,10 @@ export const backendSchema = z.object({
   FLOWDESK_GITHUB_CLIENT_SECRET: z.string().optional(),
   FLOWDESK_GITHUB_REDIRECT_URI: z.string().url().optional(),
   LLM_BASE_URL: z.string().url().default('https://api.openai.com/v1'),
-  LLM_API_KEY: z
-    .string()
-    .refine((key) => {
-      const PLACEHOLDERS = ['', 'sk-placeholder', 'your-key-here', 'changeme'];
-      return !PLACEHOLDERS.includes(key.trim().toLowerCase());
-    }, 'LLM_API_KEY must be set to a real key (no placeholder/default allowed)'),
+  LLM_API_KEY: z.string().refine((key) => {
+    const PLACEHOLDERS = ['', 'sk-placeholder', 'your-key-here', 'changeme'];
+    return !PLACEHOLDERS.includes(key.trim().toLowerCase());
+  }, 'LLM_API_KEY must be set to a real key (no placeholder/default allowed)'),
   LLM_MODEL: z.string().default('gpt-4o-mini'),
   LLM_MAX_TOKENS: z.coerce.number().int().min(1).default(2048),
   LLM_TEMPERATURE: z.coerce.number().min(0).max(2).default(0.7),

@@ -1,6 +1,6 @@
 {
   "project": "flow-desk",
-  "last_updated": "2026-07-05",
+  "last_updated": "2026-07-08",
   "f3_active": false,
   "f3_f6_shipped": ["F3", "F4", "F5", "F6"],
   "rules": {
@@ -1309,6 +1309,33 @@
       },
       "notes": "Audit: REALTIME-AUDIT.md. Plan: docs/superpowers/plans/2026-07-07-realtime-chat-refactor.md. ADR: ADR-007-realtime-reliability.md. Phases 1-4 are independently shippable; phase gates run pnpm verify before advancing. 4 phases × ~12 tasks each.",
       "evidence": []
+    },
+    {
+      "id": "command-palette",
+      "priority": 89,
+      "area": "search",
+      "title": "Global Cmd+K command palette with navigation, quick actions, and search",
+      "user_visible_behavior": "User presses Cmd/Ctrl+K anywhere and a command palette opens with three groups: Navigation (Dashboard, workspace board/list/settings links), Quick Actions (Toggle Theme), and Search Results (debounced full-text search across tasks, comments, attachments). Clicking any item executes the action and closes the palette. Replaces the old search-only SearchPalette.",
+      "status": "passing",
+      "verification": [
+        "pnpm --filter @flow-desk/web typecheck → exit 0",
+        "pnpm --filter @flow-desk/web lint → exit 0",
+        "pnpm --filter @flow-desk/web test -- --run → 27/27 pass (incl. 5 new CommandPalette tests)",
+        "pnpm verify → green (typecheck + lint + unit + integration + build)"
+      ],
+      "evidence": [
+        "apps/web/package.json — added cmdk@1.1.1 dependency",
+        "apps/web/src/components/ui/command.tsx (NEW) — shadcn Command component wrapping cmdk (Command, CommandDialog, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem, CommandSeparator)",
+        "apps/web/src/features/search/components/CommandPalette.tsx (NEW) — replaces SearchPalette; Navigation group (Dashboard + workspace board/list/settings), Quick Actions (Toggle Theme via useTheme), Search Results (useSearch hook, debounced, type icons)",
+        "apps/web/src/features/search/components/CommandPalette.test.tsx (NEW) — 5 tests: renders combobox input, Navigation→Dashboard, Quick Actions→Toggle Theme, debounced search results, 'No results found.' when empty",
+        "apps/web/src/features/search/components/SearchPalette.tsx — DELETED (replaced by CommandPalette)",
+        "apps/web/src/features/search/components/SearchPalette.test.tsx — DELETED (replaced by CommandPalette test)",
+        "apps/web/src/features/search/index.ts — exports CommandPalette instead of SearchPalette",
+        "apps/web/src/components/layout/app-shell.tsx — imports and renders CommandPalette instead of SearchPalette",
+        "apps/web/src/test-setup.ts — added ResizeObserver + scrollIntoView polyfills for cmdk/Radix Dialog",
+        "Commits: 3514d23 (cmdk + shadcn Command), 246c645 (CommandPalette component), aabcb74 (exports + app-shell), 952ffc9 (tests + polyfills), 1ecb3c6 (cleanup + old files deleted)"
+      ],
+      "notes": "Replaces hand-rolled SearchPalette (manual Dialog + keyboard nav) with shadcn Command component (cmdk). No backend changes. Uses existing useSearch hook and workspaceApi.list(). shadcn CLI failed on Node 22 — command.tsx created manually (identical output). Pre-existing 3 failing tests in packages/shared/src/chat.test.ts (schema drift from realtime-chat-refactor) are unrelated."
     }
   ]
 }

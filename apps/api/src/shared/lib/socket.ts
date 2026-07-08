@@ -3,7 +3,7 @@ import { createAdapter } from '@socket.io/redis-adapter';
 import type { Server as HttpServer } from 'node:http';
 import type { ZodSchema } from 'zod';
 import { redis } from './redis';
-import { verifyAccessToken } from './jwt';
+import { verifySocketToken } from './jwt';
 import { logger } from './logger';
 import { env } from './prisma';
 import { parseCookieToken } from './cookie';
@@ -93,13 +93,14 @@ export function createSocketServer(httpServer: HttpServer) {
       socket.handshake.headers.cookie as string | undefined,
       'access_token',
     );
+    console.error('AUTH_MW', JSON.stringify({ ns: (socket.nsp?.name ?? ''), cookie: Boolean(socket.handshake.headers.cookie), cookieToken: Boolean(cookieToken), authToken: Boolean(socket.handshake.auth?.token) }));
     const token =
       (socket.handshake.auth?.token as string | undefined) ??
       socket.handshake.headers.authorization?.replace(/^Bearer\s+/i, '') ??
       cookieToken ??
       '';
     try {
-      const payload = verifyAccessToken(token);
+      const payload = verifySocketToken(token);
       socket.data.userId = payload.userId;
       try {
         const { prisma } = await import('./prisma');
@@ -309,18 +310,18 @@ export function createSocketServer(httpServer: HttpServer) {
           data: unknown,
           ack?: (r: { ok: boolean; message?: unknown; error?: string }) => void,
         ) => {
-          const rl = await socketRateLimit(`evt:message-send:${userId}`, 60, 20);
-          if (!rl.allowed) {
-            ack?.({ ok: false, error: 'rate_limit' });
-            return;
-          }
-          const parsed = messageSendSchema.safeParse(data);
-          if (!parsed.success) {
-            ack?.({ ok: false, error: 'validation' });
-            return;
-          }
-          const d = parsed.data;
           try {
+            const rl = await socketRateLimit(`evt:message-send:${userId}`, 60, 20);
+            if (!rl.allowed) {
+              ack?.({ ok: false, error: 'rate_limit' });
+              return;
+            }
+            const parsed = messageSendSchema.safeParse(data);
+            if (!parsed.success) {
+              ack?.({ ok: false, error: 'validation' });
+              return;
+            }
+            const d = parsed.data;
             const { prisma } = await import('./prisma');
             const { sendMessage } = await import('../../modules/chat/chat.message.service');
             const channel = await prisma.chatChannel.findUnique({

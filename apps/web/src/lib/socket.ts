@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { io, type Socket } from 'socket.io-client';
+import { getSocketToken, ensureSocketTokenPrefetch, clearSocketToken, SOCKET_API_URL } from './socket-token';
 
 type FlowDeskNamespace = '/tasks' | '/notifications' | '/collab';
 
@@ -14,30 +15,21 @@ const reconnectingSince = new Map<FlowDeskNamespace, number>();
 
 const STUCK_RECONNECT_TIMEOUT_MS = 15000;
 
-// Access token TTL is 15m (JWT_ACCESS_TTL). Refresh well before expiry so a
-// long-lived socket never handshakes with a stale token. Refresh cookies are
-// httpOnly and re-issued by POST /api/auth/refresh (sent via withCredentials).
+// Access token TTL is 15m (JWT_ACCESS_TTL). Refresh the httpOnly access cookie
+// well before expiry so REST calls (which use credentials:'include') never 401.
+// The socket itself no longer depends on this cookie — it uses the JS-readable
+// socket token from /api/auth/socket-token passed via `auth:{ token }`.
 const REFRESH_INTERVAL_MS = 10 * 60 * 1000; // every 10m → leaves ≥5m margin
 let lastRefreshAt = 0;
 let refreshTimer: ReturnType<typeof setInterval> | null = null;
 
-function readAccessToken(): string {
-  if (typeof document === 'undefined') return '';
-  const match = document.cookie.match(/(?:^|;\s*)access_token=([^;]+)/);
-  return match ? decodeURIComponent(match[1]!) : '';
-}
-
-// Refresh the access_token cookie before it expires. Credentials: 'include'
-// lets the browser attach the httpOnly refresh_token cookie; the response
-// re-issues a fresh access_token cookie that the socket picks up on reconnect.
-async function refreshSocketToken(): Promise<void> {
+async function refreshAccessTokenCookie(): Promise<void> {
   const now = Date.now();
   if (now - lastRefreshAt < REFRESH_INTERVAL_MS) return;
   lastRefreshAt = now;
 
-  const apiUrl = import.meta.env.VITE_API_URL ?? '';
   try {
-    await fetch(`${apiUrl}/api/auth/refresh`, {
+    await fetch(`${SOCKET_API_URL}/api/auth/refresh`, {
       method: 'POST',
       credentials: 'include',
     });
@@ -50,7 +42,7 @@ async function refreshSocketToken(): Promise<void> {
 function ensureRefreshLoop(): void {
   if (refreshTimer !== null) return;
   refreshTimer = setInterval(() => {
-    void refreshSocketToken();
+    void refreshAccessTokenCookie();
   }, REFRESH_INTERVAL_MS);
 }
 
@@ -68,6 +60,7 @@ export function getSocket(ns: FlowDeskNamespace): Socket {
       const since = reconnectingSince.get(ns);
       if (since === undefined) {
         reconnectingSince.set(ns, Date.now());
+        return existing;
       } else if (Date.now() - since > STUCK_RECONNECT_TIMEOUT_MS) {
         existing.removeAllListeners();
         existing.io.removeAllListeners();
@@ -78,35 +71,57 @@ export function getSocket(ns: FlowDeskNamespace): Socket {
         return existing;
       }
     } else {
-      // Not connected and not actively reconnecting: clean disconnect/connecting.
+      // Not connected and not actively reconnecting. This is the normal
+      // initial-connect window (engine readyState 'opening') or a transient
+      // between attempts. The manager owns reconnection, so just return the
+      // existing socket — never recreate here, or we delete the in-flight
+      // socket on every getSocket() call and it never stays connected.
       return existing;
     }
   }
 
-  const apiUrl = import.meta.env.VITE_API_URL ?? '';
-  const accessToken = readAccessToken();
-  const socket = io(`${apiUrl}${ns}`, {
-    withCredentials: true,
-    transports: ['websocket', 'polling'],
+  console.debug('GETSOCK CREATE', ns, 'apiUrl=', JSON.stringify(SOCKET_API_URL));
+  const socket = io(`${SOCKET_API_URL}${ns}`, {
+    withCredentials: false,
+    transports: ['polling'],
     autoConnect: true,
     reconnection: true,
     reconnectionDelay: 1000,
     reconnectionDelayMax: 30000,
     randomizationFactor: 0.5,
     timeout: 20000,
-    // Dynamic auth: re-read the latest token on every (re)connect so a
-    // refreshed cookie is used instead of the value captured at creation.
-    auth: () => {
-      const token = readAccessToken();
-      return token ? { token } : {};
+    // Dynamic auth: async so we can resolve the latest JS-readable socket token
+    // on every (re)connect. No cookie — the token comes from /api/auth/socket-token.
+    auth: async () => {
+      const token = await getSocketToken();
+      return { token };
     },
-    extraHeaders: accessToken ? { Cookie: `access_token=${accessToken}` } : undefined,
   });
   socket.io.on('reconnect', () => reconnectingSince.delete(ns));
   socket.on('connect', () => reconnectingSince.delete(ns));
+  socket.io.on('error', (e) => console.error('MGR_ERR', ns, String(e)));
+  socket.on('connect_error', (e) => console.error('SOCK_CONNECT_ERR', ns, e?.message));
+  socket.on('error', (e) => console.error('SOCK_ERR', ns, String(e)));
   sockets.set(ns, socket);
+  socket.on('connect', () => console.error('SOCK_CONNECTED', ns, socket.id));
+  socket.on('disconnect', (r) => console.error('SOCK_DISCONNECT', ns, r));
   ensureRefreshLoop();
+  ensureSocketTokenPrefetch();
   return socket;
+}
+
+export function disconnectAllSockets(): void {
+  for (const ns of Array.from(sockets.keys())) {
+    const socket = sockets.get(ns);
+    if (socket) {
+      socket.removeAllListeners();
+      socket.io.removeAllListeners();
+      socket.disconnect();
+    }
+    sockets.delete(ns);
+    reconnectingSince.delete(ns);
+  }
+  clearSocketToken();
 }
 
 export function useNamespacedSocket(ns: FlowDeskNamespace) {
