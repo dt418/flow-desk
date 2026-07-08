@@ -1293,7 +1293,7 @@
       "id": "realtime-chat-refactor",
       "description": "Production-ready chat realtime matching Slack/Discord/Linear: pure-socket sends, clientMessageId dedupe, channel-scoped rooms, optimistic UI with ACK, typing/presence/read-receipts, structured errors, Zod-validated socket payloads. See REALTIME-AUDIT.md for the 100+ findings driving this work.",
       "priority": "high",
-      "status": "in_progress",
+      "status": "passing",
       "phases": {
         "0": "Scope lock + ADR-007 + REALTIME-AUDIT.md + plan (this task)",
         "1": "Chat realtime reliability — dedupe by id/clientMessageId, fix StrictMode startedRef, transaction-wrap message+notification, drop PII, optimistic insert with ACK, channels list invalidation, idempotent send via unique index, Playwright 2-browser test (tasks 1.1-1.12)",
@@ -1308,7 +1308,13 @@
         "phase_4": "pnpm verify — full gate: typecheck + lint + unit + integration + build + playwright + lefthook secret scan + format:check + pnpm audit"
       },
       "notes": "Audit: REALTIME-AUDIT.md. Plan: docs/superpowers/plans/2026-07-07-realtime-chat-refactor.md. ADR: ADR-007-realtime-reliability.md. Phases 1-4 are independently shippable; phase gates run pnpm verify before advancing. 4 phases × ~12 tasks each.",
-      "evidence": []
+      "evidence": [
+        "pnpm verify passed (lefthook pre-commit + pre-push gates)",
+        "All 4 phases implemented across 15+ commits",
+        "Migrations: clientMessageId, channel scope, message read, partial unique index, cascade delete",
+        "Socket token auth + auto-refresh + disconnect cleanup",
+        "Debug logging removed in follow-up commit"
+      ]
     },
     {
       "id": "command-palette",
