@@ -98,6 +98,12 @@
 
 ## Session Log
 
+### 2026-07-10 00:17 — `faea8ca` (main)
+
+- **type:** test
+- **msg:** fix all failing tests (e2e 22/22, unit 135/135, integration 220/220) + FE notification UI
+- **author:** thanhd
+
 ### 2026-07-08 22:55 — `315581e` (main)
 
 - **type:** docs

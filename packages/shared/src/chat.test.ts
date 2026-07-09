@@ -101,6 +101,7 @@ describe('createChatMessageSchema', () => {
     const result = createChatMessageSchema.parse({
       content: 'hi @team',
       mentionedUserIds: mentions,
+      clientMessageId: 'cm-1',
     });
     expect(result.mentionedUserIds).toHaveLength(20);
   });
@@ -111,6 +112,7 @@ describe('createChatMessageSchema', () => {
       createChatMessageSchema.parse({
         content: 'hi',
         mentionedUserIds: mentions,
+        clientMessageId: 'cm-1',
       }),
     ).toThrow();
   });
@@ -118,6 +120,8 @@ describe('createChatMessageSchema', () => {
   it('defaults mentionedUserIds to []', () => {
     const result = createChatMessageSchema.parse({
       content: 'hello',
+      // clientMessageId is required for dedup; the URL param provides channelId.
+      clientMessageId: 'cm-1',
     });
     expect(result.mentionedUserIds).toEqual([]);
   });
@@ -135,8 +139,10 @@ describe('updateChatMessageSchema', () => {
 });
 
 describe('listChannelsQuerySchema', () => {
-  it('requires workspaceId', () => {
-    expect(() => listChannelsQuerySchema.parse({})).toThrow();
+  it('workspaceId comes from the route param, not the query', () => {
+    // workspaceId is optional in the query — the route binds it from the
+    // URL. The query is for pagination + scope filters only.
+    expect(() => listChannelsQuerySchema.parse({})).not.toThrow();
   });
 
   it('allows optional scope', () => {
