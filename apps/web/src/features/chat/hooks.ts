@@ -10,7 +10,7 @@ import type {
 } from './types';
 import { chatApi } from './api';
 import { useNamespacedSocket, getSocket as getNamespacedSocket } from '@/lib/socket';
-import { SOCKET_EVENTS } from '@flow-desk/shared/socket-events';
+import { SOCKET_EVENTS } from '@flow-desk/shared';
 import { toast } from 'sonner';
 import {
   appendChannelToList,

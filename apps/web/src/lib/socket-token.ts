@@ -49,9 +49,12 @@ let prefetchTimer: ReturnType<typeof setInterval> | null = null;
 
 export function ensureSocketTokenPrefetch(): void {
   if (prefetchTimer !== null) return;
-  prefetchTimer = setInterval(() => {
-    void getSocketToken().catch(() => {});
-  }, 5 * 60 * 1000);
+  prefetchTimer = setInterval(
+    () => {
+      void getSocketToken().catch(() => {});
+    },
+    5 * 60 * 1000,
+  );
 }
 
 export const SOCKET_API_URL = env.VITE_API_URL;

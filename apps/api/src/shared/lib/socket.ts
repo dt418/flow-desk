@@ -8,7 +8,7 @@ import { logger } from './logger';
 import { env } from './prisma';
 import { parseCookieToken } from './cookie';
 import { attachPresenceHandlers } from '../../modules/realtime/realtime.gateway';
-import { SOCKET_EVENTS } from '@flow-desk/shared/socket-events';
+import { SOCKET_EVENTS } from '@flow-desk/shared';
 import {
   joinWorkspaceSchema,
   leaveWorkspaceSchema,

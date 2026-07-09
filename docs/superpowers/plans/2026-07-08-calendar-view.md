@@ -27,30 +27,32 @@
 
 ## File Structure
 
-| Action | Path | Responsibility |
-|--------|------|---------------|
-| Create | `apps/web/src/features/calendar/types.ts` | CalendarTask, ViewMode, CalendarState, CalendarGridProps, DateRange |
-| Create | `apps/web/src/features/calendar/utils.ts` | getMonthDays, getWeekDays, getDayRange, isSameDay, formatDateKey |
-| Create | `apps/web/src/features/calendar/provider.tsx` | CalendarProvider — UI/navigation state (currentDate, viewMode, dateRange) |
-| Create | `apps/web/src/features/calendar/hooks.ts` | useCalendarTasks, useCalendarDnD, useCalendarNavigation |
-| Create | `apps/web/src/components/calendar/task-card.tsx` | TaskCard — presentation-only |
-| Create | `apps/web/src/components/calendar/month-grid.tsx` | MonthGrid — 7-col CSS grid, day cells, task cards |
-| Create | `apps/web/src/components/calendar/calendar-toolbar.tsx` | Toolbar — prev/next/today, view switcher, date label |
-| Create | `apps/web/src/components/calendar/calendar-layout.tsx` | Composition shell — toolbar + content grid |
-| Create | `apps/web/src/pages/calendar.tsx` | CalendarPage — thin shell, wraps CalendarLayout |
-| Modify | `apps/web/src/features/task/api.ts` | Add `taskApi.list(params)` method |
-| Modify | `apps/web/src/App.tsx` | Add `/calendar/:workspaceId` route |
-| Modify | `apps/web/src/components/layout/app-shell.tsx` | Add Calendar NavLink per workspace |
+| Action | Path                                                    | Responsibility                                                            |
+| ------ | ------------------------------------------------------- | ------------------------------------------------------------------------- |
+| Create | `apps/web/src/features/calendar/types.ts`               | CalendarTask, ViewMode, CalendarState, CalendarGridProps, DateRange       |
+| Create | `apps/web/src/features/calendar/utils.ts`               | getMonthDays, getWeekDays, getDayRange, isSameDay, formatDateKey          |
+| Create | `apps/web/src/features/calendar/provider.tsx`           | CalendarProvider — UI/navigation state (currentDate, viewMode, dateRange) |
+| Create | `apps/web/src/features/calendar/hooks.ts`               | useCalendarTasks, useCalendarDnD, useCalendarNavigation                   |
+| Create | `apps/web/src/components/calendar/task-card.tsx`        | TaskCard — presentation-only                                              |
+| Create | `apps/web/src/components/calendar/month-grid.tsx`       | MonthGrid — 7-col CSS grid, day cells, task cards                         |
+| Create | `apps/web/src/components/calendar/calendar-toolbar.tsx` | Toolbar — prev/next/today, view switcher, date label                      |
+| Create | `apps/web/src/components/calendar/calendar-layout.tsx`  | Composition shell — toolbar + content grid                                |
+| Create | `apps/web/src/pages/calendar.tsx`                       | CalendarPage — thin shell, wraps CalendarLayout                           |
+| Modify | `apps/web/src/features/task/api.ts`                     | Add `taskApi.list(params)` method                                         |
+| Modify | `apps/web/src/App.tsx`                                  | Add `/calendar/:workspaceId` route                                        |
+| Modify | `apps/web/src/components/layout/app-shell.tsx`          | Add Calendar NavLink per workspace                                        |
 
 ---
 
 ## Task 1: Types and Date Utilities
 
 **Files:**
+
 - Create: `apps/web/src/features/calendar/types.ts`
 - Create: `apps/web/src/features/calendar/utils.ts`
 
 **Interfaces:**
+
 - Produces: `ViewMode`, `DateRange`, `CalendarTask`, `CalendarGridProps`, `CalendarState`, `CalendarActions` (consumed by all subsequent tasks)
 
 - [ ] **Step 1: Create types.ts**
@@ -68,7 +70,16 @@ export interface DateRange {
 
 export type CalendarTask = Pick<
   Task,
-  'id' | 'title' | 'status' | 'priority' | 'dueDate' | 'assigneeId' | 'labels' | 'columnId' | 'position' | 'version'
+  | 'id'
+  | 'title'
+  | 'status'
+  | 'priority'
+  | 'dueDate'
+  | 'assigneeId'
+  | 'labels'
+  | 'columnId'
+  | 'position'
+  | 'version'
 > & {
   assignee?: { id: string; name: string; avatarUrl: string | null } | null;
 };
@@ -99,9 +110,21 @@ export interface CalendarActions {
 ```ts
 // apps/web/src/features/calendar/utils.ts
 import {
-  startOfMonth, endOfMonth, startOfWeek, endOfWeek,
-  eachDayOfInterval, addMonths, subMonths, addWeeks, subWeeks,
-  addDays, subDays, isSameDay, isSameMonth, format, startOfDay,
+  startOfMonth,
+  endOfMonth,
+  startOfWeek,
+  endOfWeek,
+  eachDayOfInterval,
+  addMonths,
+  subMonths,
+  addWeeks,
+  subWeeks,
+  addDays,
+  subDays,
+  isSameDay,
+  isSameMonth,
+  format,
+  startOfDay,
 } from 'date-fns';
 import type { DateRange } from './types';
 
@@ -150,12 +173,19 @@ export function getVisibleRange(currentDate: Date, viewMode: 'month' | 'week' | 
   }
 }
 
-export function navigateDate(currentDate: Date, viewMode: 'month' | 'week' | 'day', direction: 'prev' | 'next'): Date {
+export function navigateDate(
+  currentDate: Date,
+  viewMode: 'month' | 'week' | 'day',
+  direction: 'prev' | 'next',
+): Date {
   const fn = direction === 'next' ? addDays : subDays;
   switch (viewMode) {
-    case 'month': return fn(currentDate, 30);
-    case 'week': return fn(currentDate, 7);
-    case 'day': return fn(currentDate, 1);
+    case 'month':
+      return fn(currentDate, 30);
+    case 'week':
+      return fn(currentDate, 7);
+    case 'day':
+      return fn(currentDate, 1);
   }
 }
 
@@ -188,9 +218,11 @@ git commit -m "feat(calendar): add types and date utility functions"
 ## Task 2: CalendarProvider
 
 **Files:**
+
 - Create: `apps/web/src/features/calendar/provider.tsx`
 
 **Interfaces:**
+
 - Produces: `CalendarProvider`, `useCalendar` hook (consumed by all calendar components)
 
 - [ ] **Step 1: Create provider.tsx**
@@ -228,7 +260,9 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [currentDate, setCurrentDate] = useState(() => parseDate(searchParams.get('date')));
-  const [viewMode, setViewModeState] = useState<ViewMode>(() => parseViewMode(searchParams.get('view')));
+  const [viewMode, setViewModeState] = useState<ViewMode>(() =>
+    parseViewMode(searchParams.get('view')),
+  );
 
   const dateRange: DateRange = useMemo(
     () => getVisibleRange(currentDate, viewMode),
@@ -237,12 +271,15 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
 
   const updateParams = useCallback(
     (date: Date, view: ViewMode) => {
-      setSearchParams((prev) => {
-        const next = new URLSearchParams(prev);
-        next.set('date', date.toISOString());
-        next.set('view', view);
-        return next;
-      }, { replace: true });
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          next.set('date', date.toISOString());
+          next.set('view', view);
+          return next;
+        },
+        { replace: true },
+      );
     },
     [setSearchParams],
   );
@@ -304,10 +341,12 @@ git commit -m "feat(calendar): add CalendarProvider with navigation state"
 ## Task 3: taskApi.list() and useCalendarTasks
 
 **Files:**
+
 - Modify: `apps/web/src/features/task/api.ts` (add `list` method)
 - Create: `apps/web/src/features/calendar/hooks.ts`
 
 **Interfaces:**
+
 - Produces: `taskApi.list(params)` (reusable by other features), `useCalendarTasks` hook
 
 - [ ] **Step 1: Add taskApi.list() to api.ts**
@@ -405,9 +444,11 @@ git commit -m "feat(calendar): add taskApi.list and useCalendarTasks hook"
 ## Task 4: TaskCard Component
 
 **Files:**
+
 - Create: `apps/web/src/components/calendar/task-card.tsx`
 
 **Interfaces:**
+
 - Consumes: `CalendarTask` from types.ts
 - Produces: `CalendarTaskCard` component (used by MonthGrid, WeekGrid, DayGrid)
 
@@ -439,7 +480,8 @@ export function CalendarTaskCard({ task, onClick, compact = false }: CalendarTas
       className={cn(
         'w-full cursor-pointer rounded border border-border bg-card text-left transition-colors',
         'border-l-[3px]',
-        PRIORITY_COLORS[task.priority as keyof typeof PRIORITY_COLORS] ?? 'border-l-muted-foreground',
+        PRIORITY_COLORS[task.priority as keyof typeof PRIORITY_COLORS] ??
+          'border-l-muted-foreground',
         'hover:bg-accent/50',
         compact ? 'px-1.5 py-0.5' : 'px-2 py-1',
       )}
@@ -453,9 +495,7 @@ export function CalendarTaskCard({ task, onClick, compact = false }: CalendarTas
         {task.title}
       </p>
       {!compact && task.assignee && (
-        <p className="mt-0.5 truncate text-[10px] text-muted-foreground">
-          {task.assignee.name}
-        </p>
+        <p className="mt-0.5 truncate text-[10px] text-muted-foreground">{task.assignee.name}</p>
       )}
     </button>
   );
@@ -479,9 +519,11 @@ git commit -m "feat(calendar): add CalendarTaskCard presentation component"
 ## Task 5: MonthGrid Component
 
 **Files:**
+
 - Create: `apps/web/src/components/calendar/month-grid.tsx`
 
 **Interfaces:**
+
 - Consumes: `CalendarGridProps` from types.ts, `CalendarTaskCard`, `getMonthDays`, `isSameDay`, `isSameMonth`, `formatDateKey` from utils.ts
 - Produces: `MonthGrid` component (used by CalendarLayout)
 
@@ -523,10 +565,7 @@ export function MonthGrid({ tasks, visibleRange, onTaskClick, onTaskMove }: Cale
       {/* Weekday headers */}
       <div className="grid grid-cols-7 border-b border-border">
         {WEEKDAYS.map((day) => (
-          <div
-            key={day}
-            className="py-2 text-center text-xs font-medium text-muted-foreground"
-          >
+          <div key={day} className="py-2 text-center text-xs font-medium text-muted-foreground">
             {day}
           </div>
         ))}
@@ -587,11 +626,21 @@ export function MonthGrid({ tasks, visibleRange, onTaskClick, onTaskMove }: Cale
 
       {/* Expanded day popover (simplified: inline expansion) */}
       {expandedDay && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setExpandedDay(null)}>
-          <div className="max-h-[80vh] w-96 overflow-y-auto rounded-lg border border-border bg-card p-4 shadow-lg" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+          onClick={() => setExpandedDay(null)}
+        >
+          <div
+            className="max-h-[80vh] w-96 overflow-y-auto rounded-lg border border-border bg-card p-4 shadow-lg"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-sm font-semibold">{expandedDay}</h3>
-              <button type="button" onClick={() => setExpandedDay(null)} className="text-muted-foreground hover:text-foreground">
+              <button
+                type="button"
+                onClick={() => setExpandedDay(null)}
+                className="text-muted-foreground hover:text-foreground"
+              >
                 ×
               </button>
             </div>
@@ -632,9 +681,11 @@ git commit -m "feat(calendar): add MonthGrid with day cells and task cards"
 ## Task 6: CalendarToolbar
 
 **Files:**
+
 - Create: `apps/web/src/components/calendar/calendar-toolbar.tsx`
 
 **Interfaces:**
+
 - Consumes: `useCalendar` from provider.tsx, `formatDateLabel` from utils.ts
 - Produces: `CalendarToolbar` component
 
@@ -710,10 +761,12 @@ git commit -m "feat(calendar): add CalendarToolbar with nav and view switcher"
 ## Task 7: CalendarLayout and CalendarPage
 
 **Files:**
+
 - Create: `apps/web/src/components/calendar/calendar-layout.tsx`
 - Create: `apps/web/src/pages/calendar.tsx`
 
 **Interfaces:**
+
 - Consumes: `CalendarProvider`, `CalendarToolbar`, `MonthGrid`, `useCalendarTasks`
 - Produces: `CalendarPage` (routed page)
 
@@ -753,7 +806,10 @@ export function CalendarLayout({ workspaceId, onTaskClick, onTaskMove }: Calenda
       <div className="flex h-full flex-col">
         <CalendarToolbar />
         <div className="flex flex-1 items-center justify-center">
-          <div role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
+          <div
+            role="alert"
+            className="rounded-md border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive"
+          >
             Failed to load tasks: {(tasksQuery.error as Error | null)?.message ?? 'unknown error'}
           </div>
         </div>
@@ -814,7 +870,10 @@ export function CalendarLayout({ workspaceId, onTaskClick, onTaskMove }: Calenda
       <div className="flex h-full flex-col">
         <CalendarToolbar />
         <div className="flex flex-1 items-center justify-center">
-          <div role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
+          <div
+            role="alert"
+            className="rounded-md border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive"
+          >
             Failed to load tasks: {(tasksQuery.error as Error | null)?.message ?? 'unknown error'}
           </div>
         </div>
@@ -892,10 +951,12 @@ git commit -m "feat(calendar): add CalendarLayout and CalendarPage shell"
 ## Task 8: Routing and Sidebar NavLink
 
 **Files:**
+
 - Modify: `apps/web/src/App.tsx` (add route)
 - Modify: `apps/web/src/components/layout/app-shell.tsx` (add NavLink)
 
 **Interfaces:**
+
 - Consumes: `CalendarPage` from pages/calendar.tsx
 
 - [ ] **Step 1: Add lazy import and route to App.tsx**
@@ -939,9 +1000,11 @@ git commit -m "feat(calendar): add route and sidebar NavLink"
 ## Task 9: Saved View Integration
 
 **Files:**
+
 - Modify: `apps/web/src/features/calendar/hooks.ts` (extend useCalendarTasks to accept filters)
 
 **Interfaces:**
+
 - Consumes: `SavedFilterQuery` from `@flow-desk/shared/saved-filter`
 
 - [ ] **Step 1: Check SavedViewsBar pattern**
@@ -1000,10 +1063,12 @@ git commit -m "feat(calendar): integrate SavedViewsBar filter support"
 ## Task 10: DnD Support — DraggableTaskCard and useCalendarDnD
 
 **Files:**
+
 - Create: `apps/web/src/components/calendar/draggable-task-card.tsx`
 - Modify: `apps/web/src/features/calendar/hooks.ts` (add useCalendarDnD)
 
 **Interfaces:**
+
 - Consumes: `CalendarTaskCard`, `useUpdateTask` from task hooks, `useQueryClient` from TanStack Query
 - Produces: `DraggableTaskCard`, `useCalendarDnD` hook
 
@@ -1090,9 +1155,11 @@ git commit -m "feat(calendar): add DnD support with DraggableTaskCard and useCal
 ## Task 11: Realtime Sync
 
 **Files:**
+
 - Modify: `apps/web/src/pages/calendar.tsx` (add useRealtime or socket listener)
 
 **Interfaces:**
+
 - Consumes: `useNamespacedSocket` from `@/lib/socket`, `useQueryClient` from TanStack Query
 
 - [ ] **Step 1: Add realtime invalidation to CalendarPage**
@@ -1147,14 +1214,17 @@ git commit -m "feat(calendar): add Socket.IO realtime sync"
 ## Task 12: Responsive Design
 
 **Files:**
+
 - Modify: `apps/web/src/components/calendar/month-grid.tsx` (responsive classes)
 
 **Interfaces:**
+
 - Consumes: Tailwind responsive prefixes (`md:`, `lg:`)
 
 - [ ] **Step 1: Add responsive behavior to MonthGrid**
 
 Update MonthGrid to use responsive classes:
+
 - Mobile (`<768px`): Compact mode — show day numbers with dot indicators, tap to expand
 - Tablet (`768-1023px`): Compressed task cards, fewer visible per cell
 - Desktop (`≥1024px`): Full month grid as-is
@@ -1178,10 +1248,12 @@ git commit -m "feat(calendar): add responsive month grid layout"
 ## Task 13: Keyboard Accessibility
 
 **Files:**
+
 - Modify: `apps/web/src/components/calendar/month-grid.tsx` (ARIA, keyboard nav)
 - Modify: `apps/web/src/components/calendar/task-card.tsx` (keyboard support)
 
 **Interfaces:**
+
 - Consumes: ARIA patterns (role=grid, role=gridcell, aria-label)
 
 - [ ] **Step 1: Add ARIA attributes to MonthGrid**
@@ -1191,6 +1263,7 @@ Add `role="grid"` to the grid container, `role="gridcell"` to each day cell, `ar
 - [ ] **Step 2: Add keyboard handlers**
 
 Add `onKeyDown` handler to MonthGrid that handles:
+
 - Arrow keys: move focus between day cells
 - Enter: open task detail
 - Tab: move between tasks within a cell
@@ -1212,10 +1285,12 @@ git commit -m "feat(calendar): add keyboard accessibility and ARIA attributes"
 ## Task 14: Week View
 
 **Files:**
+
 - Create: `apps/web/src/components/calendar/week-grid.tsx`
 - Modify: `apps/web/src/components/calendar/calendar-layout.tsx` (render WeekGrid for week mode)
 
 **Interfaces:**
+
 - Consumes: `CalendarGridProps`, `getWeekDays`, `useCalendarTasks`
 - Produces: `WeekGrid` component
 
@@ -1244,10 +1319,12 @@ git commit -m "feat(calendar): add WeekView grid component"
 ## Task 15: Day View
 
 **Files:**
+
 - Create: `apps/web/src/components/calendar/day-grid.tsx`
 - Modify: `apps/web/src/components/calendar/calendar-layout.tsx` (render DayGrid for day mode)
 
 **Interfaces:**
+
 - Consumes: `CalendarGridProps`, `getDayRange`, `useCalendarTasks`
 - Produces: `DayGrid` component
 
@@ -1276,9 +1353,11 @@ git commit -m "feat(calendar): add DayView grid component"
 ## Task 16: Task Detail Integration
 
 **Files:**
+
 - Modify: `apps/web/src/pages/calendar.tsx` (open TaskEditModal on task click)
 
 **Interfaces:**
+
 - Consumes: `TaskEditModal` from `@/features/task/components/TaskEditModal`
 
 - [ ] **Step 1: Add TaskEditModal to CalendarPage**
@@ -1302,15 +1381,18 @@ git commit -m "feat(calendar): integrate TaskEditModal for task detail view"
 ## Task 17: Final Integration and Polish
 
 **Files:**
+
 - Modify: `apps/web/src/components/calendar/calendar-layout.tsx`
 - Modify: `apps/web/src/pages/calendar.tsx`
 
 **Interfaces:**
+
 - Consumes: All previous tasks
 
 - [ ] **Step 1: Wire up all pieces in CalendarLayout**
 
 Ensure CalendarLayout correctly:
+
 - Passes `dateRange` from provider to grids
 - Uses `useCalendarDnD` for `onTaskMove`
 - Shows loading/error states
@@ -1342,11 +1424,13 @@ git commit -m "feat(calendar): complete calendar view implementation"
 ## Task 18: Tests
 
 **Files:**
+
 - Create: `apps/web/src/features/calendar/utils.test.ts`
 - Create: `apps/web/src/components/calendar/month-grid.test.tsx`
 - Create: `apps/web/src/components/calendar/task-card.test.tsx`
 
 **Interfaces:**
+
 - Consumes: all calendar components and utils from Tasks 1-17
 
 - [ ] **Step 1: Write date utility unit tests**

@@ -19,7 +19,12 @@ vi.mock('@/lib/api', () => ({
   },
 }));
 
-const mockUseSearch = vi.fn((): { data: unknown; isLoading: boolean } => ({ data: undefined, isLoading: false }));
+const mockUseSearch = vi.fn(
+  (_q: string, _enabled?: boolean): { data: unknown; isLoading: boolean } => ({
+    data: undefined,
+    isLoading: false,
+  }),
+);
 vi.mock('../hooks', () => ({
   useSearch: (q: string, enabled?: boolean) => mockUseSearch(q, enabled),
   searchKeys: { list: (q: string) => ['search', q] },

@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { io, type Socket } from 'socket.io-client';
-import { getSocketToken, ensureSocketTokenPrefetch, clearSocketToken, SOCKET_API_URL } from './socket-token';
+import {
+  getSocketToken,
+  ensureSocketTokenPrefetch,
+  clearSocketToken,
+  SOCKET_API_URL,
+} from './socket-token';
 
 type FlowDeskNamespace = '/tasks' | '/notifications' | '/collab';
 

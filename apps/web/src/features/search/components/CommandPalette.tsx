@@ -10,7 +10,15 @@ import {
   CommandList,
   CommandSeparator,
 } from '@/components/ui/command';
-import { FileText, MessageSquare, Paperclip, LayoutDashboard, Settings, Sun, Moon } from 'lucide-react';
+import {
+  FileText,
+  MessageSquare,
+  Paperclip,
+  LayoutDashboard,
+  Settings,
+  Sun,
+  Moon,
+} from 'lucide-react';
 import { useSearch } from '../hooks';
 import { workspaceApi } from '@/features/workspace';
 import { useTheme } from '@/lib/theme';
@@ -60,23 +68,17 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
         <CommandEmpty>No results found.</CommandEmpty>
 
         <CommandGroup heading="Navigation">
-          <CommandItem
-            onSelect={() => runAction(() => navigate('/'))}
-          >
+          <CommandItem onSelect={() => runAction(() => navigate('/'))}>
             <LayoutDashboard className="mr-2 size-4" />
             Dashboard
           </CommandItem>
           {workspaceList.map((w) => (
             <React.Fragment key={w.id}>
-              <CommandItem
-                onSelect={() => runAction(() => navigate(`/board/${w.id}`))}
-              >
+              <CommandItem onSelect={() => runAction(() => navigate(`/board/${w.id}`))}>
                 <FileText className="mr-2 size-4" />
                 {w.name}
               </CommandItem>
-              <CommandItem
-                onSelect={() => runAction(() => navigate(`/list/${w.id}`))}
-              >
+              <CommandItem onSelect={() => runAction(() => navigate(`/list/${w.id}`))}>
                 <span className="mr-2 size-4" />
                 &nbsp;&nbsp;List — {w.name}
               </CommandItem>
@@ -93,9 +95,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
         <CommandSeparator />
 
         <CommandGroup heading="Quick Actions">
-          <CommandItem
-            onSelect={() => runAction(() => toggleTheme())}
-          >
+          <CommandItem onSelect={() => runAction(() => toggleTheme())}>
             {theme === 'dark' ? <Sun className="mr-2 size-4" /> : <Moon className="mr-2 size-4" />}
             Toggle Theme
           </CommandItem>
@@ -105,9 +105,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
           <>
             <CommandSeparator />
             <CommandGroup heading="Search Results">
-              {searchLoading && (
-                <CommandItem disabled>Searching…</CommandItem>
-              )}
+              {searchLoading && <CommandItem disabled>Searching…</CommandItem>}
               {!searchLoading && results.length === 0 && (
                 <CommandItem disabled>No matches.</CommandItem>
               )}
@@ -116,15 +114,11 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                 return (
                   <CommandItem
                     key={`${r.type}-${r.id}`}
-                    onSelect={() =>
-                      runAction(() => navigate(`/board/${r.workspaceId}`))
-                    }
+                    onSelect={() => runAction(() => navigate(`/board/${r.workspaceId}`))}
                   >
                     <Icon className="mr-2 size-4" />
                     <span className="flex-1 truncate">{r.title}</span>
-                    <span className="ml-2 text-xs uppercase text-muted-foreground">
-                      {r.type}
-                    </span>
+                    <span className="ml-2 text-xs uppercase text-muted-foreground">{r.type}</span>
                   </CommandItem>
                 );
               })}

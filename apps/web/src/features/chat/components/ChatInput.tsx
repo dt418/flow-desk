@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect, type KeyboardEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { useNamespacedSocket } from '@/lib/socket';
-import { SOCKET_EVENTS } from '@flow-desk/shared/socket-events';
+import { SOCKET_EVENTS } from '@flow-desk/shared';
 
 interface ChatInputProps {
   channelId: string;

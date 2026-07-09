@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useNamespacedSocket } from '@/lib/socket';
-import { SOCKET_EVENTS } from '@flow-desk/shared/socket-events';
+import { SOCKET_EVENTS } from '@flow-desk/shared';
 
 interface TypingUser {
   userId: string;

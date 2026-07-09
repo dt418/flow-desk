@@ -5,7 +5,12 @@ import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { registerSchema, loginSchema, refreshTokenSchema } from '@flow-desk/shared/auth';
 import { prisma } from '../../shared/lib/prisma';
-import { signAccessToken, signRefreshToken, verifyRefreshToken, signSocketToken } from '../../shared/lib/jwt';
+import {
+  signAccessToken,
+  signRefreshToken,
+  verifyRefreshToken,
+  signSocketToken,
+} from '../../shared/lib/jwt';
 import jwt from 'jsonwebtoken';
 import { env } from '../../shared/lib/prisma';
 import { logger } from '../../shared/lib/logger';

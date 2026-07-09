@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useWebhookDeliveries } from '../hooks';
-import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   Table,
@@ -19,7 +18,7 @@ interface WebhookDeliveryLogProps {
 }
 
 export function WebhookDeliveryLog({ workspaceId, webhookId, onClose }: WebhookDeliveryLogProps) {
-  const [cursor, setCursor] = useState<string | undefined>(undefined);
+  const [cursor] = useState<string | undefined>(undefined);
   const { data, isLoading } = useWebhookDeliveries(workspaceId, webhookId, cursor);
 
   const statusColors: Record<string, string> = {

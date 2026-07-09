@@ -11,7 +11,7 @@ interface WebhookSecretDialogProps {
 }
 
 export function WebhookSecretDialog({ workspaceId, webhookId, onClose }: WebhookSecretDialogProps) {
-  const { data: webhook, isLoading } = useWebhook(workspaceId, webhookId);
+  const { data: webhook } = useWebhook(workspaceId, webhookId);
 
   return (
     <Dialog open onOpenChange={(open: boolean) => !open && onClose()}>

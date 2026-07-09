@@ -85,9 +85,9 @@ Owns **UI/navigation state only**. No data fetching, no mutations, no socket lis
 
 ```ts
 interface CalendarState {
-  currentDate: Date;        // anchor date for navigation
+  currentDate: Date; // anchor date for navigation
   viewMode: 'month' | 'week' | 'day';
-  dateRange: DateRange;     // derived from currentDate + viewMode (not mutable)
+  dateRange: DateRange; // derived from currentDate + viewMode (not mutable)
 }
 
 interface CalendarActions {
@@ -135,6 +135,7 @@ interface CalendarGridProps {
 Future grids (AgendaGrid, TimelineGrid) implement the same interface.
 
 **MonthGrid:**
+
 - 7-column CSS grid (Sun-Sat), 5-6 rows
 - Each cell: day number + up to 2-3 TaskCard items
 - Overflow: "+N more" opens a popover/drawer listing all tasks for that day (reuses existing drawer patterns)
@@ -142,11 +143,13 @@ Future grids (AgendaGrid, TimelineGrid) implement the same interface.
 - Days outside current month grayed out
 
 **WeekGrid:**
+
 - 7-column layout with day headers
 - Tasks are all-day in v1 — single row of columns, no hour slots
 - Same overflow behavior as MonthGrid
 
 **DayGrid:**
+
 - Single-column layout with full date header
 - Lists all tasks vertically with more detail (priority, assignee, description preview)
 
@@ -158,13 +161,14 @@ Future grids (AgendaGrid, TimelineGrid) implement the same interface.
 interface TaskCardProps {
   task: CalendarTask;
   onClick?: () => void;
-  compact?: boolean;       // true in MonthGrid, false in DayGrid
-  startDate?: Date;        // future extensibility
-  endDate?: Date;           // future extensibility
+  compact?: boolean; // true in MonthGrid, false in DayGrid
+  startDate?: Date; // future extensibility
+  endDate?: Date; // future extensibility
 }
 ```
 
 Renders:
+
 - Priority color indicator (left border or dot — matches board's priority colors)
 - Task title (truncated)
 - Optional: assignee avatar, label chips (space permitting)
@@ -202,13 +206,20 @@ Wraps `TaskCard` with `@dnd-kit`'s `useSortable`. Attaches drag behavior without
 function useCalendarTasks(workspaceId: string, savedViewFilters: SavedViewFilters) {
   const { dateRange } = useCalendar();
   return useQuery({
-    queryKey: ['calendar', workspaceId, dateRange.start.toISOString(), dateRange.end.toISOString(), savedViewFilters],
-    queryFn: () => taskApi.list({
+    queryKey: [
+      'calendar',
       workspaceId,
-      dueAfter: dateRange.start.toISOString(),
-      dueBefore: dateRange.end.toISOString(),
-      ...savedViewFilters,
-    }),
+      dateRange.start.toISOString(),
+      dateRange.end.toISOString(),
+      savedViewFilters,
+    ],
+    queryFn: () =>
+      taskApi.list({
+        workspaceId,
+        dueAfter: dateRange.start.toISOString(),
+        dueBefore: dateRange.end.toISOString(),
+        ...savedViewFilters,
+      }),
     enabled: Boolean(workspaceId),
   });
 }
@@ -224,7 +235,7 @@ The `taskApi.list` method is reusable by other features (e.g., future List/Table
 
 ```ts
 function useCalendarDnD(workspaceId: string) {
-  const updateTask = useUpdateTask(workspaceId);  // existing mutation
+  const updateTask = useUpdateTask(workspaceId); // existing mutation
 
   const handleMove = (taskId: string, newDate: Date) => {
     updateTask.mutate({
@@ -354,9 +365,9 @@ Full keyboard DnD is complex — v1 provides basic navigation and task opening. 
 
 ## 11. Risks
 
-| Risk | Likelihood | Impact | Mitigation |
-|------|-----------|--------|------------|
-| Month grid performance with many tasks per day | Medium | Medium | Virtual scrolling or "show first N" with overflow drawer |
-| DnD conflicts with existing board DnD | Low | Low | Separate DnD contexts, no cross-view dragging in v1 |
-| Responsive month grid complexity | High | Medium | Start with compact mobile mode, iterate |
-| Keyboard DnD accessibility | Medium | Low | Basic nav in v1, full DnD keyboard in follow-up |
+| Risk                                           | Likelihood | Impact | Mitigation                                               |
+| ---------------------------------------------- | ---------- | ------ | -------------------------------------------------------- |
+| Month grid performance with many tasks per day | Medium     | Medium | Virtual scrolling or "show first N" with overflow drawer |
+| DnD conflicts with existing board DnD          | Low        | Low    | Separate DnD contexts, no cross-view dragging in v1      |
+| Responsive month grid complexity               | High       | Medium | Start with compact mobile mode, iterate                  |
+| Keyboard DnD accessibility                     | Medium     | Low    | Basic nav in v1, full DnD keyboard in follow-up          |
