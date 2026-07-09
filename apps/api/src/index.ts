@@ -10,6 +10,15 @@ import { setIo } from './shared/lib/socket-events';
 import { redis } from './shared/lib/redis';
 import { prisma } from './shared/lib/prisma';
 
+// Safety net: an unhandled rejection (e.g. a transient redis or DB hiccup
+// on a background socket handler) must not kill the process. Log and move on.
+process.on('unhandledRejection', (reason) => {
+  logger.error({ err: reason }, 'unhandledRejection');
+});
+process.on('uncaughtException', (err) => {
+  logger.error({ err }, 'uncaughtException');
+});
+
 const app = buildApp();
 
 const port = Number(env.PORT);

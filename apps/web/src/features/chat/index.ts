@@ -13,6 +13,7 @@ export {
   useChatPresence,
   useFlattenedMessages,
   useReadReceipts,
+  useAutoMarkRead,
 } from './hooks';
 export { ChatSidebar, ChannelItem } from './components/ChatSidebar';
 export { ChannelView } from './components/ChannelView';

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery, useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import type {
   ChannelView,
+  ChannelWithLatest,
   ChatMessageWithAuthor,
   CreateChannelInput,
   UpdateChannelInput,
@@ -204,10 +205,11 @@ export function useSendMessage(
       toast.error('Message delivery timed out');
     }, 5000);
 
-    // Use optional/volatile so the emit is dropped if the socket goes down
-    // before delivery instead of being buffered — a buffered emit would
-    // never receive an ack because the server hasn't seen it.
-    socket.volatile.emit(
+    // Non-volatile: socket.volatile.emit drops the packet when the polling
+    // transport isn't momentarily writable (frequent with polling), silently
+    // losing messages. We already bail above when !socket.connected, so a
+    // plain emit when connected is correct — it queues through the engine.
+    socket.emit(
       'message:send',
       {
         channelId,
@@ -326,7 +328,32 @@ export function useChatRealtime(wid: string, activeChannelId: string | null) {
     if (!activeChannelId || !wid) return;
 
     const onNew = (payload: { channelId: string; message: ChatMessageWithAuthor }) => {
-      qc.invalidateQueries({ queryKey: chatKeys.channels(wid), exact: true });
+      // Update the channel's latestMessage in the channels list cache
+      // directly instead of invalidating — the realtime event already
+      // carries the data we need to refresh the preview, so a refetch
+      // is wasted bandwidth.
+      qc.setQueryData<{ data: ChannelWithLatest[]; nextCursor: string | null } | undefined>(
+        chatKeys.channels(wid),
+        (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            data: old.data.map((c) =>
+              c.id === payload.channelId
+                ? {
+                    ...c,
+                    latestMessage: {
+                      id: payload.message.id,
+                      authorId: payload.message.authorId,
+                      content: payload.message.content,
+                      createdAt: payload.message.createdAt,
+                    },
+                  }
+                : c,
+            ),
+          };
+        },
+      );
       if (payload.channelId !== activeChannelId) return;
       appendMessageIfNew(qc, wid, activeChannelId, payload.message);
     };
@@ -405,5 +432,41 @@ export function useReadReceipts(channelId: string | null) {
     return () => clearInterval(interval);
   }, [channelId]);
 
-  return useMemo(() => (channelId ? getReadReceipts(channelId) : []), [channelId]);
+  // No useMemo — the underlying Map mutates when message:read arrives,
+  // and the 2s forceUpdate above triggers a re-render to read it.
+  // A useMemo keyed on channelId would cache the initial empty array.
+  return channelId ? getReadReceipts(channelId) : [];
+}
+
+// Auto-mark the latest non-own message in the active channel as read.
+// Emits message:read exactly once per message id; the server broadcasts
+// the receipt back to the room so the author sees "Read by N".
+export function useAutoMarkRead(
+  wid: string,
+  channelId: string | null,
+  currentUserId: string | null,
+) {
+  const { socket } = useNamespacedSocket('/collab');
+  const lastEmittedRef = useRef<string | null>(null);
+  const messages = useMessages(wid, channelId ?? '');
+
+  useEffect(() => {
+    if (!channelId || !currentUserId || !socket.connected) return;
+    const pages = messages.data?.pages ?? [];
+    if (pages.length === 0) return;
+    const flat = [...pages].reverse().flatMap((p) => p.data);
+    if (flat.length === 0) return;
+    const latest = flat[flat.length - 1];
+    // Skip optimistic placeholders (temp id) — the real message arrives
+    // via the message:new broadcast and triggers another effect tick.
+    if (latest.id.startsWith('temp-')) return;
+    if (latest.authorId === currentUserId) return;
+    if (lastEmittedRef.current === latest.id) return;
+    lastEmittedRef.current = latest.id;
+    socket.emit(SOCKET_EVENTS.MessageRead, {
+      workspaceId: wid,
+      channelId,
+      messageId: latest.id,
+    });
+  }, [wid, channelId, currentUserId, socket, messages.data]);
 }

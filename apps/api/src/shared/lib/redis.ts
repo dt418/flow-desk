@@ -7,7 +7,10 @@ const globalForRedis = globalThis as unknown as { redis?: Redis };
 export const redis =
   globalForRedis.redis ??
   new Redis(env.REDIS_URL, {
-    maxRetriesPerRequest: 3,
+    // null = infinite retries. With a finite cap, ioredis throws
+    // MaxRetriesPerRequestError on every queued command during a blip,
+    // and an unhandled rejection on that throw took the process down.
+    maxRetriesPerRequest: null,
     lazyConnect: false,
     enableReadyCheck: true,
   });

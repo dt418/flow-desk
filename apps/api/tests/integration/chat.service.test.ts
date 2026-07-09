@@ -54,7 +54,7 @@ describe('chat integration', () => {
         isPrivate: false,
         scope: 'WORKSPACE',
       });
-      await messageSvc.sendMessage(db, ownerId, ch.id, {
+      await messageSvc.sendMessage(db, ownerId, wid, ch.id, {
         content: 'First message',
         mentionedUserIds: [],
       });
@@ -171,7 +171,7 @@ describe('chat integration', () => {
     });
 
     it('author can edit own message', async () => {
-      const msg = await messageSvc.sendMessage(db, ownerId, channelId, {
+      const msg = await messageSvc.sendMessage(db, ownerId, wid, channelId, {
         content: 'Original',
         mentionedUserIds: [],
       });
@@ -182,7 +182,7 @@ describe('chat integration', () => {
     });
 
     it('non-author cannot edit message', async () => {
-      const msg = await messageSvc.sendMessage(db, ownerId, channelId, {
+      const msg = await messageSvc.sendMessage(db, ownerId, wid, channelId, {
         content: 'Original',
         mentionedUserIds: [],
       });
@@ -194,7 +194,7 @@ describe('chat integration', () => {
     });
 
     it('author can delete own message', async () => {
-      const msg = await messageSvc.sendMessage(db, ownerId, channelId, {
+      const msg = await messageSvc.sendMessage(db, ownerId, wid, channelId, {
         content: 'Delete me',
         mentionedUserIds: [],
       });
@@ -208,7 +208,7 @@ describe('chat integration', () => {
     });
 
     it('message includes author info', async () => {
-      const msg = await messageSvc.sendMessage(db, ownerId, channelId, {
+      const msg = await messageSvc.sendMessage(db, ownerId, wid, channelId, {
         content: 'With author',
         mentionedUserIds: [],
       });

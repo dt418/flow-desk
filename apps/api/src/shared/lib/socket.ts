@@ -3,7 +3,7 @@ import { createAdapter } from '@socket.io/redis-adapter';
 import type { Server as HttpServer } from 'node:http';
 import type { ZodSchema } from 'zod';
 import { redis } from './redis';
-import { verifySocketToken } from './jwt';
+import { verifySocketToken, verifyAccessToken } from './jwt';
 import { logger } from './logger';
 import { env } from './prisma';
 import { parseCookieToken } from './cookie';
@@ -60,7 +60,7 @@ export function withValidation<T>(
   schema: ZodSchema<T>,
   handler: (data: T, socket: Socket) => void | Promise<void>,
 ) {
-  return (socket: Socket) => (data: unknown, _ack?: (...args: unknown[]) => void) => {
+  return (socket: Socket) => async (data: unknown, _ack?: (...args: unknown[]) => void) => {
     const result = schema.safeParse(data);
     if (!result.success) {
       socket.emit(SOCKET_EVENTS.Error, {
@@ -69,7 +69,13 @@ export function withValidation<T>(
       });
       return;
     }
-    return handler(result.data, socket);
+    try {
+      await handler(result.data, socket);
+    } catch (err) {
+      // Swallow handler errors so an FK violation or transient DB hiccup
+      // on one event doesn't take the whole socket.io process down.
+      logger.error({ err, event: 'socket handler' }, 'socket handler threw');
+    }
   };
 }
 
@@ -89,17 +95,20 @@ export function createSocketServer(httpServer: HttpServer) {
   // /notifications were skipping auth → socket.data.userId stayed undefined
   // → prisma 'userId is missing' on join-workspace.
   const authMiddleware = async (socket: Socket, next: (err?: Error) => void) => {
+    const authToken = socket.handshake.auth?.token as string | undefined;
+    const headerToken = socket.handshake.headers.authorization?.replace(/^Bearer\s+/i, '');
     const cookieToken = parseCookieToken(
       socket.handshake.headers.cookie as string | undefined,
       'access_token',
     );
-    const token =
-      (socket.handshake.auth?.token as string | undefined) ??
-      socket.handshake.headers.authorization?.replace(/^Bearer\s+/i, '') ??
-      cookieToken ??
-      '';
+    // Prefer the scoped socket token (handshake.auth.token from
+    // /api/auth/socket-token); fall back to the access token carried by the
+    // httpOnly cookie / Authorization header for clients that can't fetch a
+    // socket token (native / cookie-auth clients).
+    const token = authToken ?? headerToken ?? cookieToken ?? '';
+    const verifier = authToken ? verifySocketToken : verifyAccessToken;
     try {
-      const payload = verifySocketToken(token);
+      const payload = verifier(token);
       socket.data.userId = payload.userId;
       try {
         const { prisma } = await import('./prisma');
@@ -300,6 +309,13 @@ export function createSocketServer(httpServer: HttpServer) {
           const { markRead } = await import('../../modules/chat/chat.message.service');
           const { prisma } = await import('./prisma');
           await markRead(prisma, userId, data.workspaceId, data.channelId, data.messageId);
+          // Broadcast the receipt to the room so the author sees "Read by N".
+          socket.to(`conversation:${data.channelId}`).emit('message:read', {
+            userId,
+            channelId: data.channelId,
+            messageId: data.messageId,
+            readAt: new Date().toISOString(),
+          });
         })(socket),
       );
 
@@ -331,12 +347,33 @@ export function createSocketServer(httpServer: HttpServer) {
               ack?.({ ok: false, error: 'channel_not_found' });
               return;
             }
-            // sendMessage does the realtime emit (message:new to the
-            // conversation room). Don't double-emit here.
+            // sendMessage persists but does not broadcast — broadcasting
+            // here so we can exclude the sender (who gets the message via
+            // the ack) and avoid the broadcast+ack double on the author.
             const message = await sendMessage(prisma, userId, channel.workspaceId, d.channelId, {
               content: d.content,
               mentionedUserIds: d.mentionedUserIds,
               clientMessageId: d.clientMessageId,
+            });
+            socket.to(`conversation:${d.channelId}`).emit('message:new', {
+              channelId: d.channelId,
+              message: {
+                id: message.id,
+                channelId: message.channelId,
+                authorId: message.authorId,
+                content: message.content,
+                mentionedUserIds: message.mentionedUserIds,
+                clientMessageId: message.clientMessageId,
+                createdAt: message.createdAt.toISOString(),
+                updatedAt: message.updatedAt.toISOString(),
+                editedAt: null,
+                author: {
+                  id: message.author.id,
+                  name: message.author.name,
+                  email: message.author.email,
+                  avatarUrl: message.author.avatarUrl,
+                },
+              },
             });
             ack?.({ ok: true, message });
           } catch (err) {

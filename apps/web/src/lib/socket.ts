@@ -98,9 +98,18 @@ export function getSocket(ns: FlowDeskNamespace): Socket {
     timeout: 20000,
     // Dynamic auth: async so we can resolve the latest JS-readable socket token
     // on every (re)connect. No cookie — the token comes from /api/auth/socket-token.
-    auth: async () => {
-      const token = await getSocketToken();
-      return { token };
+    // Dynamic auth: resolve the latest JS-readable socket token on every
+    // (re)connect. socket.io-client v4.8 expects callback style
+    // `auth(cb)` (not an async function returning a promise) — an async fn
+    // ignores cb and the connect packet is never sent → socket hangs.
+    auth: (resolveAuth: (data: { token: string }) => void) => {
+      getSocketToken()
+        .then((token) => resolveAuth({ token }))
+        .catch(() => {
+          // token fetch failed — send empty auth so the server rejects with
+          // connect_error instead of hanging the handshake forever.
+          resolveAuth({} as { token: string });
+        });
     },
   });
   socket.io.on('reconnect', () => reconnectingSince.delete(ns));

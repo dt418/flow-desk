@@ -148,37 +148,11 @@ export async function sendMessage(
     }
   }
 
-  // ponytail: Bug #2 — was emitting to BOTH conversation:{channelId} room
-  // and user:{userId}. The author is in the room, so they got the
-  // message twice. Room broadcast covers everyone (author + watchers).
-  const roomResult = safeEmit(
-    () =>
-      emitToRoom('/collab', `conversation:${channelId}`, 'message:new', {
-        channelId,
-        message: {
-          id: message.id,
-          channelId: message.channelId,
-          authorId: message.authorId,
-          content: message.content,
-          mentionedUserIds: message.mentionedUserIds,
-          clientMessageId: message.clientMessageId,
-          createdAt: message.createdAt.toISOString(),
-          updatedAt: message.updatedAt.toISOString(),
-          editedAt: null,
-          author: {
-            id: message.author.id,
-            name: message.author.name,
-            email: message.author.email,
-            avatarUrl: message.author.avatarUrl,
-          },
-        },
-      }),
-    { event: 'message:new', channelId },
-  );
-  if (!roomResult.ok) {
-    logger.warn({ err: roomResult.error }, 'failed to emit message:new to room');
-  }
-
+  // Broadcast is the caller's responsibility so the socket handler can
+  // exclude the sender (who gets the message via the ack) and the REST
+  // route can include all viewers. Emitting here hit the author twice
+  // (broadcast + ack) and the dedup race was the source of duplicate
+  // message bubbles. See Bug #2.
   return message;
 }
 
@@ -281,9 +255,20 @@ export async function markRead(
   const readAt = new Date();
 
   if (!existing) {
-    await prisma.chatMessageRead.create({
-      data: { userId, channelId, messageId: upToMessageId, readAt },
-    });
+    try {
+      await prisma.chatMessageRead.create({
+        data: { userId, channelId, messageId: upToMessageId, readAt },
+      });
+    } catch (err) {
+      // FK violation: the messageId doesn't exist (e.g. a stale optimistic
+      // id leaked from the client, or a hard-deleted message). The receipt
+      // is best-effort — skip the DB row and still broadcast so the UI can
+      // update if it has the message locally.
+      logger.warn(
+        { err, userId, channelId, messageId: upToMessageId },
+        'markRead: create failed, broadcasting receipt anyway',
+      );
+    }
   }
 
   const readResult = safeEmit(

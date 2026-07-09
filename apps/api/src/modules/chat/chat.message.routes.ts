@@ -9,6 +9,7 @@ import {
   messageParamsSchema,
 } from '@flow-desk/shared/chat';
 import * as svc from './chat.message.service';
+import { emitToRoom } from '../../shared/lib/socket-events';
 
 export const chatMessageRouter = new Hono();
 chatMessageRouter.use('*', requireAuth());
@@ -42,6 +43,29 @@ chatMessageRouter.post(
       return c.json({ code: 'INVALID_BODY', details: parsed.error.flatten() }, 400);
     }
     const message = await svc.sendMessage(prisma, auth.user.id, wid, channelId, parsed.data);
+    // Broadcast to all viewers in the room. The REST caller has no socket
+    // identity to exclude, so everyone (including any of the author's other
+    // tabs) gets the realtime event.
+    emitToRoom('/collab', `conversation:${channelId}`, 'message:new', {
+      channelId,
+      message: {
+        id: message.id,
+        channelId: message.channelId,
+        authorId: message.authorId,
+        content: message.content,
+        mentionedUserIds: message.mentionedUserIds,
+        clientMessageId: message.clientMessageId,
+        createdAt: message.createdAt.toISOString(),
+        updatedAt: message.updatedAt.toISOString(),
+        editedAt: null,
+        author: {
+          id: message.author.id,
+          name: message.author.name,
+          email: message.author.email,
+          avatarUrl: message.author.avatarUrl,
+        },
+      },
+    });
     return c.json({ data: message }, 201);
   },
 );

@@ -47,6 +47,7 @@ export function MessageBubble({ message, isOwn, onResend, readByCount }: Message
           </span>
         )}
         <div
+          data-testid="message-bubble"
           className={cn(
             'rounded-2xl px-3 py-1.5 text-sm',
             isOwn ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground',

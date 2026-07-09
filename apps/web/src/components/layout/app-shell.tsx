@@ -14,6 +14,8 @@ import { WorkspaceSwitcher } from '@/features/workspace';
 import { WorkspaceCreateDialog } from '@/components/ui/workspace-create-dialog';
 import { Search as SearchIcon } from 'lucide-react';
 import { CommandPalette } from '@/features/search';
+import { NotificationBell } from '@/features/notification';
+import { useNotificationsRealtime } from '@/features/realtime/useRealtime';
 import { cn, initials } from '@/lib/utils';
 
 interface WorkspaceSummary {
@@ -34,6 +36,7 @@ export function AppShell() {
   const { theme, toggle } = useTheme();
   const qc = useQueryClient();
   useSocket();
+  useNotificationsRealtime();
   const [createOpen, setCreateOpen] = React.useState(false);
   const [searchOpen, setSearchOpen] = React.useState(false);
 
@@ -169,6 +172,9 @@ export function AppShell() {
       </aside>
 
       <main id="main" className="flex-1 overflow-auto" aria-label="Main content">
+        <div className="flex items-center justify-end gap-1 border-b border-border px-4 py-2">
+          <NotificationBell />
+        </div>
         <Outlet />
       </main>
 

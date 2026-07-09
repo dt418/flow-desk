@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import type { ChannelView, ChatMessageWithAuthor } from '../types';
 import { MessageBubble } from './MessageBubble';
 import { ChatInput } from './ChatInput';
+import { TypingIndicator } from './TypingIndicator';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { ReadReceipt } from '../hooks';
 
@@ -111,6 +112,7 @@ export function ChannelView({
         <div ref={bottomRef} />
       </div>
 
+      <TypingIndicator channelId={channel.id} currentUserId={currentUserId} />
       <ChatInput
         channelId={channel.id}
         onSend={onSend}
