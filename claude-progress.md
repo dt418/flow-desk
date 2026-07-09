@@ -85,6 +85,12 @@
 
 ## Session Log
 
+### 2026-07-10 02:00 — `d76dbae` (main)
+
+- **type:**
+- **msg:**
+- **author:** thanhd
+
 ### 2026-07-10
 
 - `78872be` — (main)
@@ -290,6 +296,7 @@
 **Test results**: e2e 22/22, web unit 27/27, api unit 108/108, api integration 220/220. `pnpm verify` clean.
 
 **Root causes fixed**:
+
 - Integration: Redis port mismatch → `import 'dotenv/config'`
 - Integration: `assertMembership` threw `ForbiddenError` not `BadRequestError`
 - E2E: socket.io-client v4.8.3 uses callback-style auth → fixed `lib/socket.ts`
@@ -298,6 +305,7 @@
 - E2E: 11× FK-cascade cleanup
 
 **Realtime bugs**:
+
 - `socket.volatile.emit` silently dropped messages → plain `socket.emit`
 - Sender got `message:new` twice → `sendMessage` no longer broadcasts; handler emits `socket.to(room)`; REST emits `io.to(room)`
 - Channels list refetched on every `message:new` → `setQueryData` update
@@ -307,6 +315,7 @@
 - `db` fixture `scope: 'worker'` → flakiness → reverted
 
 **Infrastructure hardening**:
+
 - `withValidation` wrapped in try/catch
 - `unhandledRejection`/`uncaughtException` safety net
 - `redis maxRetriesPerRequest: null`
