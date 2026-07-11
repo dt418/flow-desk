@@ -393,4 +393,23 @@
   - PERF-08: webhook fan-out uses `addBulk` (was N adds)
   - PERF-09: chat sendMessage returns notifications from tx scope
 - **Verification**: `pnpm verify` green (typecheck + unit + integration 253/253 + build)
-- **Next**: plans 025, 026, 027 still TODO
+- **Plan 025** (commit 7fdbd00):
+  - ARCH-01: dropped dead safeEmit wrapper (25 call sites → direct emit; chat module 4 sites → inline try/catch)
+  - ARCH-02a: extracted recordUpdateDiff → activity/activity-diff.ts
+  - ARCH-02b: extracted handleAssigneeChange → task/task-assignee.ts
+  - ARCH-02c: extracted CSV helpers → task/task-csv.ts
+  - task.service.ts: 704 → 475 lines (-32%)
+- **Plan 026** (commit 507a1d5):
+  - DX-01: .editorconfig added
+  - DX-03: pnpm guardrails secrets wired into lefthook pre-commit
+  - DX-04: api-key Zod schemas extracted to @flow-desk/shared/api-key
+  - TASKS-01: TASKS.md marked historical (frozen Sprint 20)
+  - DX-02: stale test counts replaced with 'run pnpm verify'
+- **Plan 027** (commit 8bba5bd):
+  - TEST-08: MAX_BACKUP_CODES=16 cap + 2 unit tests
+  - TEST-01: 5 new 2FA integration tests (backup reuse, wrong TOTP, refresh replay, full flow, backup challenge)
+  - TEST-02: 2 new automation action tests (set-field, move-column)
+  - TEST-05: sprint burndown route shape + data assertion
+  - TEST-07: chat channel latestMessage per-channel accuracy
+- **Final verification**: pnpm verify green (typecheck + unit + integration 262/262 + build)
+- **All 5 audit plans complete**: 023, 024, 025, 026, 027 all DONE

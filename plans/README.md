@@ -24,9 +24,9 @@ Updated: 2026-07-11 | New audit run: standard | Base commit: `870c8ed`
 | 022  | Realtime gateway tests (TC-01)                                                     | tests       | L      | 020             | DONE   |
 | 023  | Auth + OAuth security gaps (SEC-01,02,07 + BUG-04,06)                              | security    | S–M    | —               | DONE   |
 | 024  | Hot-path perf N+1 + addBulk + index (PERF-02..09)                                  | performance | M      | —               | DONE   |
-| 025  | Tech-debt refactor (ARCH-01,02,03,05)                                              | tech-debt   | M      | —               | TODO   |
-| 026  | Docs, DX, and `/api/v1` completeness (DX-01..04, DOCS-01..04, TASKS-01, DOCKER-01) | dx          | M      | —               | TODO   |
-| 027  | Test coverage on critical paths (TEST-01,02,05,07,08)                              | tests       | M      | —               | TODO   |
+| 025  | Tech-debt refactor (ARCH-01,02,03,05)                                              | tech-debt   | M      | —               | DONE   |
+| 026  | Docs, DX, and `/api/v1` completeness (DX-01..04, DOCS-01..04, TASKS-01, DOCKER-01) | dx          | M      | —               | DONE   |
+| 027  | Test coverage on critical paths (TEST-01,02,05,07,08)                              | tests       | M      | —               | DONE   |
 
 ## Dependency Graph
 
