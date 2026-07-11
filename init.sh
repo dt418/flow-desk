@@ -18,6 +18,9 @@ echo "==> Running baseline verification (shared package build)"
 echo "==> Installing git hooks (lefthook: pre-commit secret check + typecheck + format + lint, pre-push full verify)"
 pnpm setup:lefthook
 
+echo "==> Syncing multi-agent skill/command adapters (plan-feature → .agents/skills)"
+bash scripts/sync-agent-adapters.sh
+
 echo "==> Installing post-commit hook (session log auto-update)"
 chmod +x .githooks/post-commit 2>/dev/null || true
 git config core.hooksPath .githooks

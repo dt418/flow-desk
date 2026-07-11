@@ -37,6 +37,7 @@
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,css,yml,yaml}\"",
     "setup:hooks": "lefthook install --reset-hooks-path && echo 'lefthook installed (managed via lefthook.yml)'",
     "setup:lefthook": "lefthook install --reset-hooks-path && echo 'lefthook installed (managed via lefthook.yml)'",
+    "sync:agents": "bash scripts/sync-agent-adapters.sh",
     "check:secrets": ".githooks/pre-commit",
     "guardrails": "bash scripts/guardrails.sh",
     "verify": "lefthook run pre-commit && lefthook run pre-push",

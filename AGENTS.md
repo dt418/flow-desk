@@ -34,12 +34,12 @@ If baseline verification is already failing, fix that first. Do not stack new fe
 When planning or shipping a **product feature** (new capability, ROADMAP item, or work that updates `feature_list.json`):
 
 1. **Invoke** the `plan-feature` skill before writing feature code.
-2. Canonical path: `.agents/skills/plan-feature/SKILL.md` (Agent Skills standard; other agents symlink this tree).
-3. Slash (Claude / Pi / OpenCode): `/plan-feature <request | ROADMAP id | next>`.
+2. Canonical path: `.agents/skills/plan-feature/SKILL.md` (Agent Skills standard).
+3. Slash: `/plan-feature <request | ROADMAP id | next>` (Claude, Pi, OpenCode, Cursor, Grok).
 
 The skill **orchestrates** Superpowers (`brainstorming` → `writing-plans` → `subagent-driven-development` or `executing-plans` → `verification-before-completion` → `finishing-a-development-branch`) plus FlowDesk harness rules (single active feature, schema hygiene, `pnpm verify` evidence). Do not re-implement that pipeline ad hoc in chat.
 
-Multi-agent wiring: `.agents/skills/plan-feature/references/adapters.md`.
+**Multi-agent (one pattern for all):** every host skill dir is a **directory symlink** to `.agents/skills/plan-feature/`; every slash command is a **file symlink** to `.pi/prompts/plan-feature.md`. Rebuild after clone: `pnpm sync:agents` (also run by `./init.sh`). Details: `.agents/skills/plan-feature/references/adapters.md`.
 
 ## Working Rules
 
