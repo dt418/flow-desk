@@ -1,39 +1,12 @@
 import { resolve } from 'node:path';
-import { execSync } from 'node:child_process';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../../../../packages/db/generated/client';
 import { softDeleteExtension } from '@flowdesk/db';
-
-function detectDbPort(): number {
-  const envPort = process.env.TEST_DB_PORT;
-  if (envPort) return parseInt(envPort, 10);
-
-  // Check if postgres is listening on 5432 (native or Docker)
-  try {
-    execSync('pg_isready -h 127.0.0.1 -p 5432 -t 2', { stdio: 'ignore' });
-    return 5432;
-  } catch {
-    // not on 5432
-  }
-
-  // Try Docker container port binding
-  try {
-    const out = execSync(
-      'docker inspect flow-desk-postgres-1 --format "{{json .HostConfig.PortBindings}}"',
-      { encoding: 'utf8', stdio: ['pipe', 'pipe', 'ignore'] },
-    ).trim();
-    const bindings = JSON.parse(out);
-    return parseInt(bindings['5432/tcp']?.[0]?.HostPort ?? '5432', 10);
-  } catch {
-    return 5432;
-  }
-}
+import { buildTestDbUrl, detectDbPort } from './db-port';
 
 const DB_PORT = detectDbPort();
 
-export const TEST_DB_URL =
-  process.env.TEST_DB_URL ??
-  `postgresql://flowdesk:postgres@localhost:${DB_PORT}/flowdesk_test?schema=public`;
+export const TEST_DB_URL = process.env.TEST_DB_URL ?? buildTestDbUrl(DB_PORT);
 const WORKSPACE_ROOT = resolve(__dirname, '../../../..');
 
 export function createTestPrisma() {
