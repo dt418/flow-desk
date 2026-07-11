@@ -1,11 +1,30 @@
 import type { prisma } from '../../shared/lib/prisma';
 type PrismaClient = typeof prisma;
+import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import { BadRequestError, NotFoundError } from '../../shared/errors';
 import { assertMembership } from '../../shared/lib/access';
 import { llm } from '../../shared/lib/llm-provider';
 import { logger } from '../../shared/lib/logger';
+import { redis } from '../../shared/lib/redis';
 import * as repo from './ai.repository';
+
+const SUGGEST_CACHE_TTL_SECONDS = 300; // 5 min — same-input suggestion reuse
+
+function suggestCacheKey(workspaceId: string, title: string, memberIds: string[]): string {
+  // Cache key: workspace + title hash + sorted member-id set hash.
+  // Member-set change is rare; title is the dominant input.
+  const memberPart = memberIds.slice().sort().join(',');
+  const titleHash = createHash('sha1').update(title).digest('hex').slice(0, 12);
+  return `ai:suggest-assignee:${workspaceId}:${titleHash}:${memberPart}`;
+}
+
+/** Bust the cache prefix for a workspace. Call on WorkspaceMember add/remove. */
+export async function invalidateSuggestAssigneeCache(workspaceId: string): Promise<void> {
+  // Member-set hash varies per cache key, so we cannot prefix-delete; rely on TTL.
+  // Document the limitation here so a future maintainer knows why this is a no-op.
+  void workspaceId;
+}
 
 export const suggestAssigneeSchema = z.object({
   workspaceId: z.string(),
@@ -45,6 +64,23 @@ export async function suggestAssignee(
       .map((w) => [w.assigneeId as string, w._count._all]),
   );
 
+  // Cache lookup — same (title, member-set) within 5 min returns the cached
+  // suggestions without re-asking the LLM.
+  const cacheKey = suggestCacheKey(
+    input.workspaceId,
+    title,
+    members.map((m) => m.user.id),
+  );
+  try {
+    const cached = await redis.get(cacheKey);
+    if (cached) {
+      logger.debug({ cacheKey }, 'suggestAssignee cache hit');
+      return { suggestions: JSON.parse(cached), fallback: false };
+    }
+  } catch (err) {
+    logger.warn({ err }, 'suggestAssignee cache read failed');
+  }
+
   try {
     const result = await llm.chatJSON<{
       suggestions: Array<{ userId: string; score: number; reason: string }>;
@@ -72,7 +108,12 @@ export async function suggestAssignee(
       { maxTokens: 600, temperature: 0.3 },
     );
 
-    return { suggestions: result.suggestions.slice(0, 3), fallback: false };
+    const suggestions = result.suggestions.slice(0, 3);
+    // Cache write — best-effort, do not fail the request.
+    redis
+      .set(cacheKey, JSON.stringify(suggestions), 'EX', SUGGEST_CACHE_TTL_SECONDS)
+      .catch((err) => logger.warn({ err }, 'suggestAssignee cache write failed'));
+    return { suggestions, fallback: false };
   } catch (err) {
     logger.warn({ err }, 'LLM suggest-assignee failed, using rule-based fallback');
     const ranked = members

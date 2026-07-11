@@ -69,7 +69,7 @@ export default function BoardPage() {
         schema: boardResponseSchema,
       });
     },
-    enabled: Boolean(workspaceId),
+    enabled: Boolean(workspaceId) && boardId !== null,
   });
 
   // Source of truth: server snapshot keyed by column id.
@@ -211,24 +211,25 @@ export default function BoardPage() {
     [membersQuery.data],
   );
 
+  const handleBoardChange = React.useCallback(
+    (id: string) => {
+      setBoardId(id);
+      // Persist selection for create flows
+      try {
+        sessionStorage.setItem(`board:${workspaceId}`, id);
+      } catch {
+        /* ignore */
+      }
+    },
+    [workspaceId],
+  );
+
   return (
     <div className="flex h-full flex-col">
       <header className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border bg-background/80 px-6 py-3 backdrop-blur">
         <div className="flex flex-wrap items-center gap-3">
           <h2 className="text-base font-semibold tracking-tight">Board</h2>
-          <BoardSwitcher
-            workspaceId={workspaceId}
-            value={boardId}
-            onChange={(id) => {
-              setBoardId(id);
-              // Persist selection for create flows
-              try {
-                sessionStorage.setItem(`board:${workspaceId}`, id);
-              } catch {
-                /* ignore */
-              }
-            }}
-          />
+          <BoardSwitcher workspaceId={workspaceId} value={boardId} onChange={handleBoardChange} />
           <span className="text-xs text-muted-foreground">
             {orderedColumns.reduce((acc, c) => acc + c.tasks.length, 0)} tasks
           </span>

@@ -240,6 +240,8 @@ model Task {
   @@index([boardId])
   @@index([type])
   @@index([workspaceId, type])
+  @@index([workspaceId, deletedAt, position])
+  @@index([columnId, position])
 }
 
 model TaskDependency {

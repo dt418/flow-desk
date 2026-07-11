@@ -67,8 +67,21 @@ boardRouter.get('/', requireWorkspaceRole(['OWNER', 'ADMIN', 'MEMBER', 'GUEST'])
 
   const hasMore = columns.length > limit;
   const raw = hasMore ? columns.slice(0, limit) : columns;
+
+  const columnIds = raw.map((col) => col.id);
+  const taskCounts =
+    columnIds.length > 0
+      ? await prisma.task.groupBy({
+          by: ['columnId'],
+          where: { ...taskWhere, columnId: { in: columnIds } },
+          _count: { _all: true },
+        })
+      : [];
+  const countByColumn = new Map(taskCounts.map((g) => [g.columnId, g._count._all]));
+
   const data = raw.map((col) => ({
     ...col,
+    taskCount: countByColumn.get(col.id) ?? 0,
     tasks: col.tasks.map((t) => ({
       ...t,
       labels: t.labelsDeprecated,

@@ -32,9 +32,11 @@ export async function record(input: RecordInput): Promise<TaskActivity | null> {
       if (task) {
         const webhooks = await webhookRepo.listActiveByWorkspace(prisma, task.workspaceId);
 
-        for (const webhook of webhooks) {
-          if (webhook.events.includes(activity.action)) {
-            await webhookQueue.add('webhook', {
+        const matching = webhooks.filter((w) => w.events.includes(activity.action));
+        if (matching.length > 0) {
+          const jobs = matching.map((webhook) => ({
+            name: 'webhook',
+            data: {
               webhookId: webhook.id,
               activityId: activity.id,
               webhookUrl: webhook.url,
@@ -46,8 +48,9 @@ export async function record(input: RecordInput): Promise<TaskActivity | null> {
                 newValue: activity.newValue ?? undefined,
                 metadata: activity.metadata as Record<string, unknown>,
               },
-            });
-          }
+            },
+          }));
+          await webhookQueue.addBulk(jobs);
         }
       }
 

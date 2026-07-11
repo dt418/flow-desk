@@ -17,7 +17,7 @@ const { mockWebhookQueueAdd } = vi.hoisted(() => ({
   mockWebhookQueueAdd: vi.fn().mockResolvedValue({ id: 'job-1' }),
 }));
 vi.mock('../../src/workers/webhook/queue', () => ({
-  webhookQueue: { add: mockWebhookQueueAdd },
+  webhookQueue: { add: mockWebhookQueueAdd, addBulk: mockWebhookQueueAdd },
   createWebhookWorker: vi.fn(),
 }));
 
@@ -210,7 +210,12 @@ describe('POST/GET/PATCH/DELETE /api/workspaces/:wid/webhooks (P1-4)', () => {
     });
     expect(activity).not.toBeNull();
     expect(mockWebhookQueueAdd).toHaveBeenCalledTimes(1);
-    const [jobName, payload] = mockWebhookQueueAdd.mock.calls[0];
+    // activity.service uses webhookQueue.addBulk([{name, data}, ...]) so calls[0]
+    // is the array; unwrap the single job for assertions.
+    const jobsArg = mockWebhookQueueAdd.mock.calls[0]![0];
+    const job = Array.isArray(jobsArg) ? jobsArg[0] : null;
+    expect(job).not.toBeNull();
+    const { name: jobName, data: payload } = job!;
     expect(jobName).toBe('webhook');
     expect(payload.webhookId).toBe(webhook.id);
     expect(payload.activityId).toBe(activity!.id);

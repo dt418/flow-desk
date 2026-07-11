@@ -5,6 +5,8 @@ const mockFindUnique = vi.fn();
 const mockFindFirst = vi.fn();
 const mockCreate = vi.fn();
 const mockUpdate = vi.fn();
+const mockQueryRaw = vi.fn();
+const mockUserFindMany = vi.fn();
 
 const mockPrisma = {
   chatChannel: {
@@ -14,6 +16,10 @@ const mockPrisma = {
     create: mockCreate,
     update: mockUpdate,
   },
+  user: {
+    findMany: mockUserFindMany,
+  },
+  $queryRaw: mockQueryRaw,
 };
 
 vi.mock('../../shared/lib/logger', () => ({
@@ -63,11 +69,25 @@ describe('chat service', () => {
     mockFindFirst.mockResolvedValue(null);
     mockCreate.mockResolvedValue(mockChannel);
     mockUpdate.mockResolvedValue(mockChannel);
+    mockQueryRaw.mockResolvedValue([]);
+    mockUserFindMany.mockResolvedValue([]);
   });
 
   describe('listChannels', () => {
     it('returns channels with latest message', async () => {
-      mockFindMany.mockResolvedValue([mockChannel]);
+      const channelRow = { ...mockChannel };
+      delete (channelRow as { messages?: unknown }).messages;
+      mockFindMany.mockResolvedValue([channelRow]);
+      mockQueryRaw.mockResolvedValue([
+        {
+          channelId: 'ch-1',
+          id: 'msg-1',
+          authorId: 'user-1',
+          content: 'hello',
+          createdAt: now,
+        },
+      ]);
+      mockUserFindMany.mockResolvedValue([{ id: 'user-1', name: 'Alice' }]);
       const { listChannels } = await import('./chat.service');
       const result = await listChannels(mockPrisma as any, 'user-1', 'ws-1');
       expect(result).toHaveLength(1);
@@ -77,7 +97,11 @@ describe('chat service', () => {
     });
 
     it('returns channels with null latestMessage when no messages', async () => {
-      mockFindMany.mockResolvedValue([mockChannelNoMessages]);
+      const channelRow = { ...mockChannelNoMessages };
+      delete (channelRow as { messages?: unknown }).messages;
+      mockFindMany.mockResolvedValue([channelRow]);
+      mockQueryRaw.mockResolvedValue([]);
+      mockUserFindMany.mockResolvedValue([]);
       const { listChannels } = await import('./chat.service');
       const result = await listChannels(mockPrisma as any, 'user-1', 'ws-1');
       expect(result[0]!.latestMessage).toBeNull();

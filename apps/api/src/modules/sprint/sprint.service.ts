@@ -37,20 +37,25 @@ export const sprintService = {
       where: { workspaceId },
       orderBy: { startDate: 'desc' },
     });
-    return Promise.all(
-      rows.map(async (s) => {
-        const agg = await prisma.task.aggregate({
-          where: { sprintId: s.id, deletedAt: null },
-          _sum: { estimate: true },
-          _count: true,
-        });
-        return {
-          ...serialize(s),
-          totalPoints: agg._sum.estimate ?? 0,
-          taskCount: agg._count,
-        };
-      }),
-    );
+    const ids = rows.map((s) => s.id);
+    const groups =
+      ids.length > 0
+        ? await prisma.task.groupBy({
+            by: ['sprintId'],
+            where: { sprintId: { in: ids }, deletedAt: null },
+            _sum: { estimate: true },
+            _count: { _all: true },
+          })
+        : [];
+    const bySprint = new Map(groups.map((g) => [g.sprintId, g]));
+    return rows.map((s) => {
+      const g = bySprint.get(s.id);
+      return {
+        ...serialize(s),
+        totalPoints: g?._sum.estimate ?? 0,
+        taskCount: g?._count._all ?? 0,
+      };
+    });
   },
 
   async create(userId: string, workspaceId: string, body: CreateSprintInput) {

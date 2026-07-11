@@ -1,6 +1,32 @@
 import type { prisma } from '../../shared/lib/prisma';
+import type { Prisma } from '@flowdesk/db';
 type PrismaClient = typeof prisma;
 import { NotFoundError, ForbiddenError } from '../../shared/errors';
+
+type ChannelWithLatest = Omit<
+  Prisma.ChatChannelGetPayload<{
+    include: {
+      messages: {
+        select: {
+          id: true;
+          authorId: true;
+          content: true;
+          createdAt: true;
+          author: { select: { name: true } };
+        };
+      };
+    };
+  }>,
+  'messages'
+> & {
+  messages: Array<{
+    id: string;
+    authorId: string;
+    content: string;
+    createdAt: Date;
+    author: { name: string | null };
+  }>;
+};
 
 export async function findAndValidateChannel(
   prisma: PrismaClient,
@@ -23,24 +49,58 @@ export async function findAndValidateChannel(
   return channel;
 }
 
-export function findByWorkspace(prisma: PrismaClient, workspaceId: string) {
-  return prisma.chatChannel.findMany({
+export async function findByWorkspace(
+  prisma: PrismaClient,
+  workspaceId: string,
+): Promise<ChannelWithLatest[]> {
+  const channels = await prisma.chatChannel.findMany({
     where: { workspaceId, deletedAt: null },
     orderBy: { createdAt: 'asc' },
-    include: {
-      messages: {
-        orderBy: { createdAt: 'desc' },
-        take: 1,
-        select: {
-          id: true,
-          authorId: true,
-          content: true,
-          createdAt: true,
-          author: { select: { name: true } },
-        },
-      },
-    },
   });
+  if (channels.length === 0) {
+    return channels.map((ch) => ({ ...ch, messages: [] }));
+  }
+  const channelIds = channels.map((c) => c.id);
+  const latest = await prisma.$queryRaw<
+    Array<{
+      channelId: string;
+      id: string;
+      authorId: string;
+      content: string;
+      createdAt: Date;
+    }>
+  >`
+    SELECT DISTINCT ON ("channelId") "channelId", "id", "authorId", "content", "createdAt"
+    FROM "ChatMessage"
+    WHERE "channelId" = ANY(${channelIds}::text[])
+      AND "deletedAt" IS NULL
+    ORDER BY "channelId", "createdAt" DESC
+  `;
+  const authorIds = Array.from(new Set(latest.map((m) => m.authorId)));
+  const authors =
+    authorIds.length > 0
+      ? await prisma.user.findMany({
+          where: { id: { in: authorIds } },
+          select: { id: true, name: true },
+        })
+      : [];
+  const authorById = new Map<string, string | null>(authors.map((a) => [a.id, a.name]));
+  const latestByChannel = new Map(
+    latest.map((m) => [
+      m.channelId,
+      {
+        id: m.id,
+        authorId: m.authorId,
+        author: { name: authorById.has(m.authorId) ? (authorById.get(m.authorId) ?? null) : null },
+        content: m.content,
+        createdAt: m.createdAt,
+      },
+    ]),
+  );
+  return channels.map((ch) => ({
+    ...ch,
+    messages: latestByChannel.has(ch.id) ? [latestByChannel.get(ch.id)!] : [],
+  }));
 }
 
 export function findUnique(prisma: PrismaClient, id: string) {
