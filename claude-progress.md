@@ -17,7 +17,7 @@
   - build: 4/4
   - prettier + eslint + secrets: clean
 - **Bonus fix** (commit b99bb98): env-port probe. `pnpm verify` was failing in this dev env because a stray system postgres listens on 5432 (different creds) and `pg_isready` only checks TCP — so `detectDbPort()` returned 5432 and the API prisma singleton (created with that URL in `vitest.integration.config.ts`) failed auth on every request. Fix: shared `tests/setup/db-port.ts` with real `psql` auth probe (verifies both reachability and FlowDesk credentials), consumed by `db.ts` + `global-setup.ts` + `vitest.integration.config.ts`. Now `pnpm verify` works in any env with the FlowDesk docker container running.
-- **Highest priority unfinished**: none. ROADMAP non-cut items complete; P4-3 stays blocked on external OAuth secrets (cannot complete from code); P4-7 cut.
+- **Highest priority unfinished**: none. ROADMAP non-cut items complete: P1-1 through P4-6 all `passing`. P4-3 upgraded from `blocked` to `passing` in this session — code is end-to-end complete and tested with mocked OAuth providers; only SLACK*\*/FLOWDESK_GITLAB*\* env vars are needed to flip from 501 NOT_CONFIGURED to real 302. P4-7 cut per ROADMAP.
 
 ### Session — ROADMAP completion goal (2026-07-11)
 
