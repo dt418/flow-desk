@@ -7,15 +7,16 @@
   - Picked up 4 uncommitted files from f9d26ec: `board.routes.ts` (boardId filter on kanban GET /board), `BoardSwitcher.tsx` (default-board useEffect), `pages/board.tsx` (sessionStorage restore + per-board queryKey), `TaskEditModal.tsx` (boardId forwarded on create)
   - Added 1 new integration test: `board-mgmt.test.ts > GET /board partitions tasks by boardId` (mkt 1, eng 1, no-filter 3 incl. boardless)
   - Committed `3baa8c0`: "fix(p4-2): boardId filter on kanban GET /board + default-board + new-task inherits board"
-- **Verification** (full gate, dev env TEST_DB_PORT=5433):
+- **Verification** (full gate, no `TEST_DB_PORT` env needed):
+  - `pnpm verify` green: typecheck-all + build + unit-tests + integration-tests
   - typecheck turbo: 6/6
   - api unit: 138/138
-  - api integration: 244/244 (was 220 baseline + 24 realtime-chat-refactor + 1 new)
+  - api integration: 244/244 (220 baseline + 24 realtime-chat-refactor + 1 new)
   - web unit: 37/37
   - shared unit: 31/31
   - build: 4/4
   - prettier + eslint + secrets: clean
-- **Note**: `pnpm verify` (lefthook) fails on integration-tests step in this dev env only — a stray system postgres listens on 5432 with a different password, so `detectDbPort()` in `tests/setup/global-setup.ts` picks the wrong port. Workaround: `TEST_DB_PORT=5433` env. Not code change; only env.
+- **Bonus fix** (commit b99bb98): env-port probe. `pnpm verify` was failing in this dev env because a stray system postgres listens on 5432 (different creds) and `pg_isready` only checks TCP — so `detectDbPort()` returned 5432 and the API prisma singleton (created with that URL in `vitest.integration.config.ts`) failed auth on every request. Fix: shared `tests/setup/db-port.ts` with real `psql` auth probe (verifies both reachability and FlowDesk credentials), consumed by `db.ts` + `global-setup.ts` + `vitest.integration.config.ts`. Now `pnpm verify` works in any env with the FlowDesk docker container running.
 - **Highest priority unfinished**: none. ROADMAP non-cut items complete; P4-3 stays blocked on external OAuth secrets (cannot complete from code); P4-7 cut.
 
 ### Session — ROADMAP completion goal (2026-07-11)
