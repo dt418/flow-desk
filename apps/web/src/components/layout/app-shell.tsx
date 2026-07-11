@@ -130,6 +130,15 @@ export function AppShell() {
                 <NavLink to={`/calendar/${w.id}`} className={navSubItem}>
                   Calendar
                 </NavLink>
+                <NavLink to={`/sprints/${w.id}`} className={navSubItem}>
+                  Sprints
+                </NavLink>
+                <NavLink to={`/templates/${w.id}`} className={navSubItem}>
+                  Templates
+                </NavLink>
+                <NavLink to={`/epics/${w.id}`} className={navSubItem}>
+                  Epics
+                </NavLink>
                 <NavLink to={`/workspaces/${w.id}/chat`} className={navSubItem}>
                   Chat
                 </NavLink>
@@ -144,6 +153,9 @@ export function AppShell() {
         <div className="border-t border-border p-3">
           <NavLink to="/settings/security" className={navSubItem}>
             Security (2FA)
+          </NavLink>
+          <NavLink to="/settings/api-keys" className={navSubItem}>
+            API keys
           </NavLink>
           <div className="mt-2 flex items-center justify-between gap-2">
             <div className="flex min-w-0 items-center gap-2">

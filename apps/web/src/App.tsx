@@ -16,6 +16,10 @@ const WorkspaceSettingsPage = lazy(() => import('@/pages/workspace-settings'));
 const LabelManagerPage = lazy(() => import('@/features/label/pages/LabelManagerPage'));
 const ChatPage = lazy(() => import('@/pages/chat'));
 const CalendarPage = lazy(() => import('@/features/calendar/components/CalendarPage'));
+const SprintPage = lazy(() => import('@/features/sprint/components/SprintPage'));
+const TemplatesPage = lazy(() => import('@/features/template/components/TemplatesPage'));
+const EpicListPage = lazy(() => import('@/features/task/components/EpicList'));
+const ApiKeysSettingsPage = lazy(() => import('@/features/auth/pages/api-keys-settings'));
 
 function Loading() {
   return (
@@ -58,7 +62,11 @@ export function App() {
           <Route path="/board/:workspaceId" element={<BoardPage />} />
           <Route path="/list/:workspaceId" element={<ListPage />} />
           <Route path="/calendar/:workspaceId" element={<CalendarPage />} />
+          <Route path="/sprints/:workspaceId" element={<SprintPage />} />
+          <Route path="/templates/:workspaceId" element={<TemplatesPage />} />
+          <Route path="/epics/:workspaceId" element={<EpicListPage />} />
           <Route path="/settings/security" element={<TwoFactorSettingsPage />} />
+          <Route path="/settings/api-keys" element={<ApiKeysSettingsPage />} />
           <Route path="/workspaces/:workspaceId/settings" element={<WorkspaceSettingsPage />} />
           <Route path="/workspaces/:workspaceId/labels" element={<LabelManagerRoute />} />
           <Route path="/workspaces/:workspaceId/chat" element={<ChatPage />} />

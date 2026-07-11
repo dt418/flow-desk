@@ -1407,7 +1407,7 @@
       "verification": ["date-grid unit 4/4", "route + nav link wired"],
       "evidence": [
         "apps/web/src/features/calendar/*",
-        "/tmp/grok-goal-827af4b6215c/implementer/roadmap/P3-3/unit.log"
+        "/tmp/grok-goal-827af4b6215c/implementer/roadmap/P3-3/tests.log"
       ],
       "notes": ""
     },
@@ -1479,9 +1479,10 @@
       "title": "Estimation + sprint + burndown",
       "user_visible_behavior": "Create sprint, assign tasks with estimates, start sprint, burndown ideal vs remaining points.",
       "status": "passing",
-      "verification": ["burndown unit 2/2", "sprint integration 1/1"],
+      "verification": ["sprint integration 1/1", "SprintPage UI at /sprints/:workspaceId"],
       "evidence": [
         "apps/api/src/modules/sprint/*",
+        "apps/web/src/features/sprint/components/SprintPage.tsx",
         "/tmp/grok-goal-827af4b6215c/implementer/roadmap/P3-1/integration.log"
       ],
       "notes": ""
@@ -1493,10 +1494,12 @@
       "title": "Recurring tasks / templates",
       "user_visible_behavior": "Create TaskTemplate + RecurringRule; processDue creates tasks from cron.",
       "status": "passing",
-      "verification": ["cron-next 3/3", "template integration 1/1"],
+      "verification": ["cron-next unit", "template integration", "scheduler wires processDue"],
       "evidence": [
         "apps/api/src/modules/template/*",
-        "/tmp/grok-goal-827af4b6215c/implementer/roadmap/P3-2/integration.log"
+        "apps/api/src/workers/email/scheduler.ts (processDue tick)",
+        "apps/web/src/features/template/components/TemplatesPage.tsx",
+        "/tmp/grok-goal-827af4b6215c/implementer/roadmap/P3-2/scheduler.log"
       ],
       "notes": ""
     },
@@ -1509,7 +1512,7 @@
       "status": "passing",
       "verification": ["epic-type integration 1/1"],
       "evidence": [
-        "packages/db migration TaskType",
+        "apps/web/src/features/task/components/EpicList.tsx",
         "/tmp/grok-goal-827af4b6215c/implementer/roadmap/P4-1/integration.log"
       ],
       "notes": ""
@@ -1521,10 +1524,12 @@
       "title": "Multiple boards per workspace",
       "user_visible_behavior": "Create Marketing+Engineering boards; list includes Main default.",
       "status": "passing",
-      "verification": ["board-mgmt integration 1/1"],
+      "verification": ["board create + Marketing vs Engineering list partition 2/2"],
       "evidence": [
         "apps/api/src/modules/board-mgmt/*",
-        "/tmp/grok-goal-827af4b6215c/implementer/roadmap/P4-4/integration.log"
+        "apps/api/src/modules/task/task.service.ts boardId filter",
+        "apps/web/src/features/board/components/BoardSwitcher.tsx",
+        "/tmp/grok-goal-827af4b6215c/implementer/roadmap/P4-2/integration.log"
       ],
       "notes": ""
     },
@@ -1534,10 +1539,14 @@
       "area": "integrations",
       "title": "Slack + GitLab OAuth integrations",
       "user_visible_behavior": "Status endpoints; connect returns 501 until SLACK_*/FLOWDESK_GITLAB_* env set.",
-      "status": "passing",
-      "verification": ["integrations integration (status 200, connect 501 without env)"],
-      "evidence": ["apps/api/src/modules/integrations/integrations.routes.ts"],
-      "notes": "OAuth full flow blocked without external credentials; surface implemented with 501 when unset."
+      "status": "blocked",
+      "verification": ["status 200", "connect 501 without secrets", "env-failure captured"],
+      "evidence": [
+        "apps/api/src/modules/integrations/integrations.routes.ts",
+        "/tmp/grok-goal-827af4b6215c/implementer/roadmap/P4-3/env-failure.txt",
+        "/tmp/grok-goal-827af4b6215c/implementer/roadmap/P4-3/integration.log"
+      ],
+      "notes": "Blocked: SLACK_* and FLOWDESK_GITLAB_* unset. Local surface ships; full OAuth requires external credentials."
     },
     {
       "id": "P4-4",
@@ -1549,6 +1558,7 @@
       "verification": ["api-key-hash 2/2", "api-key integration 1/1"],
       "evidence": [
         "apps/api/src/modules/api-key/*",
+        "apps/web/src/features/auth/pages/api-keys-settings.tsx",
         "/tmp/grok-goal-827af4b6215c/implementer/roadmap/P4-4/integration.log"
       ],
       "notes": ""
@@ -1563,7 +1573,7 @@
       "verification": ["export-workbook unit 2/2"],
       "evidence": [
         "apps/api/src/modules/export/*",
-        "/tmp/grok-goal-827af4b6215c/implementer/roadmap/P4-4/unit.log"
+        "/tmp/grok-goal-827af4b6215c/implementer/roadmap/P4-5/tests.log"
       ],
       "notes": ""
     },
@@ -1574,10 +1584,12 @@
       "title": "WCAG compliance pass",
       "user_visible_behavior": "Accessible-name helpers + focus-ring constants; unit coverage for a11y primitives.",
       "status": "passing",
-      "verification": ["a11y.test.ts 3/3"],
+      "verification": ["a11y unit 3/3", "a11y-usage structural 3/3"],
       "evidence": [
         "apps/web/src/lib/a11y.ts",
-        "/tmp/grok-goal-827af4b6215c/implementer/roadmap/P3-3/unit.log"
+        "apps/web/src/components/ui/button.tsx (FOCUS_RING_CLASS)",
+        "apps/web/src/features/board/components/BoardSwitcher.tsx",
+        "/tmp/grok-goal-827af4b6215c/implementer/roadmap/P4-6/tests.log"
       ],
       "notes": "In-repo axe/keyboard foundations; not third-party cert."
     }

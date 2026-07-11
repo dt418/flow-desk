@@ -12,6 +12,7 @@ import { useMembers, useUpdateColumn } from '@/features/workspace';
 import { useRealtime } from '@/features/realtime/useRealtime';
 import { setMoveInProgress } from '@/features/realtime/move-progress';
 import { EmptyBoardState, PresenceBar } from '@/features/board';
+import { BoardSwitcher } from '@/features/board/components/BoardSwitcher';
 import { PRIORITY_BAR, PriorityDot } from '@/features/task/utils';
 void PRIORITY_BAR;
 void PriorityDot;
@@ -45,6 +46,7 @@ export default function BoardPage() {
   const [editModalOpen, setEditModalOpen] = React.useState(false);
   const [selectedTaskId, setSelectedTaskId] = React.useState<string | null>(null);
   const [createColumnId, setCreateColumnId] = React.useState<string | null>(null);
+  const [boardId, setBoardId] = React.useState<string | null>(null);
   const membersQuery = useMembers(workspaceId);
   const taskDelete = useTaskDelete(workspaceId);
   const updateColumn = useUpdateColumn(workspaceId);
@@ -199,9 +201,22 @@ export default function BoardPage() {
 
   return (
     <div className="flex h-full flex-col">
-      <header className="flex shrink-0 items-center justify-between border-b border-border bg-background/80 px-6 py-3 backdrop-blur">
-        <div className="flex items-center gap-3">
+      <header className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border bg-background/80 px-6 py-3 backdrop-blur">
+        <div className="flex flex-wrap items-center gap-3">
           <h2 className="text-base font-semibold tracking-tight">Board</h2>
+          <BoardSwitcher
+            workspaceId={workspaceId}
+            value={boardId}
+            onChange={(id) => {
+              setBoardId(id);
+              // Persist selection for create flows
+              try {
+                sessionStorage.setItem(`board:${workspaceId}`, id);
+              } catch {
+                /* ignore */
+              }
+            }}
+          />
           <span className="text-xs text-muted-foreground">
             {orderedColumns.reduce((acc, c) => acc + c.tasks.length, 0)} tasks
           </span>

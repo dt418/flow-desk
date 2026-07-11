@@ -20,7 +20,7 @@
   - P4-6 a11y helper primitives + tests
 - **Verification**: API unit 137, integration 242, web 34; typecheck green; build green
 - **Highest priority unfinished**: none (ROADMAP non-cut items complete; P4-7 cut)
-- **Blockers**: Slack/GitLab full OAuth needs external credentials (surface returns 501)
+- **Blockers**: P4-3 Slack/GitLab OAuth **blocked** — SLACK*\*/FLOWDESK_GITLAB*\* unset (env-failure captured); status routes ship, connect returns 501
 - **Next**: none for ROADMAP product features; optional polish / real Sentry DSN / OAuth secrets
 
 ## Current Verified State

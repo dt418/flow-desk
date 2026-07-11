@@ -167,6 +167,12 @@ export function startScheduler() {
     try {
       await checkDueReminders();
       await checkDigests();
+      // P3-2: process due recurring task templates on the same tick
+      const { templateService } = await import('../../modules/template/template.service');
+      const created = await templateService.processDue(new Date());
+      if (created > 0) {
+        logger.info({ created }, 'recurring templates processed');
+      }
     } catch (err) {
       logger.error({ err }, 'email scheduler tick failed');
     }

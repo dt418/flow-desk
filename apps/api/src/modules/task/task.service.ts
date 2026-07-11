@@ -27,6 +27,7 @@ import {
 export const listTasksQuerySchema = CursorPaginationQuery.extend({
   workspaceId: cuidSchema,
   columnId: cuidSchema.optional(),
+  boardId: cuidSchema.optional(),
   status: taskStatusSchema.optional(),
   priority: taskPrioritySchema.optional(),
   assigneeId: cuidSchema.optional(),
@@ -59,6 +60,8 @@ function buildTaskWhere(query: TaskFilterQuery): Prisma.TaskWhereInput {
   return {
     workspaceId: query.workspaceId,
     ...(query.columnId ? { columnId: query.columnId } : {}),
+    // P4-2: optional board partition (exact boardId when provided)
+    ...(query.boardId ? { boardId: query.boardId } : {}),
     ...(query.status ? { status: query.status } : {}),
     ...(query.priority ? { priority: query.priority } : {}),
     ...(query.assigneeId ? { assigneeId: query.assigneeId } : {}),
@@ -210,6 +213,9 @@ export const taskService = {
       dueDate: body.dueDate ? new Date(body.dueDate) : null,
       createdById: userId,
       parentTaskId: body.parentTaskId ?? null,
+      boardId: body.boardId ?? null,
+      type: body.type ?? 'TASK',
+      estimate: body.estimate ?? null,
       position: body.position ?? (last ? last.position + 1 : 0),
     });
     safeEmit(() => emitToWorkspace(task.workspaceId, 'task:created', { task }), {
