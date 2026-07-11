@@ -54,6 +54,8 @@ const formSchema = z.object({
   columnId: z.string().min(1, 'Pick a column'),
   assigneeId: z.string().optional(),
   dueDate: z.string().optional(),
+  type: z.enum(['TASK', 'EPIC', 'STORY', 'SUBTASK']).optional(),
+  parentTaskId: z.string().optional(),
 });
 type FormInput = z.infer<typeof formSchema>;
 
@@ -78,6 +80,8 @@ interface Props {
   defaultColumnId?: string;
   members: MemberOption[];
   initial?: TaskCardData | null;
+  /** Tasks list for parentTaskId selector */
+  tasks?: Array<{ id: string; title: string; type?: string }>;
 }
 
 const PRIORITY_TONE: Record<string, string> = {
@@ -151,6 +155,7 @@ export function TaskEditModal({
   boardId,
   members,
   initial,
+  tasks,
 }: Props) {
   const create = useCreateTask(workspaceId);
   const update = useUpdateTask(workspaceId);
@@ -183,6 +188,8 @@ export function TaskEditModal({
       assigneeId: initial?.assignee?.id ?? '',
       dueDate: initial?.dueDate ? initial.dueDate.slice(0, 10) : '',
       status: (initial?.status as FormInput['status']) ?? 'TODO',
+      type: (initial?.type as FormInput['type']) ?? 'TASK',
+      parentTaskId: initial?.parentTaskId ?? '',
     },
   });
 
@@ -196,6 +203,8 @@ export function TaskEditModal({
         assigneeId: initial?.assignee?.id ?? '',
         dueDate: initial?.dueDate ? initial.dueDate.slice(0, 10) : '',
         status: (initial?.status as FormInput['status']) ?? 'TODO',
+        type: (initial?.type as FormInput['type']) ?? 'TASK',
+        parentTaskId: initial?.parentTaskId ?? '',
       });
       setTab('details');
       setAiSuggestions(null);
@@ -233,6 +242,9 @@ export function TaskEditModal({
             columnId: values.columnId,
             assigneeId: values.assigneeId && values.assigneeId !== '' ? values.assigneeId : null,
             dueDate,
+            type: values.type,
+            parentTaskId:
+              values.parentTaskId && values.parentTaskId !== '' ? values.parentTaskId : null,
           },
         });
         toast.success('Task updated');
@@ -246,6 +258,9 @@ export function TaskEditModal({
           status: values.status ?? 'TODO',
           assigneeId: values.assigneeId && values.assigneeId !== '' ? values.assigneeId : null,
           dueDate,
+          type: values.type,
+          parentTaskId:
+            values.parentTaskId && values.parentTaskId !== '' ? values.parentTaskId : undefined,
           ...(boardId ? { boardId } : {}),
         });
         toast.success('Task created');
@@ -454,6 +469,62 @@ export function TaskEditModal({
                       </Select>
                     )}
                   />
+                </div>
+
+                {/* Type + Parent */}
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <SectionLabel>Type</SectionLabel>
+                    <Controller
+                      name="type"
+                      control={control}
+                      render={({ field }) => (
+                        <Select value={field.value ?? 'TASK'} onValueChange={field.onChange}>
+                          <SelectTrigger className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {(['TASK', 'EPIC', 'STORY', 'SUBTASK'] as const).map((t) => (
+                              <SelectItem key={t} value={t}>
+                                {t === 'EPIC'
+                                  ? '📦 '
+                                  : t === 'STORY'
+                                    ? '📖 '
+                                    : t === 'SUBTASK'
+                                      ? '🔗 '
+                                      : ''}
+                                {t}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <SectionLabel>Parent task</SectionLabel>
+                    <Controller
+                      name="parentTaskId"
+                      control={control}
+                      render={({ field }) => (
+                        <Select value={field.value ?? ''} onValueChange={field.onChange}>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="None" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="">None</SelectItem>
+                            {(tasks ?? [])
+                              .filter((t) => t.type === 'EPIC')
+                              .map((t) => (
+                                <SelectItem key={t.id} value={t.id}>
+                                  📦 {t.title}
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                  </div>
                 </div>
 
                 <Separator />

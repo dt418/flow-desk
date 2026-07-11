@@ -16,6 +16,19 @@ export const createTemplateSchema = z.object({
 });
 export type CreateTemplateInput = z.infer<typeof createTemplateSchema>;
 
+export const updateTemplateSchema = z.object({
+  name: z.string().min(1).max(120).optional(),
+  fields: templateFieldsSchema.partial().optional(),
+});
+export type UpdateTemplateInput = z.infer<typeof updateTemplateSchema>;
+
+export const applyTemplateSchema = z.object({
+  columnId: cuidSchema,
+  assigneeId: cuidSchema.nullable().optional(),
+  dueDate: z.string().datetime({ offset: true }).nullable().optional(),
+});
+export type ApplyTemplateInput = z.infer<typeof applyTemplateSchema>;
+
 export const createRecurringSchema = z.object({
   templateId: cuidSchema,
   /** Simple cron: "0 9 * * 1" = Mon 09:00, or "daily", "weekly" aliases */

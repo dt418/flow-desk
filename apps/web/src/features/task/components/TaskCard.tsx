@@ -19,6 +19,8 @@ export interface TaskCardData {
   description?: string;
   status: string;
   priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+  type?: string;
+  parentTaskId?: string | null;
   columnId: string;
   position: number;
   version: number;

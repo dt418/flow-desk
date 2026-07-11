@@ -3,6 +3,8 @@ import { assertMembership, assertRole } from '../../shared/lib/access';
 import { NotFoundError, BadRequestError } from '../../shared/errors';
 import type {
   CreateTemplateInput,
+  UpdateTemplateInput,
+  ApplyTemplateInput,
   CreateRecurringInput,
   TemplateFields,
 } from '@flow-desk/shared/template';
@@ -49,6 +51,48 @@ export const templateService = {
       },
     });
     return serializeTemplate(row);
+  },
+
+  async update(userId: string, id: string, body: UpdateTemplateInput) {
+    const row = await prisma.taskTemplate.findUnique({ where: { id } });
+    if (!row || row.deletedAt) throw new NotFoundError('TaskTemplate');
+    await assertRole(row.workspaceId, userId, ['OWNER', 'ADMIN', 'MEMBER']);
+    const data: Record<string, unknown> = {};
+    if (body.name !== undefined) data.name = body.name;
+    if (body.fields !== undefined) data.fields = { ...(row.fields as object), ...body.fields };
+    const updated = await prisma.taskTemplate.update({ where: { id }, data });
+    return serializeTemplate(updated);
+  },
+
+  async apply(userId: string, id: string, body: ApplyTemplateInput) {
+    const row = await prisma.taskTemplate.findUnique({ where: { id } });
+    if (!row || row.deletedAt) throw new NotFoundError('TaskTemplate');
+    await assertRole(row.workspaceId, userId, ['OWNER', 'ADMIN', 'MEMBER']);
+    const fields = row.fields as TemplateFields;
+    const task = await prisma.task.create({
+      data: {
+        workspaceId: row.workspaceId,
+        columnId: body.columnId,
+        title: fields.title,
+        description: fields.description ?? null,
+        priority: fields.priority ?? 'MEDIUM',
+        estimate: fields.estimate ?? null,
+        assigneeId: body.assigneeId ?? null,
+        dueDate: body.dueDate ? new Date(body.dueDate) : null,
+        createdById: userId,
+      },
+    });
+    return { id: task.id, title: task.title };
+  },
+
+  async removeRecurring(userId: string, id: string) {
+    const row = await prisma.recurringRule.findUnique({
+      where: { id },
+      include: { template: true },
+    });
+    if (!row) throw new NotFoundError('RecurringRule');
+    await assertRole(row.template.workspaceId, userId, ['OWNER', 'ADMIN']);
+    await prisma.recurringRule.delete({ where: { id } });
   },
 
   async remove(userId: string, id: string) {

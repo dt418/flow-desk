@@ -4,6 +4,8 @@ import { requireAuth } from '../../shared/middleware/auth';
 import { templateService } from './template.service';
 import {
   createTemplateSchema,
+  updateTemplateSchema,
+  applyTemplateSchema,
   createRecurringSchema,
   taskTemplateSchema,
 } from '@flow-desk/shared/template';
@@ -30,6 +32,42 @@ templateRouter.post(
     const auth = c.get('auth');
     const result = await templateService.create(auth.user.id, wid, c.req.valid('json'));
     return c.json(taskTemplateSchema.parse(result), 201);
+  },
+);
+
+templateRouter.patch(
+  '/:id',
+  zValidator('json', updateTemplateSchema, (result, c) => {
+    if (!result.success)
+      return c.json({ code: 'INVALID_BODY', details: result.error.flatten() }, 400);
+    return undefined;
+  }),
+  async (c) => {
+    const auth = c.get('auth');
+    const result = await templateService.update(
+      auth.user.id,
+      c.req.param('id'),
+      c.req.valid('json'),
+    );
+    return c.json(taskTemplateSchema.parse(result));
+  },
+);
+
+templateRouter.post(
+  '/:id/apply',
+  zValidator('json', applyTemplateSchema, (result, c) => {
+    if (!result.success)
+      return c.json({ code: 'INVALID_BODY', details: result.error.flatten() }, 400);
+    return undefined;
+  }),
+  async (c) => {
+    const auth = c.get('auth');
+    const result = await templateService.apply(
+      auth.user.id,
+      c.req.param('id'),
+      c.req.valid('json'),
+    );
+    return c.json(result, 201);
   },
 );
 
@@ -60,3 +98,9 @@ templateRouter.post(
     return c.json(result, 201);
   },
 );
+
+templateRouter.delete('/recurring/:id', async (c) => {
+  const auth = c.get('auth');
+  await templateService.removeRecurring(auth.user.id, c.req.param('id'));
+  return c.json({ ok: true });
+});
