@@ -102,4 +102,70 @@ describe('Boards multi (P4-2)', () => {
     expect(engTasks).toHaveLength(1);
     expect(engTasks[0].title).toBe('API rewrite');
   });
+
+  it('GET /board partitions tasks by boardId', async () => {
+    const owner = await createUser(prisma, 'kanban@test.local', 'Owner');
+    const w = await createWorkspace(prisma, owner.id, 'Kanban WS');
+    const cookie = await getAuthCookie(prisma, owner.id);
+    const col = await createColumn(prisma, w.id, 'Todo', 0);
+    const app = buildApp();
+
+    const mktRes = await app.request(`/api/workspaces/${w.id}/boards`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Cookie: cookie },
+      body: JSON.stringify({ name: 'Marketing' }),
+    });
+    const engRes = await app.request(`/api/workspaces/${w.id}/boards`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Cookie: cookie },
+      body: JSON.stringify({ name: 'Engineering' }),
+    });
+    const mkt = await mktRes.json();
+    const eng = await engRes.json();
+
+    for (const t of [
+      { title: 'Campaign brief', boardId: mkt.id },
+      { title: 'API rewrite', boardId: eng.id },
+      { title: 'No board', boardId: null },
+    ]) {
+      await app.request('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: cookie },
+        body: JSON.stringify({
+          workspaceId: w.id,
+          columnId: col.id,
+          title: t.title,
+          ...(t.boardId ? { boardId: t.boardId } : {}),
+        }),
+      });
+    }
+
+    const mktBoard = await app.request(`/api/workspaces/${w.id}/board?boardId=${mkt.id}`, {
+      headers: { Cookie: cookie },
+    });
+    expect(mktBoard.status).toBe(200);
+    const mktColumns = (await mktBoard.json()).columns;
+    const mktTasks = mktColumns.flatMap((c: { tasks: { title: string }[] }) => c.tasks);
+    expect(mktTasks.map((t: { title: string }) => t.title)).toEqual(['Campaign brief']);
+
+    const engBoard = await app.request(`/api/workspaces/${w.id}/board?boardId=${eng.id}`, {
+      headers: { Cookie: cookie },
+    });
+    const engTasks = (await engBoard.json()).columns.flatMap(
+      (c: { tasks: { title: string }[] }) => c.tasks,
+    );
+    expect(engTasks.map((t: { title: string }) => t.title)).toEqual(['API rewrite']);
+
+    const allBoard = await app.request(`/api/workspaces/${w.id}/board`, {
+      headers: { Cookie: cookie },
+    });
+    const allTasks = (await allBoard.json()).columns.flatMap(
+      (c: { tasks: { title: string }[] }) => c.tasks,
+    );
+    expect(allTasks.map((t: { title: string }) => t.title).sort()).toEqual([
+      'API rewrite',
+      'Campaign brief',
+      'No board',
+    ]);
+  });
 });

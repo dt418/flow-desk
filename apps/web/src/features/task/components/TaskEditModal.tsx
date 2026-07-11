@@ -72,6 +72,8 @@ interface Props {
   open: boolean;
   onClose: () => void;
   workspaceId: string;
+  /** P4-2: when creating, assign task to this board so kanban partition works */
+  boardId?: string | null;
   columns: ColumnOption[];
   defaultColumnId?: string;
   members: MemberOption[];
@@ -146,6 +148,7 @@ export function TaskEditModal({
   workspaceId,
   columns,
   defaultColumnId,
+  boardId,
   members,
   initial,
 }: Props) {
@@ -243,6 +246,7 @@ export function TaskEditModal({
           status: values.status ?? 'TODO',
           assigneeId: values.assigneeId && values.assigneeId !== '' ? values.assigneeId : null,
           dueDate,
+          ...(boardId ? { boardId } : {}),
         });
         toast.success('Task created');
       }

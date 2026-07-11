@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
@@ -21,6 +22,13 @@ export function BoardSwitcher({ workspaceId, value, onChange }: Props) {
   });
 
   const items = boards.data?.data ?? [];
+
+  // Default to first board so kanban always partitions when multi-board is available
+  useEffect(() => {
+    if (!value && items.length > 0) {
+      onChange(items[0]!.id);
+    }
+  }, [value, items, onChange]);
 
   return (
     <div

@@ -16,6 +16,7 @@ boardRouter.use(
 boardRouter.get('/', requireWorkspaceRole(['OWNER', 'ADMIN', 'MEMBER', 'GUEST']), async (c) => {
   const workspaceId = c.req.param('workspaceId')!;
   const cursor = c.req.query('cursor');
+  const boardId = c.req.query('boardId') || undefined;
   const limitRaw = Number(c.req.query('limit') ?? '50');
   const limit = Number.isFinite(limitRaw) && limitRaw >= 1 && limitRaw <= 100 ? limitRaw : 50;
 
@@ -29,13 +30,19 @@ boardRouter.get('/', requireWorkspaceRole(['OWNER', 'ADMIN', 'MEMBER', 'GUEST'])
       }
     : undefined;
 
+  // P4-2: when boardId is set, only tasks on that board appear in kanban columns
+  const taskWhere: Prisma.TaskWhereInput = {
+    deletedAt: null,
+    ...(boardId ? { boardId } : {}),
+  };
+
   const columns = await prisma.column.findMany({
     where: { workspaceId, ...(cursorWhere ?? {}) },
     orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
     take: limit + 1,
     include: {
       tasks: {
-        where: { deletedAt: null },
+        where: taskWhere,
         orderBy: { position: 'asc' },
         select: {
           id: true,
@@ -47,6 +54,7 @@ boardRouter.get('/', requireWorkspaceRole(['OWNER', 'ADMIN', 'MEMBER', 'GUEST'])
           version: true,
           columnId: true,
           workspaceId: true,
+          boardId: true,
           assigneeId: true,
           createdAt: true,
           labelsDeprecated: true,

@@ -51,12 +51,24 @@ export default function BoardPage() {
   const taskDelete = useTaskDelete(workspaceId);
   const updateColumn = useUpdateColumn(workspaceId);
 
+  // Restore last selected board for this workspace
+  React.useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem(`board:${workspaceId}`);
+      if (saved) setBoardId(saved);
+    } catch {
+      /* ignore */
+    }
+  }, [workspaceId]);
+
   const data = useQuery({
-    queryKey: ['board', workspaceId],
-    queryFn: () =>
-      api<{ columns: ColumnData[] }>(`/api/workspaces/${workspaceId}/board`, {
+    queryKey: ['board', workspaceId, boardId],
+    queryFn: () => {
+      const q = boardId ? `?boardId=${encodeURIComponent(boardId)}` : '';
+      return api<{ columns: ColumnData[] }>(`/api/workspaces/${workspaceId}/board${q}`, {
         schema: boardResponseSchema,
-      }),
+      });
+    },
     enabled: Boolean(workspaceId),
   });
 
@@ -125,7 +137,7 @@ export default function BoardPage() {
       moveSnapshotRef.current = null;
       moveIdRef.current = null;
       setMoveInProgress(false);
-      qc.invalidateQueries({ queryKey: ['board', workspaceId] });
+      qc.invalidateQueries({ queryKey: ['board', workspaceId, boardId] });
     },
   });
 
@@ -325,6 +337,7 @@ export default function BoardPage() {
           setCreateColumnId(null);
         }}
         workspaceId={workspaceId}
+        boardId={boardId}
         columns={modalColumns}
         defaultColumnId={createColumnId ?? orderedColumns[0]?.meta.id ?? ''}
         members={modalMembers}
