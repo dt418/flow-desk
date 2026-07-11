@@ -373,3 +373,24 @@
 - **Plans written** (commit a9fd245): `plans/023`–`plans/027` covering all 25 findings. 5 independent files in Batch A. Each is self-contained for a fresh-context executor with: in-scope file list, step-by-step verify commands, machine-checkable done criteria, STOP conditions, maintenance notes.
 - **What was NOT covered**: bundles (PERF-10/11/12), OpenAPI tooling, PRD/team-vs-portfolio tension, larger ARCH-04 lib/ drift — listed as direction or future-audit items
 - **Next**: pick from the 5 plans. All independent, any order works. Plan 024 first if you want plan 027's chat test to reflect the post-024 shape.
+
+### Session — 2026-07-11 plan 023 + plan 024 execution
+
+- **Goal**: Execute audit plans 023 (auth security) and 024 (hot-path perf)
+- **Plan 023** (commit 1cd1287):
+  - SEC-07: `oauth_state` cookie gains `secure: env.NODE_ENV === 'production'`
+  - SEC-01: `CORS_ORIGINS[0]` redirect replaced with `postLoginRedirect()` allowlist helper
+  - BUG-04: `assertMembership` now checks `Workspace.deletedAt` (NotFoundError on soft-deleted workspace)
+  - SEC-02/BUG-06: register/login use `findFirst` with `deletedAt` filter (soft-deleted email → 409, not 500)
+  - Regression tests: 2 in auth-2fa (soft-deleted register 409, soft-deleted login 401), 1 in soft-delete (workspace soft-delete → assertMembership 404)
+- **Plan 024** (commit 3e3af7f):
+  - PERF-02: chat channel list uses `DISTINCT ON` raw SQL (was N subqueries)
+  - PERF-03: sprint list uses `groupBy` (was N aggregates)
+  - PERF-04: board endpoint exposes `taskCount` per column
+  - PERF-05: board query gated on `boardId` (avoids double-fetch)
+  - PERF-06: composite index `(workspaceId, deletedAt, position)` + `(columnId, position)` on Task
+  - PERF-07: `suggestAssignee` cached in Redis 5min TTL
+  - PERF-08: webhook fan-out uses `addBulk` (was N adds)
+  - PERF-09: chat sendMessage returns notifications from tx scope
+- **Verification**: `pnpm verify` green (typecheck + unit + integration 253/253 + build)
+- **Next**: plans 025, 026, 027 still TODO
