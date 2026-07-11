@@ -1,5 +1,23 @@
 # Progress Log
 
+### Session — P4-2 wire-up finish (2026-07-11)
+
+- **Goal**: Land uncommitted P4-2 multi-board glue left from f9d26ec skeptic-gap pass
+- **Completed**:
+  - Picked up 4 uncommitted files from f9d26ec: `board.routes.ts` (boardId filter on kanban GET /board), `BoardSwitcher.tsx` (default-board useEffect), `pages/board.tsx` (sessionStorage restore + per-board queryKey), `TaskEditModal.tsx` (boardId forwarded on create)
+  - Added 1 new integration test: `board-mgmt.test.ts > GET /board partitions tasks by boardId` (mkt 1, eng 1, no-filter 3 incl. boardless)
+  - Committed `3baa8c0`: "fix(p4-2): boardId filter on kanban GET /board + default-board + new-task inherits board"
+- **Verification** (full gate, dev env TEST_DB_PORT=5433):
+  - typecheck turbo: 6/6
+  - api unit: 138/138
+  - api integration: 244/244 (was 220 baseline + 24 realtime-chat-refactor + 1 new)
+  - web unit: 37/37
+  - shared unit: 31/31
+  - build: 4/4
+  - prettier + eslint + secrets: clean
+- **Note**: `pnpm verify` (lefthook) fails on integration-tests step in this dev env only — a stray system postgres listens on 5432 with a different password, so `detectDbPort()` in `tests/setup/global-setup.ts` picks the wrong port. Workaround: `TEST_DB_PORT=5433` env. Not code change; only env.
+- **Highest priority unfinished**: none. ROADMAP non-cut items complete; P4-3 stays blocked on external OAuth secrets (cannot complete from code); P4-7 cut.
+
 ### Session — ROADMAP completion goal (2026-07-11)
 
 - **Goal**: Finish all non-cut ROADMAP items (P1-4…P4-6)

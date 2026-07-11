@@ -1522,16 +1522,26 @@
       "priority": 78,
       "area": "board",
       "title": "Multiple boards per workspace",
-      "user_visible_behavior": "Create Marketing+Engineering boards; list includes Main default.",
+      "user_visible_behavior": "Create Marketing+Engineering boards; switcher auto-selects first; kanban /board?boardId= partitions tasks; new task inherits active board; last board persists per workspace in sessionStorage.",
       "status": "passing",
-      "verification": ["board create + Marketing vs Engineering list partition 2/2"],
-      "evidence": [
-        "apps/api/src/modules/board-mgmt/*",
-        "apps/api/src/modules/task/task.service.ts boardId filter",
-        "apps/web/src/features/board/components/BoardSwitcher.tsx",
-        "/tmp/grok-goal-827af4b6215c/implementer/roadmap/P4-2/integration.log"
+      "verification": [
+        "pnpm --filter @flow-desk/api typecheck → exit 0",
+        "pnpm --filter @flow-desk/web typecheck → exit 0",
+        "pnpm --filter @flow-desk/api test:integration → 244/244 pass (board-mgmt 3/3 incl. new kanban boardId partition test)",
+        "pnpm --filter @flow-desk/web test → 37/37 pass",
+        "pnpm build → all 4 packages built"
       ],
-      "notes": ""
+      "evidence": [
+        "apps/api/src/modules/board-mgmt/board-mgmt.{routes,service}.ts — create + list boards per workspace, default 'Main' on first workspace create",
+        "apps/api/src/modules/task/task.service.ts — list() boardId filter, create accepts boardId",
+        "apps/api/src/modules/board/board.routes.ts — GET /api/workspaces/:id/board?boardId= partitions kanban tasks; selects boardId on each task row",
+        "apps/api/tests/integration/board-mgmt.test.ts — 3 tests: list+create mkt+eng, tasks?boardId= partition, GET /board?boardId= kanban partition (mkt 1 task, eng 1 task, no-filter 3 tasks incl. boardless)",
+        "apps/web/src/features/board/components/BoardSwitcher.tsx — auto-selects first board via useEffect when value unset",
+        "apps/web/src/pages/board.tsx — sessionStorage['board:<wid>'] restores last board; queryKey ['board', workspaceId, boardId] per-board cache",
+        "apps/web/src/features/task/components/TaskEditModal.tsx — boardId prop forwarded to create payload so new tasks land on active board",
+        "commit 3baa8c0 — 'fix(p4-2): boardId filter on kanban GET /board + default-board + new-task inherits board'"
+      ],
+      "notes": "f9d26ec left 4 uncommitted files (board.routes.ts boardId filter, BoardSwitcher default, board.tsx sessionStorage + per-board queryKey, TaskEditModal boardId). Picked up + added 1 new integration test (board-mgmt: kanban partition) and committed in 3baa8c0. Full verify-equivalent: typecheck turbo 6/6, integration 244/244, build 4/4, unit 138+37+31, format+lint+secrets clean."
     },
     {
       "id": "P4-3",
