@@ -6,9 +6,8 @@ import type {
   ListChatMessagesQuery,
 } from '@flow-desk/shared/chat';
 import { BadRequestError, NotFoundError } from '../../shared/errors';
-import { assertMembership } from '../../shared/lib/access';
 import { logger } from '../../shared/lib/logger';
-import { emitToRoom, emitToUser, safeEmit } from '../../shared/lib/socket-events';
+import { emitToRoom, emitToUser } from '../../shared/lib/socket-events';
 import { decodeCursor, encodeCursor } from '@flow-desk/shared/pagination';
 import * as channelRepo from './chat.repository';
 import * as commentRepo from '../comment/comment.repository';
@@ -134,16 +133,10 @@ export async function sendMessage(
   if (recipientIds.length > 0) {
     const notifications = await repo.findNotificationsForMessage(prisma, message.id);
     for (const notif of notifications) {
-      const notifResult = safeEmit(
-        () => emitToUser(notif.userId, 'notification:new', { notification: notif }),
-        {
-          event: 'notification:new',
-          notificationId: notif.id,
-          userId: notif.userId,
-        },
-      );
-      if (!notifResult.ok) {
-        logger.warn({ err: notifResult.error }, 'failed to emit notification:new');
+      try {
+        emitToUser(notif.userId, 'notification:new', { notification: notif });
+      } catch (e) {
+        logger.warn({ err: e }, 'failed to emit notification:new');
       }
     }
   }
@@ -176,32 +169,29 @@ export async function updateMessage(
 
   const message = await repo.updateContent(prisma, messageId, body.content);
 
-  const updateResult = safeEmit(
-    () =>
-      emitToRoom('/collab', `conversation:${channelId}`, 'message:updated', {
-        channelId,
-        message: {
-          id: message.id,
-          channelId: message.channelId,
-          authorId: message.authorId,
-          content: message.content,
-          mentionedUserIds: message.mentionedUserIds,
-          clientMessageId: message.clientMessageId,
-          createdAt: message.createdAt.toISOString(),
-          updatedAt: message.updatedAt.toISOString(),
-          editedAt: message.updatedAt.toISOString(),
-          author: {
-            id: message.author.id,
-            name: message.author.name,
-            email: message.author.email,
-            avatarUrl: message.author.avatarUrl,
-          },
+  try {
+    emitToRoom('/collab', `conversation:${channelId}`, 'message:updated', {
+      channelId,
+      message: {
+        id: message.id,
+        channelId: message.channelId,
+        authorId: message.authorId,
+        content: message.content,
+        mentionedUserIds: message.mentionedUserIds,
+        clientMessageId: message.clientMessageId,
+        createdAt: message.createdAt.toISOString(),
+        updatedAt: message.updatedAt.toISOString(),
+        editedAt: message.updatedAt.toISOString(),
+        author: {
+          id: message.author.id,
+          name: message.author.name,
+          email: message.author.email,
+          avatarUrl: message.author.avatarUrl,
         },
-      }),
-    { event: 'message:updated', channelId, messageId },
-  );
-  if (!updateResult.ok) {
-    logger.warn({ err: updateResult.error }, 'failed to emit message:updated');
+      },
+    });
+  } catch (e) {
+    logger.warn({ err: e }, 'failed to emit message:updated');
   }
 
   return message;
@@ -226,16 +216,13 @@ export async function deleteMessage(
 
   await repo.softDelete(prisma, messageId);
 
-  const deleteResult = safeEmit(
-    () =>
-      emitToRoom('/collab', `conversation:${channelId}`, 'message:deleted', {
-        channelId,
-        messageId,
-      }),
-    { event: 'message:deleted', channelId, messageId },
-  );
-  if (!deleteResult.ok) {
-    logger.warn({ err: deleteResult.error }, 'failed to emit message:deleted');
+  try {
+    emitToRoom('/collab', `conversation:${channelId}`, 'message:deleted', {
+      channelId,
+      messageId,
+    });
+  } catch (e) {
+    logger.warn({ err: e }, 'failed to emit message:deleted');
   }
 }
 
@@ -271,17 +258,14 @@ export async function markRead(
     }
   }
 
-  const readResult = safeEmit(
-    () =>
-      emitToRoom('/collab', `conversation:${channelId}`, 'message:read', {
-        userId,
-        channelId,
-        messageId: upToMessageId,
-        readAt: readAt.toISOString(),
-      }),
-    { event: 'message:read', channelId },
-  );
-  if (!readResult.ok) {
-    logger.warn({ err: readResult.error }, 'failed to emit message:read');
+  try {
+    emitToRoom('/collab', `conversation:${channelId}`, 'message:read', {
+      userId,
+      channelId,
+      messageId: upToMessageId,
+      readAt: readAt.toISOString(),
+    });
+  } catch (e) {
+    logger.warn({ err: e }, 'failed to emit message:read');
   }
 }

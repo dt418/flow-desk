@@ -13,16 +13,12 @@ import {
   type CreateSubtaskInput,
   type CreateDependencyInput,
 } from '@flow-desk/shared/task';
-import { emitToTask, emitToWorkspace, emitToUser, safeEmit } from '../../shared/lib/socket-events';
-import { logger } from '../../shared/lib/logger';
+import { emitToTask, emitToWorkspace } from '../../shared/lib/socket-events';
 import { BadRequestError, ConflictError, NotFoundError } from '../../shared/errors';
 import * as repo from './task.repository';
+import { recordUpdateDiff } from '../activity/activity-diff';
+import { handleAssigneeChange } from './task-assignee';
 import { activityService } from '../activity';
-import { createTaskAssignmentNotification } from '../notification/notification.service';
-import {
-  handleTaskAssignedEmail,
-  handleTaskStatusChangeEmail,
-} from '../notification/notification-email.service';
 
 export const listTasksQuerySchema = CursorPaginationQuery.extend({
   workspaceId: cuidSchema,
@@ -78,39 +74,6 @@ function buildTaskWhere(query: TaskFilterQuery): Prisma.TaskWhereInput {
 }
 
 // RFC 4180: wrap in quotes + double embedded quotes iff field has , " \r \n
-function csvEscapeField(s: string): string {
-  if (/[",\r\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
-  return s;
-}
-
-// Row shape produced by exportTasks' findMany include.
-type ExportTaskRow = {
-  status: string;
-  title: string;
-  priority: string;
-  dueDate: Date | null;
-  assignee: { email: string } | null;
-  assignments: { label: { name: string } }[];
-};
-
-export function serializeTaskCsvRow(task: ExportTaskRow): string {
-  // Canonical source = TaskLabelAssignment join (schema.prisma:238).
-  // labelsDeprecated is the F2 dual-write legacy array kept for migration
-  // safety — do not read from it here; it can leak stale label names.
-  const labels = task.assignments.map((a) => a.label.name).join(';');
-  const fields = [
-    task.status,
-    task.title,
-    task.assignee?.email ?? '',
-    task.priority,
-    task.dueDate ? task.dueDate.toISOString() : '',
-    labels,
-  ];
-  return fields.map(csvEscapeField).join(',') + '\r\n';
-}
-
-type TaskStatusLike = TaskStatus;
-
 export const taskService = {
   async list(query: ListTasksQuery, userId: string) {
     await assertMembership(query.workspaceId, userId);
@@ -218,10 +181,7 @@ export const taskService = {
       estimate: body.estimate ?? null,
       position: body.position ?? (last ? last.position + 1 : 0),
     });
-    safeEmit(() => emitToWorkspace(task.workspaceId, 'task:created', { task }), {
-      event: 'task:created',
-      taskId: task.id,
-    });
+    emitToWorkspace(task.workspaceId, 'task:created', { task });
     await activityService.record({
       taskId: task.id,
       userId,
@@ -266,14 +226,8 @@ export const taskService = {
         : {}),
       version: { increment: 1 },
     });
-    safeEmit(() => emitToWorkspace(task.workspaceId, 'task:updated', { task }), {
-      event: 'task:updated',
-      taskId: task.id,
-    });
-    safeEmit(() => emitToTask(task.id, 'task:updated', { task }), {
-      event: 'task:updated',
-      taskId: task.id,
-    });
+    emitToWorkspace(task.workspaceId, 'task:updated', { task });
+    emitToTask(task.id, 'task:updated', { task });
     await recordUpdateDiff(userId, existing, task);
     await handleAssigneeChange(userId, previousAssigneeId, task);
     return task;
@@ -284,14 +238,8 @@ export const taskService = {
     if (!existing) throw new NotFoundError('Task not found');
     await assertMembership(existing.workspaceId, userId);
     await repo.softDelete(prisma, id);
-    safeEmit(() => emitToWorkspace(existing.workspaceId, 'task:deleted', { taskId: id }), {
-      event: 'task:deleted',
-      taskId: id,
-    });
-    safeEmit(() => emitToTask(id, 'task:deleted', { taskId: id }), {
-      event: 'task:deleted',
-      taskId: id,
-    });
+    emitToWorkspace(existing.workspaceId, 'task:deleted', { taskId: id });
+    emitToTask(id, 'task:deleted', { taskId: id });
   },
 
   async restore(userId: string, id: string) {
@@ -302,14 +250,8 @@ export const taskService = {
       where: { id },
       data: { deletedAt: null },
     });
-    safeEmit(() => emitToWorkspace(existing.workspaceId, 'task:restored', { task }), {
-      event: 'task:restored',
-      taskId: id,
-    });
-    safeEmit(() => emitToTask(id, 'task:restored', { task }), {
-      event: 'task:restored',
-      taskId: id,
-    });
+    emitToWorkspace(existing.workspaceId, 'task:restored', { task });
+    emitToTask(id, 'task:restored', { task });
     await activityService.record({ taskId: id, userId, action: 'RESTORED' });
     return task;
   },
@@ -354,7 +296,7 @@ export const taskService = {
         await tx.task.update({ where: { id: parkIds[i] }, data: { position: parkBase + i } });
       }
 
-      const finalStatus: TaskStatusLike = targetColumn.isDoneColumn ? 'DONE' : existing.status;
+      const finalStatus: TaskStatus = targetColumn.isDoneColumn ? 'DONE' : existing.status;
       const completedAt = targetColumn.isDoneColumn ? new Date() : null;
 
       if (isSameColumn) {
@@ -413,14 +355,8 @@ export const taskService = {
       return tx.task.findUnique({ where: { id } });
     });
 
-    safeEmit(() => emitToWorkspace(existing.workspaceId, 'task:moved', { task: movedTask }), {
-      event: 'task:moved',
-      taskId: id,
-    });
-    safeEmit(() => emitToTask(id, 'task:moved', { task: movedTask }), {
-      event: 'task:moved',
-      taskId: id,
-    });
+    emitToWorkspace(existing.workspaceId, 'task:moved', { task: movedTask });
+    emitToTask(id, 'task:moved', { task: movedTask });
     if (!isSameColumn) {
       await activityService.record({
         taskId: id,
@@ -468,14 +404,8 @@ export const taskService = {
       parentTaskId: parent.id,
       position: body.position ?? 0,
     });
-    safeEmit(() => emitToWorkspace(parent.workspaceId, 'task:created', { task: subtask }), {
-      event: 'task:created',
-      taskId: subtask.id,
-    });
-    safeEmit(() => emitToTask(parent.id, 'task:subtask:created', { task: subtask }), {
-      event: 'task:subtask:created',
-      parentTaskId: parent.id,
-    });
+    emitToWorkspace(parent.workspaceId, 'task:created', { task: subtask });
+    emitToTask(parent.id, 'task:subtask:created', { task: subtask });
     await activityService.record({
       taskId: parent.id,
       userId,
@@ -521,10 +451,7 @@ export const taskService = {
       blockingTaskId: body.blockingTaskId,
       blockedTaskId: body.blockedTaskId,
     });
-    safeEmit(
-      () => emitToWorkspace(blocking.workspaceId, 'task:dependency:added', { dependency: dep }),
-      { event: 'task:dependency:added', dependencyId: dep.id },
-    );
+    emitToWorkspace(blocking.workspaceId, 'task:dependency:added', { dependency: dep });
     await activityService.record({
       taskId: body.blockedTaskId,
       userId,
@@ -544,200 +471,3 @@ export const taskService = {
     });
   },
 };
-
-async function recordUpdateDiff(
-  userId: string,
-  existing: {
-    id: string;
-    title: string;
-    description: string | null;
-    priority: string;
-    status: string;
-    columnId: string;
-    assigneeId: string | null;
-    dueDate: Date | null;
-  },
-  updated: {
-    id: string;
-    title: string;
-    description: string | null;
-    priority: string;
-    status: string;
-    columnId: string;
-    assigneeId: string | null;
-    dueDate: Date | null;
-    workspaceId: string;
-  },
-) {
-  const diffs: Array<{
-    action:
-      | 'TITLE_CHANGED'
-      | 'DESCRIPTION_CHANGED'
-      | 'STATUS_CHANGED'
-      | 'PRIORITY_CHANGED'
-      | 'COLUMN_CHANGED'
-      | 'ASSIGNEE_CHANGED'
-      | 'DUE_DATE_CHANGED';
-    field: string;
-    oldValue: string | null;
-    newValue: string | null;
-  }> = [];
-  if (existing.title !== updated.title)
-    diffs.push({
-      action: 'TITLE_CHANGED',
-      field: 'title',
-      oldValue: existing.title,
-      newValue: updated.title,
-    });
-  if ((existing.description ?? null) !== (updated.description ?? null))
-    diffs.push({
-      action: 'DESCRIPTION_CHANGED',
-      field: 'description',
-      oldValue: existing.description,
-      newValue: updated.description,
-    });
-  if (existing.priority !== updated.priority)
-    diffs.push({
-      action: 'PRIORITY_CHANGED',
-      field: 'priority',
-      oldValue: existing.priority,
-      newValue: updated.priority,
-    });
-  if (existing.status !== updated.status)
-    diffs.push({
-      action: 'STATUS_CHANGED',
-      field: 'status',
-      oldValue: existing.status,
-      newValue: updated.status,
-    });
-  if (existing.columnId !== updated.columnId)
-    diffs.push({
-      action: 'COLUMN_CHANGED',
-      field: 'columnId',
-      oldValue: existing.columnId,
-      newValue: updated.columnId,
-    });
-  if ((existing.assigneeId ?? null) !== (updated.assigneeId ?? null))
-    diffs.push({
-      action: 'ASSIGNEE_CHANGED',
-      field: 'assigneeId',
-      oldValue: existing.assigneeId,
-      newValue: updated.assigneeId,
-    });
-  const oldDue = existing.dueDate?.toISOString() ?? null;
-  const newDue = updated.dueDate?.toISOString() ?? null;
-  if (oldDue !== newDue)
-    diffs.push({
-      action: 'DUE_DATE_CHANGED',
-      field: 'dueDate',
-      oldValue: oldDue,
-      newValue: newDue,
-    });
-  for (const d of diffs) {
-    await activityService.record({
-      taskId: updated.id,
-      userId,
-      action: d.action,
-      field: d.field,
-      oldValue: d.oldValue,
-      newValue: d.newValue,
-    });
-  }
-
-  // P2-2: status-change email to assignee
-  if (existing.status !== updated.status && updated.assigneeId) {
-    try {
-      const [workspace, assignee, actor] = await Promise.all([
-        prisma.workspace.findUnique({
-          where: { id: updated.workspaceId },
-          select: { name: true },
-        }),
-        prisma.user.findUnique({
-          where: { id: updated.assigneeId },
-          select: { id: true, name: true, email: true },
-        }),
-        prisma.user.findUnique({ where: { id: userId }, select: { name: true } }),
-      ]);
-      if (workspace && assignee && actor) {
-        const appUrl = process.env.APP_URL ?? 'http://localhost:3000';
-        await handleTaskStatusChangeEmail(prisma, {
-          recipientId: assignee.id,
-          recipientName: assignee.name,
-          recipientEmail: assignee.email,
-          actorName: actor.name,
-          taskId: updated.id,
-          taskTitle: updated.title,
-          taskUrl: `${appUrl}/tasks/${updated.id}`,
-          workspaceId: updated.workspaceId,
-          workspaceName: workspace.name,
-          oldStatus: existing.status,
-          newStatus: updated.status,
-        });
-      }
-    } catch (err) {
-      logger.warn({ err, taskId: updated.id }, 'failed to enqueue status-change email');
-    }
-  }
-}
-
-async function handleAssigneeChange(
-  userId: string,
-  previousAssigneeId: string | null,
-  task: {
-    id: string;
-    title: string;
-    workspaceId: string;
-    assigneeId: string | null;
-    dueDate: Date | null;
-  },
-) {
-  if (!previousAssigneeId && !task.assigneeId) return;
-  if (previousAssigneeId === task.assigneeId) return;
-  if (!task.assigneeId) return;
-
-  const [workspace, assignee, assigner] = await Promise.all([
-    prisma.workspace.findUnique({ where: { id: task.workspaceId }, select: { name: true } }),
-    prisma.user.findUnique({
-      where: { id: task.assigneeId },
-      select: { id: true, name: true, email: true },
-    }),
-    prisma.user.findUnique({ where: { id: userId }, select: { name: true } }),
-  ]);
-  if (!workspace || !assignee || !assigner) return;
-
-  try {
-    const notification = await createTaskAssignmentNotification(prisma, {
-      taskId: task.id,
-      taskTitle: task.title,
-      workspaceId: task.workspaceId,
-      assigneeId: task.assigneeId,
-      assignedById: userId,
-      workspaceName: workspace.name,
-    });
-    safeEmit(() => emitToUser(task.assigneeId!, 'notification:new', { notification }), {
-      event: 'notification:new',
-      taskId: task.id,
-    });
-  } catch (err) {
-    logger.warn({ err, taskId: task.id }, 'failed to create assignment notification');
-  }
-
-  try {
-    const appUrl = process.env.APP_URL ?? 'http://localhost:3000';
-    const dueAt = task.dueDate?.toISOString() ?? null;
-    await handleTaskAssignedEmail(prisma, {
-      assigneeId: task.assigneeId,
-      assigneeName: assignee.name,
-      assigneeEmail: assignee.email,
-      assignerName: assigner.name,
-      taskId: task.id,
-      taskTitle: task.title,
-      taskUrl: `${appUrl}/tasks/${task.id}`,
-      workspaceId: task.workspaceId,
-      workspaceName: workspace.name,
-      dueAt,
-    });
-  } catch (err) {
-    logger.warn({ err, taskId: task.id }, 'failed to enqueue assignment email');
-  }
-}

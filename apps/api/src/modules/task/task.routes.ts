@@ -10,12 +10,8 @@ import {
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
 import { requireAuth } from '../../shared/middleware/auth';
-import {
-  taskService,
-  listTasksQuerySchema,
-  exportTasksQuerySchema,
-  serializeTaskCsvRow,
-} from './task.service';
+import { taskService, listTasksQuerySchema, exportTasksQuerySchema } from './task.service';
+import { serializeTaskCsvRow } from './task-csv';
 import { prisma } from '../../shared/lib/prisma';
 import { assertMembership } from '../../shared/lib/access';
 import * as commentSvc from '../comment/comment.service';

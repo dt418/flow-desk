@@ -7,7 +7,7 @@ import type {
 } from '@flow-desk/shared/comment';
 import { BadRequestError, NotFoundError } from '../../shared/errors';
 import { assertMembership } from '../../shared/lib/access';
-import { emitToTask, emitToUser, safeEmit } from '../../shared/lib/socket-events';
+import { emitToTask, emitToUser } from '../../shared/lib/socket-events';
 import { decodeCursor, encodeCursor } from '@flow-desk/shared/pagination';
 import { activityService } from '../activity';
 import { handleTaskMentionEmail } from '../notification/notification-email.service';
@@ -118,11 +118,7 @@ export async function createComment(
       comment.createdAt,
     );
     for (const notif of notifications) {
-      safeEmit(() => emitToUser(notif.userId, 'notification:new', { notification: notif }), {
-        event: 'notification:new',
-        notificationId: notif.id,
-        userId: notif.userId,
-      });
+      emitToUser(notif.userId, 'notification:new', { notification: notif });
     }
 
     // P2-2: email fan-out for mentions
@@ -162,11 +158,7 @@ export async function createComment(
     }
   }
 
-  safeEmit(() => emitToTask(body.taskId, 'comment:created', { comment }), {
-    event: 'comment:created',
-    commentId: comment.id,
-    taskId: body.taskId,
-  });
+  emitToTask(body.taskId, 'comment:created', { comment });
 
   if (!body.isChat) {
     await activityService.record({
@@ -196,11 +188,7 @@ export async function updateComment(
   await assertMembership(task.workspaceId, userId);
 
   const comment = await repo.updateContent(prisma, id, body.content);
-  safeEmit(() => emitToTask(existing.taskId, 'comment:updated', { comment }), {
-    event: 'comment:updated',
-    commentId: id,
-    taskId: existing.taskId,
-  });
+  emitToTask(existing.taskId, 'comment:updated', { comment });
   return comment;
 }
 
@@ -215,9 +203,5 @@ export async function deleteComment(prisma: PrismaClient, userId: string, id: st
   await assertMembership(task.workspaceId, userId);
 
   await repo.softDelete(prisma, id);
-  safeEmit(() => emitToTask(existing.taskId, 'comment:deleted', { commentId: id }), {
-    event: 'comment:deleted',
-    commentId: id,
-    taskId: existing.taskId,
-  });
+  emitToTask(existing.taskId, 'comment:deleted', { commentId: id });
 }
