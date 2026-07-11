@@ -397,5 +397,18 @@ describe('soft-delete gap audit (R-29)', () => {
       });
       expect(found).toBeNull();
     });
+
+    it('assertMembership rejects when Workspace is soft-deleted (BUG-04)', async () => {
+      const { wid, cookie } = await setupOwnerWorkspace();
+      await prisma.$executeRawUnsafe(
+        `UPDATE "Workspace" SET "deletedAt" = NOW() WHERE id = '${wid}'`,
+      );
+      const app = buildApp();
+      // Hit an endpoint that calls assertMembership — GET /api/workspaces/:id
+      const res = await app.request(`/api/workspaces/${wid}`, {
+        headers: { Cookie: cookie },
+      });
+      expect(res.status).toBe(404);
+    });
   });
 });

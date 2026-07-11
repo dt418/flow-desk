@@ -37,6 +37,29 @@ import { generateTotpSecret, totpKeyUri, verifyTotpToken } from './totp-engine';
 
 export const authRouter = new Hono();
 
+/**
+ * Validate CORS_ORIGINS[0] as a safe post-login redirect target.
+ * Blocks open-redirect via malformed env or missing config.
+ */
+function postLoginRedirect(c: Context): Response {
+  const origins = env.CORS_ORIGINS;
+  if (!origins || origins.length === 0 || !origins[0]) {
+    logger.error({ event: 'oauth.postlogin.no_cors_origins' }, 'CORS_ORIGINS empty');
+    throw new Error('CORS_ORIGINS not configured');
+  }
+  const target = origins[0];
+  let url: URL;
+  try {
+    url = new URL(target);
+  } catch {
+    throw new Error(`CORS_ORIGINS[0] not a URL: ${target}`);
+  }
+  if (!/^https?:$/.test(url.protocol)) {
+    throw new Error(`CORS_ORIGINS[0] bad protocol: ${url.protocol}`);
+  }
+  return c.redirect(`${url.origin}/`);
+}
+
 function setAuthCookies(c: Context, access: string, refresh: string) {
   setCookie(c, 'access_token', access, {
     httpOnly: true,
@@ -64,7 +87,11 @@ authRouter.post(
   rateLimit({ scope: 'auth:register', windowSec: 3600, max: 3, keyBy: 'ip' }),
   async (c) => {
     const body = registerSchema.parse(await c.req.json());
-    const existing = await prisma.user.findUnique({ where: { email: body.email } });
+    // findFirst with deletedAt:not:null catches soft-deleted accounts that findUnique would miss.
+    // Return 409 regardless so attackers cannot probe for soft-deleted emails.
+    const existing = await prisma.user.findFirst({
+      where: { email: body.email, deletedAt: { not: null } },
+    });
     if (existing) throw new ConflictError('Email already registered');
 
     const passwordHash = await bcrypt.hash(body.password, 10);
@@ -141,7 +168,7 @@ authRouter.post(
   rateLimit({ scope: 'auth:login', windowSec: 60, max: 5, keyBy: 'ip' }),
   async (c) => {
     const body = loginSchema.parse(await c.req.json());
-    const user = await prisma.user.findUnique({ where: { email: body.email } });
+    const user = await prisma.user.findFirst({ where: { email: body.email, deletedAt: null } });
     if (!user || !user.passwordHash) throw new UnauthorizedError('Invalid credentials');
 
     const ok = await bcrypt.compare(body.password, user.passwordHash);
@@ -389,7 +416,13 @@ authRouter.get('/google', (c) => {
     return c.json({ message: 'Google OAuth not configured' }, 501);
   }
   const state = crypto.randomUUID();
-  setCookie(c, 'oauth_state', state, { httpOnly: true, sameSite: 'Lax', path: '/', maxAge: 600 });
+  setCookie(c, 'oauth_state', state, {
+    httpOnly: true,
+    secure: env.NODE_ENV === 'production',
+    sameSite: 'Lax',
+    path: '/',
+    maxAge: 600,
+  });
   const url = new URL('https://accounts.google.com/o/oauth2/v2/auth');
   url.searchParams.set('client_id', env.GOOGLE_CLIENT_ID);
   url.searchParams.set('redirect_uri', env.GOOGLE_REDIRECT_URI);
@@ -480,5 +513,5 @@ authRouter.get('/google/callback', async (c) => {
   });
   setAuthCookies(c, access, refresh);
 
-  return c.redirect(`${env.CORS_ORIGINS[0]}/`);
+  return postLoginRedirect(c);
 });

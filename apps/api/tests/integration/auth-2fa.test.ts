@@ -171,4 +171,31 @@ describe('2FA TOTP (P1-5)', () => {
     expect(db?.twoFactorEnabled).toBe(false);
     expect(db?.twoFactorSecret).toBeNull();
   });
+
+  it('register on soft-deleted email returns 409 (not 500)', async () => {
+    const { user } = await userWithPassword('softreg@test.local', 'Password1!');
+    // Soft-delete via raw SQL
+    await prisma.$executeRawUnsafe(`UPDATE "User" SET "deletedAt" = NOW() WHERE id = '${user.id}'`);
+    const app = buildApp();
+    const res = await app.request('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'softreg@test.local', name: 'Other', password: 'Test1234!' }),
+    });
+    expect(res.status).toBe(409);
+    const body = await res.json();
+    expect(body.code).toBe('CONFLICT');
+  });
+
+  it('login on soft-deleted email returns 401 Invalid credentials', async () => {
+    const { user, password } = await userWithPassword('softlogin@test.local');
+    await prisma.$executeRawUnsafe(`UPDATE "User" SET "deletedAt" = NOW() WHERE id = '${user.id}'`);
+    const app = buildApp();
+    const res = await app.request('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'softlogin@test.local', password }),
+    });
+    expect(res.status).toBe(401);
+  });
 });
