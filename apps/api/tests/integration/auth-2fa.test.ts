@@ -198,4 +198,200 @@ describe('2FA TOTP (P1-5)', () => {
     });
     expect(res.status).toBe(401);
   });
+
+  it('backup code is consumed and cannot be reused', async () => {
+    const password = 'Password1!';
+    const secret = generateTotpSecret();
+    const { plain, hashes } = await generateBackupCodes(2);
+    const user = await prisma.user.create({
+      data: {
+        email: 'backup-consume@test.local',
+        name: 'BC',
+        passwordHash: await bcrypt.hash(password, 10),
+        twoFactorEnabled: true,
+        twoFactorSecret: encryptTotpSecret(secret),
+        twoFactorBackupCodes: hashes,
+      },
+    });
+    const app = buildApp();
+
+    // First use — success
+    const login1 = await app.request('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: user.email, password }),
+    });
+    const { challengeToken: ct1 } = await login1.json();
+    const res1 = await app.request('/api/auth/login/2fa', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ challengeToken: ct1, code: plain[0] }),
+    });
+    expect(res1.status).toBe(200);
+
+    // Second use of same code — rejected
+    const login2 = await app.request('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: user.email, password }),
+    });
+    const { challengeToken: ct2 } = await login2.json();
+    const res2 = await app.request('/api/auth/login/2fa', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ challengeToken: ct2, code: plain[0] }),
+    });
+    expect(res2.status).toBe(401);
+  });
+
+  it('wrong TOTP code returns 401, correct code succeeds', async () => {
+    const password = 'Password1!';
+    const secret = generateTotpSecret();
+    const user = await prisma.user.create({
+      data: {
+        email: 'wrong-totp@test.local',
+        name: 'WT',
+        passwordHash: await bcrypt.hash(password, 10),
+        twoFactorEnabled: true,
+        twoFactorSecret: encryptTotpSecret(secret),
+        twoFactorBackupCodes: [],
+      },
+    });
+    const app = buildApp();
+
+    const login = await app.request('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: user.email, password }),
+    });
+    const { challengeToken } = await login.json();
+
+    // Wrong code
+    const bad = await app.request('/api/auth/login/2fa', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ challengeToken, code: '000000' }),
+    });
+    expect(bad.status).toBe(401);
+
+    // Correct code (new challenge needed since old one may be consumed)
+    const login2 = await app.request('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: user.email, password }),
+    });
+    const { challengeToken: ct2 } = await login2.json();
+    const code = generateTotpToken(secret);
+    const ok = await app.request('/api/auth/login/2fa', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ challengeToken: ct2, code }),
+    });
+    expect(ok.status).toBe(200);
+  });
+
+  it('refresh token reuse after rotation is rejected', async () => {
+    const { user, password } = await userWithPassword('refresh-reuse@test.local');
+    const app = buildApp();
+
+    // Login
+    const loginRes = await app.request('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: user.email, password }),
+    });
+    expect(loginRes.status).toBe(200);
+    const setCookie = loginRes.headers.get('set-cookie') ?? '';
+    const oldRefresh = setCookie.match(/refresh_token=([^;]+)/)?.[1];
+    expect(oldRefresh).toBeTruthy();
+
+    // Rotate
+    const refreshRes = await app.request('/api/auth/refresh', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Cookie: `refresh_token=${oldRefresh}` },
+    });
+    expect(refreshRes.status).toBe(200);
+
+    // Reuse old token
+    const reuse = await app.request('/api/auth/refresh', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Cookie: `refresh_token=${oldRefresh}` },
+    });
+    expect(reuse.status).toBe(401);
+  });
+
+  it('2FA login flow: password → challenge → TOTP → session', async () => {
+    const password = 'Password1!';
+    const secret = generateTotpSecret();
+    const user = await prisma.user.create({
+      data: {
+        email: 'full-flow@test.local',
+        name: 'FF',
+        passwordHash: await bcrypt.hash(password, 10),
+        twoFactorEnabled: true,
+        twoFactorSecret: encryptTotpSecret(secret),
+        twoFactorBackupCodes: [],
+      },
+    });
+    const app = buildApp();
+
+    // Step 1: password login → challenge
+    const login = await app.request('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: user.email, password }),
+    });
+    expect(login.status).toBe(200);
+    const body = await login.json();
+    expect(body.twoFactorRequired).toBe(true);
+    expect(body.challengeToken).toBeTruthy();
+    expect(body.user).toBeUndefined();
+
+    // Step 2: TOTP → session
+    const code = generateTotpToken(secret);
+    const verify = await app.request('/api/auth/login/2fa', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ challengeToken: body.challengeToken, code }),
+    });
+    expect(verify.status).toBe(200);
+    const sess = await verify.json();
+    expect(sess.user.email).toBe(user.email);
+    const cookies = verify.headers.get('set-cookie') ?? '';
+    expect(cookies).toMatch(/access_token=/);
+  });
+
+  it('2FA challenge with backup code works', async () => {
+    const password = 'Password1!';
+    const secret = generateTotpSecret();
+    const { plain, hashes } = await generateBackupCodes(3);
+    const user = await prisma.user.create({
+      data: {
+        email: 'backup-challenge@test.local',
+        name: 'BC2',
+        passwordHash: await bcrypt.hash(password, 10),
+        twoFactorEnabled: true,
+        twoFactorSecret: encryptTotpSecret(secret),
+        twoFactorBackupCodes: hashes,
+      },
+    });
+    const app = buildApp();
+
+    const login = await app.request('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: user.email, password }),
+    });
+    const { challengeToken } = await login.json();
+
+    // Use backup code
+    const verify = await app.request('/api/auth/login/2fa', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ challengeToken, code: plain[1] }),
+    });
+    expect(verify.status).toBe(200);
+    const sess = await verify.json();
+    expect(sess.user.email).toBe(user.email);
+  });
 });

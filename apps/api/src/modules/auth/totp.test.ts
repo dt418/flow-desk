@@ -5,6 +5,7 @@ import {
   decryptTotpSecret,
   generateBackupCodes,
   consumeBackupCode,
+  MAX_BACKUP_CODES,
 } from './totp';
 import { generateTotpSecret, generateTotpToken, verifyTotpToken, totpKeyUri } from './totp-engine';
 
@@ -43,6 +44,20 @@ describe('totp crypto (P1-5)', () => {
     expect(remaining).toHaveLength(2);
     const again = await consumeBackupCode(plain[1]!, remaining!);
     expect(again).toBeNull();
+  });
+
+  it('generateBackupCodes clamps to MAX_BACKUP_CODES', async () => {
+    const { plain } = await generateBackupCodes(32);
+    expect(plain).toHaveLength(MAX_BACKUP_CODES);
+    expect(MAX_BACKUP_CODES).toBe(16);
+  });
+
+  it('consumeBackupCode does not mutate input array on no match', async () => {
+    const { hashes } = await generateBackupCodes(8);
+    const before = [...hashes];
+    const result = await consumeBackupCode('nonexistent', hashes);
+    expect(result).toBeNull();
+    expect(hashes).toEqual(before);
   });
 });
 

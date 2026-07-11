@@ -131,4 +131,67 @@ describe('Automation rules (P2-1)', () => {
     const execs = await prisma.ruleExecution.findMany({ where: { activityId: activity!.id } });
     expect(execs[0]!.status).toBe('SKIPPED');
   });
+
+  it('set-field action: rule sets priority to HIGH when triggered', async () => {
+    const { ownerId, wid, cookie } = await setup();
+    const app = buildApp();
+    await app.request(`/api/workspaces/${wid}/rules`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Cookie: cookie },
+      body: JSON.stringify({
+        name: 'High priority on review',
+        trigger: 'STATUS_CHANGED',
+        condition: { field: 'newValue', op: 'eq', value: 'IN_REVIEW' },
+        action: { type: 'set-field', field: 'priority', value: 'HIGH' },
+      }),
+    });
+    const col = await createColumn(prisma, wid, 'R2', 7);
+    const task = await createTask(prisma, wid, col.id, ownerId, 'Priority me');
+    await prisma.task.update({ where: { id: task.id }, data: { priority: 'LOW' } });
+
+    const { activityService } = await import('../../src/modules/activity/activity.service');
+    await activityService.record({
+      taskId: task.id,
+      userId: ownerId,
+      action: 'STATUS_CHANGED',
+      field: 'status',
+      oldValue: 'TODO',
+      newValue: 'IN_REVIEW',
+    });
+
+    const updated = await prisma.task.findUnique({ where: { id: task.id } });
+    expect(updated?.priority).toBe('HIGH');
+  });
+
+  it('move-column action: rule moves task to Done column when triggered', async () => {
+    const { ownerId, wid, cookie } = await setup();
+    const app = buildApp();
+    const doneCol = await createColumn(prisma, wid, 'DoneRule', 8);
+
+    await app.request(`/api/workspaces/${wid}/rules`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Cookie: cookie },
+      body: JSON.stringify({
+        name: 'Move to done on review',
+        trigger: 'STATUS_CHANGED',
+        condition: { field: 'newValue', op: 'eq', value: 'IN_REVIEW' },
+        action: { type: 'move-column', columnId: doneCol.id },
+      }),
+    });
+    const todoCol = await createColumn(prisma, wid, 'TodoRule', 9);
+    const task = await createTask(prisma, wid, todoCol.id, ownerId, 'Move me');
+
+    const { activityService } = await import('../../src/modules/activity/activity.service');
+    await activityService.record({
+      taskId: task.id,
+      userId: ownerId,
+      action: 'STATUS_CHANGED',
+      field: 'status',
+      oldValue: 'TODO',
+      newValue: 'IN_REVIEW',
+    });
+
+    const updated = await prisma.task.findUnique({ where: { id: task.id } });
+    expect(updated?.columnId).toBe(doneCol.id);
+  });
 });

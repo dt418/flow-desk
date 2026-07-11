@@ -75,4 +75,42 @@ describe('Sprints (P3-1)', () => {
     expect(startRes.status).toBe(200);
     expect((await startRes.json()).status).toBe('ACTIVE');
   });
+
+  it('GET /sprints/:id/burndown returns ideal + actual lines with correct structure', async () => {
+    const { ownerId, wid, cookie } = await setup();
+    const app = buildApp();
+    const createRes = await app.request(`/api/workspaces/${wid}/sprints`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Cookie: cookie },
+      body: JSON.stringify({
+        name: 'Sprint 2',
+        goal: 'Test burndown',
+        startDate: '2026-07-01T00:00:00.000Z',
+        endDate: '2026-07-04T00:00:00.000Z',
+      }),
+    });
+    const sprint = await createRes.json();
+    const col = await createColumn(prisma, wid, 'Todo2', 11);
+    for (let i = 0; i < 4; i++) {
+      const t = await createTask(prisma, wid, col.id, ownerId, `Task ${i}`);
+      await prisma.task.update({ where: { id: t.id }, data: { estimate: 3, sprintId: sprint.id } });
+    }
+
+    const burnRes = await app.request(`/api/workspaces/${wid}/sprints/${sprint.id}/burndown`, {
+      headers: { Cookie: cookie },
+    });
+    expect(burnRes.status).toBe(200);
+    const { data } = await burnRes.json();
+    expect(data.length).toBeGreaterThanOrEqual(4);
+    // Each point has ideal + remaining
+    for (const point of data) {
+      expect(point).toHaveProperty('ideal');
+      expect(point).toHaveProperty('remaining');
+      expect(typeof point.ideal).toBe('number');
+      expect(typeof point.remaining).toBe('number');
+    }
+    // First point: ideal = total estimate = 12, remaining = 12 (nothing done)
+    expect(data[0].ideal).toBe(12);
+    expect(data[0].remaining).toBe(12);
+  });
 });

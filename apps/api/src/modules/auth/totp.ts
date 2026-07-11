@@ -36,14 +36,17 @@ export function decryptTotpSecret(blob: string, key: Buffer = deriveTotpKey()): 
   return dec.toString('utf8');
 }
 
+export const MAX_BACKUP_CODES = 16;
+
 /** Generate N random backup codes (plain) and their bcrypt hashes. */
 export async function generateBackupCodes(count = 8): Promise<{
   plain: string[];
   hashes: string[];
 }> {
+  const safeCount = Math.min(Math.max(count, 1), MAX_BACKUP_CODES);
   const plain: string[] = [];
   const hashes: string[] = [];
-  for (let i = 0; i < count; i++) {
+  for (let i = 0; i < safeCount; i++) {
     // 10 hex chars → readable one-time codes
     const code = randomBytes(5).toString('hex');
     plain.push(code);

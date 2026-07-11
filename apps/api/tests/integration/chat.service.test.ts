@@ -66,6 +66,39 @@ describe('chat integration', () => {
       expect(channels[0]!.latestMessage!.authorId).toBe(ownerId);
     });
 
+    it('channel latestMessage reflects most recent message across channels', async () => {
+      const ch1 = await channelSvc.createChannel(db, ownerId, wid, {
+        workspaceId: wid,
+        name: 'ch1',
+        isPrivate: false,
+        scope: 'WORKSPACE',
+      });
+      const ch2 = await channelSvc.createChannel(db, ownerId, wid, {
+        workspaceId: wid,
+        name: 'ch2',
+        isPrivate: false,
+        scope: 'WORKSPACE',
+      });
+      await messageSvc.sendMessage(db, ownerId, wid, ch1.id, {
+        content: 'Msg 1a',
+        mentionedUserIds: [],
+      });
+      await messageSvc.sendMessage(db, ownerId, wid, ch1.id, {
+        content: 'Msg 1b (latest in ch1)',
+        mentionedUserIds: [],
+      });
+      await messageSvc.sendMessage(db, ownerId, wid, ch2.id, {
+        content: 'Msg 2a (only in ch2)',
+        mentionedUserIds: [],
+      });
+
+      const channels = await channelSvc.listChannels(db, ownerId, wid);
+      const c1 = channels.find((c) => c.id === ch1.id)!;
+      const c2 = channels.find((c) => c.id === ch2.id)!;
+      expect(c1.latestMessage!.content).toBe('Msg 1b (latest in ch1)');
+      expect(c2.latestMessage!.content).toBe('Msg 2a (only in ch2)');
+    });
+
     it('non-member cannot create channel', async () => {
       const outsider = await createUser(prisma, 'outsider@test.com');
       await expect(
