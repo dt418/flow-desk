@@ -8,12 +8,14 @@ import {
   Bookmark,
   Webhook,
   Zap,
+  Plug,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useWorkspaceRole } from '../hooks';
 import { canDeleteWorkspace, canManageColumns, canManageMembers } from './role';
 import { WebhooksTab } from '../../webhook/components/WebhooksTab';
 import { RulesTab } from '../../automation/components/RulesTab';
+import { IntegrationsTab } from '../../integration/components/IntegrationsTab';
 
 type TabId =
   | 'general'
@@ -23,6 +25,7 @@ type TabId =
   | 'views'
   | 'webhooks'
   | 'rules'
+  | 'integrations'
   | 'danger';
 
 interface TabDef {
@@ -69,6 +72,12 @@ const TABS: TabDef[] = [
     label: 'Automation',
     icon: Zap,
     visible: () => true,
+  },
+  {
+    id: 'integrations',
+    label: 'Integrations',
+    icon: Plug,
+    visible: (r) => canManageMembers(r),
   },
   {
     id: 'danger',
@@ -125,6 +134,8 @@ export function SettingsTabs({ workspaceId, children }: Props) {
           <WebhooksTab />
         ) : active === 'rules' ? (
           <RulesTab />
+        ) : active === 'integrations' ? (
+          <IntegrationsTab />
         ) : (
           <div className="rounded-lg border border-border bg-card p-5">{children[active]}</div>
         )}

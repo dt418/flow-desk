@@ -105,6 +105,7 @@ model User {
   savedFilters      SavedFilter[]        @relation("SavedFilterOwner")
   chatMessageReads ChatMessageRead[]
   apiKeys          ApiKey[]
+  integrations     Integration[] @relation("UserIntegrations")
 
   @@index([email])
   @@index([deletedAt])
@@ -135,6 +136,7 @@ model Workspace {
   taskTemplates               TaskTemplate[]     @relation("WorkspaceTaskTemplates")
   sprints                     Sprint[]           @relation("WorkspaceSprints")
   boards                      Board[]            @relation("WorkspaceBoards")
+  integrations                Integration[]      @relation("WorkspaceIntegrations")
 
   @@index([slug])
   @@index([ownerId])
@@ -657,6 +659,49 @@ model Board {
 
   @@index([workspaceId])
   @@index([workspaceId, deletedAt])
+}
+
+// --- P4-3 Slack + GitLab OAuth integrations ---
+
+enum IntegrationProvider {
+  SLACK
+  GITLAB
+}
+
+model Integration {
+  id                  String             @id @default(cuid())
+  /// Which OAuth provider issued this token
+  provider            IntegrationProvider
+  /// Workspace that owns the integration (slack = per workspace, gitlab = per user + workspace)
+  workspaceId         String
+  /// User that connected it (always present; per-user attribution for gitlab)
+  userId              String
+  /// Provider's account id (slack team id, gitlab user id)
+  externalAccountId   String
+  /// Display name (slack team name, gitlab username)
+  externalAccountName String
+  /// Scopes granted at connect time
+  scopes              String[]           @default([])
+  /// AES-256-GCM ciphertext of access token (base64: iv.tag.ciphertext)
+  accessTokenCipher   String
+  /// Optional AES-256-GCM ciphertext of refresh token (gitlab only — slack tokens are long-lived)
+  refreshTokenCipher  String?
+  /// unix seconds; null = no expiry known
+  accessTokenExpiresAt Int?
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  deletedAt           DateTime?
+
+  workspace Workspace @relation("WorkspaceIntegrations", fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation("UserIntegrations", fields: [userId], references: [id], onDelete: Cascade)
+
+  /// One connection per (provider, workspace, external account). Soft-delete
+  /// re-allows the same (provider, workspace, account) — the partial unique
+  /// index WHERE "deletedAt" IS NULL is in the migration.
+  @@unique([provider, workspaceId, externalAccountId])
+  @@index([workspaceId, provider])
+  @@index([userId])
+  @@index([deletedAt])
 }
 
 // --- P4-4 Public API keys ---

@@ -16,6 +16,7 @@ const SOFT_DELETE_MODELS = new Set<string>([
   'Sprint',
   'TaskTemplate',
   'Board',
+  'Integration',
 ]);
 
 type ReadArgs = { where?: Record<string, unknown> };

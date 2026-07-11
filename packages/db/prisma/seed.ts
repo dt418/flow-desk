@@ -292,6 +292,8 @@ async function main() {
   await prisma.task.deleteMany();
   await prisma.taskLabel.deleteMany();
   await prisma.column.deleteMany();
+  // P4-3 integrations have FK to Workspace via Cascade — safe to wipe before Workspace
+  await prisma.integration.deleteMany();
   // Chat + notification settings have FK to Workspace without onDelete: Cascade
   await prisma.chatMessage.deleteMany();
   await prisma.chatChannel.deleteMany();

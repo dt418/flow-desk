@@ -370,5 +370,32 @@ describe('soft-delete gap audit (R-29)', () => {
       await softDeleteTask(t.id);
       await expect(prisma.task.findUniqueOrThrow({ where: { id: t.id } })).rejects.toThrow();
     });
+
+    it('findUnique returns null for soft-deleted Integration (P4-3)', async () => {
+      const { ownerId, wid } = await setupOwnerWorkspace();
+      const intg = await prisma.integration.create({
+        data: {
+          provider: 'SLACK',
+          workspaceId: wid,
+          userId: ownerId,
+          externalAccountId: 'T-12345',
+          externalAccountName: 'Acme',
+          accessTokenCipher: 'iv.tag.ciphertext',
+        },
+      });
+      await prisma.$executeRawUnsafe(
+        `UPDATE "Integration" SET "deletedAt" = NOW() WHERE id = '${intg.id}'`,
+      );
+      const found = await prisma.integration.findUnique({
+        where: {
+          provider_workspaceId_externalAccountId: {
+            provider: 'SLACK',
+            workspaceId: wid,
+            externalAccountId: 'T-12345',
+          },
+        },
+      });
+      expect(found).toBeNull();
+    });
   });
 });
