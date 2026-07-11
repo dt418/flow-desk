@@ -18,4 +18,11 @@ prisma/migrations/dev.db*
 .worktrees/
 apps/api/generated/
 .agents
+# Track FlowDesk harness skills (rest of .agents stays local/vendor)
+!.agents/
+.agents/*
+!.agents/skills/
+.agents/skills/*
+!.agents/skills/plan-feature/
+!.agents/skills/plan-feature/**
 test-results/

@@ -2,7 +2,7 @@
 
 Sequenced plan for closing the Jira/Trello parity gap. Driven by the brainstorming session on 2026-07-05 (audience = D: portfolio + eventual small-team use; search = A: Postgres tsvector; future-sprint = A: careful avoidance, no speculative schema).
 
-Items are feature-list-schema-compatible. `/plan-feature` pulls one unstarted item at a time and runs brainstorm → approve → plan → approve → execute → update `feature_list.json`.
+Items are feature-list-schema-compatible. `/plan-feature` (canonical skill: `.agents/skills/plan-feature/SKILL.md`; multi-agent adapters symlink that tree) pulls one unstarted item at a time and orchestrates Superpowers brainstorm → approve → plan → approve → execute → verify → update `feature_list.json`.
 
 ## Cross-cutting policies (apply to every item)
 

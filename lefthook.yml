@@ -28,7 +28,13 @@ pre-commit:
       run: bash .githooks/pre-commit
     format-check:
       glob: '*.{ts,tsx,js,jsx,json,md,css,yml,yaml}'
-      run: pnpm exec prettier --check {staged_files}
+      # Skip symlinks (multi-agent skill/command adapters point at canonical trees;
+      # Prettier errors when given an explicit symlink path).
+      run: >
+        bash -c 'real=(); for f in {staged_files}; do
+        [ -L "$f" ] && continue; [ -f "$f" ] || continue; real+=("$f"); done;
+        [ ${#real[@]} -eq 0 ] && exit 0;
+        pnpm exec prettier --check "${real[@]}"'
     eslint-check:
       glob: '*.{ts,tsx}'
       run: pnpm exec eslint {staged_files}

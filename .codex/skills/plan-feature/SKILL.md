@@ -1,1 +1,1 @@
-../../../.pi/prompts/plan-feature/SKILL.md
+../../../.agents/skills/plan-feature/SKILL.md
