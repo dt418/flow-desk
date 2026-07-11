@@ -364,3 +364,12 @@
 - `redis maxRetriesPerRequest: null`
 
 **Skipped**: 2 e2e tests for pre-refactor WebSocket API (replaced by socket.io)
+
+### Session — 2026-07-11 /improve audit
+
+- **Goal**: ROADMAP done; find next batch of high-leverage work
+- **Audit**: 4 parallel subagent passes (correctness+security, perf+tests, tech-debt+architecture, DX+docs+direction). Standard depth.
+- **Findings**: 32 raw → 25 after dedup → 8 direction suggestions (carried as maintainer options, not plans)
+- **Plans written** (commit a9fd245): `plans/023`–`plans/027` covering all 25 findings. 5 independent files in Batch A. Each is self-contained for a fresh-context executor with: in-scope file list, step-by-step verify commands, machine-checkable done criteria, STOP conditions, maintenance notes.
+- **What was NOT covered**: bundles (PERF-10/11/12), OpenAPI tooling, PRD/team-vs-portfolio tension, larger ARCH-04 lib/ drift — listed as direction or future-audit items
+- **Next**: pick from the 5 plans. All independent, any order works. Plan 024 first if you want plan 027's chat test to reflect the post-024 shape.
