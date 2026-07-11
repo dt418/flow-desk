@@ -20,7 +20,7 @@ export async function listMessages(
   channelId: string,
   query: ListChatMessagesQuery,
 ) {
-  const channel = await channelRepo.findAndValidateChannel(prisma, userId, workspaceId, channelId);
+  await channelRepo.findAndValidateChannel(prisma, userId, workspaceId, channelId);
 
   const decoded = query.cursor ? decodeCursor(query.cursor) : null;
 
@@ -157,7 +157,7 @@ export async function updateMessage(
   messageId: string,
   body: UpdateChatMessageInput,
 ) {
-  const channel = await channelRepo.findAndValidateChannel(prisma, userId, workspaceId, channelId);
+  await channelRepo.findAndValidateChannel(prisma, userId, workspaceId, channelId);
 
   const existing = await repo.findUnique(prisma, messageId);
   if (!existing || existing.deletedAt || existing.channelId !== channelId) {
@@ -204,7 +204,7 @@ export async function deleteMessage(
   channelId: string,
   messageId: string,
 ) {
-  const channel = await channelRepo.findAndValidateChannel(prisma, userId, workspaceId, channelId);
+  await channelRepo.findAndValidateChannel(prisma, userId, workspaceId, channelId);
 
   const existing = await repo.findUnique(prisma, messageId);
   if (!existing || existing.deletedAt || existing.channelId !== channelId) {
@@ -233,7 +233,7 @@ export async function markRead(
   channelId: string,
   upToMessageId: string,
 ) {
-  const channel = await channelRepo.findAndValidateChannel(prisma, userId, workspaceId, channelId);
+  await channelRepo.findAndValidateChannel(prisma, userId, workspaceId, channelId);
 
   const existing = await prisma.chatMessageRead.findUnique({
     where: { userId_messageId: { userId, messageId: upToMessageId } },
