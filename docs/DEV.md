@@ -146,7 +146,7 @@ Reconnect client uses exponential backoff 1s → 30s with randomization 0.5, tim
 Backend integration tests:
 
     pnpm --filter @flow-desk/api test:integration
-    # 190 tests, ~55s
+    # run pnpm verify for current count
 
 Test structure: `apps/api/tests/integration/{feature}.test.ts`. Each module gets its own file. Tests use the soft-delete extension unchanged.
 

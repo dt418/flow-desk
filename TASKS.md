@@ -1,4 +1,9 @@
-# TASKS — FlowDesk Implementation Backlog
+# Tasks (historical — frozen 2026-07-05, end of Sprint 20)
+
+> Active backlog lives in `feature_list.json` (last updated 2026-07-11).
+> This file is preserved for sprint history. New work is not added here.
+
+## Sprint 1: Foundation (Days 1-5)
 
 ## Sprint 1: Foundation (Days 1-5)
 

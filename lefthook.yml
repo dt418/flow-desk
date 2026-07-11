@@ -26,6 +26,9 @@ pre-commit:
       glob: '*'
       exclude: "(\\.githooks/|\\.lefthook/|lefthook\\.yml|docs/|\\.md$)"
       run: bash .githooks/pre-commit
+    guardrails-secrets:
+      glob: '*'
+      run: pnpm guardrails secrets
     format-check:
       glob: '*.{ts,tsx,js,jsx,json,md,css,yml,yaml}'
       # Skip symlinks (multi-agent skill/command adapters point at canonical trees;

@@ -17,3 +17,4 @@ export * from './automation';
 export * from './sprint';
 export * from './template';
 export * from './socket-events';
+export * from './api-key';

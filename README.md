@@ -166,7 +166,7 @@ Hooks are managed by [lefthook](https://github.com/evilmartians/lefthook) (confi
 **pre-push** (heavier, ~60-90s):
 
 - Full typecheck (all packages)
-- BE integration tests (190 tests)
+- BE integration tests (run `pnpm verify` for current count)
 - Web build
 
 Bypass (emergency): `git commit --no-verify` / `git push --no-verify`.
@@ -174,7 +174,7 @@ Bypass (emergency): `git commit --no-verify` / `git push --no-verify`.
 ## Recent changes
 
 - **Session 028 (dev workflow + docker)**: New `pnpm dev` one-command wrapper (`scripts/dev.sh`) — starts postgres + redis in Docker, patches `.env` ports, runs migrate + seed, then turbo watch loop with hot-reload. Auto port-conflict detection (5432→5433, 6379→6380). Dockerfiles + docker-compose cleaned (DRY `x-common-env` anchor, dropped unused `deps` stage). `dev:local` deprecated (redirects to `pnpm dev`).
-- **Session 025 (dev workflow)**: Fixed integration test env (Redis port 6379→6390, DB password flowdesk→postgres), created `apps/api/.env` symlink, verified 190/190 tests pass. Updated docs with hybrid dev mode (docker services + `pnpm dev`).
+- **Session 025 (dev workflow)**: Fixed integration test env (Redis port 6379→6390, DB password flowdesk→postgres), created `apps/api/.env` symlink, verified integration tests pass. Updated docs with hybrid dev mode (docker services + `pnpm dev`).
 - **Session 024 (test fixes)**: Fixed 7 broken unit tests + docker inspect error from audit batch changes. 97/97 unit tests pass.
 - **Session 023 (improve audit)**: Full /improve audit — 14 plans executed across 3 batches. Email worker, security, performance, tech debt, correctness, test pipeline all improved.
 - **Session 022 (kanban-sprint-1.5)**: RC3 (optimistic reorder race), RC5 (same-position move), RC6 (DragOverlay snap) fixed.

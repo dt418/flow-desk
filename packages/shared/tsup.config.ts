@@ -20,6 +20,7 @@ export default defineConfig({
     'src/automation.ts',
     'src/sprint.ts',
     'src/template.ts',
+    'src/api-key.ts',
   ],
   format: ['cjs', 'esm'],
   dts: true,

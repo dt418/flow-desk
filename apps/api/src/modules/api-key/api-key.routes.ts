@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
-import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
+import { createApiKeySchema } from '@flow-desk/shared/api-key';
 import { requireAuth } from '../../shared/middleware/auth';
 import { apiKeyService } from './api-key.service';
 import { prisma } from '../../shared/lib/prisma';
@@ -19,18 +19,11 @@ apiKeyRouter.get('/', async (c) => {
 
 apiKeyRouter.post(
   '/',
-  zValidator(
-    'json',
-    z.object({
-      name: z.string().min(1).max(80),
-      scopes: z.array(z.string()).default(['read']),
-    }),
-    (result, c) => {
-      if (!result.success)
-        return c.json({ code: 'INVALID_BODY', details: result.error.flatten() }, 400);
-      return undefined;
-    },
-  ),
+  zValidator('json', createApiKeySchema, (result, c) => {
+    if (!result.success)
+      return c.json({ code: 'INVALID_BODY', details: result.error.flatten() }, 400);
+    return undefined;
+  }),
   async (c) => {
     const auth = c.get('auth');
     const body = c.req.valid('json');
