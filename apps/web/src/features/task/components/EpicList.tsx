@@ -46,20 +46,20 @@ export default function EpicListPage() {
 
   const tasks = useQuery({
     queryKey: ['epic-tasks', workspaceId],
-    queryFn: () => api<{ data: TaskRow[] }>(`/tasks?workspaceId=${workspaceId}&limit=200`),
+    queryFn: () => api<{ data: TaskRow[] }>(`/api/tasks?workspaceId=${workspaceId}&limit=200`),
     enabled: Boolean(workspaceId),
   });
 
   const columns = useQuery({
     queryKey: ['columns', workspaceId],
     queryFn: () =>
-      api<{ data: Array<{ id: string; name: string }> }>(`/workspaces/${workspaceId}/columns`),
+      api<{ data: Array<{ id: string; name: string }> }>(`/api/workspaces/${workspaceId}/columns`),
     enabled: Boolean(workspaceId),
   });
 
   const createTask = useMutation({
     mutationFn: (body: { title: string; type: string; parentTaskId?: string; columnId: string }) =>
-      api(`/tasks`, { method: 'POST', json: { workspaceId, ...body } }),
+      api(`/api/tasks`, { method: 'POST', json: { workspaceId, ...body } }),
     onSuccess: () => {
       toast.success('Created');
       qc.invalidateQueries({ queryKey: ['epic-tasks', workspaceId] });

@@ -59,18 +59,19 @@ export default function TemplatesPage() {
 
   const templates = useQuery({
     queryKey: ['templates', workspaceId],
-    queryFn: () => api<{ data: Template[] }>(`/workspaces/${workspaceId}/templates`),
+    queryFn: () => api<{ data: Template[] }>(`/api/workspaces/${workspaceId}/templates`),
   });
 
   const recurring = useQuery({
     queryKey: ['recurring', workspaceId],
-    queryFn: () => api<{ data: RecurringRule[] }>(`/workspaces/${workspaceId}/templates/recurring`),
+    queryFn: () =>
+      api<{ data: RecurringRule[] }>(`/api/workspaces/${workspaceId}/templates/recurring`),
   });
 
   const create = useMutation({
     mutationFn: async () => {
       const cron = cronChoice === 'custom' ? customCron : cronChoice;
-      const tpl = await api<Template>(`/workspaces/${workspaceId}/templates`, {
+      const tpl = await api<Template>(`/api/workspaces/${workspaceId}/templates`, {
         method: 'POST',
         json: {
           name,
@@ -82,7 +83,7 @@ export default function TemplatesPage() {
           },
         },
       });
-      await api(`/workspaces/${workspaceId}/templates/recurring`, {
+      await api(`/api/workspaces/${workspaceId}/templates/recurring`, {
         method: 'POST',
         json: { templateId: tpl.id, cron, isActive: true },
       });
@@ -100,7 +101,7 @@ export default function TemplatesPage() {
   const update = useMutation({
     mutationFn: async () => {
       if (!editing) return;
-      return api(`/workspaces/${workspaceId}/templates/${editing.id}`, {
+      return api(`/api/workspaces/${workspaceId}/templates/${editing.id}`, {
         method: 'PATCH',
         json: {
           name,
@@ -123,7 +124,7 @@ export default function TemplatesPage() {
 
   const remove = useMutation({
     mutationFn: (id: string) =>
-      api(`/workspaces/${workspaceId}/templates/${id}`, { method: 'DELETE' }),
+      api(`/api/workspaces/${workspaceId}/templates/${id}`, { method: 'DELETE' }),
     onSuccess: () => {
       toast.success('Template deleted');
       qc.invalidateQueries({ queryKey: ['templates', workspaceId] });
@@ -133,7 +134,7 @@ export default function TemplatesPage() {
 
   const removeRecurring = useMutation({
     mutationFn: (id: string) =>
-      api(`/workspaces/${workspaceId}/templates/recurring/${id}`, { method: 'DELETE' }),
+      api(`/api/workspaces/${workspaceId}/templates/recurring/${id}`, { method: 'DELETE' }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['recurring', workspaceId] });
     },
@@ -141,7 +142,7 @@ export default function TemplatesPage() {
 
   const apply = useMutation({
     mutationFn: async ({ templateId, columnId }: { templateId: string; columnId: string }) =>
-      api(`/workspaces/${workspaceId}/templates/${templateId}/apply`, {
+      api(`/api/workspaces/${workspaceId}/templates/${templateId}/apply`, {
         method: 'POST',
         json: { columnId },
       }),

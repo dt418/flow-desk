@@ -61,13 +61,13 @@ export default function SprintPage() {
 
   const sprints = useQuery({
     queryKey: ['sprints', workspaceId],
-    queryFn: () => api<{ data: Sprint[] }>(`/workspaces/${workspaceId}/sprints`),
+    queryFn: () => api<{ data: Sprint[] }>(`/api/workspaces/${workspaceId}/sprints`),
     enabled: Boolean(workspaceId),
   });
 
   const backlog = useQuery({
     queryKey: ['backlog', workspaceId],
-    queryFn: () => api<{ data: SprintTask[] }>(`/workspaces/${workspaceId}/sprints/backlog`),
+    queryFn: () => api<{ data: SprintTask[] }>(`/api/workspaces/${workspaceId}/sprints/backlog`),
     enabled: Boolean(workspaceId),
   });
 
@@ -84,13 +84,13 @@ export default function SprintPage() {
   const burndown = useQuery({
     queryKey: ['burndown', selected],
     queryFn: () =>
-      api<{ data: BurndownPoint[] }>(`/workspaces/${workspaceId}/sprints/${selected}/burndown`),
+      api<{ data: BurndownPoint[] }>(`/api/workspaces/${workspaceId}/sprints/${selected}/burndown`),
     enabled: Boolean(selected),
   });
 
   const create = useMutation({
     mutationFn: () =>
-      api(`/workspaces/${workspaceId}/sprints`, {
+      api(`/api/workspaces/${workspaceId}/sprints`, {
         method: 'POST',
         json: {
           name: cName || 'New Sprint',
@@ -110,7 +110,7 @@ export default function SprintPage() {
 
   const updateStatus = useMutation({
     mutationFn: ({ id, status }: { id: string; status: string }) =>
-      api(`/workspaces/${workspaceId}/sprints/${id}`, {
+      api(`/api/workspaces/${workspaceId}/sprints/${id}`, {
         method: 'PATCH',
         json: { status },
       }),
@@ -121,7 +121,7 @@ export default function SprintPage() {
 
   const deleteSprint = useMutation({
     mutationFn: (id: string) =>
-      api(`/workspaces/${workspaceId}/sprints/${id}`, { method: 'DELETE' }),
+      api(`/api/workspaces/${workspaceId}/sprints/${id}`, { method: 'DELETE' }),
     onSuccess: () => {
       toast.success('Sprint deleted');
       setSelected(null);
@@ -132,7 +132,7 @@ export default function SprintPage() {
 
   const assign = useMutation({
     mutationFn: ({ sprintId, taskId }: { sprintId: string; taskId: string }) =>
-      api(`/workspaces/${workspaceId}/sprints/${sprintId}/tasks`, {
+      api(`/api/workspaces/${workspaceId}/sprints/${sprintId}/tasks`, {
         method: 'POST',
         json: { taskId },
       }),
@@ -146,7 +146,7 @@ export default function SprintPage() {
 
   const unassign = useMutation({
     mutationFn: ({ sprintId, taskId }: { sprintId: string; taskId: string }) =>
-      api(`/workspaces/${workspaceId}/sprints/${sprintId}/tasks/${taskId}`, {
+      api(`/api/workspaces/${workspaceId}/sprints/${sprintId}/tasks/${taskId}`, {
         method: 'DELETE',
       }),
     onSuccess: () => {

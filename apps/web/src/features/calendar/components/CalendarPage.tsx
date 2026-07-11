@@ -43,13 +43,13 @@ export function CalendarPage() {
 
   const tasksQuery = useQuery({
     queryKey: ['calendar-tasks', workspaceId],
-    queryFn: () => api<{ data: CalTask[] }>(`/tasks?workspaceId=${workspaceId}&limit=200`),
+    queryFn: () => api<{ data: CalTask[] }>(`/api/tasks?workspaceId=${workspaceId}&limit=200`),
     enabled: Boolean(workspaceId),
   });
 
   const updateDue = useMutation({
     mutationFn: ({ id, dueDate }: { id: string; dueDate: string }) =>
-      api(`/tasks/${id}`, {
+      api(`/api/tasks/${id}`, {
         method: 'PATCH',
         json: { dueDate },
       }),
