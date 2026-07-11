@@ -58,7 +58,7 @@ export function AppShell() {
 
   const activeWorkspaceId = React.useMemo(() => {
     if (typeof window === 'undefined') return undefined;
-    const match = window.location.pathname.match(/\/(?:board|list|workspaces)\/([^/]+)/);
+    const match = window.location.pathname.match(/\/(?:board|list|calendar|workspaces)\/([^/]+)/);
     return match?.[1];
   }, []);
 

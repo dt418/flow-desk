@@ -5,6 +5,7 @@ import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { addMonths, buildMonthGrid, buildWeekGrid, dueDateKey } from '../utils/date-grid';
+import { STATUS_TONE } from '@/features/task/utils';
 import { cn } from '@/lib/utils';
 
 interface CalTask {
@@ -16,7 +17,7 @@ interface CalTask {
   type?: string;
 }
 
-type ViewMode = 'month' | 'week' | 'day';
+type ViewMode = 'month' | 'week' | 'day' | 'agenda';
 
 const PRIORITY_DOT: Record<string, string> = {
   LOW: 'bg-slate-400',
@@ -43,7 +44,7 @@ export function CalendarPage() {
 
   const tasksQuery = useQuery({
     queryKey: ['calendar-tasks', workspaceId],
-    queryFn: () => api<{ data: CalTask[] }>(`/api/tasks?workspaceId=${workspaceId}&limit=200`),
+    queryFn: () => api<{ data: CalTask[] }>(`/api/tasks?workspaceId=${workspaceId}&limit=100`),
     enabled: Boolean(workspaceId),
   });
 
@@ -123,7 +124,7 @@ export function CalendarPage() {
           >
             Next
           </Button>
-          {(['month', 'week', 'day'] as ViewMode[]).map((m) => (
+          {(['month', 'week', 'day', 'agenda'] as ViewMode[]).map((m) => (
             <Button
               key={m}
               size="sm"
@@ -150,8 +151,17 @@ export function CalendarPage() {
         </div>
       )}
 
+      {/* Agenda view */}
+      {!tasksQuery.isLoading && !tasksQuery.isError && mode === 'agenda' && (
+        <AgendaView
+          tasks={tasksQuery.data?.data ?? []}
+          anchor={anchor}
+          onSelect={setSelectedTask}
+        />
+      )}
+
       {/* Calendar grid */}
-      {!tasksQuery.isLoading && !tasksQuery.isError && (
+      {!tasksQuery.isLoading && !tasksQuery.isError && mode !== 'agenda' && (
         <div
           className={
             mode === 'day'
@@ -271,6 +281,152 @@ function addDaysLocal(d: Date, n: number): Date {
   const x = new Date(d);
   x.setUTCDate(x.getUTCDate() + n);
   return x;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Agenda view — vertical day-grouped list (à la big-calendar)       */
+/* ------------------------------------------------------------------ */
+
+interface AgendaDayGroup {
+  iso: string;
+  date: Date;
+  tasks: CalTask[];
+}
+
+function buildAgendaGroups(tasks: CalTask[], anchor: Date): AgendaDayGroup[] {
+  const month = anchor.getUTCMonth();
+  const year = anchor.getUTCFullYear();
+  const map = new Map<string, AgendaDayGroup>();
+
+  for (const t of tasks) {
+    const key = dueDateKey(t.dueDate);
+    if (!key) continue;
+    const d = new Date(`${key}T00:00:00Z`);
+    // Only show tasks in the anchored month
+    if (d.getUTCMonth() !== month || d.getUTCFullYear() !== year) continue;
+    if (!map.has(key)) map.set(key, { iso: key, date: d, tasks: [] });
+    map.get(key)!.tasks.push(t);
+  }
+
+  return Array.from(map.values())
+    .sort((a, b) => a.date.getTime() - b.date.getTime())
+    .map((g) => ({
+      ...g,
+      tasks: g.tasks.sort(
+        (a, b) => new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime(),
+      ),
+    }));
+}
+
+const PRIORITY_BAR: Record<string, string> = {
+  LOW: 'bg-slate-300 dark:bg-slate-600',
+  MEDIUM: 'bg-blue-500',
+  HIGH: 'bg-amber-500',
+  URGENT: 'bg-red-500',
+};
+
+const TYPE_LABEL: Record<string, string> = {
+  EPIC: 'Epic',
+  STORY: 'Story',
+  SUBTASK: 'Subtask',
+  TASK: 'Task',
+};
+
+function AgendaView({
+  tasks,
+  anchor,
+  onSelect,
+}: {
+  tasks: CalTask[];
+  anchor: Date;
+  onSelect: (t: CalTask) => void;
+}) {
+  const groups = useMemo(() => buildAgendaGroups(tasks, anchor), [tasks, anchor]);
+  const totalTasks = groups.reduce((n, g) => n + g.tasks.length, 0);
+
+  return (
+    <div className="flex-1 overflow-auto rounded-lg border border-border">
+      {groups.length === 0 ? (
+        <div className="flex flex-col items-center justify-center gap-2 py-20 text-muted-foreground">
+          <span className="text-3xl">📅</span>
+          <p className="text-sm">No tasks with due dates this month</p>
+        </div>
+      ) : (
+        <div className="space-y-6 p-4">
+          <p className="text-xs text-muted-foreground">
+            {totalTasks} task{totalTasks !== 1 ? 's' : ''} across {groups.length} day
+            {groups.length !== 1 ? 's' : ''}
+          </p>
+          {groups.map((g) => (
+            <div key={g.iso} className="space-y-2">
+              {/* Sticky day header */}
+              <div className="sticky top-0 z-10 flex items-center gap-3 bg-background/95 py-2 backdrop-blur">
+                <p className="text-sm font-semibold">
+                  {g.date.toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    month: 'long',
+                    day: 'numeric',
+                    year: 'numeric',
+                    timeZone: 'UTC',
+                  })}
+                </p>
+                <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                  {g.tasks.length}
+                </span>
+              </div>
+              {/* Task cards */}
+              <div className="space-y-1.5 pl-1">
+                {g.tasks.map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => onSelect(t)}
+                    className={cn(
+                      'group relative flex w-full items-start gap-3 rounded-md border border-border bg-card p-3 text-left text-sm transition-colors hover:bg-accent/50',
+                    )}
+                  >
+                    {/* Priority bar */}
+                    <span
+                      className={cn(
+                        'absolute inset-y-0 left-0 w-[3px] rounded-l-md',
+                        PRIORITY_BAR[t.priority] ?? 'bg-transparent',
+                      )}
+                    />
+                    <div className="min-w-0 flex-1 pl-2">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-foreground">{t.title}</span>
+                      </div>
+                      <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                        <Badge
+                          variant="secondary"
+                          className={cn(
+                            'border-transparent text-[10px]',
+                            STATUS_TONE[t.status] ?? '',
+                          )}
+                        >
+                          {t.status.replace('_', ' ')}
+                        </Badge>
+                        <span className="text-[10px] text-muted-foreground">
+                          {TYPE_LABEL[t.type ?? 'TASK']}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground">
+                          {new Date(t.dueDate!).toLocaleTimeString('en-US', {
+                            hour: 'numeric',
+                            minute: '2-digit',
+                            timeZone: 'UTC',
+                          })}
+                        </span>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default CalendarPage;
