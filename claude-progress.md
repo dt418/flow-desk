@@ -1,5 +1,28 @@
 # Progress Log
 
+### Session — ROADMAP completion goal (2026-07-11)
+
+- **Goal**: Finish all non-cut ROADMAP items (P1-4…P4-6)
+- **Completed**:
+  - P1-4 webhooks verified+fixed (date serialize, soft-delete, HMAC tests)
+  - P1-5 TOTP 2FA (schema, routes, login challenge, backup codes, UI)
+  - P2-1 automation rules engine (condition eval, assign/set-field actions, Rules tab)
+  - P2-2 email mention + status-change templates + wiring
+  - P2-3 Prometheus `/metrics` + optional Sentry hooks
+  - P3-1 sprint+estimate+burndown
+  - P3-2 templates/recurring + processDue
+  - P3-3 calendar month/week/day + DnD reschedule UI
+  - P4-1 Task.type EPIC/STORY hierarchy
+  - P4-2 multi-board CRUD
+  - P4-3 Slack/GitLab routes (501 without env secrets)
+  - P4-4 API keys + `/api/v1` Bearer
+  - P4-5 Excel multi-sheet + PDF-text export formats
+  - P4-6 a11y helper primitives + tests
+- **Verification**: API unit 137, integration 242, web 34; typecheck green; build green
+- **Highest priority unfinished**: none (ROADMAP non-cut items complete; P4-7 cut)
+- **Blockers**: Slack/GitLab full OAuth needs external credentials (surface returns 501)
+- **Next**: none for ROADMAP product features; optional polish / real Sentry DSN / OAuth secrets
+
 ## Current Verified State
 
 - **Repository root**: `/home/thanh/flow-desk`

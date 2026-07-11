@@ -35,6 +35,9 @@ export const createTaskSchema = z.object({
 });
 export type CreateTaskInput = z.infer<typeof createTaskSchema>;
 
+export const taskTypeSchema = z.enum(['TASK', 'EPIC', 'STORY', 'SUBTASK']);
+export type TaskType = z.infer<typeof taskTypeSchema>;
+
 export const updateTaskSchema = z.object({
   title: nameSchema.optional(),
   description: optionalString,
@@ -46,6 +49,11 @@ export const updateTaskSchema = z.object({
   position: z.number().int().min(0).optional(),
   labels: z.array(z.string().min(1).max(30)).max(20).optional(),
   version: z.number().int().min(0).optional(),
+  estimate: z.number().int().min(0).max(1000).nullable().optional(),
+  sprintId: cuidSchema.nullable().optional(),
+  type: taskTypeSchema.optional(),
+  parentTaskId: cuidSchema.nullable().optional(),
+  boardId: cuidSchema.nullable().optional(),
 });
 export type UpdateTaskInput = z.infer<typeof updateTaskSchema>;
 

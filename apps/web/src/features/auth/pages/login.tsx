@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'sonner';
-import { useAuth } from '../store';
+import { useAuth, TwoFactorRequiredError } from '../store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,8 +17,11 @@ type LoginInput = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, login2fa } = useAuth();
   const [serverError, setServerError] = useState<string | null>(null);
+  const [challengeToken, setChallengeToken] = useState<string | null>(null);
+  const [totpCode, setTotpCode] = useState('');
+  const [submitting2fa, setSubmitting2fa] = useState(false);
   const {
     register,
     handleSubmit,
@@ -35,11 +38,92 @@ export default function LoginPage() {
       toast.success('Welcome back');
       navigate('/');
     } catch (err) {
+      if (err instanceof TwoFactorRequiredError) {
+        setChallengeToken(err.challengeToken);
+        return;
+      }
       const message = err instanceof Error ? err.message : 'Login failed';
       setServerError(message);
       toast.error(message);
     }
   });
+
+  async function onSubmit2fa(e: React.FormEvent) {
+    e.preventDefault();
+    if (!challengeToken) return;
+    setSubmitting2fa(true);
+    setServerError(null);
+    try {
+      await login2fa(challengeToken, totpCode);
+      toast.success('Welcome back');
+      navigate('/');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Invalid code';
+      setServerError(message);
+      toast.error(message);
+    } finally {
+      setSubmitting2fa(false);
+    }
+  }
+
+  if (challengeToken) {
+    return (
+      <div className="flex h-full items-center justify-center bg-background p-4">
+        <form
+          onSubmit={onSubmit2fa}
+          noValidate
+          className="w-full max-w-sm space-y-4 rounded-xl border border-border bg-card/80 p-6 shadow-sm backdrop-blur-sm"
+          aria-label="Two-factor authentication form"
+        >
+          <div className="space-y-1">
+            <h1 className="text-2xl font-semibold tracking-tight">Two-factor code</h1>
+            <p className="text-sm text-muted-foreground">
+              Enter the code from your authenticator app or a backup code.
+            </p>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="totp">Authentication code</Label>
+            <Input
+              id="totp"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              value={totpCode}
+              onChange={(e) => setTotpCode(e.target.value)}
+              placeholder="123456"
+              autoFocus
+            />
+          </div>
+          {serverError && (
+            <div
+              role="alert"
+              className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive"
+            >
+              {serverError}
+            </div>
+          )}
+          <Button
+            type="submit"
+            disabled={submitting2fa || totpCode.length < 6}
+            className="h-9 w-full"
+          >
+            {submitting2fa ? 'Verifying…' : 'Verify'}
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            className="h-9 w-full"
+            onClick={() => {
+              setChallengeToken(null);
+              setTotpCode('');
+              setServerError(null);
+            }}
+          >
+            Back to password
+          </Button>
+        </form>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-full items-center justify-center bg-background p-4">

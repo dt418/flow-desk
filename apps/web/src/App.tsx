@@ -8,12 +8,14 @@ import { AppShell } from '@/components/layout/app-shell';
 
 const LoginPage = lazy(() => import('@/features/auth/pages/login'));
 const RegisterPage = lazy(() => import('@/features/auth/pages/register'));
+const TwoFactorSettingsPage = lazy(() => import('@/features/auth/pages/two-factor-settings'));
 const DashboardPage = lazy(() => import('@/pages/dashboard'));
 const BoardPage = lazy(() => import('@/pages/board'));
 const ListPage = lazy(() => import('@/pages/list'));
 const WorkspaceSettingsPage = lazy(() => import('@/pages/workspace-settings'));
 const LabelManagerPage = lazy(() => import('@/features/label/pages/LabelManagerPage'));
 const ChatPage = lazy(() => import('@/pages/chat'));
+const CalendarPage = lazy(() => import('@/features/calendar/components/CalendarPage'));
 
 function Loading() {
   return (
@@ -55,6 +57,8 @@ export function App() {
           <Route path="/" element={<DashboardPage />} />
           <Route path="/board/:workspaceId" element={<BoardPage />} />
           <Route path="/list/:workspaceId" element={<ListPage />} />
+          <Route path="/calendar/:workspaceId" element={<CalendarPage />} />
+          <Route path="/settings/security" element={<TwoFactorSettingsPage />} />
           <Route path="/workspaces/:workspaceId/settings" element={<WorkspaceSettingsPage />} />
           <Route path="/workspaces/:workspaceId/labels" element={<LabelManagerRoute />} />
           <Route path="/workspaces/:workspaceId/chat" element={<ChatPage />} />

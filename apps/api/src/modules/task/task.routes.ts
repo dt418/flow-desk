@@ -74,15 +74,47 @@ taskRouter.get(
     const query = c.req.valid('query');
     const rows = await taskService.exportTasks(query, auth.user.id);
 
-    // Filename: tasks-{slug}-{yyyyMMddHHmm}.csv (slug fallback to workspaceId)
+    // Filename: tasks-{slug}-{yyyyMMddHHmm}.{ext} (slug fallback to workspaceId)
     const ws = await prisma.workspace.findUnique({
       where: { id: query.workspaceId },
-      select: { slug: true },
+      select: { slug: true, name: true },
     });
     const slug = ws?.slug ?? query.workspaceId;
     const stamp = new Date().toISOString().replace(/[:.]/g, '').slice(0, 15);
-    const filename = `tasks-${slug}-${stamp}.csv`;
+    const format = query.format ?? 'csv';
 
+    const mapExportRows = (list: typeof rows) =>
+      list.map((r) => ({
+        status: r.status,
+        title: r.title,
+        assigneeEmail: r.assignee?.email ?? '',
+        priority: r.priority,
+        dueDate: r.dueDate ? r.dueDate.toISOString() : '',
+        labels: r.assignments.map((a) => a.label.name).join(';'),
+      }));
+
+    if (format === 'excel' || format === 'xlsx') {
+      const { buildExcelWorkbook } = await import('../export/export-workbook');
+      const body = buildExcelWorkbook(mapExportRows(rows));
+      const filename = `tasks-${slug}-${stamp}.xlsx.csv`;
+      c.header('Content-Type', 'text/csv; charset=utf-8');
+      c.header('Content-Disposition', `attachment; filename="${filename}"`);
+      return c.body(body);
+    }
+
+    if (format === 'pdf') {
+      const { buildPdfTaskReport } = await import('../export/export-workbook');
+      const body = buildPdfTaskReport({
+        workspaceName: ws?.name ?? slug,
+        tasks: mapExportRows(rows),
+      });
+      const filename = `tasks-${slug}-${stamp}.pdf.txt`;
+      c.header('Content-Type', 'text/plain; charset=utf-8');
+      c.header('Content-Disposition', `attachment; filename="${filename}"`);
+      return c.body(body);
+    }
+
+    const filename = `tasks-${slug}-${stamp}.csv`;
     const encoder = new TextEncoder();
     const stream = new ReadableStream<Uint8Array>({
       start(controller) {

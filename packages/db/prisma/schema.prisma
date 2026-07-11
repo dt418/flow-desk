@@ -77,14 +77,19 @@ enum ActivityAction {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  name         String
-  avatarUrl    String?
-  passwordHash String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  deletedAt    DateTime?
+  id                    String   @id @default(cuid())
+  email                 String   @unique
+  name                  String
+  avatarUrl             String?
+  passwordHash          String?
+  twoFactorEnabled      Boolean  @default(false)
+  /// AES-256-GCM ciphertext of TOTP secret (base64: iv.tag.ciphertext) — null when 2FA off
+  twoFactorSecret       String?
+  /// bcrypt-hashed backup codes; consumed codes are removed from the array
+  twoFactorBackupCodes  String[] @default([])
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  deletedAt             DateTime?
 
   ownedWorkspaces  Workspace[]        @relation("WorkspaceOwner")
   memberships      WorkspaceMember[]
@@ -99,6 +104,7 @@ model User {
   activities        TaskActivity[]      @relation("UserActivities")
   savedFilters      SavedFilter[]        @relation("SavedFilterOwner")
   chatMessageReads ChatMessageRead[]
+  apiKeys          ApiKey[]
 
   @@index([email])
   @@index([deletedAt])
@@ -125,6 +131,10 @@ model Workspace {
   userNotificationPreferences UserNotificationPreference[]
   savedFilters                SavedFilter[]      @relation("SavedFilterWorkspace")
   webhooks                    Webhook[]          @relation("WebhookWorkspaces")
+  automationRules             AutomationRule[]   @relation("WorkspaceAutomationRules")
+  taskTemplates               TaskTemplate[]     @relation("WorkspaceTaskTemplates")
+  sprints                     Sprint[]           @relation("WorkspaceSprints")
+  boards                      Board[]            @relation("WorkspaceBoards")
 
   @@index([slug])
   @@index([ownerId])
@@ -164,6 +174,19 @@ model Column {
   @@index([workspaceId, position])
 }
 
+enum TaskType {
+  TASK
+  EPIC
+  STORY
+  SUBTASK
+}
+
+enum SprintStatus {
+  PLANNED
+  ACTIVE
+  CLOSED
+}
+
 model Task {
   id           String       @id @default(cuid())
   workspaceId  String
@@ -173,9 +196,14 @@ model Task {
   description  String?
   priority     TaskPriority @default(MEDIUM)
   status       TaskStatus   @default(TODO)
+  type         TaskType     @default(TASK)
   position     Int          @default(0)
   assigneeId   String?
   dueDate      DateTime?
+  /// Story points (nullable until estimated)
+  estimate     Int?
+  sprintId     String?
+  boardId      String?
   completedAt  DateTime?
   createdById  String
   version      Int          @default(0)
@@ -191,6 +219,8 @@ model Task {
   subtasks     Task[]            @relation("TaskParent")
   assignee     User?             @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
   createdBy    User              @relation("TaskCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  sprint       Sprint?           @relation("SprintTasks", fields: [sprintId], references: [id], onDelete: SetNull)
+  board        Board?            @relation("BoardTasks", fields: [boardId], references: [id], onDelete: SetNull)
   dependencies TaskDependency[]  @relation("BlockingTask")
   blockers     TaskDependency[]  @relation("BlockedTask")
   comments     Comment[]
@@ -204,6 +234,10 @@ model Task {
   @@index([parentTaskId])
   @@index([status])
   @@index([dueDate])
+  @@index([sprintId])
+  @@index([boardId])
+  @@index([type])
+  @@index([workspaceId, type])
 }
 
 model TaskDependency {
@@ -233,6 +267,7 @@ model TaskActivity {
   task Task @relation("TaskActivities", fields: [taskId], references: [id], onDelete: Cascade)
   user User @relation("UserActivities", fields: [userId], references: [id], onDelete: Cascade)
   deliveries WebhookDelivery[] @relation("WebhookDeliveries")
+  ruleExecutions RuleExecution[] @relation("RuleExecutions")
 
   @@index([taskId, createdAt(sort: Desc)])
   @@index([userId])
@@ -507,4 +542,140 @@ model WebhookDelivery {
 
   @@index([webhookId, createdAt])
   @@index([status, createdAt])
+}
+
+// --- P2-1 Automation rules ---
+
+model AutomationRule {
+  id          String   @id @default(cuid())
+  workspaceId String
+  name        String
+  /// ActivityAction value that triggers this rule
+  trigger     String
+  /// JSON: { field, op, value } condition DSL (null = always)
+  condition   Json?
+  /// JSON: { type, ...params } action (set-field | assign | move-column | send-webhook | send-email)
+  action      Json
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+
+  workspace  Workspace        @relation("WorkspaceAutomationRules", fields: [workspaceId], references: [id], onDelete: Cascade)
+  executions RuleExecution[]  @relation("RuleExecutions")
+
+  @@index([workspaceId, isActive])
+  @@index([workspaceId, deletedAt])
+  @@index([workspaceId, trigger])
+}
+
+model RuleExecution {
+  id         String   @id @default(cuid())
+  ruleId     String
+  activityId String
+  status     String
+  error      String?
+  executedAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  rule     AutomationRule @relation("RuleExecutions", fields: [ruleId], references: [id], onDelete: Cascade)
+  activity TaskActivity   @relation("RuleExecutions", fields: [activityId], references: [id], onDelete: Cascade)
+
+  @@index([ruleId, executedAt])
+  @@index([status, executedAt])
+}
+
+// --- P3-1 Sprint + estimation ---
+
+model Sprint {
+  id          String       @id @default(cuid())
+  workspaceId String
+  name        String
+  goal        String?
+  startDate   DateTime
+  endDate     DateTime
+  status      SprintStatus @default(PLANNED)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  deletedAt   DateTime?
+
+  workspace Workspace @relation("WorkspaceSprints", fields: [workspaceId], references: [id], onDelete: Cascade)
+  tasks     Task[]    @relation("SprintTasks")
+
+  @@index([workspaceId, status])
+  @@index([workspaceId, deletedAt])
+}
+
+// --- P3-2 Templates + recurring ---
+
+model TaskTemplate {
+  id          String   @id @default(cuid())
+  workspaceId String
+  name        String
+  /// JSON template fields: title, description?, priority?, estimate?, labels?
+  fields      Json
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+
+  workspace Workspace       @relation("WorkspaceTaskTemplates", fields: [workspaceId], references: [id], onDelete: Cascade)
+  recurring RecurringRule[] @relation("TemplateRecurring")
+
+  @@index([workspaceId, deletedAt])
+}
+
+model RecurringRule {
+  id         String    @id @default(cuid())
+  templateId String
+  cron       String
+  nextRunAt  DateTime
+  lastRunAt  DateTime?
+  isActive   Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  template TaskTemplate @relation("TemplateRecurring", fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@index([isActive, nextRunAt])
+  @@index([templateId])
+}
+
+// --- P4-2 Multiple boards ---
+
+model Board {
+  id          String   @id @default(cuid())
+  workspaceId String
+  name        String
+  position    Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+
+  workspace Workspace @relation("WorkspaceBoards", fields: [workspaceId], references: [id], onDelete: Cascade)
+  tasks     Task[]    @relation("BoardTasks")
+
+  @@index([workspaceId])
+  @@index([workspaceId, deletedAt])
+}
+
+// --- P4-4 Public API keys ---
+
+model ApiKey {
+  id         String    @id @default(cuid())
+  userId     String
+  name       String
+  /// SHA-256 hex of full key (fdkey_…)
+  hashedKey  String    @unique
+  /// First 8 chars of key for display (fdkey_ab…)
+  prefix     String
+  lastUsedAt DateTime?
+  scopes     String[]  @default([])
+  createdAt  DateTime  @default(now())
+  revokedAt  DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([hashedKey])
 }

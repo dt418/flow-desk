@@ -87,6 +87,21 @@
       "import": "./dist/webhook.mjs",
       "require": "./dist/webhook.js"
     },
+    "./automation": {
+      "types": "./dist/automation.d.ts",
+      "import": "./dist/automation.mjs",
+      "require": "./dist/automation.js"
+    },
+    "./template": {
+      "types": "./dist/template.d.ts",
+      "import": "./dist/template.mjs",
+      "require": "./dist/template.js"
+    },
+    "./sprint": {
+      "types": "./dist/sprint.d.ts",
+      "import": "./dist/sprint.mjs",
+      "require": "./dist/sprint.js"
+    },
     "./socket-events": {
       "types": "./dist/socket-events.d.ts",
       "import": "./dist/socket-events.mjs",

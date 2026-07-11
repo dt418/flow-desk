@@ -44,6 +44,10 @@ vi.mock('../../workers/webhook/queue', () => ({
   webhookQueue: { add: vi.fn().mockResolvedValue(undefined) },
 }));
 
+vi.mock('../automation/automation.service', () => ({
+  automationService: { processActivity: vi.fn().mockResolvedValue(undefined) },
+}));
+
 vi.mock('../../shared/errors', () => ({
   NotFoundError: class NotFoundError extends Error {
     constructor(resource: string) {

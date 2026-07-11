@@ -50,6 +50,21 @@ export class LLMProvider {
       ...(opts.jsonMode ? { response_format: { type: 'json_object' } } : {}),
     };
 
+    const started = process.hrtime.bigint();
+    const observeLatency = () => {
+      try {
+        // Lazy require avoids coupling metrics import graph to LLM tests
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const metrics = require('./metrics') as {
+          llmLatencySeconds: { observe: (labels: { operation: string }, v: number) => void };
+        };
+        const sec = Number(process.hrtime.bigint() - started) / 1e9;
+        metrics.llmLatencySeconds.observe({ operation: 'chat' }, sec);
+      } catch {
+        // metrics optional in some unit-test graphs
+      }
+    };
+
     let lastErr: unknown;
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
       const ctrl = new AbortController();
@@ -67,6 +82,7 @@ export class LLMProvider {
             await new Promise((r) => setTimeout(r, RETRY_BACKOFF_MS));
             continue;
           }
+          observeLatency();
           throw err;
         }
         const data = (await res.json()) as {
@@ -74,6 +90,7 @@ export class LLMProvider {
         };
         const content = data.choices[0]?.message.content;
         if (!content) throw new LLMError('Empty response from LLM');
+        observeLatency();
         return content;
       } catch (err: unknown) {
         lastErr = err;

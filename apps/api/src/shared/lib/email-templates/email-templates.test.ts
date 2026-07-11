@@ -207,3 +207,37 @@ describe('renderDigestEmail', () => {
     expect(text).toContain('2026-06-27');
   });
 });
+
+import { renderTaskMentionEmail } from './task-mention';
+import { renderTaskStatusChangeEmail } from './task-status-change';
+
+describe('P2-2 mention + status templates', () => {
+  it('renderTaskMentionEmail includes author and snippet', () => {
+    const r = renderTaskMentionEmail({
+      recipientName: 'Bob',
+      authorName: 'Alice',
+      taskTitle: 'Fix login',
+      taskUrl: 'https://app/t/1',
+      workspaceName: 'Demo',
+      snippet: 'hey @bob look at this',
+    });
+    expect(r.subject).toContain('Alice');
+    expect(r.text).toContain('@bob');
+    expect(r.html).toContain('Fix login');
+  });
+
+  it('renderTaskStatusChangeEmail shows old → new', () => {
+    const r = renderTaskStatusChangeEmail({
+      recipientName: 'Bob',
+      actorName: 'Alice',
+      taskTitle: 'Ship it',
+      taskUrl: 'https://app/t/1',
+      workspaceName: 'Demo',
+      oldStatus: 'TODO',
+      newStatus: 'IN_PROGRESS',
+    });
+    expect(r.text).toContain('TODO');
+    expect(r.text).toContain('IN_PROGRESS');
+    expect(r.subject).toContain('IN_PROGRESS');
+  });
+});

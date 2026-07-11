@@ -55,5 +55,7 @@ export async function errorHandler(err: Error, c: Context) {
   }
 
   logger.error({ err, requestId }, 'unhandled error');
+  // P2-3: optional Sentry capture when SENTRY_DSN is set
+  void import('../lib/sentry').then((m) => m.captureException(err)).catch(() => undefined);
   return c.json({ message: 'Internal Server Error', code: 'INTERNAL_ERROR', requestId }, 500);
 }

@@ -1,11 +1,29 @@
 import { useState } from 'react';
-import { Settings, Users, Columns3, AlertTriangle, Tag, Bookmark, Webhook } from 'lucide-react';
+import {
+  Settings,
+  Users,
+  Columns3,
+  AlertTriangle,
+  Tag,
+  Bookmark,
+  Webhook,
+  Zap,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useWorkspaceRole } from '../hooks';
 import { canDeleteWorkspace, canManageColumns, canManageMembers } from './role';
 import { WebhooksTab } from '../../webhook/components/WebhooksTab';
+import { RulesTab } from '../../automation/components/RulesTab';
 
-type TabId = 'general' | 'members' | 'columns' | 'labels' | 'views' | 'webhooks' | 'danger';
+type TabId =
+  | 'general'
+  | 'members'
+  | 'columns'
+  | 'labels'
+  | 'views'
+  | 'webhooks'
+  | 'rules'
+  | 'danger';
 
 interface TabDef {
   id: TabId;
@@ -44,6 +62,12 @@ const TABS: TabDef[] = [
     id: 'webhooks',
     label: 'Webhooks',
     icon: Webhook,
+    visible: () => true,
+  },
+  {
+    id: 'rules',
+    label: 'Automation',
+    icon: Zap,
     visible: () => true,
   },
   {
@@ -99,6 +123,8 @@ export function SettingsTabs({ workspaceId, children }: Props) {
       <div className="flex-1 min-w-0">
         {active === 'webhooks' ? (
           <WebhooksTab />
+        ) : active === 'rules' ? (
+          <RulesTab />
         ) : (
           <div className="rounded-lg border border-border bg-card p-5">{children[active]}</div>
         )}

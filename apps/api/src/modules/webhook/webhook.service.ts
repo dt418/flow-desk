@@ -4,28 +4,46 @@ import { NotFoundError } from '../../shared/errors';
 import * as crypto from 'crypto';
 import * as repo from './webhook.repository';
 import type { CreateWebhookInput, UpdateWebhookInput } from '@flow-desk/shared/webhook';
+import type { Webhook as PrismaWebhook } from '@flowdesk/db';
+
+export { signWebhookPayload } from './webhook-sign';
 
 function generateSecret(): string {
   return crypto.randomBytes(32).toString('hex');
 }
 
-function stripSecret<T extends { secret?: string }>(webhook: T): Omit<T, 'secret'> {
-  const { secret: _secret, ...rest } = webhook as { secret?: string; [key: string]: unknown };
-  return rest as Omit<T, 'secret'>;
+function serializeWebhook(row: PrismaWebhook) {
+  return {
+    id: row.id,
+    workspaceId: row.workspaceId,
+    url: row.url,
+    events: row.events,
+    isActive: row.isActive,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+    deletedAt: row.deletedAt?.toISOString() ?? null,
+  };
+}
+
+function serializeWebhookWithSecret(row: PrismaWebhook) {
+  return {
+    ...serializeWebhook(row),
+    secret: row.secret,
+  };
 }
 
 export const webhookService = {
   async list(userId: string, workspaceId: string) {
     await assertMembership(workspaceId, userId);
     const rows = await repo.list(prisma, workspaceId);
-    return rows.map(stripSecret);
+    return rows.map(serializeWebhook);
   },
 
   async get(userId: string, id: string) {
     const row = await repo.findById(prisma, id);
     if (!row) throw new NotFoundError('Webhook');
     await assertMembership(row.workspaceId, userId);
-    return stripSecret(row);
+    return serializeWebhook(row);
   },
 
   async create(userId: string, workspaceId: string, body: CreateWebhookInput) {
@@ -39,7 +57,7 @@ export const webhookService = {
       isActive: body.isActive ?? true,
     });
     // Return with secret — one-time reveal only
-    return row;
+    return serializeWebhookWithSecret(row);
   },
 
   async update(userId: string, id: string, body: UpdateWebhookInput) {
@@ -51,7 +69,7 @@ export const webhookService = {
       ...(body.events !== undefined ? { events: body.events } : {}),
       ...(body.isActive !== undefined ? { isActive: body.isActive } : {}),
     });
-    return stripSecret(updated);
+    return serializeWebhook(updated);
   },
 
   async remove(userId: string, id: string) {

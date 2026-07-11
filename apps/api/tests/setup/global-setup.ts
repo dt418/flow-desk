@@ -19,7 +19,9 @@ function detectDbPort(): number {
     const out = execSync(
       'docker inspect flow-desk-postgres-1 --format "{{json .HostConfig.PortBindings}}"',
       { encoding: 'utf8', stdio: ['pipe', 'pipe', 'ignore'] },
-    ).toString().trim();
+    )
+      .toString()
+      .trim();
     const bindings = JSON.parse(out);
     return parseInt(bindings['5432/tcp']?.[0]?.HostPort ?? '5432', 10);
   } catch {

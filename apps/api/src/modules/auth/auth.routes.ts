@@ -3,13 +3,23 @@ import type { Context } from 'hono';
 import { setCookie, deleteCookie } from 'hono/cookie';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
-import { registerSchema, loginSchema, refreshTokenSchema } from '@flow-desk/shared/auth';
+import QRCode from 'qrcode';
+import {
+  registerSchema,
+  loginSchema,
+  refreshTokenSchema,
+  login2faSchema,
+  verify2faSetupSchema,
+  disable2faSchema,
+} from '@flow-desk/shared/auth';
 import { prisma } from '../../shared/lib/prisma';
 import {
   signAccessToken,
   signRefreshToken,
   verifyRefreshToken,
   signSocketToken,
+  signTwoFactorChallenge,
+  verifyTwoFactorChallenge,
 } from '../../shared/lib/jwt';
 import jwt from 'jsonwebtoken';
 import { env } from '../../shared/lib/prisma';
@@ -17,6 +27,13 @@ import { logger } from '../../shared/lib/logger';
 import { requireAuth } from '../../shared/middleware/auth';
 import { rateLimit } from '../../shared/middleware/rate-limit';
 import { BadRequestError, ConflictError, UnauthorizedError } from '../../shared/errors';
+import {
+  encryptTotpSecret,
+  decryptTotpSecret,
+  generateBackupCodes,
+  consumeBackupCode,
+} from './totp';
+import { generateTotpSecret, totpKeyUri, verifyTotpToken } from './totp-engine';
 
 export const authRouter = new Hono();
 
@@ -87,6 +104,38 @@ authRouter.post(
   },
 );
 
+async function issueSession(
+  c: Context,
+  user: {
+    id: string;
+    email: string;
+    name: string;
+    avatarUrl: string | null;
+    twoFactorEnabled?: boolean;
+  },
+) {
+  const access = signAccessToken({ userId: user.id, email: user.email });
+  const tokenId = crypto.randomUUID();
+  const refresh = signRefreshToken({ userId: user.id, tokenId });
+  await prisma.refreshToken.create({
+    data: {
+      id: tokenId,
+      userId: user.id,
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    },
+  });
+  setAuthCookies(c, access, refresh);
+  return {
+    user: {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      avatarUrl: user.avatarUrl,
+      twoFactorEnabled: user.twoFactorEnabled ?? false,
+    },
+  };
+}
+
 authRouter.post(
   '/login',
   rateLimit({ scope: 'auth:login', windowSec: 60, max: 5, keyBy: 'ip' }),
@@ -98,21 +147,147 @@ authRouter.post(
     const ok = await bcrypt.compare(body.password, user.passwordHash);
     if (!ok) throw new UnauthorizedError('Invalid credentials');
 
-    const access = signAccessToken({ userId: user.id, email: user.email });
-    const tokenId = crypto.randomUUID();
-    const refresh = signRefreshToken({ userId: user.id, tokenId });
-    await prisma.refreshToken.create({
+    if (user.twoFactorEnabled) {
+      const challengeToken = signTwoFactorChallenge({ userId: user.id, email: user.email });
+      return c.json({ twoFactorRequired: true as const, challengeToken });
+    }
+
+    return c.json(await issueSession(c, user));
+  },
+);
+
+authRouter.post(
+  '/login/2fa',
+  rateLimit({ scope: 'auth:login-2fa', windowSec: 60, max: 10, keyBy: 'ip' }),
+  async (c) => {
+    const body = login2faSchema.parse(await c.req.json());
+    let challenge;
+    try {
+      challenge = verifyTwoFactorChallenge(body.challengeToken);
+    } catch {
+      throw new UnauthorizedError('Invalid or expired 2FA challenge');
+    }
+
+    const user = await prisma.user.findUnique({ where: { id: challenge.userId } });
+    if (!user || !user.twoFactorEnabled || !user.twoFactorSecret) {
+      throw new UnauthorizedError('2FA is not enabled for this account');
+    }
+
+    const secret = decryptTotpSecret(user.twoFactorSecret);
+    const totpOk = verifyTotpToken(body.code, secret);
+    if (totpOk) {
+      return c.json(await issueSession(c, user));
+    }
+
+    // Try backup codes
+    const remaining = await consumeBackupCode(
+      body.code.trim().toLowerCase(),
+      user.twoFactorBackupCodes,
+    );
+    if (!remaining) {
+      throw new UnauthorizedError('Invalid authentication code');
+    }
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { twoFactorBackupCodes: remaining },
+    });
+    return c.json(await issueSession(c, user));
+  },
+);
+
+// --- 2FA setup / disable (authenticated) ---
+
+authRouter.post(
+  '/2fa/setup',
+  requireAuth(),
+  rateLimit({ scope: 'auth:2fa-setup', windowSec: 60, max: 5, keyBy: 'user' }),
+  async (c) => {
+    const auth = c.get('auth');
+    const user = await prisma.user.findUnique({ where: { id: auth.user.id } });
+    if (!user) throw new UnauthorizedError('User not found');
+    if (user.twoFactorEnabled) throw new BadRequestError('2FA is already enabled');
+
+    const secret = generateTotpSecret();
+    const encrypted = encryptTotpSecret(secret);
+    // Store pending secret; not enabled until verify
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { twoFactorSecret: encrypted },
+    });
+
+    const otpauthUrl = totpKeyUri(user.email, secret);
+    const qrDataUrl = await QRCode.toDataURL(otpauthUrl);
+    return c.json({ secret, otpauthUrl, qrDataUrl });
+  },
+);
+
+authRouter.post(
+  '/2fa/verify',
+  requireAuth(),
+  rateLimit({ scope: 'auth:2fa-verify', windowSec: 60, max: 10, keyBy: 'user' }),
+  async (c) => {
+    const auth = c.get('auth');
+    const body = verify2faSetupSchema.parse(await c.req.json());
+    const user = await prisma.user.findUnique({ where: { id: auth.user.id } });
+    if (!user?.twoFactorSecret) throw new BadRequestError('Call /2fa/setup first');
+    if (user.twoFactorEnabled) throw new BadRequestError('2FA is already enabled');
+
+    const secret = decryptTotpSecret(user.twoFactorSecret);
+    if (!verifyTotpToken(body.code, secret)) {
+      throw new UnauthorizedError('Invalid TOTP code');
+    }
+
+    const { plain, hashes } = await generateBackupCodes(8);
+    await prisma.user.update({
+      where: { id: user.id },
       data: {
-        id: tokenId,
-        userId: user.id,
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        twoFactorEnabled: true,
+        twoFactorBackupCodes: hashes,
       },
     });
-    setAuthCookies(c, access, refresh);
 
     return c.json({
-      user: { id: user.id, email: user.email, name: user.name, avatarUrl: user.avatarUrl },
+      enabled: true,
+      backupCodes: plain,
     });
+  },
+);
+
+authRouter.post(
+  '/2fa/disable',
+  requireAuth(),
+  rateLimit({ scope: 'auth:2fa-disable', windowSec: 60, max: 5, keyBy: 'user' }),
+  async (c) => {
+    const auth = c.get('auth');
+    const body = disable2faSchema.parse(await c.req.json());
+    const user = await prisma.user.findUnique({ where: { id: auth.user.id } });
+    if (!user?.twoFactorEnabled || !user.twoFactorSecret) {
+      throw new BadRequestError('2FA is not enabled');
+    }
+
+    const secret = decryptTotpSecret(user.twoFactorSecret);
+    const totpOk = verifyTotpToken(body.code, secret);
+    let backupOk = false;
+    if (!totpOk) {
+      const remaining = await consumeBackupCode(
+        body.code.trim().toLowerCase(),
+        user.twoFactorBackupCodes,
+      );
+      backupOk = remaining !== null;
+    }
+    if (!totpOk && !backupOk) {
+      throw new UnauthorizedError('Invalid authentication code');
+    }
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        twoFactorEnabled: false,
+        twoFactorSecret: null,
+        twoFactorBackupCodes: [],
+      },
+    });
+    return c.json({ enabled: false });
   },
 );
 
@@ -182,7 +357,13 @@ authRouter.get('/me', requireAuth(), async (c) => {
   const auth = c.get('auth');
   const user = await prisma.user.findUnique({
     where: { id: auth.user.id },
-    select: { id: true, email: true, name: true, avatarUrl: true },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      avatarUrl: true,
+      twoFactorEnabled: true,
+    },
   });
   if (!user) throw new UnauthorizedError('User not found');
   return c.json({ user });

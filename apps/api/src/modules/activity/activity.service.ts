@@ -4,6 +4,7 @@ import { NotFoundError } from '../../shared/errors';
 import * as repo from './activity.repository';
 import * as webhookRepo from '../webhook/webhook.repository';
 import { webhookQueue } from '../../workers/webhook/queue';
+import { automationService } from '../automation/automation.service';
 import type { ActivityAction } from '@flow-desk/shared/task';
 import type { TaskActivity } from '@flowdesk/db';
 
@@ -49,6 +50,9 @@ export async function record(input: RecordInput): Promise<TaskActivity | null> {
           }
         }
       }
+
+      // Fan-out to automation rules (non-blocking for caller — errors swallowed inside)
+      await automationService.processActivity(activity.id);
     }
 
     return activity;

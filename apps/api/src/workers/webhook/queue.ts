@@ -2,7 +2,7 @@ import { Queue, Worker } from 'bullmq';
 import { env } from '../../shared/lib/env';
 import { prisma } from '../../shared/lib/prisma';
 import { createDelivery, updateDelivery } from '../../modules/webhook/webhook.repository';
-import { createHmac } from 'crypto';
+import { signWebhookPayload } from '../../modules/webhook/webhook-sign';
 import { logger } from '../../shared/lib/logger';
 
 interface WebhookJob {
@@ -45,13 +45,12 @@ export async function createWebhookWorker() {
         status: 'PROCESSING',
       });
 
-      // Prepare request
-      const hmac = createHmac('sha256', webhookSecret);
-      hmac.update(JSON.stringify(activity));
-      const signature = hmac.digest('hex');
+      // Prepare request — body signed with HMAC-SHA256 (X-FlowDesk-Signature)
+      const body = JSON.stringify(activity);
+      const signature = signWebhookPayload(webhookSecret, body);
       const headers = {
         'Content-Type': 'application/json',
-        'X-FlowDesk-Signature': `sha256=${signature}`,
+        'X-FlowDesk-Signature': signature,
         'X-FlowDesk-Event': activity.action,
         'X-FlowDesk-Delivery': delivery.id,
       };
@@ -64,7 +63,7 @@ export async function createWebhookWorker() {
         const response = await fetch(webhookUrl, {
           method: 'POST',
           headers,
-          body: JSON.stringify(activity),
+          body,
           signal: controller.signal,
         });
 

@@ -7,6 +7,17 @@ export interface AuthUser {
   email: string;
   name: string;
   avatarUrl: string | null;
+  twoFactorEnabled?: boolean;
+}
+
+/** Returned by login when password is correct but TOTP is still required. */
+export class TwoFactorRequiredError extends Error {
+  challengeToken: string;
+  constructor(challengeToken: string) {
+    super('Two-factor authentication required');
+    this.name = 'TwoFactorRequiredError';
+    this.challengeToken = challengeToken;
+  }
 }
 
 interface AuthState {
@@ -14,6 +25,7 @@ interface AuthState {
   isLoading: boolean;
   checkAuth: () => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
+  login2fa: (challengeToken: string, code: string) => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -31,9 +43,26 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
   login: async (email, password) => {
-    const data = await api<{ user: AuthUser }>('/api/auth/login', {
+    const data = await api<{
+      user?: AuthUser;
+      twoFactorRequired?: boolean;
+      challengeToken?: string;
+    }>('/api/auth/login', {
       method: 'POST',
       json: { email, password },
+    });
+    if (data.twoFactorRequired && data.challengeToken) {
+      throw new TwoFactorRequiredError(data.challengeToken);
+    }
+    if (!data.user) {
+      throw new Error('Login failed');
+    }
+    set({ user: data.user });
+  },
+  login2fa: async (challengeToken, code) => {
+    const data = await api<{ user: AuthUser }>('/api/auth/login/2fa', {
+      method: 'POST',
+      json: { challengeToken, code },
     });
     set({ user: data.user });
   },

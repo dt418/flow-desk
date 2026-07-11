@@ -10,6 +10,8 @@ import { assertMembership } from '../../shared/lib/access';
 import { emitToTask, emitToUser, safeEmit } from '../../shared/lib/socket-events';
 import { decodeCursor, encodeCursor } from '@flow-desk/shared/pagination';
 import { activityService } from '../activity';
+import { handleTaskMentionEmail } from '../notification/notification-email.service';
+import { logger } from '../../shared/lib/logger';
 import * as repo from './comment.repository';
 
 const MENTION_REGEX = /@([a-zA-Z0-9_-]+)/g;
@@ -100,8 +102,8 @@ export async function createComment(
   if (recipientIds.length > 0) {
     await repo.createManyNotifications(
       prisma,
-      recipientIds.map((userId) => ({
-        userId,
+      recipientIds.map((uid) => ({
+        userId: uid,
         type: 'COMMENT_REPLY',
         title: 'You were mentioned',
         body: body.content.slice(0, 200),
@@ -121,6 +123,42 @@ export async function createComment(
         notificationId: notif.id,
         userId: notif.userId,
       });
+    }
+
+    // P2-2: email fan-out for mentions
+    try {
+      const [workspace, author, recipients] = await Promise.all([
+        prisma.workspace.findUnique({
+          where: { id: task.workspaceId },
+          select: { name: true },
+        }),
+        prisma.user.findUnique({ where: { id: userId }, select: { name: true } }),
+        prisma.user.findMany({
+          where: { id: { in: recipientIds } },
+          select: { id: true, name: true, email: true },
+        }),
+      ]);
+      if (workspace && author) {
+        const appUrl = process.env.APP_URL ?? 'http://localhost:3000';
+        await Promise.all(
+          recipients.map((r) =>
+            handleTaskMentionEmail(prisma, {
+              recipientId: r.id,
+              recipientName: r.name,
+              recipientEmail: r.email,
+              authorName: author.name,
+              taskId: task.id,
+              taskTitle: task.title,
+              taskUrl: `${appUrl}/tasks/${task.id}`,
+              workspaceId: task.workspaceId,
+              workspaceName: workspace.name,
+              snippet: body.content.slice(0, 200),
+            }),
+          ),
+        );
+      }
+    } catch (err) {
+      logger.warn({ err, taskId: task.id }, 'failed to enqueue mention emails');
     }
   }
 

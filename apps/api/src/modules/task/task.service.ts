@@ -19,7 +19,10 @@ import { BadRequestError, ConflictError, NotFoundError } from '../../shared/erro
 import * as repo from './task.repository';
 import { activityService } from '../activity';
 import { createTaskAssignmentNotification } from '../notification/notification.service';
-import { handleTaskAssignedEmail } from '../notification/notification-email.service';
+import {
+  handleTaskAssignedEmail,
+  handleTaskStatusChangeEmail,
+} from '../notification/notification-email.service';
 
 export const listTasksQuerySchema = CursorPaginationQuery.extend({
   workspaceId: cuidSchema,
@@ -38,14 +41,21 @@ export type ListTasksQuery = z.infer<typeof listTasksQuerySchema>;
 // Export accepts the same filter shape as list, minus cursor pagination.
 // sortBy/sortOrder are kept (serializer ignores them) so both endpoints
 // accept one shape and cannot drift.
-export const exportTasksQuerySchema = listTasksQuerySchema.omit({
-  cursor: true,
-  limit: true,
-});
+export const exportTasksQuerySchema = listTasksQuerySchema
+  .omit({
+    cursor: true,
+    limit: true,
+  })
+  .extend({
+    format: z.enum(['csv', 'excel', 'xlsx', 'pdf']).default('csv'),
+  });
 export type ExportTasksQuery = z.infer<typeof exportTasksQuerySchema>;
 
+/** Filter fields shared by list + export (format is export-only). */
+type TaskFilterQuery = Omit<ExportTasksQuery, 'format'> & { format?: ExportTasksQuery['format'] };
+
 // Shared filter builder for list + export — one filter path, no drift.
-function buildTaskWhere(query: ExportTasksQuery): Prisma.TaskWhereInput {
+function buildTaskWhere(query: TaskFilterQuery): Prisma.TaskWhereInput {
   return {
     workspaceId: query.workspaceId,
     ...(query.columnId ? { columnId: query.columnId } : {}),
@@ -236,9 +246,18 @@ export const taskService = {
 
     const previousAssigneeId = existing.assigneeId;
 
+    const rest = { ...body };
+    delete rest.labels;
     const task = await repo.update(prisma, id, {
-      ...body,
-      ...(body.dueDate ? { dueDate: new Date(body.dueDate) } : {}),
+      ...rest,
+      ...(body.dueDate !== undefined
+        ? { dueDate: body.dueDate ? new Date(body.dueDate) : null }
+        : {}),
+      // P3-1: set completedAt when status moves to DONE for burndown
+      ...(body.status === 'DONE' && existing.status !== 'DONE' ? { completedAt: new Date() } : {}),
+      ...(body.status && body.status !== 'DONE' && existing.status === 'DONE'
+        ? { completedAt: null }
+        : {}),
       version: { increment: 1 },
     });
     safeEmit(() => emitToWorkspace(task.workspaceId, 'task:updated', { task }), {
@@ -541,6 +560,7 @@ async function recordUpdateDiff(
     columnId: string;
     assigneeId: string | null;
     dueDate: Date | null;
+    workspaceId: string;
   },
 ) {
   const diffs: Array<{
@@ -616,6 +636,41 @@ async function recordUpdateDiff(
       oldValue: d.oldValue,
       newValue: d.newValue,
     });
+  }
+
+  // P2-2: status-change email to assignee
+  if (existing.status !== updated.status && updated.assigneeId) {
+    try {
+      const [workspace, assignee, actor] = await Promise.all([
+        prisma.workspace.findUnique({
+          where: { id: updated.workspaceId },
+          select: { name: true },
+        }),
+        prisma.user.findUnique({
+          where: { id: updated.assigneeId },
+          select: { id: true, name: true, email: true },
+        }),
+        prisma.user.findUnique({ where: { id: userId }, select: { name: true } }),
+      ]);
+      if (workspace && assignee && actor) {
+        const appUrl = process.env.APP_URL ?? 'http://localhost:3000';
+        await handleTaskStatusChangeEmail(prisma, {
+          recipientId: assignee.id,
+          recipientName: assignee.name,
+          recipientEmail: assignee.email,
+          actorName: actor.name,
+          taskId: updated.id,
+          taskTitle: updated.title,
+          taskUrl: `${appUrl}/tasks/${updated.id}`,
+          workspaceId: updated.workspaceId,
+          workspaceName: workspace.name,
+          oldStatus: existing.status,
+          newStatus: updated.status,
+        });
+      }
+    } catch (err) {
+      logger.warn({ err, taskId: updated.id }, 'failed to enqueue status-change email');
+    }
   }
 }
 

@@ -11,7 +11,11 @@ const SOFT_DELETE_MODELS = new Set<string>([
   'ChatMessage',
   'SavedFilter',
   'Webhook',
-  'WebhookDelivery',
+  // WebhookDelivery has no deletedAt column — do not soft-filter it
+  'AutomationRule',
+  'Sprint',
+  'TaskTemplate',
+  'Board',
 ]);
 
 type ReadArgs = { where?: Record<string, unknown> };

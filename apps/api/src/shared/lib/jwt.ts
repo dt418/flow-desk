@@ -17,6 +17,12 @@ export interface SocketTokenPayload {
   scope: 'socket';
 }
 
+export interface TwoFactorChallengePayload {
+  userId: string;
+  email: string;
+  purpose: '2fa';
+}
+
 export function signAccessToken(payload: AccessTokenPayload): string {
   return jwt.sign(payload, env.JWT_SECRET, { expiresIn: env.JWT_ACCESS_TTL } as jwt.SignOptions);
 }
@@ -60,4 +66,23 @@ export function verifySocketToken(token: string): AccessTokenPayload {
   if (decoded.exp * 1000 <= Date.now()) throw new Error('Invalid token: expired');
   if (!decoded.userId || !decoded.email) throw new Error('Invalid token payload');
   return { userId: decoded.userId, email: decoded.email };
+}
+
+/** Short-lived token issued after password check when 2FA is enabled (5 min). */
+export function signTwoFactorChallenge(payload: { userId: string; email: string }): string {
+  const body: TwoFactorChallengePayload = {
+    userId: payload.userId,
+    email: payload.email,
+    purpose: '2fa',
+  };
+  return jwt.sign(body, env.JWT_SECRET, { expiresIn: '5m' } as jwt.SignOptions);
+}
+
+export function verifyTwoFactorChallenge(token: string): TwoFactorChallengePayload {
+  const decoded = jwt.verify(token, env.JWT_SECRET) as TwoFactorChallengePayload & jwt.JwtPayload;
+  if (decoded.purpose !== '2fa') throw new Error('Invalid token: wrong purpose');
+  if (typeof decoded.exp !== 'number') throw new Error('Invalid token: missing exp');
+  if (decoded.exp * 1000 <= Date.now()) throw new Error('Invalid token: expired');
+  if (!decoded.userId || !decoded.email) throw new Error('Invalid token payload');
+  return { userId: decoded.userId, email: decoded.email, purpose: '2fa' };
 }

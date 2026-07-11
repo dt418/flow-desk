@@ -127,6 +127,9 @@ export function AppShell() {
                 <NavLink to={`/list/${w.id}`} className={navSubItem}>
                   List view
                 </NavLink>
+                <NavLink to={`/calendar/${w.id}`} className={navSubItem}>
+                  Calendar
+                </NavLink>
                 <NavLink to={`/workspaces/${w.id}/chat`} className={navSubItem}>
                   Chat
                 </NavLink>
@@ -139,7 +142,10 @@ export function AppShell() {
         </nav>
 
         <div className="border-t border-border p-3">
-          <div className="flex items-center justify-between gap-2">
+          <NavLink to="/settings/security" className={navSubItem}>
+            Security (2FA)
+          </NavLink>
+          <div className="mt-2 flex items-center justify-between gap-2">
             <div className="flex min-w-0 items-center gap-2">
               <Avatar size="sm">
                 <AvatarFallback>{user?.name ? initials(user.name) : '?'}</AvatarFallback>

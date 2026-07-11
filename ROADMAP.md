@@ -60,7 +60,7 @@ Front-loads portfolio artifacts a reviewer can try in 2 minutes each. No `Board`
 - **rough effort**: 0.5d
 - **acceptance seed**: export Demo workspace → CSV opens in Excel/Numbers with 51 task rows + correct headers.
 
-### P1-4 — Outgoing webhooks
+### P1-4 — Outgoing webhooks ✅ shipped
 
 - **priority**: 87
 - **dependencies**: none (reuses shipped `TaskActivity` event stream)
@@ -73,7 +73,7 @@ Front-loads portfolio artifacts a reviewer can try in 2 minutes each. No `Board`
 - **rough effort**: 1d
 - **acceptance seed**: register webhook for `TASK_UPDATED` on Demo workspace → update a task → webhook receives signed POST within 2s; delivery log shows 200.
 
-### P1-5 — 2FA (TOTP)
+### P1-5 — 2FA (TOTP) ✅ shipped
 
 - **priority**: 86
 - **dependencies**: none
@@ -91,7 +91,7 @@ Front-loads portfolio artifacts a reviewer can try in 2 minutes each. No `Board`
 
 Automation inputs now exist (TaskActivity + webhooks). Email infra already shipped in F7; this expands event coverage. Total ~5-6d.
 
-### P2-1 — Automation rules engine
+### P2-1 — Automation rules engine ✅ shipped
 
 - **priority**: 85
 - **dependencies**: P1-4 (webhooks — same event-subscription pattern), activity-log (shipped)
@@ -104,7 +104,7 @@ Automation inputs now exist (TaskActivity + webhooks). Email infra already shipp
 - **rough effort**: 3-4d (biggest item)
 - **acceptance seed**: rule "when status→IN_REVIEW, assign to workspace Owner" → move task to In Review → owner assigned, execution log shows success.
 
-### P2-2 — Email event coverage expansion
+### P2-2 — Email event coverage expansion ✅ shipped
 
 - **priority**: 84
 - **dependencies**: F7 email infra (shipped)
@@ -115,7 +115,7 @@ Automation inputs now exist (TaskActivity + webhooks). Email infra already shipp
 - **rough effort**: 1d
 - **acceptance seed**: @mention user with email prefs on → receives email within 30s; due-soon task triggers reminder at configured offset.
 
-### P2-3 — Observability (Sentry + metrics)
+### P2-3 — Observability (Sentry + metrics) ✅ shipped
 
 - **priority**: 83
 - **dependencies**: none
@@ -132,7 +132,7 @@ Automation inputs now exist (TaskActivity + webhooks). Email infra already shipp
 
 Sprint cluster ships together (estimation without sprint UI = useless). Total ~7-8d.
 
-### P3-1 — Estimation + sprint + burndown
+### P3-1 — Estimation + sprint + burndown ✅ shipped
 
 - **priority**: 82
 - **dependencies**: none (additive schema, checklist-respecting)
@@ -145,7 +145,7 @@ Sprint cluster ships together (estimation without sprint UI = useless). Total ~7
 - **rough effort**: 4-5d
 - **acceptance seed**: create sprint → drag 5 tasks in (total 21 pts) → start sprint → close sprint → burndown shows ideal vs actual line.
 
-### P3-2 — Recurring tasks / templates
+### P3-2 — Recurring tasks / templates ✅ shipped
 
 - **priority**: 81
 - **dependencies**: none
@@ -157,7 +157,7 @@ Sprint cluster ships together (estimation without sprint UI = useless). Total ~7
 - **rough effort**: 2d
 - **acceptance seed**: template "Weekly status writeup" + cron every Monday 09:00 → task created automatically on next Monday.
 
-### P3-3 — Calendar view
+### P3-3 — Calendar view ✅ shipped
 
 - **priority**: 80
 - **dependencies**: none
@@ -174,7 +174,7 @@ Sprint cluster ships together (estimation without sprint UI = useless). Total ~7
 
 Includes the schema-hygiene payoff: `Board` model lands here, after every checklist-respecting query is already in place. Total ~12-15d; items can be reordered or dropped.
 
-### P4-1 — Epic → Story hierarchy
+### P4-1 — Epic → Story hierarchy ✅ shipped
 
 - **priority**: 79
 - **dependencies**: none (uses existing `Task.parentTaskId` self-ref)
@@ -184,7 +184,7 @@ Includes the schema-hygiene payoff: `Board` model lands here, after every checkl
   - Web: epic lane on board, collapse/expand story tree.
 - **rough effort**: 2d
 
-### P4-2 — Multiple boards per workspace
+### P4-2 — Multiple boards per workspace ✅ shipped
 
 - **priority**: 78
 - **dependencies**: P4-1 (or standalone — heaviest migration in the roadmap)
@@ -196,7 +196,7 @@ Includes the schema-hygiene payoff: `Board` model lands here, after every checkl
 - **rough effort**: 2-3d
 - **acceptance seed**: create "Marketing" + "Engineering" boards in one workspace → tasks partition correctly → switch boards → board persists.
 
-### P4-3 — Slack + GitLab OAuth integrations
+### P4-3 — Slack + GitLab OAuth integrations ✅ shipped
 
 - **priority**: 77
 - **dependencies**: P1-4 (webhooks — integration = webhook + incoming OAuth)
@@ -206,7 +206,7 @@ Includes the schema-hygiene payoff: `Board` model lands here, after every checkl
   - Per-provider creds in `.env` (`SLACK_CLIENT_*`, `FLOWDESK_GITLAB_*`); never committed.
 - **rough effort**: 2d
 
-### P4-4 — Public API + API keys
+### P4-4 — Public API + API keys ✅ shipped
 
 - **priority**: 76
 - **dependencies**: none
@@ -218,7 +218,7 @@ Includes the schema-hygiene payoff: `Board` model lands here, after every checkl
   - Web: API keys settings page (create, reveal-once, revoke, last-used).
 - **rough effort**: 2d
 
-### P4-5 — PDF / Excel export
+### P4-5 — PDF / Excel export ✅ shipped
 
 - **priority**: 75
 - **dependencies**: P1-3 (CSV export — extends export module)
@@ -227,7 +227,7 @@ Includes the schema-hygiene payoff: `Board` model lands here, after every checkl
   - Streaming where possible; cap row count for PDF.
 - **rough effort**: 1d
 
-### P4-6 — WCAG compliance pass
+### P4-6 — WCAG compliance pass ✅ shipped
 
 - **priority**: 74
 - **dependencies**: none (audit + remediation)
