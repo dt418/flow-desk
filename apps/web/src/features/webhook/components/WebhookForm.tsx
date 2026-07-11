@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
-import { activityActionEnumSchema } from '@flow-desk/shared/webhook';
+import { activityActionEnumSchema, type ActivityActionEnum } from '@flow-desk/shared/webhook';
 
 interface WebhookFormProps {
   onSubmit: (data: CreateWebhookInput) => void;
@@ -29,9 +29,9 @@ export function WebhookForm({ onSubmit }: WebhookFormProps) {
 
   const toggleEvent = (event: string) => {
     const current = selectedEvents || [];
-    const updated = current.includes(event as any)
+    const updated = current.includes(event as ActivityActionEnum)
       ? current.filter((e) => e !== event)
-      : [...current, event as any];
+      : [...current, event as ActivityActionEnum];
     form.setValue('events', updated);
   };
 
@@ -52,7 +52,7 @@ export function WebhookForm({ onSubmit }: WebhookFormProps) {
             <div key={opt} className="flex items-center space-x-2">
               <Checkbox
                 id={`event-${opt}`}
-                checked={selectedEvents?.includes(opt as any) || false}
+                checked={selectedEvents?.includes(opt as ActivityActionEnum) || false}
                 onCheckedChange={() => toggleEvent(opt)}
               />
               <label

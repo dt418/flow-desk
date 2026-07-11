@@ -1,6 +1,5 @@
 import { z } from 'zod';
 import { cuidSchema } from './common';
-import { CursorPaginationQuery } from './pagination';
 
 // Re-export the 16 ActivityAction values as a Zod enum for webhook event filtering.
 // This matches the Prisma enum at schema.prisma:60 without importing @flowdesk/db.
