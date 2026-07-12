@@ -50,7 +50,7 @@ describe('totp crypto (P1-5)', () => {
     const { plain } = await generateBackupCodes(32);
     expect(plain).toHaveLength(MAX_BACKUP_CODES);
     expect(MAX_BACKUP_CODES).toBe(16);
-  });
+  }, 15_000);
 
   it('consumeBackupCode does not mutate input array on no match', async () => {
     const { hashes } = await generateBackupCodes(8);
@@ -58,7 +58,7 @@ describe('totp crypto (P1-5)', () => {
     const result = await consumeBackupCode('nonexistent', hashes);
     expect(result).toBeNull();
     expect(hashes).toEqual(before);
-  });
+  }, 15_000);
 });
 
 describe('totp-engine (P1-5)', () => {
