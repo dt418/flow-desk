@@ -73,6 +73,7 @@ export const taskSchema = z.object({
   description: z.string().nullable(),
   priority: taskPrioritySchema,
   status: taskStatusSchema,
+  type: taskTypeSchema,
   position: z.number().int(),
   assigneeId: cuidSchema.nullable(),
   dueDate: nullableIsoDateSchema,

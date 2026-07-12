@@ -23,8 +23,9 @@ export const workspaceService = {
       order,
     });
     const hasMore = items.length > query.limit;
-    const data = hasMore ? items.slice(0, query.limit) : items;
-    const last = data[data.length - 1];
+    const raw = hasMore ? items.slice(0, query.limit) : items;
+    const data = raw.map(({ members, ...w }) => ({ ...w, role: members[0]?.role ?? null }));
+    const last = raw[raw.length - 1];
     const nextCursor = hasMore && last ? encodeCursor(last.createdAt, last.id) : null;
     return { data, nextCursor };
   },

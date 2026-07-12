@@ -7,7 +7,10 @@ export const workspaceRepo = {
   listForUser: (userId: string) =>
     prisma.workspace.findMany({
       where: { members: { some: { userId } }, deletedAt: null },
-      include: { _count: { select: { members: true, tasks: true } } },
+      include: {
+        _count: { select: { members: true, tasks: true } },
+        members: { where: { userId }, select: { role: true } },
+      },
       orderBy: { createdAt: 'asc' },
     }),
 
@@ -25,7 +28,10 @@ export const workspaceRepo = {
         deletedAt: null,
         ...(args.cursorWhere ?? {}),
       },
-      include: { _count: { select: { members: true, tasks: true } } },
+      include: {
+        _count: { select: { members: true, tasks: true } },
+        members: { where: { userId }, select: { role: true } },
+      },
       orderBy: [{ createdAt: args.order }, { id: args.order }],
       take: args.take,
     }),

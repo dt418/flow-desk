@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
+import { workspaceApi } from '@/features/workspace/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -34,14 +35,13 @@ export default function EpicListPage() {
 
   const tasks = useQuery({
     queryKey: ['epic-tasks', workspaceId],
-    queryFn: () => api<{ data: TaskRow[] }>(`/api/tasks?workspaceId=${workspaceId}&limit=200`),
+    queryFn: () => api<{ data: TaskRow[] }>(`/api/tasks?workspaceId=${workspaceId}&limit=100`),
     enabled: Boolean(workspaceId),
   });
 
   const columns = useQuery({
     queryKey: ['columns', workspaceId],
-    queryFn: () =>
-      api<{ data: Array<{ id: string; name: string }> }>(`/api/workspaces/${workspaceId}/columns`),
+    queryFn: () => workspaceApi.columns(workspaceId),
     enabled: Boolean(workspaceId),
   });
 
@@ -68,7 +68,7 @@ export default function EpicListPage() {
   }
 
   function handleCreateEpic() {
-    const colId = columns.data?.data[0]?.id;
+    const colId = columns.data?.[0]?.id;
     if (!colId || !epicTitle.trim()) return;
     createTask.mutate(
       { title: epicTitle.trim(), type: 'EPIC', columnId: colId },
@@ -82,7 +82,7 @@ export default function EpicListPage() {
   }
 
   function handleAddStory(epicId: string) {
-    const colId = columns.data?.data[0]?.id;
+    const colId = columns.data?.[0]?.id;
     if (!colId || !storyTitle.trim()) return;
     createTask.mutate(
       { title: storyTitle.trim(), type: 'STORY', parentTaskId: epicId, columnId: colId },

@@ -17,12 +17,12 @@ export function RulesTab() {
 
   const rules = useQuery({
     queryKey: ['rules', wid],
-    queryFn: () => api<{ data: AutomationRule[] }>(`/workspaces/${wid}/rules`),
+    queryFn: () => api<{ data: AutomationRule[] }>(`/api/workspaces/${wid}/rules`),
   });
 
   const create = useMutation({
     mutationFn: () =>
-      api(`/workspaces/${wid}/rules`, {
+      api(`/api/workspaces/${wid}/rules`, {
         method: 'POST',
         json: {
           name,
@@ -41,7 +41,7 @@ export function RulesTab() {
   });
 
   const remove = useMutation({
-    mutationFn: (id: string) => api(`/workspaces/${wid}/rules/${id}`, { method: 'DELETE' }),
+    mutationFn: (id: string) => api(`/api/workspaces/${wid}/rules/${id}`, { method: 'DELETE' }),
     onSuccess: () => {
       toast.success('Rule deleted');
       qc.invalidateQueries({ queryKey: ['rules', wid] });

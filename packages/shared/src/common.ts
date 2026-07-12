@@ -31,7 +31,7 @@ export const isoDateString = z.string().datetime({ offset: true }).or(z.string()
 
 export const nonEmptyString = z.string().min(1).max(10_000);
 
-export const optionalString = z.string().max(10_000).optional();
+export const optionalString = z.string().max(10_000).nullable().optional();
 
 export const urlSchema = z.string().url().max(2048);
 

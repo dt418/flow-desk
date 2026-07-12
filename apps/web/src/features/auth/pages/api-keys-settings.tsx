@@ -23,12 +23,12 @@ export default function ApiKeysSettingsPage() {
 
   const keys = useQuery({
     queryKey: ['api-keys'],
-    queryFn: () => api<{ data: ApiKeyRow[] }>('/api-keys'),
+    queryFn: () => api<{ data: ApiKeyRow[] }>('/api/api-keys'),
   });
 
   const create = useMutation({
     mutationFn: () =>
-      api<{ key: string; id: string }>('/api-keys', {
+      api<{ key: string; id: string }>('/api/api-keys', {
         method: 'POST',
         json: { name, scopes: ['read'] },
       }),
@@ -40,7 +40,7 @@ export default function ApiKeysSettingsPage() {
   });
 
   const revoke = useMutation({
-    mutationFn: (id: string) => api(`/api-keys/${id}`, { method: 'DELETE' }),
+    mutationFn: (id: string) => api(`/api/api-keys/${id}`, { method: 'DELETE' }),
     onSuccess: () => {
       toast.success('Key revoked');
       qc.invalidateQueries({ queryKey: ['api-keys'] });
@@ -48,7 +48,7 @@ export default function ApiKeysSettingsPage() {
   });
 
   return (
-    <div className="mx-auto max-w-lg space-y-6 p-6">
+    <div className="space-y-6 p-6">
       <div>
         <h1 className="text-2xl font-semibold">API keys</h1>
         <p className="text-sm text-muted-foreground">

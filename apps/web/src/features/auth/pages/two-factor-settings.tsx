@@ -74,7 +74,7 @@ export default function TwoFactorSettingsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-lg space-y-6 p-6">
+    <div className="space-y-6 p-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Two-factor authentication</h1>
         <p className="text-sm text-muted-foreground">

@@ -19,6 +19,7 @@ import { CalendarDays, Plus, User, Calendar, Clock, FileText } from 'lucide-reac
 import { addMonths, buildMonthGrid, buildWeekGrid, dueDateKey } from '../utils/date-grid';
 import { FOCUS_RING_CLASS } from '@/lib/a11y';
 import { cn } from '@/lib/utils';
+import { useColumns } from '@/features/workspace/hooks';
 import { DatePicker } from '@/components/ui/date-picker';
 import {
   Select,
@@ -100,6 +101,7 @@ export function CalendarPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [createDate, setCreateDate] = useState<string>('');
   const qc = useQueryClient();
+  const columnsQuery = useColumns(workspaceId);
 
   const tasksQuery = useQuery({
     queryKey: ['calendar-tasks', workspaceId],
@@ -407,7 +409,7 @@ export function CalendarPage() {
           onSubmit={(body) =>
             createTask.mutate({
               workspaceId,
-              columnId: '', // will be resolved server-side or needs default
+              columnId: columnsQuery.data?.[0]?.id ?? '',
               title: body.title,
               description: body.description,
               startDate: body.startDate,

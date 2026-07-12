@@ -151,7 +151,15 @@
   - `taskApi.list` method needs to be added
 - **Next**: User reviews spec, then invoke writing-plans skill
 
-## Session Log
+### Session — Settings CRUD audit (2026-07-12)
+
+- **Goal**: Audit all workspace settings tabs for CRUD completeness
+- **Completed**:
+  - Audit all 7 settings tabs: General✓ Members✓ Columns✓ Labels✓ Views✓ Automation✓ DangerZone✓
+  - Labels: `LabelManagerPage` already exists as embedded tab in workspace-settings.tsx (labels CRUD fully wired)
+  - API fix: workspace list now includes `role` per workspace for the current user
+- **Fix**: `workspace.repository.ts` — `listWorkspaces`/`listWorkspacesPaginated` now include `members: { where: { userId }, select: { role: true } }` + service maps `members[0]?.role` onto each workspace
+- **Verification**: `pnpm verify` — 262/262 tests pass (all suites green)
 
 ### 2026-07-10 02:00 — `d76dbae` (main)
 
