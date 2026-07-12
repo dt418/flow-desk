@@ -202,6 +202,8 @@ model Task {
   position     Int          @default(0)
   assigneeId   String?
   dueDate      DateTime?
+  startDate    DateTime?
+  color        String?
   /// Story points (nullable until estimated)
   estimate     Int?
   sprintId     String?
@@ -236,6 +238,7 @@ model Task {
   @@index([parentTaskId])
   @@index([status])
   @@index([dueDate])
+  @@index([startDate])
   @@index([sprintId])
   @@index([boardId])
   @@index([type])

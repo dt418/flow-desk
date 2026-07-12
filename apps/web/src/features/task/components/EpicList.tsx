@@ -6,9 +6,13 @@ import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import { EmptyState } from '@/components/ui/empty-state';
 import { FOCUS_RING_CLASS } from '@/lib/a11y';
 import { cn } from '@/lib/utils';
-import { Plus, ChevronRight, ChevronDown } from 'lucide-react';
+import { PRIORITY_DOT, STATUS_TONE } from '@/features/task/utils';
+import { Plus, ChevronRight, ChevronDown, Layers } from 'lucide-react';
 
 interface TaskRow {
   id: string;
@@ -18,22 +22,6 @@ interface TaskRow {
   status: string;
   priority: string;
 }
-
-const TYPE_ICON: Record<string, string> = {
-  EPIC: '📦',
-  STORY: '📖',
-  SUBTASK: '🔗',
-  TASK: '•',
-};
-
-const STATUS_STYLE: Record<string, string> = {
-  BACKLOG: 'bg-slate-500/15 text-slate-700 dark:text-slate-300',
-  TODO: 'bg-slate-500/15 text-slate-700 dark:text-slate-300',
-  IN_PROGRESS: 'bg-blue-500/15 text-blue-700 dark:text-blue-300',
-  IN_REVIEW: 'bg-amber-500/15 text-amber-700 dark:text-amber-300',
-  DONE: 'bg-green-500/15 text-green-700 dark:text-green-300',
-  BLOCKED: 'bg-red-500/15 text-red-700 dark:text-red-300',
-};
 
 export default function EpicListPage() {
   const { workspaceId = '' } = useParams<{ workspaceId: string }>();
@@ -107,10 +95,17 @@ export default function EpicListPage() {
     );
   }
 
+  const hasEpics = epics.length > 0;
+
   return (
-    <div className="mx-auto max-w-3xl space-y-4 p-6">
+    <div className="space-y-6 p-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Epics</h1>
+        <div>
+          <h1 className="text-2xl font-semibold">Epics</h1>
+          <p className="text-sm text-muted-foreground">
+            Organize large bodies of work into epics with nested stories
+          </p>
+        </div>
         <Button
           size="sm"
           className={cn(FOCUS_RING_CLASS)}
@@ -123,129 +118,174 @@ export default function EpicListPage() {
         </Button>
       </div>
 
-      {/* Create epic inline */}
       {creatingEpic && (
-        <div className="flex gap-2 rounded-lg border border-border p-3">
-          <Input
-            value={epicTitle}
-            onChange={(e) => setEpicTitle(e.target.value)}
-            placeholder="Epic title..."
-            className={FOCUS_RING_CLASS}
-            autoFocus
-            onKeyDown={(e) => e.key === 'Enter' && handleCreateEpic()}
-          />
-          <Button
-            size="sm"
-            onClick={handleCreateEpic}
-            disabled={!epicTitle.trim() || createTask.isPending}
-          >
-            Create
-          </Button>
-          <Button size="sm" variant="ghost" onClick={() => setCreatingEpic(false)}>
-            Cancel
-          </Button>
-        </div>
+        <Card>
+          <CardContent className="pt-4">
+            <div className="flex gap-2">
+              <Input
+                value={epicTitle}
+                onChange={(e) => setEpicTitle(e.target.value)}
+                placeholder="Epic title..."
+                className={FOCUS_RING_CLASS}
+                autoFocus
+                onKeyDown={(e) => e.key === 'Enter' && handleCreateEpic()}
+              />
+              <Button
+                size="sm"
+                onClick={handleCreateEpic}
+                disabled={!epicTitle.trim() || createTask.isPending}
+              >
+                Create
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setCreatingEpic(false)}>
+                Cancel
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
-      {epics.length === 0 && !creatingEpic && (
-        <p className="text-sm text-muted-foreground">
-          No epics yet. Click "New epic" to create one.
-        </p>
-      )}
+      {!hasEpics && !creatingEpic ? (
+        <EmptyState
+          icon={Layers}
+          title="No epics yet"
+          description="Epics help you organize large bodies of work. Create an epic to get started."
+          action={
+            <Button size="sm" variant="outline" onClick={() => setCreatingEpic(true)}>
+              <Plus className="mr-1 h-3 w-3" /> New epic
+            </Button>
+          }
+        />
+      ) : (
+        <div className="space-y-3">
+          {epics.map((epic) => {
+            const kids = childrenOf(epic.id);
+            const done = kids.filter((k) => k.status === 'DONE').length;
+            const total = kids.length;
+            const progress = total > 0 ? (done / total) * 100 : 0;
+            const expanded = expandedEpics.has(epic.id);
 
-      <ul className="space-y-2">
-        {epics.map((epic) => {
-          const kids = childrenOf(epic.id);
-          const done = kids.filter((k) => k.status === 'DONE').length;
-          const expanded = expandedEpics.has(epic.id) || creatingEpic === false;
-          return (
-            <li key={epic.id} className="rounded-lg border border-border">
-              <div className="flex items-center gap-2 px-3 py-2">
-                <button
-                  type="button"
-                  className="text-muted-foreground hover:text-foreground"
+            return (
+              <Card key={epic.id}>
+                <div
+                  className="flex cursor-pointer items-center gap-3 px-4 py-3"
                   onClick={() => toggleEpic(epic.id)}
                 >
-                  {expanded ? (
-                    <ChevronDown className="h-4 w-4" />
-                  ) : (
-                    <ChevronRight className="h-4 w-4" />
-                  )}
-                </button>
-                <span>{TYPE_ICON.EPIC}</span>
-                <span className="flex-1 font-medium">{epic.title}</span>
-                <Badge className={cn('text-[10px]', STATUS_STYLE[epic.status] ?? '')}>
-                  {epic.status}
-                </Badge>
-                {kids.length > 0 && (
-                  <span className="text-xs text-muted-foreground">
-                    {done}/{kids.length} done
-                  </span>
-                )}
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-6 px-2 text-xs"
-                  onClick={() => {
-                    setAddingStoryTo(epic.id);
-                    setStoryTitle('');
-                  }}
-                >
-                  <Plus className="mr-1 h-3 w-3" /> Story
-                </Button>
-              </div>
+                  <button
+                    type="button"
+                    className="text-muted-foreground hover:text-foreground shrink-0"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleEpic(epic.id);
+                    }}
+                  >
+                    {expanded ? (
+                      <ChevronDown className="h-4 w-4" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4" />
+                    )}
+                  </button>
 
-              {/* Children */}
-              {expanded && (
-                <ul className="border-t border-border px-6 py-2">
-                  {kids.length === 0 && (
-                    <li className="py-1 text-xs text-muted-foreground">No stories yet</li>
-                  )}
-                  {kids.map((child) => (
-                    <li key={child.id} className="flex items-center gap-2 py-1 text-sm">
-                      <span>{TYPE_ICON[child.type] ?? '•'}</span>
-                      <span className="flex-1">{child.title}</span>
-                      <Badge className={cn('text-[10px]', STATUS_STYLE[child.status] ?? '')}>
-                        {child.status}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{epic.title}</span>
+                      <Badge className={cn('text-[10px]', STATUS_TONE[epic.status] ?? '')}>
+                        {epic.status.replace('_', ' ')}
                       </Badge>
-                    </li>
-                  ))}
+                    </div>
+                    {total > 0 && (
+                      <div className="mt-2 flex items-center gap-3">
+                        <Progress value={progress} className="h-1.5 flex-1 max-w-[200px]" />
+                        <span className="text-xs text-muted-foreground">
+                          {done}/{total} stories
+                        </span>
+                      </div>
+                    )}
+                    {total === 0 && (
+                      <p className="mt-1 text-xs text-muted-foreground">No stories yet</p>
+                    )}
+                  </div>
 
-                  {/* Add story inline */}
-                  {addingStoryTo === epic.id && (
-                    <li className="flex gap-2 py-1">
-                      <Input
-                        value={storyTitle}
-                        onChange={(e) => setStoryTitle(e.target.value)}
-                        placeholder="Story title..."
-                        className="h-7 text-xs"
-                        autoFocus
-                        onKeyDown={(e) => e.key === 'Enter' && handleAddStory(epic.id)}
-                      />
-                      <Button
-                        size="sm"
-                        className="h-7 px-2 text-xs"
-                        onClick={() => handleAddStory(epic.id)}
-                        disabled={!storyTitle.trim()}
-                      >
-                        Add
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-7 px-2 text-xs"
-                        onClick={() => setAddingStoryTo(null)}
-                      >
-                        Cancel
-                      </Button>
-                    </li>
-                  )}
-                </ul>
-              )}
-            </li>
-          );
-        })}
-      </ul>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 px-2 text-xs shrink-0"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setAddingStoryTo(epic.id);
+                      setStoryTitle('');
+                    }}
+                  >
+                    <Plus className="mr-1 h-3 w-3" /> Story
+                  </Button>
+                </div>
+
+                {expanded && (
+                  <div className="border-t border-border px-4 py-3">
+                    {kids.length === 0 ? (
+                      <p className="py-2 text-center text-xs text-muted-foreground">
+                        No stories yet. Add a story to this epic.
+                      </p>
+                    ) : (
+                      <ul className="space-y-1">
+                        {kids.map((child) => (
+                          <li
+                            key={child.id}
+                            className="flex items-center gap-3 rounded-md px-3 py-2 text-sm hover:bg-muted/50"
+                          >
+                            <span
+                              className={cn(
+                                'h-1.5 w-1.5 shrink-0 rounded-full',
+                                PRIORITY_DOT[child.priority] ?? 'bg-muted-foreground',
+                              )}
+                            />
+                            <span className="flex-1 min-w-0 truncate">{child.title}</span>
+                            <Badge
+                              variant="secondary"
+                              className={cn('text-[10px]', STATUS_TONE[child.status] ?? '')}
+                            >
+                              {child.status.replace('_', ' ')}
+                            </Badge>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+
+                    {addingStoryTo === epic.id && (
+                      <div className="mt-2 flex gap-2">
+                        <Input
+                          value={storyTitle}
+                          onChange={(e) => setStoryTitle(e.target.value)}
+                          placeholder="Story title..."
+                          className="h-8 text-xs"
+                          autoFocus
+                          onKeyDown={(e) => e.key === 'Enter' && handleAddStory(epic.id)}
+                        />
+                        <Button
+                          size="sm"
+                          className="h-8 px-3 text-xs"
+                          onClick={() => handleAddStory(epic.id)}
+                          disabled={!storyTitle.trim()}
+                        >
+                          Add
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-8 px-2 text-xs"
+                          onClick={() => setAddingStoryTo(null)}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </Card>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

@@ -1,5 +1,30 @@
 # Progress Log
 
+### Session — UI/UX improvement: Sprints, Templates, Epics, Calendar (2026-07-12)
+
+- **Goal**: Improve UI/UX of Sprints, Templates, Epics, Calendar pages with shadcn components
+- **Completed**:
+  - SprintPage full rewrite: Card layout, Progress bars, EmptyState, burndown chart with area fill + grid lines, priority dots, date range display
+  - TemplatesPage full rewrite: Card grid, EmptyState, priority dots, recurring rules with active/paused indicator, apply dialog with preview
+  - EpicList full rewrite: Card grid, Progress bars, EmptyState, expandable story list with priority dots + status badges, inline add-story
+  - CalendarPage full rewrite: shadcn Dialog for modals, shadcn DatePicker for Start/End dates, shadcn Select for Responsible dropdown
+  - Prisma migration `20260712180000_calendar_fields`: adds `startDate DateTime?` + `color String?` to Task
+  - API task.service.ts: create/update pass startDate + color
+  - Shared package: createTaskSchema/updateTaskSchema extended with startDate + color
+  - Fixed Calendar Responsible Select: API returns nested `{ user: { id, name } }` — added `select` transform
+- **Verification**:
+  - `pnpm --filter @flow-desk/web typecheck` → exit 0
+  - `pnpm --filter @flow-desk/web lint` → exit 0
+- **Files changed**:
+  - `apps/web/src/features/sprint/components/SprintPage.tsx`
+  - `apps/web/src/features/template/components/TemplatesPage.tsx`
+  - `apps/web/src/features/task/components/EpicList.tsx`
+  - `apps/web/src/features/calendar/components/CalendarPage.tsx`
+  - `apps/api/src/modules/task/task.service.ts`
+  - `packages/shared/src/task.ts`
+  - `packages/db/prisma/schema.prisma`
+  - `packages/db/prisma/migrations/20260712180000_calendar_fields/`
+
 ### Session — P4-2 wire-up finish (2026-07-11)
 
 - **Goal**: Land uncommitted P4-2 multi-board glue left from f9d26ec skeptic-gap pass

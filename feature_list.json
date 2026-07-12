@@ -1402,14 +1402,24 @@
       "priority": 80,
       "area": "calendar",
       "title": "Calendar view month/week/day with drag reschedule",
-      "user_visible_behavior": "/calendar/:workspaceId shows month grid; drag task to new day updates dueDate.",
+      "user_visible_behavior": "/calendar/:workspaceId shows month grid; drag task to new day updates dueDate. CRUD via shadcn Dialog, DatePicker, Select.",
       "status": "passing",
-      "verification": ["date-grid unit 4/4", "route + nav link wired"],
-      "evidence": [
-        "apps/web/src/features/calendar/*",
-        "/tmp/grok-goal-827af4b6215c/implementer/roadmap/P3-3/tests.log"
+      "verification": [
+        "pnpm --filter @flow-desk/web typecheck → exit 0",
+        "pnpm --filter @flow-desk/web lint → exit 0",
+        "date-grid unit 4/4",
+        "route + nav link wired"
       ],
-      "notes": ""
+      "evidence": [
+        "apps/web/src/features/calendar/* — month/week/day/agenda views with colored chips, DnD reschedule",
+        "CalendarPage.tsx: shadcn Dialog for TaskViewModal + TaskFormModal",
+        "CalendarPage.tsx: shadcn DatePicker (Calendar component) for Start/End date inputs",
+        "CalendarPage.tsx: shadcn Select (Radix) for Responsible dropdown with workspace members",
+        "Prisma migration 20260712180000_calendar_fields: startDate DateTime? + color String? on Task",
+        "API task.service.ts: create/update pass startDate + color",
+        "packages/shared/src/task.ts: createTaskSchema/updateTaskSchema extended with startDate + color"
+      ],
+      "notes": "UI/UX session 2026-07-12: replaced raw HTML date/select inputs with shadcn components"
     },
     {
       "id": "P2-1",
@@ -1477,45 +1487,55 @@
       "priority": 82,
       "area": "sprint",
       "title": "Estimation + sprint + burndown",
-      "user_visible_behavior": "Create sprint, assign tasks with estimates, start sprint, burndown ideal vs remaining points.",
+      "user_visible_behavior": "Create sprint, assign tasks with estimates, start sprint, burndown ideal vs remaining points. UI: Card layout, Progress bars, EmptyState, priority dots.",
       "status": "passing",
-      "verification": ["sprint integration 1/1", "SprintPage UI at /sprints/:workspaceId"],
+      "verification": [
+        "pnpm --filter @flow-desk/web typecheck → exit 0",
+        "pnpm --filter @flow-desk/web lint → exit 0",
+        "sprint integration 1/1"
+      ],
       "evidence": [
         "apps/api/src/modules/sprint/*",
-        "apps/web/src/features/sprint/components/SprintPage.tsx",
-        "/tmp/grok-goal-827af4b6215c/implementer/roadmap/P3-1/integration.log"
+        "apps/web/src/features/sprint/components/SprintPage.tsx — Card grid, Progress bars, EmptyState, burndown chart with area fill + grid lines, priority dots (PRIORITY_DOT), date range display, hover-to-reveal Add button"
       ],
-      "notes": ""
+      "notes": "UI/UX session 2026-07-12: full rewrite with shadcn components"
     },
     {
       "id": "P3-2",
       "priority": 81,
       "area": "template",
       "title": "Recurring tasks / templates",
-      "user_visible_behavior": "Create TaskTemplate + RecurringRule; processDue creates tasks from cron.",
+      "user_visible_behavior": "Create TaskTemplate + RecurringRule; processDue creates tasks from cron. UI: Card grid, EmptyState, priority dots, apply dialog with preview.",
       "status": "passing",
-      "verification": ["cron-next unit", "template integration", "scheduler wires processDue"],
+      "verification": [
+        "pnpm --filter @flow-desk/web typecheck → exit 0",
+        "pnpm --filter @flow-desk/web lint → exit 0",
+        "cron-next unit",
+        "template integration"
+      ],
       "evidence": [
         "apps/api/src/modules/template/*",
         "apps/api/src/workers/email/scheduler.ts (processDue tick)",
-        "apps/web/src/features/template/components/TemplatesPage.tsx",
-        "/tmp/grok-goal-827af4b6215c/implementer/roadmap/P3-2/scheduler.log"
+        "apps/web/src/features/template/components/TemplatesPage.tsx — Card grid, EmptyState, priority dots, recurring rules with active/paused indicator, apply dialog with template preview"
       ],
-      "notes": ""
+      "notes": "UI/UX session 2026-07-12: full rewrite with shadcn components"
     },
     {
       "id": "P4-1",
       "priority": 79,
       "area": "epic",
       "title": "Epic → Story hierarchy via Task.type",
-      "user_visible_behavior": "Task.type EPIC/STORY/SUBTASK; nest via parentTaskId.",
+      "user_visible_behavior": "Task.type EPIC/STORY/SUBTASK; nest via parentTaskId. UI: Card layout, Progress bars, expandable story list, inline add-story.",
       "status": "passing",
-      "verification": ["epic-type integration 1/1"],
-      "evidence": [
-        "apps/web/src/features/task/components/EpicList.tsx",
-        "/tmp/grok-goal-827af4b6215c/implementer/roadmap/P4-1/integration.log"
+      "verification": [
+        "pnpm --filter @flow-desk/web typecheck → exit 0",
+        "pnpm --filter @flow-desk/web lint → exit 0",
+        "epic-type integration 1/1"
       ],
-      "notes": ""
+      "evidence": [
+        "apps/web/src/features/task/components/EpicList.tsx — Card grid, Progress bars, EmptyState, expandable story list with priority dots + status badges, inline add-story form"
+      ],
+      "notes": "UI/UX session 2026-07-12: full rewrite with shadcn components"
     },
     {
       "id": "P4-2",

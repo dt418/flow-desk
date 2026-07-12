@@ -174,6 +174,8 @@ export const taskService = {
       status: body.status,
       assigneeId: body.assigneeId ?? null,
       dueDate: body.dueDate ? new Date(body.dueDate) : null,
+      startDate: body.startDate ? new Date(body.startDate) : null,
+      color: body.color ?? null,
       createdById: userId,
       parentTaskId: body.parentTaskId ?? null,
       boardId: body.boardId ?? null,
@@ -218,6 +220,9 @@ export const taskService = {
       ...rest,
       ...(body.dueDate !== undefined
         ? { dueDate: body.dueDate ? new Date(body.dueDate) : null }
+        : {}),
+      ...(body.startDate !== undefined
+        ? { startDate: body.startDate ? new Date(body.startDate) : null }
         : {}),
       // P3-1: set completedAt when status moves to DONE for burndown
       ...(body.status === 'DONE' && existing.status !== 'DONE' ? { completedAt: new Date() } : {}),
