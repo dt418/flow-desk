@@ -70,4 +70,21 @@ if command -v npx &>/dev/null; then
   npx prettier --write "$PROGRESS_FILE" 2>/dev/null || true
 fi
 
-echo "📝 Session log updated: ${COMMIT_HASH} (${TYPE})"
+# Fold the progress update into the commit we just made when HEAD is not
+# yet on the remote. Leaves a clean working tree for the subsequent push.
+# Skip amend if HEAD already matches upstream (would rewrite published history).
+can_amend=1
+if git rev-parse --abbrev-ref '@{u}' >/dev/null 2>&1; then
+  if [ "$(git rev-parse HEAD)" = "$(git rev-parse '@{u}')" ]; then
+    can_amend=0
+  fi
+fi
+
+if [ "$can_amend" -eq 1 ]; then
+  git add "$PROGRESS_FILE"
+  # Disable hooks so amend does not re-enter this script.
+  git -c core.hooksPath=/dev/null commit --amend --no-edit --no-verify >/dev/null 2>&1 || true
+  echo "📝 Session log updated: ${COMMIT_HASH} (${TYPE}) [amended into commit]"
+else
+  echo "📝 Session log updated: ${COMMIT_HASH} (${TYPE}) [working tree — already pushed]"
+fi
