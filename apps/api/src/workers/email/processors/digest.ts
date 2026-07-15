@@ -3,6 +3,7 @@ import { Worker } from 'bullmq';
 import { TaskStatus } from '@flowdesk/db';
 import { logger } from '../../../shared/lib/logger';
 import { emailProvider } from '../../../shared/lib/email-provider';
+import { env } from '../../../shared/lib/env';
 import { prisma } from '../../../shared/lib/prisma';
 import { renderDigestEmail } from '../../../shared/lib/email-templates';
 import type { EmailJobData } from '../queue';
@@ -49,7 +50,7 @@ export function createDigestEmailWorker() {
         const items = tasks.map((t) => ({
           taskId: t.id,
           taskTitle: t.title,
-          taskUrl: `${process.env.APP_URL ?? 'http://localhost:3000'}/tasks/${t.id}`,
+          taskUrl: `${env.APP_URL}/tasks/${t.id}`,
           workspaceName: '',
           dueAt: t.dueDate?.toISOString() ?? null,
           priority: t.priority,
@@ -68,7 +69,7 @@ export function createDigestEmailWorker() {
           userName,
           cadence,
           items,
-          digestUrl: `${process.env.APP_URL ?? 'http://localhost:3000'}/tasks`,
+          digestUrl: `${env.APP_URL}/tasks`,
           periodStart: now.toISOString(),
           periodEnd: periodEnd.toISOString(),
         });
@@ -109,7 +110,7 @@ export function createDigestEmailWorker() {
       }
     },
     {
-      connection: { url: process.env.REDIS_URL ?? 'redis://127.0.0.1:6379' },
+      connection: { url: env.REDIS_URL },
       concurrency: 2,
     },
   );

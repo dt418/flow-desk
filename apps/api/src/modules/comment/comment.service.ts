@@ -12,6 +12,7 @@ import { decodeCursor, encodeCursor } from '@flow-desk/shared/pagination';
 import { activityService } from '../activity';
 import { handleTaskMentionEmail } from '../notification/notification-email.service';
 import { logger } from '../../shared/lib/logger';
+import { env } from '../../shared/lib/env';
 import * as repo from './comment.repository';
 
 const MENTION_REGEX = /@([a-zA-Z0-9_-]+)/g;
@@ -135,7 +136,7 @@ export async function createComment(
         }),
       ]);
       if (workspace && author) {
-        const appUrl = process.env.APP_URL ?? 'http://localhost:3000';
+        const appUrl = env.APP_URL;
         await Promise.all(
           recipients.map((r) =>
             handleTaskMentionEmail(prisma, {

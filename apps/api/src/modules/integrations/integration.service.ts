@@ -1,6 +1,7 @@
 import { BadRequestError, NotFoundError } from '../../shared/errors';
 import { assertMembership } from '../../shared/lib/access';
 import { logger } from '../../shared/lib/logger';
+import { env } from '../../shared/lib/env';
 import { integrationRepository } from './integration.repository';
 import { decryptToken, encryptToken } from './integration-crypto';
 import type { IntegrationProvider } from '@flowdesk/db';
@@ -158,7 +159,7 @@ async function exchangeCode(
 }
 
 async function resolveGitlabUser(accessToken: string): Promise<{ id: string; name: string }> {
-  const base = process.env.FLOWDESK_GITLAB_BASE_URL ?? 'https://gitlab.com';
+  const base = env.FLOWDESK_GITLAB_BASE_URL;
   const res = await fetch(`${base}/api/v4/user`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });

@@ -1,7 +1,7 @@
 import { createPrismaClient, softDeleteExtension } from '@flowdesk/db';
-import { parseBackendEnv } from '@flowdesk/env';
+import { env } from './env';
 
-export const env = parseBackendEnv(process.env);
+export { env };
 
 const globalForPrisma = globalThis as unknown as { prisma?: ReturnType<typeof createPrismaClient> };
 

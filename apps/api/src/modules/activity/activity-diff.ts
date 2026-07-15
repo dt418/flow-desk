@@ -1,5 +1,6 @@
 import { prisma } from '../../shared/lib/prisma';
 import { logger } from '../../shared/lib/logger';
+import { env } from '../../shared/lib/env';
 import { activityService } from './index';
 import { handleTaskStatusChangeEmail } from '../notification/notification-email.service';
 
@@ -117,7 +118,7 @@ export async function recordUpdateDiff(
         prisma.user.findUnique({ where: { id: userId }, select: { name: true } }),
       ]);
       if (workspace && assignee && actor) {
-        const appUrl = process.env.APP_URL ?? 'http://localhost:3000';
+        const appUrl = env.APP_URL;
         await handleTaskStatusChangeEmail(prisma, {
           recipientId: assignee.id,
           recipientName: assignee.name,

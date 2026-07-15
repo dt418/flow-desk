@@ -1,5 +1,29 @@
 # Progress Log
 
+### Session — Production readiness hardening (2026-07-15)
+
+- **Goal**: Feature gap check; if none, production-ready refactor
+- **Feature audit**: 68/68 `feature_list.json` entries `passing`; ROADMAP non-cut items P1-1…P4-6 all shipped (P4-7 cut). No unfinished product feature.
+- **Completed** (ops/hardening, not a product feature ship):
+  - Unified backend env: `packages/env` owns full schema (`APP_URL`, email, Slack/GitLab, `SENTRY_DSN`, `METRICS_TOKEN`); `apps/api/src/shared/lib/env.ts` is thin `safeParse` + process.exit + prod warnings; `prisma.ts` re-exports same `env` (no dual schema).
+  - Readiness: `GET /api/ready` probes Postgres + Redis (`checkReadiness`); liveness stays `GET /api/health`.
+  - Metrics: optional `Authorization: Bearer ${METRICS_TOKEN}` on `GET /metrics`.
+  - Security headers: `Permissions-Policy`, `Cross-Origin-Opener-Policy`, `Cross-Origin-Resource-Policy` on API; nginx static headers aligned.
+  - Wire email/app links + workers off `process.env` onto validated `env` (`APP_URL`, `REDIS_URL`, Sentry, Slack signing, GitLab base URL).
+  - Docker: api healthcheck → `/api/ready`; email-worker env fixed (`SMTP_PASSWORD`/`EMAIL_FROM` — was mismatched `SMTP_PASS`/`DEFAULT_FROM_*`); `APP_URL`/`METRICS_TOKEN`/`SENTRY_DSN` passed through.
+  - `.env.example` documents `APP_URL`, ops tokens, email vars.
+  - Tests: unit `health.test.ts` (3) + integration `health.test.ts` (4).
+- **Verification** (this session):
+  - typecheck: 6/6 green
+  - api unit: 149/149
+  - api integration: 266/266
+  - web unit: 37/37
+  - shared unit: 31/31
+  - build: 4/4
+  - lint + prettier: clean
+- **Highest priority unfinished**: none (product). Optional ops: set real `METRICS_TOKEN`/`SENTRY_DSN`/OAuth secrets in deploy env; R-24 AI latency still material UX risk.
+- **Next**: operator secrets for prod deploy; or DIR suggestions (CSV import, inbound webhooks, velocity reports) if product work resumes.
+
 ### Session — UI/UX improvement: Sprints, Templates, Epics, Calendar (2026-07-12)
 
 - **Goal**: Improve UI/UX of Sprints, Templates, Epics, Calendar pages with shadcn components
@@ -72,9 +96,9 @@
 
 - **Repository root**: `/home/thanh/flow-desk`
 - **Standard startup**: `./init.sh` then `docker compose up -d`
-- **Standard verification**: `pnpm --filter @flow-desk/shared build` + curl API + `bash scripts/prisma-exec.sh <args>`
-- **Highest priority unfinished**: P3-3 (Calendar View — spec written, plan pending)
-- **Active branch**: `main` (F7 merged, F8 implemented)
+- **Standard verification**: `pnpm typecheck` + unit + `pnpm --filter @flow-desk/api test:integration` + `pnpm build` (or stage files then `pnpm verify`)
+- **Highest priority unfinished**: none — all non-cut ROADMAP + feature_list entries passing
+- **Active branch**: `main`
 - **Post-F8 fixes**: (a) dev startup race — `turbo.json` dev `dependsOn: [^build, ^db:generate]` + `tsup.config.ts` `clean: false`; (b) seed cleanup — added `deleteMany` for ChatMessage/ChatChannel/UserNotificationPreference/WorkspaceNotificationSetting/EmailJob; (c) force-exit timer regression — moved 10s `setTimeout` inside `shutdown()` function
 - **Prisma**: 7.8.0 | **pnpm**: 11.8.0 | **Node**: 22-alpine
 - **R-39 resolved**: E2E suite 3/3 passing

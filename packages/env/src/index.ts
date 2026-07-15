@@ -1,4 +1,4 @@
-export { backendSchema, parseBackendEnv } from './backend';
+export { backendSchema, parseBackendEnv, safeParseBackendEnv, normalizeEnv } from './backend';
 export type { BackendEnv } from './backend';
 
 export { frontendSchema, parseFrontendEnv } from './frontend';

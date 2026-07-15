@@ -1,5 +1,6 @@
 import { prisma } from '../../shared/lib/prisma';
 import { logger } from '../../shared/lib/logger';
+import { env } from '../../shared/lib/env';
 import { emitToUser } from '../../shared/lib/socket-events';
 import { createTaskAssignmentNotification } from '../notification/notification.service';
 import { handleTaskAssignedEmail } from '../notification/notification-email.service';
@@ -44,7 +45,7 @@ export async function handleAssigneeChange(
   }
 
   try {
-    const appUrl = process.env.APP_URL ?? 'http://localhost:3000';
+    const appUrl = env.APP_URL;
     const dueAt = task.dueDate?.toISOString() ?? null;
     await handleTaskAssignedEmail(prisma, {
       assigneeId: task.assigneeId,

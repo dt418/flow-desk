@@ -30,6 +30,7 @@ import { apiKeyRouter, publicV1Router } from './modules/api-key/api-key.routes';
 import { integrationsRouter } from './modules/integrations/integrations.routes';
 import { metricsMiddleware } from './shared/middleware/metrics';
 import { renderMetrics } from './shared/lib/metrics';
+import { checkReadiness } from './shared/lib/health';
 
 const WRITE_METHODS = new Set(['POST', 'PATCH', 'PUT', 'DELETE']);
 const writeRateLimit = rateLimit({ scope: 'writes', windowSec: 60, max: 60, keyBy: 'user' });
@@ -45,6 +46,9 @@ export function buildApp(): Hono {
     c.header('X-Frame-Options', 'DENY');
     c.header('X-XSS-Protection', '0');
     c.header('Referrer-Policy', 'strict-origin-when-cross-origin');
+    c.header('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+    c.header('Cross-Origin-Opener-Policy', 'same-origin');
+    c.header('Cross-Origin-Resource-Policy', 'same-site');
     if (env.NODE_ENV === 'production') {
       c.header('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
     }
@@ -67,10 +71,23 @@ export function buildApp(): Hono {
     return writeRateLimit(c, next);
   });
 
+  // Liveness — process is up. Do not check deps (avoids kill loops during blips).
   app.get('/api/health', (c) => c.json({ status: 'ok', timestamp: new Date().toISOString() }));
 
-  // Prometheus scrape endpoint (P2-3)
+  // Readiness — Postgres + Redis answering. 503 until both green.
+  app.get('/api/ready', async (c) => {
+    const result = await checkReadiness();
+    return c.json(result, result.status === 'ready' ? 200 : 503);
+  });
+
+  // Prometheus scrape endpoint (P2-3). Optional bearer when METRICS_TOKEN set.
   app.get('/metrics', async (c) => {
+    if (env.METRICS_TOKEN) {
+      const auth = c.req.header('authorization');
+      if (auth !== `Bearer ${env.METRICS_TOKEN}`) {
+        return c.json({ message: 'Unauthorized', code: 'UNAUTHORIZED' }, 401);
+      }
+    }
     const body = await renderMetrics();
     return c.text(body, 200, {
       'Content-Type': 'text/plain; version=0.0.4; charset=utf-8',

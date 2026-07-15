@@ -27,6 +27,7 @@ Updated: 2026-07-11 | New audit run: standard | Base commit: `870c8ed`
 | 025  | Tech-debt refactor (ARCH-01,02,03,05)                                              | tech-debt   | M      | —               | DONE   |
 | 026  | Docs, DX, and `/api/v1` completeness (DX-01..04, DOCS-01..04, TASKS-01, DOCKER-01) | dx          | M      | —               | DONE   |
 | 027  | Test coverage on critical paths (TEST-01,02,05,07,08)                              | tests       | M      | —               | DONE   |
+| 028  | Production readiness (env unify, readiness, metrics token, headers)                | ops         | M      | —               | DONE   |
 
 ## Dependency Graph
 

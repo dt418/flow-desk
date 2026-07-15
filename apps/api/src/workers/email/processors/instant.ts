@@ -2,6 +2,7 @@ import type { Job } from 'bullmq';
 import { Worker } from 'bullmq';
 import { logger } from '../../../shared/lib/logger';
 import { emailProvider } from '../../../shared/lib/email-provider';
+import { env } from '../../../shared/lib/env';
 import type { EmailJobData } from '../queue';
 import { prisma } from '../../../shared/lib/prisma';
 
@@ -43,7 +44,7 @@ export function createInstantEmailWorker() {
       }
     },
     {
-      connection: { url: process.env.REDIS_URL ?? 'redis://127.0.0.1:6379' },
+      connection: { url: env.REDIS_URL },
       concurrency: 5,
       limiter: { max: 100, duration: 60_000 },
     },

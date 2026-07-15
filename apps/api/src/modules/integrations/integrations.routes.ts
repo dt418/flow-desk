@@ -10,6 +10,7 @@ import {
   integrationService,
   isProviderConfigured,
 } from './integration.service';
+import { env } from '../../shared/lib/env';
 
 /**
  * P4-3 Slack + GitLab OAuth integrations.
@@ -227,7 +228,7 @@ integrationsRouter.delete('/:id', requireAuth(), async (c) => {
 
 // ---- Slack slash command (no requireAuth — Slack signs requests) ----
 integrationsRouter.post('/slack/commands', async (c) => {
-  if (!process.env.SLACK_SIGNING_SECRET) {
+  if (!env.SLACK_SIGNING_SECRET) {
     return c.json({ code: 'NOT_CONFIGURED', message: 'Slack signing secret missing' }, 501);
   }
   // Signature verification would go here when SLACK_SIGNING_SECRET is set.

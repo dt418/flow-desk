@@ -4,6 +4,8 @@
  * require @sentry/node to be installed (optional dependency).
  */
 
+import { env } from './env';
+
 let initialized = false;
 
 type SentryLike = {
@@ -12,7 +14,7 @@ type SentryLike = {
 };
 
 async function loadSentry(): Promise<SentryLike | null> {
-  if (!process.env.SENTRY_DSN) return null;
+  if (!env.SENTRY_DSN) return null;
   try {
     // Dynamic package name keeps tsc happy when @sentry/node is not installed
     const mod = ' @sentry/node'.trim();
@@ -25,20 +27,20 @@ async function loadSentry(): Promise<SentryLike | null> {
 }
 
 export async function initSentry(): Promise<void> {
-  const dsn = process.env.SENTRY_DSN;
+  const dsn = env.SENTRY_DSN;
   if (!dsn || initialized) return;
   const Sentry = await loadSentry();
   if (!Sentry) return;
   Sentry.init({
     dsn,
-    environment: process.env.NODE_ENV ?? 'development',
+    environment: env.NODE_ENV,
     tracesSampleRate: 0.1,
   });
   initialized = true;
 }
 
 export async function captureException(err: unknown): Promise<void> {
-  if (!process.env.SENTRY_DSN) return;
+  if (!env.SENTRY_DSN) return;
   const Sentry = await loadSentry();
   if (Sentry) Sentry.captureException(err);
 }
