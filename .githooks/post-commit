@@ -16,6 +16,12 @@ BRANCH=$(git branch --show-current 2>/dev/null || echo "detached")
 AUTHOR=$(git log -1 --format=%an)
 DATE=$(date '+%Y-%m-%d %H:%M')
 
+# Skip if this commit is already recorded (avoids dirty tree after
+# committing only claude-progress.md / re-running the hook).
+if grep -q "\`${COMMIT_HASH}\`" "$PROGRESS_FILE" 2>/dev/null; then
+  exit 0
+fi
+
 # Parse conventional commit type
 TYPE=$(echo "$COMMIT_MSG" | sed -n 's/^\([a-z]*\)!\?:.*/\1/p')
 SCOPE=$(echo "$COMMIT_MSG" | sed -n 's/^[a-z]*!*\(\([^)]*\)\)\?:.*/\2/p')
