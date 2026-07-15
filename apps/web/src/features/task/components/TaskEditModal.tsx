@@ -43,7 +43,7 @@ import type { TaskCardData } from './TaskCard';
 import { TaskChat } from '@/features/chat/components/TaskChat';
 import { ActivityTimeline } from '@/features/activity';
 import { useSuggestAssignee } from '@/features/ai';
-import type { SuggestAssigneeSuggestion } from '@/features/ai';
+import type { SuggestAssigneeSuggestion, SuggestFallbackReason } from '@/features/ai';
 import { cn } from '@/lib/utils';
 
 const formSchema = z.object({
@@ -165,10 +165,25 @@ export function TaskEditModal({
   const [aiSuggestions, setAiSuggestions] = React.useState<SuggestAssigneeSuggestion[] | null>(
     null,
   );
+  const [aiFallbackReason, setAiFallbackReason] = React.useState<SuggestFallbackReason | null>(
+    null,
+  );
   const [previewDescription, setPreviewDescription] = React.useState(false);
+  const [aiElapsedSec, setAiElapsedSec] = React.useState(0);
 
   const abortRef = React.useRef<AbortController | null>(null);
   React.useEffect(() => () => abortRef.current?.abort(), []);
+
+  // R-24: elapsed timer while AI request is in flight.
+  React.useEffect(() => {
+    if (!suggestAssignee.isPending) {
+      setAiElapsedSec(0);
+      return;
+    }
+    setAiElapsedSec(0);
+    const id = window.setInterval(() => setAiElapsedSec((s) => s + 1), 1000);
+    return () => window.clearInterval(id);
+  }, [suggestAssignee.isPending]);
 
   const {
     register,
@@ -208,22 +223,47 @@ export function TaskEditModal({
       });
       setTab('details');
       setAiSuggestions(null);
+      setAiFallbackReason(null);
     }
   }, [open, initial, defaultColumnId, columns, reset]);
+
+  // R-24: abort in-flight AI when modal closes (unmount also aborts via abortRef).
+  React.useEffect(() => {
+    if (!open) abortRef.current?.abort();
+  }, [open]);
 
   const watchTitle = watch('title');
   const watchDescription = watch('description') ?? '';
 
   const handleSuggest = () => {
+    abortRef.current?.abort();
     abortRef.current = new AbortController();
     setAiSuggestions(null);
+    setAiFallbackReason(null);
     suggestAssignee.mutate(
-      { taskId: initial?.id, title: watchTitle || initial?.title, signal: abortRef.current.signal },
       {
-        onSuccess: (data) => setAiSuggestions(data.suggestions),
-        onError: () => toast.error('AI suggestion failed'),
+        taskId: initial?.id,
+        title: watchTitle || initial?.title,
+        description: watchDescription || undefined,
+        signal: abortRef.current.signal,
+      },
+      {
+        onSuccess: (data) => {
+          setAiSuggestions(data.suggestions);
+          setAiFallbackReason(data.fallback ? (data.fallbackReason ?? 'error') : null);
+        },
+        onError: (err) => {
+          if (err instanceof Error && err.name === 'AbortError') return;
+          if (err instanceof DOMException && err.name === 'AbortError') return;
+          toast.error('AI suggestion failed');
+        },
       },
     );
+  };
+
+  const handleCancelSuggest = () => {
+    abortRef.current?.abort();
+    suggestAssignee.reset();
   };
 
   const on_submit = handleSubmit(async (values) => {
@@ -536,22 +576,40 @@ export function TaskEditModal({
                       <SectionLabel className="flex items-center gap-1.5">
                         <User className="h-3 w-3" /> Assignee
                       </SectionLabel>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="xs"
-                        onClick={handleSuggest}
-                        disabled={suggestAssignee.isPending || members.length === 0}
-                        className="gap-1 text-xs text-primary hover:text-primary/80"
-                        title="AI-suggest assignee based on workload"
-                      >
-                        {suggestAssignee.isPending ? (
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                        ) : (
-                          <Sparkles className="h-3 w-3" />
+                      <div className="flex items-center gap-1">
+                        {suggestAssignee.isPending && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="xs"
+                            onClick={handleCancelSuggest}
+                            className="text-xs text-muted-foreground"
+                            title="Cancel AI suggestion"
+                          >
+                            Cancel
+                          </Button>
                         )}
-                        {suggestAssignee.isPending ? 'Thinking…' : 'Suggest'}
-                      </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="xs"
+                          onClick={handleSuggest}
+                          disabled={suggestAssignee.isPending || members.length === 0}
+                          className="gap-1 text-xs text-primary hover:text-primary/80"
+                          title="AI-suggest assignee based on workload"
+                        >
+                          {suggestAssignee.isPending ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <Sparkles className="h-3 w-3" />
+                          )}
+                          {suggestAssignee.isPending
+                            ? aiElapsedSec > 0
+                              ? `AI thinking… ${aiElapsedSec}s`
+                              : 'AI thinking…'
+                            : 'Suggest'}
+                        </Button>
+                      </div>
                     </div>
                     <Controller
                       name="assigneeId"
@@ -614,9 +672,11 @@ export function TaskEditModal({
                             </button>
                           );
                         })}
-                        {suggestAssignee.data?.fallback && (
+                        {(aiFallbackReason || suggestAssignee.data?.fallback) && (
                           <p className="text-[11px] text-[var(--warning)]">
-                            Rule-based (AI unavailable)
+                            {aiFallbackReason === 'timeout'
+                              ? 'Rule-based (AI timed out — results by workload)'
+                              : 'Rule-based (AI unavailable)'}
                           </p>
                         )}
                       </div>

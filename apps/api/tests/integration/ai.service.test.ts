@@ -39,6 +39,8 @@ describe('ai.service', () => {
       expect(res.suggestions.length).toBeGreaterThan(0);
       expect(res.suggestions.length).toBeLessThanOrEqual(3);
       expect(res.fallback).toBe(true);
+      // Invalid key / upstream error → error reason; abort after 5s → timeout.
+      expect(res.fallbackReason === 'error' || res.fallbackReason === 'timeout').toBe(true);
     });
 
     it('uses taskId to fill title', async () => {

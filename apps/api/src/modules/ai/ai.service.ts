@@ -10,6 +10,10 @@ import { redis } from '../../shared/lib/redis';
 import * as repo from './ai.repository';
 
 const SUGGEST_CACHE_TTL_SECONDS = 300; // 5 min — same-input suggestion reuse
+/** R-24: soft cap so slow LLM proxies fall back to rule-based ranking instead of hanging the UI. */
+const SUGGEST_LLM_TIMEOUT_MS = 5_000;
+
+export type SuggestFallbackReason = 'timeout' | 'error';
 
 function suggestCacheKey(workspaceId: string, title: string, memberIds: string[]): string {
   // Cache key: workspace + title hash + sorted member-id set hash.
@@ -17,6 +21,28 @@ function suggestCacheKey(workspaceId: string, title: string, memberIds: string[]
   const memberPart = memberIds.slice().sort().join(',');
   const titleHash = createHash('sha1').update(title).digest('hex').slice(0, 12);
   return `ai:suggest-assignee:${workspaceId}:${titleHash}:${memberPart}`;
+}
+
+function ruleBasedSuggestions(
+  members: Array<{ user: { id: string; name: string } }>,
+  loadMap: Map<string, number>,
+): Array<{ userId: string; score: number; reason: string }> {
+  return members
+    .map((m) => {
+      const load = loadMap.get(m.user.id) ?? 0;
+      return { userId: m.user.id, name: m.user.name, activeTaskCount: load };
+    })
+    .sort((a, b) => a.activeTaskCount - b.activeTaskCount)
+    .slice(0, 3)
+    .map((m) => ({
+      userId: m.userId,
+      score: Math.max(40, 100 - m.activeTaskCount * 10),
+      reason: `Lowest current workload (${m.activeTaskCount} active tasks)`,
+    }));
+}
+
+function isAbortError(err: unknown): boolean {
+  return err instanceof Error && err.name === 'AbortError';
 }
 
 /** Bust the cache prefix for a workspace. Call on WorkspaceMember add/remove. */
@@ -105,7 +131,7 @@ export async function suggestAssignee(
           }),
         },
       ],
-      { maxTokens: 600, temperature: 0.3 },
+      { maxTokens: 600, temperature: 0.3, timeoutMs: SUGGEST_LLM_TIMEOUT_MS },
     );
 
     const suggestions = result.suggestions.slice(0, 3);
@@ -113,22 +139,18 @@ export async function suggestAssignee(
     redis
       .set(cacheKey, JSON.stringify(suggestions), 'EX', SUGGEST_CACHE_TTL_SECONDS)
       .catch((err) => logger.warn({ err }, 'suggestAssignee cache write failed'));
-    return { suggestions, fallback: false };
+    return { suggestions, fallback: false as const };
   } catch (err) {
-    logger.warn({ err }, 'LLM suggest-assignee failed, using rule-based fallback');
-    const ranked = members
-      .map((m) => {
-        const load = loadMap.get(m.user.id) ?? 0;
-        return { userId: m.user.id, name: m.user.name, activeTaskCount: load };
-      })
-      .sort((a, b) => a.activeTaskCount - b.activeTaskCount)
-      .slice(0, 3)
-      .map((m) => ({
-        userId: m.userId,
-        score: Math.max(40, 100 - m.activeTaskCount * 10),
-        reason: `Lowest current workload (${m.activeTaskCount} active tasks)`,
-      }));
-    return { suggestions: ranked, fallback: true };
+    const fallbackReason: SuggestFallbackReason = isAbortError(err) ? 'timeout' : 'error';
+    logger.warn(
+      { err, fallbackReason, timeoutMs: SUGGEST_LLM_TIMEOUT_MS },
+      'LLM suggest-assignee failed, using rule-based fallback',
+    );
+    return {
+      suggestions: ruleBasedSuggestions(members, loadMap),
+      fallback: true as const,
+      fallbackReason,
+    };
   }
 }
 

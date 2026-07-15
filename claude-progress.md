@@ -1,5 +1,17 @@
 # Progress Log
 
+### Session — R-24 AI suggest latency (2026-07-15)
+
+- **Goal**: Mitigate remaining material risk R-24 (AI suggest hangs UI on slow LLM)
+- **Completed**:
+  - `LLMProvider.chat` accepts `timeoutMs` + external `signal`; soft timeouts (<30s) fail fast without retry
+  - `suggestAssignee` uses 5s LLM timeout; rule-based fallback returns `fallbackReason: 'timeout' | 'error'`
+  - TaskEditModal: elapsed "AI thinking… Ns", Cancel, abort on re-click/close/unmount, pass description, clearer fallback copy
+  - RISKS.md: R-24 marked mitigated
+- **Verification**: api unit 149; integration 266 (ai.service fallbackReason asserted); web typecheck+lint green
+- **Pushed earlier this session**: `1afb937` production readiness
+- **Next**: operator secrets only (METRICS_TOKEN/SENTRY/OAuth); product DIR items need maintainer pick
+
 ### Session — Production readiness hardening (2026-07-15)
 
 - **Goal**: Feature gap check; if none, production-ready refactor
@@ -430,6 +442,12 @@
 - **Plans written** (commit a9fd245): `plans/023`–`plans/027` covering all 25 findings. 5 independent files in Batch A. Each is self-contained for a fresh-context executor with: in-scope file list, step-by-step verify commands, machine-checkable done criteria, STOP conditions, maintenance notes.
 - **What was NOT covered**: bundles (PERF-10/11/12), OpenAPI tooling, PRD/team-vs-portfolio tension, larger ARCH-04 lib/ drift — listed as direction or future-audit items
 - **Next**: pick from the 5 plans. All independent, any order works. Plan 024 first if you want plan 027's chat test to reflect the post-024 shape.
+
+### 2026-07-15 22:29 — `1afb937` (main)
+
+- **type:**
+- **msg:**
+- **author:** thanhd
 
 ### Session — 2026-07-11 plan 023 + plan 024 execution
 

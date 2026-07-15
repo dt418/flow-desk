@@ -11,9 +11,13 @@ export interface ChatOptions {
   maxTokens?: number;
   temperature?: number;
   jsonMode?: boolean;
+  /** Per-call timeout. Defaults to 30s. Short values (e.g. 5s) fail fast without retry. */
+  timeoutMs?: number;
+  /** Optional external abort (e.g. request cancellation). */
+  signal?: AbortSignal;
 }
 
-const TIMEOUT_MS = 30_000;
+const DEFAULT_TIMEOUT_MS = 30_000;
 const MAX_ATTEMPTS = 2;
 const RETRY_BACKOFF_MS = 500;
 
@@ -65,10 +69,23 @@ export class LLMProvider {
       }
     };
 
+    const timeoutMs = opts.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+    // Soft UX timeouts (< default) must fail fast — retry would double the wait.
+    const allowRetryOnAbort = timeoutMs >= DEFAULT_TIMEOUT_MS;
+
     let lastErr: unknown;
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      if (opts.signal?.aborted) {
+        const abortErr = new Error('LLM call aborted');
+        abortErr.name = 'AbortError';
+        throw abortErr;
+      }
+
       const ctrl = new AbortController();
-      const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
+      const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+      const onExternalAbort = () => ctrl.abort();
+      opts.signal?.addEventListener('abort', onExternalAbort, { once: true });
+
       try {
         const res = await callOnce(body, ctrl.signal);
         if (!res.ok) {
@@ -99,7 +116,7 @@ export class LLMProvider {
           err instanceof LLMError &&
           (err.details as { upstreamStatus?: number } | undefined)?.upstreamStatus !== undefined &&
           ((err.details as { upstreamStatus?: number }).upstreamStatus ?? 0) >= 500;
-        if (attempt < MAX_ATTEMPTS && (isAbort || isRetryableLLM)) {
+        if (attempt < MAX_ATTEMPTS && ((isAbort && allowRetryOnAbort) || isRetryableLLM)) {
           logger.warn(
             { attempt, err: err instanceof Error ? err.message : String(err) },
             'llm call retried',
@@ -107,9 +124,11 @@ export class LLMProvider {
           await new Promise((r) => setTimeout(r, RETRY_BACKOFF_MS));
           continue;
         }
+        observeLatency();
         throw err;
       } finally {
         clearTimeout(timer);
+        opts.signal?.removeEventListener('abort', onExternalAbort);
       }
     }
     throw lastErr instanceof Error ? lastErr : new Error('LLM call failed');
