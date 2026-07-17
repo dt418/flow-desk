@@ -13,15 +13,22 @@
 - Web: http://localhost:5173 · API: http://localhost:3000
 - Demo: `demo@flow-desk.app` / `demo1234` (after seed)
 
-## Shipped this session (029–034 + review)
+## Shipped this session
 
-| Area         | Highlights                                                                         |
-| ------------ | ---------------------------------------------------------------------------------- |
-| Security     | Chat IDOR, OAuth 2FA cookie, Slack HMAC, DNS-pinned SSRF, automation target checks |
-| Product bugs | Sprint `/api` + filters, list/calendar/epic/sprint pagination                      |
-| Ops          | Export 413, scheduler batch, Sentry, docker LLM required, CSP-RO                   |
+Audit plans **029–034** plus review follow-ups. Commit: `4099a0b`.
 
-Artifacts: `plans/README.md`, `RISKS.md` R-45…R-47 mitigated, `TASKS.md` appendix, `claude-progress.md` session log.
+| Plan    | Area     | What shipped                                                                                    |
+| ------- | -------- | ----------------------------------------------------------------------------------------------- |
+| AUD-029 | Security | Chat always requires workspace membership; typing only after join; Secure OAuth cookies         |
+| AUD-030 | Security | Google OAuth 2FA via httpOnly cookie; Slack request signature; cookie-only callback workspaceId |
+| AUD-031 | Product  | `sprintId` / `type` task filters; list, calendar, epic, sprint load-more / infinite scroll      |
+| AUD-032 | Security | Outbound SSRF guard + DNS-pinned fetch; automation assign/column stay in-workspace              |
+| AUD-033 | Ops      | Export hard-cap 10k → 413 + FE toast; email scheduler batching; rate-limit unit tests           |
+| AUD-034 | Ops      | Sentry package, required docker `LLM_API_KEY`, CSP report-only, docs accuracy                   |
+
+**Review follow-ups** (same ship): IPv6/IMDS/CGNAT blocklist, calendar next-page error gate, export blob download, epic/sprint Load more.
+
+**Harness**: `feature_list.json` AUD-029…034 · `RISKS.md` R-45…R-47 mitigated · `TASKS.md` appendix · `plans/README.md` · `claude-progress.md`
 
 ## Open / operator
 

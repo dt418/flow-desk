@@ -503,6 +503,12 @@
 - **msg:** sync handoff, feature_list, TASKS, RISKS after 029–034 ship
 - **author:** thanhd
 
+### 2026-07-18 02:12 — `43382be` (main)
+
+- **type:** docs
+- **msg:** make session-handoff shipped table readable
+- **author:** thanhd
+
 ### Session — 2026-07-11 plan 023 + plan 024 execution
 
 - **Goal**: Execute audit plans 023 (auth security) and 024 (hot-path perf)
