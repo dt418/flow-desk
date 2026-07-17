@@ -8,9 +8,14 @@ const mockUpdateMessage = vi.fn();
 const mockDeleteMessage = vi.fn();
 void mockDeleteMessage;
 
+const mockMemberFindUnique = vi.fn();
+
 const mockPrisma = {
   chatChannel: {
     findUnique: mockFindChannel,
+  },
+  workspaceMember: {
+    findUnique: mockMemberFindUnique,
   },
   chatMessage: {
     findMany: mockFindMessages,
@@ -97,6 +102,11 @@ describe('chat message service', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockFindChannel.mockResolvedValue(mockChannel);
+    mockMemberFindUnique.mockResolvedValue({
+      workspaceId: 'ws-1',
+      userId: 'user-1',
+      role: 'MEMBER',
+    });
     mockFindMessages.mockResolvedValue([]);
     mockFindMessage.mockResolvedValue(null);
     mockCreateMessage.mockResolvedValue(mockMessage);

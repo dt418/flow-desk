@@ -1,7 +1,8 @@
 import { Prisma } from '@flowdesk/db';
 import { prisma } from '../../shared/lib/prisma';
 import { assertMembership, assertRole } from '../../shared/lib/access';
-import { NotFoundError } from '../../shared/errors';
+import { BadRequestError, NotFoundError } from '../../shared/errors';
+import { assertSafeOutboundUrl, safeOutboundFetch } from '../../shared/lib/url-safety';
 import type {
   CreateAutomationRuleInput,
   UpdateAutomationRuleInput,
@@ -47,6 +48,9 @@ export const automationService = {
 
   async create(userId: string, workspaceId: string, body: CreateAutomationRuleInput) {
     await assertRole(workspaceId, userId, ['OWNER', 'ADMIN']);
+    if (body.action.type === 'send-webhook') {
+      await assertSafeOutboundUrl(body.action.url);
+    }
     const row = await repo.create(prisma, {
       workspaceId,
       name: body.name,
@@ -65,6 +69,9 @@ export const automationService = {
     const row = await repo.findById(prisma, id);
     if (!row) throw new NotFoundError('AutomationRule');
     await assertRole(row.workspaceId, userId, ['OWNER', 'ADMIN']);
+    if (body.action?.type === 'send-webhook') {
+      await assertSafeOutboundUrl(body.action.url);
+    }
     const updated = await repo.update(prisma, id, {
       ...(body.name !== undefined ? { name: body.name } : {}),
       ...(body.trigger !== undefined ? { trigger: body.trigger } : {}),
@@ -190,6 +197,16 @@ async function runAction(
     case 'assign': {
       const assigneeId =
         action.assigneeId === 'workspace-owner' ? task.workspace.ownerId : action.assigneeId;
+      if (action.assigneeId !== 'workspace-owner') {
+        const member = await prisma.workspaceMember.findUnique({
+          where: {
+            workspaceId_userId: { workspaceId: task.workspaceId, userId: assigneeId },
+          },
+        });
+        if (!member) {
+          throw new BadRequestError('Assignee is not a workspace member');
+        }
+      }
       await prisma.task.update({
         where: { id: task.id },
         data: { assigneeId },
@@ -197,6 +214,10 @@ async function runAction(
       return;
     }
     case 'move-column': {
+      const column = await prisma.column.findUnique({ where: { id: action.columnId } });
+      if (!column || column.workspaceId !== task.workspaceId) {
+        throw new BadRequestError('Column does not belong to this workspace');
+      }
       await prisma.task.update({
         where: { id: task.id },
         data: { columnId: action.columnId },
@@ -204,7 +225,7 @@ async function runAction(
       return;
     }
     case 'send-webhook': {
-      await fetch(action.url, {
+      await safeOutboundFetch(action.url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

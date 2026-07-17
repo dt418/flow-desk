@@ -1,54 +1,84 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { exportTasksCsv } from './api';
 
-// P1-3: exportTasksCsv builds the correct query string and assigns it to
-// window.location.href so the browser downloads the CSV via
-// Content-Disposition: attachment.
+// P1-3: exportTasksCsv fetches CSV and triggers a blob download.
 describe('exportTasksCsv (P1-3)', () => {
-  let assignedHref: string | undefined;
-  const originalLocation = window.location;
+  let createObjectURL: ReturnType<typeof vi.fn>;
+  let revokeObjectURL: ReturnType<typeof vi.fn>;
+  let clickSpy: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
-    assignedHref = undefined;
-    // jsdom's window.location is non-writable; stub via defineProperty so we
-    // can capture the href assignment without triggering a real navigation.
-    Object.defineProperty(window, 'location', {
-      configurable: true,
-      value: {
-        get href() {
-          return assignedHref ?? originalLocation.href;
-        },
-        set href(v: string) {
-          assignedHref = v;
-        },
-      },
+    createObjectURL = vi.fn(() => 'blob:mock');
+    revokeObjectURL = vi.fn();
+    clickSpy = vi.fn();
+    vi.stubGlobal('URL', {
+      createObjectURL,
+      revokeObjectURL,
     });
+    vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
+      if (tag === 'a') {
+        return {
+          href: '',
+          download: '',
+          rel: '',
+          click: clickSpy,
+          remove: vi.fn(),
+        } as unknown as HTMLAnchorElement;
+      }
+      return document.createElement(tag);
+    });
+    vi.spyOn(document.body, 'appendChild').mockImplementation((n) => n);
   });
 
   afterEach(() => {
-    // Restore the real location object.
-    Object.defineProperty(window, 'location', {
-      configurable: true,
-      value: originalLocation,
-    });
+    vi.unstubAllGlobals();
     vi.restoreAllMocks();
   });
 
-  it('builds a URL with workspaceId only when filters are ALL', () => {
-    exportTasksCsv({ workspaceId: 'ws-123', status: 'ALL', priority: 'ALL' });
-    expect(assignedHref).toBe('/api/tasks/export?workspaceId=ws-123');
+  it('fetches export URL with workspaceId only when filters are ALL', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      blob: async () => new Blob(['csv']),
+      headers: new Headers({
+        'Content-Disposition': 'attachment; filename="tasks.csv"',
+      }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await exportTasksCsv({ workspaceId: 'ws-123', status: 'ALL', priority: 'ALL' });
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/tasks/export?workspaceId=ws-123', {
+      credentials: 'include',
+    });
+    expect(clickSpy).toHaveBeenCalled();
   });
 
-  it('includes status and priority when not ALL', () => {
-    exportTasksCsv({ workspaceId: 'ws-123', status: 'IN_REVIEW', priority: 'HIGH' });
-    expect(assignedHref).toContain('workspaceId=ws-123');
-    expect(assignedHref).toContain('status=IN_REVIEW');
-    expect(assignedHref).toContain('priority=HIGH');
+  it('includes status and priority when not ALL', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      blob: async () => new Blob(['csv']),
+      headers: new Headers({}),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await exportTasksCsv({ workspaceId: 'ws-123', status: 'IN_REVIEW', priority: 'HIGH' });
+
+    const url = String(fetchMock.mock.calls[0]?.[0]);
+    expect(url).toContain('workspaceId=ws-123');
+    expect(url).toContain('status=IN_REVIEW');
+    expect(url).toContain('priority=HIGH');
   });
 
-  it('omits status when ALL but includes priority when set', () => {
-    exportTasksCsv({ workspaceId: 'ws-123', status: 'ALL', priority: 'HIGH' });
-    expect(assignedHref).not.toContain('status=');
-    expect(assignedHref).toContain('priority=HIGH');
+  it('throws with server message on 413', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 413,
+      json: async () => ({ message: 'Export exceeds 10000 rows' }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(
+      exportTasksCsv({ workspaceId: 'ws-123', status: 'ALL', priority: 'ALL' }),
+    ).rejects.toThrow(/Export exceeds 10000 rows/);
   });
 });

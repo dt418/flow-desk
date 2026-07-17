@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -89,14 +89,32 @@ export default function SprintPage() {
     enabled: Boolean(workspaceId),
   });
 
-  const sprintTasks = useQuery({
+  const sprintTasks = useInfiniteQuery({
     queryKey: ['sprint-tasks', workspaceId, selected],
-    queryFn: () =>
-      api<{ data: SprintTask[] }>(
-        `/tasks?workspaceId=${workspaceId}&limit=100&sprintId=${selected}`,
-      ),
+    queryFn: async ({ pageParam }) => {
+      const params = new URLSearchParams({
+        workspaceId,
+        limit: '50',
+        sprintId: selected!,
+      });
+      if (typeof pageParam === 'string' && pageParam) params.set('cursor', pageParam);
+      const res = await api<{ data: SprintTask[]; nextCursor: string | null }>(
+        `/api/tasks?${params.toString()}`,
+      );
+      return {
+        data: Array.isArray(res?.data) ? res.data : [],
+        nextCursor: typeof res?.nextCursor === 'string' ? res.nextCursor : null,
+      };
+    },
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (last) => last.nextCursor ?? undefined,
     enabled: Boolean(selected),
   });
+
+  const sprintTaskList = useMemo(
+    () => (sprintTasks.data?.pages ?? []).flatMap((p) => p.data),
+    [sprintTasks.data],
+  );
 
   const burndown = useQuery({
     queryKey: ['burndown', selected],
@@ -382,13 +400,13 @@ export default function SprintPage() {
                 <h3 className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
                   Tasks in {activeSprint.name}
                 </h3>
-                {sprintTasks.data?.data.length === 0 ? (
+                {sprintTaskList.length === 0 ? (
                   <div className="rounded-lg border border-dashed border-border py-8 text-center text-sm text-muted-foreground">
                     No tasks in this sprint. Add tasks from the backlog.
                   </div>
                 ) : (
                   <ul className="space-y-1">
-                    {(sprintTasks.data?.data ?? []).map((t) => (
+                    {sprintTaskList.map((t) => (
                       <li
                         key={t.id}
                         className="group flex items-center justify-between rounded-md border border-border bg-card px-3 py-2 text-sm transition-colors hover:bg-muted/50"
@@ -419,6 +437,20 @@ export default function SprintPage() {
                     ))}
                   </ul>
                 )}
+                {sprintTasks.hasNextPage ? (
+                  <div className="mt-2 flex justify-center">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-8 text-xs"
+                      disabled={sprintTasks.isFetchingNextPage}
+                      onClick={() => void sprintTasks.fetchNextPage()}
+                    >
+                      {sprintTasks.isFetchingNextPage ? 'Loading…' : 'Load more tasks'}
+                    </Button>
+                  </div>
+                ) : null}
               </div>
             </div>
           ) : (

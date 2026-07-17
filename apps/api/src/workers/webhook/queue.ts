@@ -4,6 +4,7 @@ import { prisma } from '../../shared/lib/prisma';
 import { createDelivery, updateDelivery } from '../../modules/webhook/webhook.repository';
 import { signWebhookPayload } from '../../modules/webhook/webhook-sign';
 import { logger } from '../../shared/lib/logger';
+import { isSafeOutboundUrl, safeOutboundFetch } from '../../shared/lib/url-safety';
 
 interface WebhookJob {
   webhookId: string;
@@ -45,6 +46,15 @@ export async function createWebhookWorker() {
         status: 'PROCESSING',
       });
 
+      // Defense-in-depth: re-check URL at delivery time (SSRF)
+      if (!(await isSafeOutboundUrl(webhookUrl))) {
+        await updateDelivery(prisma, delivery.id, {
+          status: 'ERROR',
+          error: 'URL not allowed for outbound webhooks',
+        });
+        return;
+      }
+
       // Prepare request — body signed with HMAC-SHA256 (X-FlowDesk-Signature)
       const body = JSON.stringify(activity);
       const signature = signWebhookPayload(webhookSecret, body);
@@ -55,12 +65,13 @@ export async function createWebhookWorker() {
         'X-FlowDesk-Delivery': delivery.id,
       };
 
-      // Send request with timeout
+      // Send request with timeout; do not follow redirects (SSRF via redirect)
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 10000);
 
       try {
-        const response = await fetch(webhookUrl, {
+        // DNS-pinned fetch — closes rebinding window after isSafeOutboundUrl.
+        const response = await safeOutboundFetch(webhookUrl, {
           method: 'POST',
           headers,
           body,
@@ -69,11 +80,14 @@ export async function createWebhookWorker() {
 
         clearTimeout(timeout);
 
+        const rawBody = await response.text();
+        const responseBody = rawBody.length > 4096 ? rawBody.slice(0, 4096) : rawBody;
+
         // Update delivery record
         await updateDelivery(prisma, delivery.id, {
           status: response.ok ? 'SUCCESS' : 'FAILED',
           responseCode: response.status,
-          responseBody: await response.text(),
+          responseBody,
           deliveredAt: new Date(),
         });
       } catch (error) {

@@ -1,8 +1,8 @@
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAuth, TwoFactorRequiredError } from '../store';
 import { Button } from '@/components/ui/button';
@@ -17,9 +17,14 @@ type LoginInput = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { login, login2fa } = useAuth();
   const [serverError, setServerError] = useState<string | null>(null);
+  // Password login: challengeToken in memory from JSON. OAuth: cookie only + ?twoFactor=1.
   const [challengeToken, setChallengeToken] = useState<string | null>(null);
+  const [oauth2faPending, setOauth2faPending] = useState(
+    () => searchParams.get('twoFactor') === '1',
+  );
   const [totpCode, setTotpCode] = useState('');
   const [submitting2fa, setSubmitting2fa] = useState(false);
   const {
@@ -30,6 +35,15 @@ export default function LoginPage() {
     resolver: zodResolver(loginSchema),
     defaultValues: { email: '', password: '' },
   });
+
+  // Strip sensitive/legacy query params from the address bar after mount.
+  useEffect(() => {
+    if (searchParams.has('twoFactor') || searchParams.has('twoFactorChallenge')) {
+      navigate('/login', { replace: true });
+    }
+  }, [searchParams, navigate]);
+
+  const show2fa = Boolean(challengeToken) || oauth2faPending;
 
   const onSubmit = handleSubmit(async (values) => {
     setServerError(null);
@@ -50,11 +64,12 @@ export default function LoginPage() {
 
   async function onSubmit2fa(e: React.FormEvent) {
     e.preventDefault();
-    if (!challengeToken) return;
+    // Cookie path (OAuth) has no in-memory token — server reads httpOnly cookie.
+    if (!challengeToken && !oauth2faPending) return;
     setSubmitting2fa(true);
     setServerError(null);
     try {
-      await login2fa(challengeToken, totpCode);
+      await login2fa(challengeToken ?? undefined, totpCode);
       toast.success('Welcome back');
       navigate('/');
     } catch (err) {
@@ -66,7 +81,7 @@ export default function LoginPage() {
     }
   }
 
-  if (challengeToken) {
+  if (show2fa) {
     return (
       <div className="flex h-full items-center justify-center bg-background p-4">
         <form
@@ -114,6 +129,7 @@ export default function LoginPage() {
             className="h-9 w-full"
             onClick={() => {
               setChallengeToken(null);
+              setOauth2faPending(false);
               setTotpCode('');
               setServerError(null);
             }}

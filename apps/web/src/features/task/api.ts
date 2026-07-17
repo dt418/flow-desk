@@ -1,5 +1,5 @@
 import type { CreateTaskInput, Task, UpdateTaskInput } from '@flow-desk/shared/task';
-import { api } from '@/lib/api';
+import { api, ApiError } from '@/lib/api';
 import { taskResponseSchema, okResponseSchema } from './schemas';
 
 export const taskApi = {
@@ -39,18 +39,46 @@ export const taskApi = {
 };
 
 /**
- * Trigger a CSV download for the current filter set. The browser handles the
- * download via the response's Content-Disposition: attachment header. Cookies
- * travel with the same-origin navigation. Server-side filtered — exports the
- * full filtered set, not the rendered paginated subset.
+ * Download a CSV export for the current filter set (fetch + blob).
+ * Surfaces 413 / API errors as thrown Error so callers can toast.
  */
-export function exportTasksCsv(params: {
+export async function exportTasksCsv(params: {
   workspaceId: string;
   status?: string;
   priority?: string;
-}): void {
+}): Promise<void> {
   const qs = new URLSearchParams({ workspaceId: params.workspaceId });
   if (params.status && params.status !== 'ALL') qs.set('status', params.status);
   if (params.priority && params.priority !== 'ALL') qs.set('priority', params.priority);
-  window.location.href = `/api/tasks/export?${qs.toString()}`;
+  const url = `/api/tasks/export?${qs.toString()}`;
+
+  const res = await fetch(url, { credentials: 'include' });
+  if (!res.ok) {
+    let message = `Export failed (${res.status})`;
+    try {
+      const body = (await res.json()) as { message?: string };
+      if (body.message) message = body.message;
+    } catch {
+      // ignore non-JSON body
+    }
+    throw new ApiError(res.status, null, message);
+  }
+
+  const blob = await res.blob();
+  const cd = res.headers.get('Content-Disposition') ?? '';
+  const match = /filename="?([^";]+)"?/i.exec(cd);
+  const filename = match?.[1] ?? 'tasks-export.csv';
+
+  const objectUrl = URL.createObjectURL(blob);
+  try {
+    const a = document.createElement('a');
+    a.href = objectUrl;
+    a.download = filename;
+    a.rel = 'noopener';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
 }

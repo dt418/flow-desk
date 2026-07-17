@@ -7,7 +7,7 @@ For new engineers joining the team. Read once, then keep open as a reference. Th
     apps/web/         # React 18 + Vite + TypeScript + Tailwind v4 + shadcn/ui
     apps/api/         # Hono + Node 22 + TypeScript + Prisma 7 + Socket.IO
     packages/shared/  # Zod schemas + types shared by web and api
-    packages/db/      # Prisma schema + migrations + generated client (output at apps/api/generated/prisma)
+    packages/db/      # Prisma schema + migrations + generated client (`packages/db/generated`, package `@flowdesk/db`)
     packages/env/     # Environment variable validation (Zod)
     prisma.config.ts  # Prisma 7 config at repo root (schema path, seed, datasource)
     docker/           # Dockerfiles + nginx config
@@ -22,7 +22,7 @@ Forging session notes live in `claude-progress.md`. Compact handoffs in `session
 
 Layered architecture. Two halves:
 
-- **Backend (`apps/api`)**: Hono routes → service → repository → Prisma (custom output `apps/api/generated/prisma`). Read `docs/ARCHITECTURE.md` for the layered rationale and `ADR-006-security-middleware-pattern.md` for middleware.
+- **Backend (`apps/api`)**: Hono routes → service → repository → Prisma (`@flowdesk/db` / `packages/db/generated`). Soft-delete: `packages/db/src/prisma-extension.ts`. Read `docs/ARCHITECTURE.md` and `ADR-006-security-middleware-pattern.md`.
 - **Frontend (`apps/web`)**: feature folders under `apps/web/src/features/{feature}/` with `components/`, `hooks/`, `api.ts`, `types.ts`, `index.ts`. Public surface is `index.ts`. Posted data is mutated via TanStack Query, never raw `useEffect` fetches.
 
 ## Setup
@@ -135,7 +135,7 @@ Reconnect client uses exponential backoff 1s → 30s with randomization 0.5, tim
 
 ## Database (Prisma 7)
 
-- `packages/db/prisma/schema.prisma` — `provider = "prisma-client"`, custom `output = "../apps/api/generated/prisma"`.
+- `packages/db/prisma/schema.prisma` — `provider = "prisma-client"`, custom `output = "../generated"`.
 - `prisma.config.ts` at repo root defines the config (`env('DATABASE_URL')`, migrations path, etc.).
 - All app code imports the generated client, not `@prisma/client`. The generated dir is gitignored.
 - `PrismaPg` driver adapter pattern: `new PrismaClient({ adapter: new PrismaPg({ connectionString }), ... })`.
@@ -183,7 +183,7 @@ Done = implementation done + verification ran + evidence recorded + `./init.sh` 
 
 - `.env` keys in chat or commit messages → **rotate immediately**. Pre-commit secret scan blocks them in commits. Treat leaks as compromised the moment they reach scrollback.
 - Container hostname is `postgres:5432`. Host-side local dev (`pnpm dev`) reads `localhost` from `.env`; the `pnpm dev` wrapper auto-rewrites the port in `.env` when it remaps to avoid host conflicts.
-- `apps/api/generated/prisma/` is gitignored. If a checkout "loses" Prisma types, run `pnpm db:generate` first.
+- `packages/db/generated/` is gitignored. If a checkout "loses" Prisma types, run `pnpm db:generate` first.
 - `pnpm` 11 ignores `public-hoist-pattern` in `.npmrc`. Hoist settings live in `pnpm-workspace.yaml`. `prisma` and `@prisma/*` are public-hoisted on purpose for monorepo Docker builds.
 - Long-running feature branches accumulate symlinks; `pnpm install --no-frozen-lockfile` clears them.
 - Use `./scripts/docker-up.sh` instead of `docker compose up` directly — it auto-overrides conflicting host ports.

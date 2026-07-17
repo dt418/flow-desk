@@ -5,7 +5,7 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build", "^db:generate"],
-      "env": ["VITE_API_URL", "VITE_APP_NAME", "VITE_STRIPE_PUBLIC_KEY"],
+      "env": ["VITE_API_URL", "VITE_APP_NAME"],
       "outputs": ["dist/**", ".vite/**", "build/**", "generated/**"]
     },
     "dev": {

@@ -161,6 +161,20 @@ describe('POST/GET/PATCH/DELETE /api/workspaces/:wid/webhooks (P1-4)', () => {
     expect(res.status).toBe(400);
   });
 
+  it('rejects private/loopback webhook URL (SSRF)', async () => {
+    const { wid, cookie } = await setup();
+    const app = buildApp();
+    const res = await app.request(`/api/workspaces/${wid}/webhooks`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Cookie: cookie },
+      body: JSON.stringify({
+        url: 'http://127.0.0.1/hooks',
+        events: ['CREATED'],
+      }),
+    });
+    expect(res.status).toBe(400);
+  });
+
   it('lists empty deliveries for a new webhook', async () => {
     const { wid, cookie } = await setup();
     const app = buildApp();

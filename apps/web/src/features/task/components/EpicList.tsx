@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMemo, useState } from 'react';
+import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
@@ -24,6 +24,22 @@ interface TaskRow {
   priority: string;
 }
 
+type TaskPage = { data: TaskRow[]; nextCursor: string | null };
+
+async function fetchTaskPage(
+  workspaceId: string,
+  type: string,
+  pageParam: string | undefined,
+): Promise<TaskPage> {
+  const params = new URLSearchParams({ workspaceId, limit: '50', type });
+  if (pageParam) params.set('cursor', pageParam);
+  const res = await api<TaskPage>(`/api/tasks?${params.toString()}`);
+  return {
+    data: Array.isArray(res?.data) ? res.data : [],
+    nextCursor: typeof res?.nextCursor === 'string' ? res.nextCursor : null,
+  };
+}
+
 export default function EpicListPage() {
   const { workspaceId = '' } = useParams<{ workspaceId: string }>();
   const qc = useQueryClient();
@@ -33,9 +49,20 @@ export default function EpicListPage() {
   const [addingStoryTo, setAddingStoryTo] = useState<string | null>(null);
   const [storyTitle, setStoryTitle] = useState('');
 
-  const tasks = useQuery({
-    queryKey: ['epic-tasks', workspaceId],
-    queryFn: () => api<{ data: TaskRow[] }>(`/api/tasks?workspaceId=${workspaceId}&limit=100`),
+  const epicsQuery = useInfiniteQuery({
+    queryKey: ['epic-tasks', workspaceId, 'EPIC'],
+    queryFn: ({ pageParam }) => fetchTaskPage(workspaceId, 'EPIC', pageParam as string | undefined),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (last) => last.nextCursor ?? undefined,
+    enabled: Boolean(workspaceId),
+  });
+
+  const storiesQuery = useInfiniteQuery({
+    queryKey: ['epic-tasks', workspaceId, 'STORY'],
+    queryFn: ({ pageParam }) =>
+      fetchTaskPage(workspaceId, 'STORY', pageParam as string | undefined),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (last) => last.nextCursor ?? undefined,
     enabled: Boolean(workspaceId),
   });
 
@@ -54,9 +81,15 @@ export default function EpicListPage() {
     },
   });
 
-  const all = tasks.data?.data ?? [];
-  const epics = all.filter((t) => t.type === 'EPIC');
-  const childrenOf = (epicId: string) => all.filter((t) => t.parentTaskId === epicId);
+  const epics = useMemo(
+    () => (epicsQuery.data?.pages ?? []).flatMap((p) => p.data),
+    [epicsQuery.data],
+  );
+  const stories = useMemo(
+    () => (storiesQuery.data?.pages ?? []).flatMap((p) => p.data),
+    [storiesQuery.data],
+  );
+  const childrenOf = (epicId: string) => stories.filter((t) => t.parentTaskId === epicId);
 
   function toggleEpic(id: string) {
     setExpandedEpics((prev) => {
@@ -284,6 +317,34 @@ export default function EpicListPage() {
               </Card>
             );
           })}
+          {(epicsQuery.hasNextPage || storiesQuery.hasNextPage) && (
+            <div className="flex flex-wrap justify-center gap-2 pt-2">
+              {epicsQuery.hasNextPage ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-8 text-xs"
+                  disabled={epicsQuery.isFetchingNextPage}
+                  onClick={() => void epicsQuery.fetchNextPage()}
+                >
+                  {epicsQuery.isFetchingNextPage ? 'Loading…' : 'Load more epics'}
+                </Button>
+              ) : null}
+              {storiesQuery.hasNextPage ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-8 text-xs"
+                  disabled={storiesQuery.isFetchingNextPage}
+                  onClick={() => void storiesQuery.fetchNextPage()}
+                >
+                  {storiesQuery.isFetchingNextPage ? 'Loading…' : 'Load more stories'}
+                </Button>
+              ) : null}
+            </div>
+          )}
         </div>
       )}
     </div>

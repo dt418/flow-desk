@@ -280,6 +280,8 @@ export function createSocketServer(httpServer: HttpServer) {
       socket.on(
         'typing:start',
         withValidation(typingStartSchema, (data, socket) => {
+          // Only emit if the socket joined this conversation (membership checked on join).
+          if (!chatPresenceChannels.has(data.channelId)) return;
           typingChannels.add(data.channelId);
           socket.to(`conversation:${data.channelId}`).emit('typing:start', {
             channelId: data.channelId,
@@ -293,6 +295,7 @@ export function createSocketServer(httpServer: HttpServer) {
       socket.on(
         'typing:stop',
         withValidation(typingStopSchema, (data, socket) => {
+          if (!chatPresenceChannels.has(data.channelId)) return;
           typingChannels.delete(data.channelId);
           socket.to(`conversation:${data.channelId}`).emit('typing:stop', {
             channelId: data.channelId,

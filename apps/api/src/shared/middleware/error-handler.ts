@@ -26,7 +26,7 @@ export async function errorHandler(err: Error, c: Context) {
     }
     return c.json(
       { message: err.message, code: err.code, details: err.details, requestId },
-      err.status as 400 | 401 | 403 | 404 | 409 | 429 | 502 | 503,
+      err.status as 400 | 401 | 403 | 404 | 409 | 413 | 429 | 502 | 503,
     );
   }
 

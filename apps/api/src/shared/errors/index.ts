@@ -46,6 +46,12 @@ export class RateLimitError extends AppError {
   }
 }
 
+export class PayloadTooLargeError extends AppError {
+  constructor(message = 'Payload Too Large', details?: unknown) {
+    super(413, message, 'PAYLOAD_TOO_LARGE', details);
+  }
+}
+
 export class LLMError extends AppError {
   constructor(message: string, details?: Record<string, unknown>) {
     super(502, message, 'LLM_UPSTREAM', details);

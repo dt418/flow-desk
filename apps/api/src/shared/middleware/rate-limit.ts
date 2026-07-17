@@ -2,6 +2,7 @@ import type { MiddlewareHandler } from 'hono';
 import { redis } from '../lib/redis';
 import { env } from '../lib/prisma';
 import { RateLimitError } from '../errors';
+import { checkRateLimit } from './rate-limit-core';
 
 type RateLimitOptions = {
   windowSec: number;
@@ -9,21 +10,6 @@ type RateLimitOptions = {
   keyBy: 'ip' | 'user';
   scope: string;
 };
-
-const RATE_LIMIT_SCRIPT = `
-  local key = KEYS[1]
-  local window = tonumber(ARGV[1])
-  local count = redis.call('INCR', key)
-  if count == 1 then
-    redis.call('EXPIRE', key, window)
-  end
-  return count
-`;
-
-async function getRedisKeyTTL(key: string): Promise<number> {
-  const ttl = await redis.pttl(key);
-  return ttl > 0 ? Math.ceil(ttl / 1000) : 0;
-}
 
 function getClientIp(c: { req: { header: (k: string) => string | undefined } }): string {
   if (env.TRUST_PROXY_HOPS > 0) {
@@ -49,21 +35,20 @@ export function rateLimit(opts: RateLimitOptions): MiddlewareHandler {
 
     const identity = keyBy === 'ip' ? getClientIp(c) : (c.get('auth')?.user?.id ?? getClientIp(c));
 
-    const bucket = Math.floor(Date.now() / 1000 / windowSec);
-    const key = `rl:{${scope}:${identity}}:${bucket}`;
+    const result = await checkRateLimit({
+      redis,
+      scope,
+      identity,
+      windowSec,
+      max,
+    });
 
-    const count = (await redis.eval(RATE_LIMIT_SCRIPT, 1, key, String(windowSec))) as number;
+    c.header('X-RateLimit-Limit', String(result.limit));
+    c.header('X-RateLimit-Remaining', String(result.remaining));
+    c.header('X-RateLimit-Reset', String(result.resetEpoch));
 
-    const resetEpoch = (bucket + 1) * windowSec;
-    const remaining = Math.max(0, max - count);
-
-    c.header('X-RateLimit-Limit', String(max));
-    c.header('X-RateLimit-Remaining', String(remaining));
-    c.header('X-RateLimit-Reset', String(resetEpoch));
-
-    if (count > max) {
-      const retryAfter = await getRedisKeyTTL(key);
-      throw new RateLimitError('Too Many Requests', retryAfter);
+    if (!result.allowed) {
+      throw new RateLimitError('Too Many Requests', result.retryAfterSec);
     }
 
     return next();

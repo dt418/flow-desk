@@ -38,13 +38,12 @@ export async function findAndValidateChannel(
   if (!channel || channel.deletedAt || channel.workspaceId !== workspaceId) {
     throw new NotFoundError('Channel not found');
   }
-  if (channel.isPrivate) {
-    const member = await prisma.workspaceMember.findUnique({
-      where: { workspaceId_userId: { workspaceId, userId } },
-    });
-    if (!member) {
-      throw new ForbiddenError('You do not have access to this private channel');
-    }
+  // Always require workspace membership — public channels are still tenant-scoped.
+  const member = await prisma.workspaceMember.findUnique({
+    where: { workspaceId_userId: { workspaceId, userId } },
+  });
+  if (!member) {
+    throw new ForbiddenError('Not a workspace member');
   }
   return channel;
 }

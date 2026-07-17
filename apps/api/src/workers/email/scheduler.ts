@@ -26,44 +26,51 @@ export async function checkDueReminders() {
       dueDate: true,
       assigneeId: true,
       workspaceId: true,
+      assignee: { select: { id: true, name: true, email: true } },
     },
   });
 
+  if (dueTasks.length === 0) return;
+
+  const assigneeIds = [
+    ...new Set(dueTasks.map((t) => t.assigneeId).filter((id): id is string => Boolean(id))),
+  ];
+  const recentJobs =
+    assigneeIds.length > 0
+      ? await prisma.emailJob.findMany({
+          where: {
+            userId: { in: assigneeIds },
+            type: 'DUE_REMINDER',
+            status: { in: ['PENDING', 'PROCESSING'] },
+            createdAt: { gte: new Date(now.getTime() - 24 * 3600_000) },
+          },
+          select: { userId: true, payload: true },
+        })
+      : [];
+
+  const pendingTaskKeys = new Set(
+    recentJobs.map((j) => {
+      const payload = j.payload as { taskId?: string } | null;
+      return `${j.userId}:${payload?.taskId ?? ''}`;
+    }),
+  );
+
   for (const task of dueTasks) {
-    if (!task.assigneeId) continue;
-
-    const existing = await prisma.emailJob.findFirst({
-      where: {
-        userId: task.assigneeId,
-        type: 'DUE_REMINDER',
-        status: { in: ['PENDING', 'PROCESSING'] },
-        createdAt: { gte: new Date(now.getTime() - 24 * 3600_000) },
-        payload: { path: ['taskId'], equals: task.id },
-      },
-    });
-
-    if (existing) continue;
-
-    const user = await prisma.user.findUnique({
-      where: { id: task.assigneeId },
-      select: { name: true, email: true },
-    });
-
-    if (!user) continue;
+    if (!task.assigneeId || !task.assignee) continue;
+    if (pendingTaskKeys.has(`${task.assigneeId}:${task.id}`)) continue;
 
     const dueMs = task.dueDate!.getTime();
     const hoursUntilDue = Math.round((dueMs - now.getTime()) / 3_600_000);
-
     const jobId = `reminder-${task.id}-${task.assigneeId}`;
 
     await enqueueEmail(
       {
         userId: task.assigneeId,
         type: 'DUE_REMINDER',
-        to: user.email,
+        to: task.assignee.email,
         subject: `Reminder: ${task.title} is due in ${hoursUntilDue}h`,
-        html: `<p>Hi ${user.name},</p><p>Task <strong>${task.title}</strong> is due in ${hoursUntilDue} hours.</p>`,
-        text: `Hi ${user.name},\n\nTask "${task.title}" is due in ${hoursUntilDue} hours.`,
+        html: `<p>Hi ${task.assignee.name},</p><p>Task <strong>${task.title}</strong> is due in ${hoursUntilDue} hours.</p>`,
+        text: `Hi ${task.assignee.name},\n\nTask "${task.title}" is due in ${hoursUntilDue} hours.`,
         metadata: { taskId: task.id, hoursUntilDue },
       },
       { jobId },
@@ -97,26 +104,29 @@ export async function checkDigests() {
 
     const members = await prisma.workspaceMember.findMany({
       where: { workspaceId: ws.workspaceId },
-      select: { userId: true },
+      select: {
+        userId: true,
+        user: { select: { id: true, name: true, email: true } },
+      },
     });
 
+    if (members.length === 0) continue;
+
+    const memberIds = members.map((m) => m.userId);
+    const recentDigests = await prisma.emailJob.findMany({
+      where: {
+        userId: { in: memberIds },
+        type: 'DIGEST',
+        createdAt: { gte: cooldownStart },
+      },
+      select: { userId: true },
+    });
+    const recentDigestUsers = new Set(recentDigests.map((j) => j.userId));
+
     for (const member of members) {
-      const user = await prisma.user.findUnique({
-        where: { id: member.userId },
-        select: { name: true, email: true },
-      });
-
+      const user = member.user;
       if (!user) continue;
-
-      const recentDigest = await prisma.emailJob.findFirst({
-        where: {
-          userId: member.userId,
-          type: 'DIGEST',
-          createdAt: { gte: cooldownStart },
-        },
-      });
-
-      if (recentDigest) continue;
+      if (recentDigestUsers.has(member.userId)) continue;
 
       const today = now.toISOString().slice(0, 10);
       const jobId = `digest-${ws.workspaceId}-${member.userId}-${today}`;

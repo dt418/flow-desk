@@ -1,8 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 const mockFindTasks = vi.fn();
-const mockFindEmailJob = vi.fn();
-const mockFindUser = vi.fn();
+const mockFindEmailJobs = vi.fn();
 const mockFindSettings = vi.fn();
 const mockFindMembers = vi.fn();
 const mockEmailJobCreate = vi.fn();
@@ -33,8 +32,7 @@ vi.mock('../../shared/lib/email-provider', () => ({
 vi.mock('../../shared/lib/prisma', () => ({
   prisma: {
     task: { findMany: mockFindTasks },
-    emailJob: { findFirst: mockFindEmailJob, create: mockEmailJobCreate },
-    user: { findUnique: mockFindUser },
+    emailJob: { findMany: mockFindEmailJobs, create: mockEmailJobCreate },
     workspaceNotificationSetting: { findMany: mockFindSettings },
     workspaceMember: { findMany: mockFindMembers },
   },
@@ -45,8 +43,7 @@ describe('scheduler', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockFindTasks.mockResolvedValue([]);
-    mockFindEmailJob.mockResolvedValue(null);
-    mockFindUser.mockResolvedValue({ name: 'Test', email: 'test@example.com' });
+    mockFindEmailJobs.mockResolvedValue([]);
     mockFindSettings.mockResolvedValue([]);
     mockFindMembers.mockResolvedValue([]);
     vi.useFakeTimers();
@@ -85,14 +82,12 @@ describe('scheduler', () => {
         dueDate: new Date(Date.now() + 3600000),
         assigneeId: 'user-1',
         workspaceId: 'ws-1',
+        assignee: { id: 'user-1', name: 'Test', email: 'test@example.com' },
       },
     ]);
+    mockFindEmailJobs.mockResolvedValue([]);
     await checkDueReminders();
-    expect(mockFindEmailJob).toHaveBeenCalled();
-    expect(mockFindUser).toHaveBeenCalledWith({
-      where: { id: 'user-1' },
-      select: expect.any(Object),
-    });
+    expect(mockFindEmailJobs).toHaveBeenCalled();
   });
 
   it('checkDigests handles no settings', async () => {
@@ -106,8 +101,13 @@ describe('scheduler', () => {
     mockFindSettings.mockResolvedValue([
       { workspaceId: 'ws-1', dailyDigest: true, weeklyDigest: false },
     ]);
-    mockFindMembers.mockResolvedValue([{ userId: 'user-1' }]);
-    mockFindEmailJob.mockResolvedValue(null);
+    mockFindMembers.mockResolvedValue([
+      {
+        userId: 'user-1',
+        user: { id: 'user-1', name: 'Test', email: 'test@example.com' },
+      },
+    ]);
+    mockFindEmailJobs.mockResolvedValue([]);
     mockEmailJobCreate.mockResolvedValue({ id: 'ej-digest-1' });
     await checkDigests();
     expect(mockFindMembers).toHaveBeenCalled();

@@ -1,5 +1,19 @@
 # Progress Log
 
+### Session — Security/ops audit ship 029–034 + review fixes (2026-07-15)
+
+- **Goal**: Ship residual improve-audit plans 029–034 and address two review rounds of findings
+- **Completed**:
+  - **029**: Chat always requires workspace membership; typing gated on room join; integration OAuth cookies `Secure` in prod
+  - **030**: Google OAuth respects 2FA via httpOnly challenge cookie; Slack/GitLab callback uses cookie workspaceId; Slack request signature verify
+  - **031**: Task list filters `sprintId`/`type`; Sprint/Epic/List/Calendar pagination fixes
+  - **032**: Outbound SSRF guards (`url-safety` + DNS-pinned `safeOutboundFetch`); automation assign/column + webhook URL checks
+  - **033**: Export hard-cap 10k (413); email scheduler batching; rate-limit core unit tests
+  - **034**: Sentry dep/warn, docker requires real LLM key, CSP-Report-Only, docs/handoff, env cleanup (GitHub OAuth vars kept)
+  - **Review fixes**: IPv6 hex-mapped/loopback/IMDS/CGNAT blocking; calendar fetchNextPage error gate; export blob+toast; epic/sprint Load more
+- **Verification**: typecheck 6/6; api unit 170; integration 270; web 37; shared 31; lint+format+build green
+- **Next**: operator secrets (METRICS_TOKEN/SENTRY/OAuth); DIR product items if resuming features
+
 ### Session — R-24 AI suggest latency (2026-07-15)
 
 - **Goal**: Mitigate remaining material risk R-24 (AI suggest hangs UI on slow LLM)
@@ -480,6 +494,12 @@
 - **author:** thanhd
 
 ### 2026-07-15 22:40 — `dd197de` (main)
+
+- **type:**
+- **msg:**
+- **author:** thanhd
+
+### 2026-07-18 02:07 — `680b9ca` (main)
 
 - **type:**
 - **msg:**

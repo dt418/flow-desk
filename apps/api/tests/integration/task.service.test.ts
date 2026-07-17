@@ -71,6 +71,48 @@ describe('task.service', () => {
       expect(byStatus.data.length).toBe(1);
     });
 
+    it('filters by type and sprintId', async () => {
+      const sprint = await prisma.sprint.create({
+        data: {
+          workspaceId: wid,
+          name: 'S1',
+          startDate: new Date('2026-07-01'),
+          endDate: new Date('2026-07-14'),
+        },
+      });
+      await prisma.task.create({
+        data: {
+          workspaceId: wid,
+          columnId: colTodo.id,
+          title: 'Epic A',
+          createdById: ownerId,
+          type: 'EPIC',
+        },
+      });
+      await prisma.task.create({
+        data: {
+          workspaceId: wid,
+          columnId: colTodo.id,
+          title: 'Sprint task',
+          createdById: ownerId,
+          sprintId: sprint.id,
+        },
+      });
+      const epics = await taskService.list(
+        { workspaceId: wid, type: 'EPIC', limit: 50 } as never,
+        ownerId,
+      );
+      expect(epics.data.every((t) => t.type === 'EPIC')).toBe(true);
+      expect(epics.data.some((t) => t.title === 'Epic A')).toBe(true);
+
+      const inSprint = await taskService.list(
+        { workspaceId: wid, sprintId: sprint.id, limit: 50 } as never,
+        ownerId,
+      );
+      expect(inSprint.data).toHaveLength(1);
+      expect(inSprint.data[0]!.title).toBe('Sprint task');
+    });
+
     it('non-member rejected', async () => {
       await expect(
         taskService.list({ workspaceId: wid, limit: 10 } as never, outsiderId),

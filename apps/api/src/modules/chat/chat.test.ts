@@ -8,6 +8,8 @@ const mockUpdate = vi.fn();
 const mockQueryRaw = vi.fn();
 const mockUserFindMany = vi.fn();
 
+const mockMemberFindUnique = vi.fn();
+
 const mockPrisma = {
   chatChannel: {
     findMany: mockFindMany,
@@ -15,6 +17,9 @@ const mockPrisma = {
     findFirst: mockFindFirst,
     create: mockCreate,
     update: mockUpdate,
+  },
+  workspaceMember: {
+    findUnique: mockMemberFindUnique,
   },
   user: {
     findMany: mockUserFindMany,
@@ -67,6 +72,11 @@ describe('chat service', () => {
     mockFindMany.mockResolvedValue([]);
     mockFindUnique.mockResolvedValue(null);
     mockFindFirst.mockResolvedValue(null);
+    mockMemberFindUnique.mockResolvedValue({
+      workspaceId: 'ws-1',
+      userId: 'user-1',
+      role: 'MEMBER',
+    });
     mockCreate.mockResolvedValue(mockChannel);
     mockUpdate.mockResolvedValue(mockChannel);
     mockQueryRaw.mockResolvedValue([]);

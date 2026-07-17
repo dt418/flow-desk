@@ -1,8 +1,9 @@
 import { Link, useParams } from 'react-router-dom';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import type { ColumnDef } from '@tanstack/react-table';
 import { useMemo, useState } from 'react';
 import { ChevronDown, Download, Pencil, Plus, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import { DataTable } from '@/components/ui/data-table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -158,33 +159,29 @@ export default function ListPage() {
     taskDelete.request({ id: taskId, title });
   };
 
-  const data = useQuery<ListPageResponse, Error>({
-    queryKey: ['tasks', workspaceId],
-    queryFn: async () => {
-      try {
-        const res = await api<ListPageResponse>(
-          `/api/tasks?${new URLSearchParams({ workspaceId, limit: '100' }).toString()}`,
-        );
-        return {
-          data: Array.isArray(res?.data) ? res.data : [],
-          nextCursor: typeof res?.nextCursor === 'string' ? res.nextCursor : null,
-        };
-      } catch {
-        return { data: [], nextCursor: null };
-      }
+  const data = useInfiniteQuery<ListPageResponse, Error>({
+    queryKey: ['tasks', workspaceId, statusFilter, priorityFilter],
+    queryFn: async ({ pageParam }) => {
+      const params = new URLSearchParams({ workspaceId, limit: '50' });
+      if (statusFilter !== 'ALL') params.set('status', statusFilter);
+      if (priorityFilter !== 'ALL') params.set('priority', priorityFilter);
+      if (typeof pageParam === 'string' && pageParam) params.set('cursor', pageParam);
+      const res = await api<ListPageResponse>(`/api/tasks?${params.toString()}`);
+      return {
+        data: Array.isArray(res?.data) ? res.data : [],
+        nextCursor: typeof res?.nextCursor === 'string' ? res.nextCursor : null,
+      };
     },
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (last) => last.nextCursor ?? undefined,
     enabled: Boolean(workspaceId),
     retry: false,
   });
 
   const filtered = useMemo(() => {
-    const tasks = Array.isArray(data.data?.data) ? data.data.data : [];
-    return tasks.filter((t) => {
-      if (statusFilter !== 'ALL' && t?.status !== statusFilter) return false;
-      if (priorityFilter !== 'ALL' && t?.priority !== priorityFilter) return false;
-      return true;
-    });
-  }, [data.data, statusFilter, priorityFilter]);
+    const pages = data.data?.pages ?? [];
+    return pages.flatMap((p) => (Array.isArray(p.data) ? p.data : []));
+  }, [data.data]);
 
   const columns = useMemo<ColumnDef<TaskRow, unknown>[]>(
     () => [
@@ -321,7 +318,8 @@ export default function ListPage() {
         <div className="flex items-center gap-3">
           <h2 className="text-base font-semibold tracking-tight">Tasks</h2>
           <span className="text-xs text-muted-foreground">
-            {filtered.length} of {data.data?.data.length ?? 0} shown
+            {filtered.length} task{filtered.length === 1 ? '' : 's'}
+            {data.hasNextPage ? '+' : ''}
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -360,13 +358,16 @@ export default function ListPage() {
             variant="ghost"
             size="sm"
             className="h-8 gap-1 text-xs"
-            onClick={() =>
-              exportTasksCsv({
+            onClick={() => {
+              void exportTasksCsv({
                 workspaceId,
                 status: statusFilter,
                 priority: priorityFilter,
-              })
-            }
+              }).catch((err: unknown) => {
+                const message = err instanceof Error ? err.message : 'Export failed';
+                toast.error(message);
+              });
+            }}
           >
             <Download className="h-3.5 w-3.5" />
             Export CSV
@@ -407,6 +408,20 @@ export default function ListPage() {
             empty="No tasks match the current filters."
             onRowClick={(row) => handleEdit(row.id)}
           />
+          {data.hasNextPage ? (
+            <div className="flex justify-center pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-8 text-xs"
+                disabled={data.isFetchingNextPage}
+                onClick={() => void data.fetchNextPage()}
+              >
+                {data.isFetchingNextPage ? 'Loading…' : 'Load more'}
+              </Button>
+            </div>
+          ) : null}
         </>
       )}
 
@@ -432,7 +447,7 @@ export default function ListPage() {
           workspaceId={workspaceId}
           columns={wsColumns}
           members={members}
-          initial={(data.data?.data ?? []).find((t) => t.id === selectedTaskId) ?? null}
+          initial={filtered.find((t) => t.id === selectedTaskId) ?? null}
         />
       )}
       {taskDelete.dialog}

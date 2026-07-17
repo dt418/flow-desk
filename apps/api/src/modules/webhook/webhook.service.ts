@@ -1,6 +1,7 @@
 import { prisma } from '../../shared/lib/prisma';
 import { assertMembership, assertRole } from '../../shared/lib/access';
 import { NotFoundError } from '../../shared/errors';
+import { assertSafeOutboundUrl } from '../../shared/lib/url-safety';
 import * as crypto from 'crypto';
 import * as repo from './webhook.repository';
 import type { CreateWebhookInput, UpdateWebhookInput } from '@flow-desk/shared/webhook';
@@ -48,6 +49,7 @@ export const webhookService = {
 
   async create(userId: string, workspaceId: string, body: CreateWebhookInput) {
     await assertRole(workspaceId, userId, ['OWNER', 'ADMIN']);
+    await assertSafeOutboundUrl(body.url);
     const secret = generateSecret();
     const row = await repo.create(prisma, {
       workspaceId,
@@ -64,6 +66,9 @@ export const webhookService = {
     const row = await repo.findById(prisma, id);
     if (!row) throw new NotFoundError('Webhook');
     await assertRole(row.workspaceId, userId, ['OWNER', 'ADMIN']);
+    if (body.url !== undefined) {
+      await assertSafeOutboundUrl(body.url);
+    }
     const updated = await repo.update(prisma, id, {
       ...(body.url !== undefined ? { url: body.url } : {}),
       ...(body.events !== undefined ? { events: body.events } : {}),

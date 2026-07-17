@@ -144,7 +144,7 @@ describe('Integrations Slack/GitLab (P4-3)', () => {
     const userCookie = cookieHeader.split(',').find((c) => c.includes('oauth_user='))!;
     const providerCookie = cookieHeader.split(',').find((c) => c.includes('oauth_provider='))!;
     const callbackRes = await app.request(
-      `/api/integrations/slack/callback?code=abc&state=${state}&workspaceId=${ws.id}`,
+      `/api/integrations/slack/callback?code=abc&state=${state}`,
       {
         headers: {
           Cookie: [stateCookie, workspaceCookie, userCookie, providerCookie]
@@ -230,7 +230,7 @@ describe('Integrations Slack/GitLab (P4-3)', () => {
         .find((c) => c.includes(`${name}=`))!
         .split(';')[0]!;
     const callbackRes = await app.request(
-      `/api/integrations/gitlab/callback?code=gl-code&state=${state}&workspaceId=${ws.id}`,
+      `/api/integrations/gitlab/callback?code=gl-code&state=${state}`,
       {
         headers: {
           Cookie: [
@@ -273,19 +273,16 @@ describe('Integrations Slack/GitLab (P4-3)', () => {
         .find((c) => c.includes(`${name}=`))!
         .split(';')[0]!;
 
-    const callbackRes = await app.request(
-      `/api/integrations/slack/callback?code=abc&state=WRONG&workspaceId=${ws.id}`,
-      {
-        headers: {
-          Cookie: [
-            cookieObj('oauth_state'),
-            cookieObj('oauth_workspace'),
-            cookieObj('oauth_user'),
-            cookieObj('oauth_provider'),
-          ].join('; '),
-        },
+    const callbackRes = await app.request(`/api/integrations/slack/callback?code=abc&state=WRONG`, {
+      headers: {
+        Cookie: [
+          cookieObj('oauth_state'),
+          cookieObj('oauth_workspace'),
+          cookieObj('oauth_user'),
+          cookieObj('oauth_provider'),
+        ].join('; '),
       },
-    );
+    });
     expect(callbackRes.status).toBe(400);
     const body = await callbackRes.json();
     expect(body.code).toBe('INVALID_STATE');

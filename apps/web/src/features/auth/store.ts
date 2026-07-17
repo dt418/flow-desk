@@ -25,7 +25,8 @@ interface AuthState {
   isLoading: boolean;
   checkAuth: () => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
-  login2fa: (challengeToken: string, code: string) => Promise<void>;
+  /** challengeToken optional when server holds it in httpOnly cookie (OAuth 2FA). */
+  login2fa: (challengeToken: string | undefined, code: string) => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -62,7 +63,10 @@ export const useAuthStore = create<AuthState>((set) => ({
   login2fa: async (challengeToken, code) => {
     const data = await api<{ user: AuthUser }>('/api/auth/login/2fa', {
       method: 'POST',
-      json: { challengeToken, code },
+      json: {
+        code,
+        ...(challengeToken ? { challengeToken } : {}),
+      },
     });
     set({ user: data.user });
   },

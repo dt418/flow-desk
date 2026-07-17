@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import type { Context } from 'hono';
-import { setCookie, deleteCookie } from 'hono/cookie';
+import { setCookie, deleteCookie, getCookie } from 'hono/cookie';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import QRCode from 'qrcode';
@@ -188,9 +188,14 @@ authRouter.post(
   rateLimit({ scope: 'auth:login-2fa', windowSec: 60, max: 10, keyBy: 'ip' }),
   async (c) => {
     const body = login2faSchema.parse(await c.req.json());
+    // Prefer body token (password login); fall back to httpOnly cookie (Google OAuth).
+    const rawToken = body.challengeToken ?? getCookie(c, 'two_factor_challenge');
+    if (!rawToken) {
+      throw new UnauthorizedError('Invalid or expired 2FA challenge');
+    }
     let challenge;
     try {
-      challenge = verifyTwoFactorChallenge(body.challengeToken);
+      challenge = verifyTwoFactorChallenge(rawToken);
     } catch {
       throw new UnauthorizedError('Invalid or expired 2FA challenge');
     }
@@ -200,9 +205,14 @@ authRouter.post(
       throw new UnauthorizedError('2FA is not enabled for this account');
     }
 
+    const clearChallengeCookie = () => {
+      deleteCookie(c, 'two_factor_challenge', { path: '/' });
+    };
+
     const secret = decryptTotpSecret(user.twoFactorSecret);
     const totpOk = verifyTotpToken(body.code, secret);
     if (totpOk) {
+      clearChallengeCookie();
       return c.json(await issueSession(c, user));
     }
 
@@ -218,6 +228,7 @@ authRouter.post(
       where: { id: user.id },
       data: { twoFactorBackupCodes: remaining },
     });
+    clearChallengeCookie();
     return c.json(await issueSession(c, user));
   },
 );
@@ -499,6 +510,26 @@ authRouter.get('/google/callback', async (c) => {
       });
       return u;
     });
+  }
+
+  // Match password login: 2FA-enabled accounts must complete TOTP before session cookies.
+  // Challenge lives in httpOnly cookie only — never in the redirect URL (history/Referer/logs).
+  if (user.twoFactorEnabled) {
+    const challengeToken = signTwoFactorChallenge({ userId: user.id, email: user.email });
+    const origins = env.CORS_ORIGINS;
+    if (!origins?.[0]) {
+      throw new Error('CORS_ORIGINS not configured');
+    }
+    setCookie(c, 'two_factor_challenge', challengeToken, {
+      httpOnly: true,
+      secure: env.NODE_ENV === 'production',
+      sameSite: 'Lax',
+      path: '/',
+      maxAge: 5 * 60,
+    });
+    const url = new URL('/login', origins[0]);
+    url.searchParams.set('twoFactor', '1');
+    return c.redirect(url.toString());
   }
 
   const access = signAccessToken({ userId: user.id, email: user.email });

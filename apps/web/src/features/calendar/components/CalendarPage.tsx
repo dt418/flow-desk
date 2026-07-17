@@ -1,6 +1,6 @@
-import { useMemo, useState, useCallback } from 'react';
+import { useMemo, useState, useCallback, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -103,11 +103,50 @@ export function CalendarPage() {
   const qc = useQueryClient();
   const columnsQuery = useColumns(workspaceId);
 
-  const tasksQuery = useQuery({
-    queryKey: ['calendar-tasks', workspaceId],
-    queryFn: () => api<{ data: CalTask[] }>(`/api/tasks?workspaceId=${workspaceId}&limit=100`),
+  // Visible window ±1 month around anchor so month/week grids stay complete without unbounded fetch.
+  const calRange = useMemo(() => {
+    const y = anchor.getUTCFullYear();
+    const m = anchor.getUTCMonth();
+    const dueAfter = new Date(Date.UTC(y, m - 1, 1)).toISOString();
+    const dueBefore = new Date(Date.UTC(y, m + 2, 0, 23, 59, 59, 999)).toISOString();
+    return { dueAfter, dueBefore };
+  }, [anchor]);
+
+  const tasksQuery = useInfiniteQuery({
+    queryKey: ['calendar-tasks', workspaceId, calRange.dueAfter, calRange.dueBefore],
+    queryFn: async ({ pageParam }) => {
+      const params = new URLSearchParams({
+        workspaceId,
+        limit: '100',
+        dueAfter: calRange.dueAfter,
+        dueBefore: calRange.dueBefore,
+      });
+      if (typeof pageParam === 'string' && pageParam) params.set('cursor', pageParam);
+      return api<{ data: CalTask[]; nextCursor: string | null }>(`/api/tasks?${params.toString()}`);
+    },
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (last) => last.nextCursor ?? undefined,
     enabled: Boolean(workspaceId),
   });
+
+  // Drain remaining pages so months with >100 due tasks stay complete.
+  // Stop on error so a failed next-page does not tight-loop fetchNextPage.
+  useEffect(() => {
+    if (
+      tasksQuery.hasNextPage &&
+      !tasksQuery.isFetchingNextPage &&
+      !tasksQuery.isError &&
+      !tasksQuery.isFetchNextPageError
+    ) {
+      void tasksQuery.fetchNextPage();
+    }
+  }, [
+    tasksQuery.hasNextPage,
+    tasksQuery.isFetchingNextPage,
+    tasksQuery.isError,
+    tasksQuery.isFetchNextPageError,
+    tasksQuery.dataUpdatedAt,
+  ]);
 
   const createTask = useMutation({
     mutationFn: (body: Record<string, unknown>) =>
@@ -153,9 +192,14 @@ export function CalendarPage() {
     return buildMonthGrid(anchor);
   }, [anchor, mode]);
 
+  const calTasks = useMemo(
+    () => (tasksQuery.data?.pages ?? []).flatMap((p) => (Array.isArray(p.data) ? p.data : [])),
+    [tasksQuery.data],
+  );
+
   const byDay = useMemo(() => {
     const map = new Map<string, CalTask[]>();
-    for (const t of tasksQuery.data?.data ?? []) {
+    for (const t of calTasks) {
       const key = dueDateKey(t.dueDate);
       if (!key) continue;
       const list = map.get(key) ?? [];
@@ -163,18 +207,18 @@ export function CalendarPage() {
       map.set(key, list);
     }
     return map;
-  }, [tasksQuery.data]);
+  }, [calTasks]);
 
   const totalEvents = useMemo(() => {
     const month = anchor.getUTCMonth();
     const year = anchor.getUTCFullYear();
-    return (tasksQuery.data?.data ?? []).filter((t) => {
+    return calTasks.filter((t) => {
       const key = dueDateKey(t.dueDate);
       if (!key) return false;
       const d = new Date(`${key}T00:00:00Z`);
       return d.getUTCMonth() === month && d.getUTCFullYear() === year;
     }).length;
-  }, [tasksQuery.data, anchor]);
+  }, [calTasks, anchor]);
 
   const onDropTask = useCallback(
     (taskId: string, iso: string) => {
@@ -281,11 +325,7 @@ export function CalendarPage() {
 
       {/* Agenda view */}
       {!tasksQuery.isLoading && !tasksQuery.isError && mode === 'agenda' && (
-        <AgendaView
-          tasks={tasksQuery.data?.data ?? []}
-          anchor={anchor}
-          onSelect={setSelectedTask}
-        />
+        <AgendaView tasks={calTasks} anchor={anchor} onSelect={setSelectedTask} />
       )}
 
       {/* Month/week/day grid */}

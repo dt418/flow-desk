@@ -11,6 +11,7 @@ import {
   isProviderConfigured,
 } from './integration.service';
 import { env } from '../../shared/lib/env';
+import { verifySlackSignature } from './slack-sign';
 
 /**
  * P4-3 Slack + GitLab OAuth integrations.
@@ -35,7 +36,6 @@ export const integrationsRouter = new Hono();
 const oauthCallbackSchema = z.object({
   code: z.string().min(1),
   state: z.string().min(1),
-  workspaceId: z.string().min(1),
 });
 
 function statusFor(provider: 'slack' | 'gitlab') {
@@ -68,27 +68,19 @@ integrationsRouter.get('/slack/connect', requireAuth(), async (c) => {
     );
   }
   const state = randomUUID();
-  setCookie(c, 'oauth_state', state, { httpOnly: true, sameSite: 'Lax', path: '/', maxAge: 600 });
-  setCookie(c, 'oauth_workspace', workspaceId, {
+  const oauthCookie = {
     httpOnly: true,
-    sameSite: 'Lax',
+    secure: env.NODE_ENV === 'production',
+    sameSite: 'Lax' as const,
     path: '/',
     maxAge: 600,
-  });
-  setCookie(c, 'oauth_user', auth.user.id, {
-    httpOnly: true,
-    sameSite: 'Lax',
-    path: '/',
-    maxAge: 600,
-  });
-  setCookie(c, 'oauth_provider', 'SLACK', {
-    httpOnly: true,
-    sameSite: 'Lax',
-    path: '/',
-    maxAge: 600,
-  });
+  };
+  setCookie(c, 'oauth_state', state, oauthCookie);
+  setCookie(c, 'oauth_workspace', workspaceId, oauthCookie);
+  setCookie(c, 'oauth_user', auth.user.id, oauthCookie);
+  setCookie(c, 'oauth_provider', 'SLACK', oauthCookie);
   const url = new URL(buildAuthorizeUrl('SLACK', state));
-  // carry workspaceId through to the callback via state cookie + query (provider echoes query)
+  // workspaceId lives only in oauth_workspace cookie (providers do not echo it)
   url.searchParams.set('state', state);
   return c.redirect(url.toString());
 });
@@ -111,25 +103,17 @@ integrationsRouter.get('/gitlab/connect', requireAuth(), async (c) => {
     );
   }
   const state = randomUUID();
-  setCookie(c, 'oauth_state', state, { httpOnly: true, sameSite: 'Lax', path: '/', maxAge: 600 });
-  setCookie(c, 'oauth_workspace', workspaceId, {
+  const oauthCookie = {
     httpOnly: true,
-    sameSite: 'Lax',
+    secure: env.NODE_ENV === 'production',
+    sameSite: 'Lax' as const,
     path: '/',
     maxAge: 600,
-  });
-  setCookie(c, 'oauth_user', auth.user.id, {
-    httpOnly: true,
-    sameSite: 'Lax',
-    path: '/',
-    maxAge: 600,
-  });
-  setCookie(c, 'oauth_provider', 'GITLAB', {
-    httpOnly: true,
-    sameSite: 'Lax',
-    path: '/',
-    maxAge: 600,
-  });
+  };
+  setCookie(c, 'oauth_state', state, oauthCookie);
+  setCookie(c, 'oauth_workspace', workspaceId, oauthCookie);
+  setCookie(c, 'oauth_user', auth.user.id, oauthCookie);
+  setCookie(c, 'oauth_provider', 'GITLAB', oauthCookie);
   const url = new URL(buildAuthorizeUrl('GITLAB', state));
   url.searchParams.set('state', state);
   return c.redirect(url.toString());
@@ -151,9 +135,9 @@ async function handleCallback(c: Context, provider: 'SLACK' | 'GITLAB') {
     ...Object.fromEntries(new URL(c.req.url).searchParams),
   });
   if (!parsed.success) {
-    return c.json({ code: 'INVALID_QUERY', message: 'code + state + workspaceId required' }, 400);
+    return c.json({ code: 'INVALID_QUERY', message: 'code + state required' }, 400);
   }
-  const { code, state, workspaceId } = parsed.data;
+  const { code, state } = parsed.data;
   if (!cookieState || cookieState !== state) {
     return c.json({ code: 'INVALID_STATE', message: 'OAuth state mismatch' }, 400);
   }
@@ -163,7 +147,10 @@ async function handleCallback(c: Context, provider: 'SLACK' | 'GITLAB') {
       400,
     );
   }
-  if (!cookieUser || !cookieWorkspace || cookieWorkspace !== workspaceId) {
+  // workspaceId comes only from the oauth_workspace cookie set at connect time
+  // (Slack/GitLab do not echo query workspaceId).
+  const workspaceId = cookieWorkspace;
+  if (!cookieUser || !workspaceId) {
     return c.json({ code: 'MISSING_SESSION', message: 'OAuth session cookies missing' }, 400);
   }
   try {
@@ -231,10 +218,21 @@ integrationsRouter.post('/slack/commands', async (c) => {
   if (!env.SLACK_SIGNING_SECRET) {
     return c.json({ code: 'NOT_CONFIGURED', message: 'Slack signing secret missing' }, 501);
   }
-  // Signature verification would go here when SLACK_SIGNING_SECRET is set.
-  const body = await c.req.parseBody();
+  // Raw body required for HMAC — parse form after verify.
+  const rawBody = await c.req.text();
+  const ok = verifySlackSignature({
+    signingSecret: env.SLACK_SIGNING_SECRET,
+    signatureHeader: c.req.header('x-slack-signature'),
+    timestampHeader: c.req.header('x-slack-request-timestamp'),
+    rawBody,
+  });
+  if (!ok) {
+    return c.json({ code: 'INVALID_SIGNATURE', message: 'Invalid Slack signature' }, 401);
+  }
+  const params = new URLSearchParams(rawBody);
+  const text = params.get('text') ?? '';
   return c.json({
     response_type: 'ephemeral',
-    text: `FlowDesk received: ${String((body as Record<string, unknown>).text ?? '')}`,
+    text: `FlowDesk received: ${text}`,
   });
 });

@@ -14,7 +14,12 @@ import {
   type CreateDependencyInput,
 } from '@flow-desk/shared/task';
 import { emitToTask, emitToWorkspace } from '../../shared/lib/socket-events';
-import { BadRequestError, ConflictError, NotFoundError } from '../../shared/errors';
+import {
+  BadRequestError,
+  ConflictError,
+  NotFoundError,
+  PayloadTooLargeError,
+} from '../../shared/errors';
 import * as repo from './task.repository';
 import { recordUpdateDiff } from '../activity/activity-diff';
 import { handleAssigneeChange } from './task-assignee';
@@ -24,6 +29,9 @@ export const listTasksQuerySchema = CursorPaginationQuery.extend({
   workspaceId: cuidSchema,
   columnId: cuidSchema.optional(),
   boardId: cuidSchema.optional(),
+  sprintId: cuidSchema.optional(),
+  type: z.enum(['TASK', 'EPIC', 'STORY', 'SUBTASK']).optional(),
+  parentTaskId: cuidSchema.optional(),
   status: taskStatusSchema.optional(),
   priority: taskPrioritySchema.optional(),
   assigneeId: cuidSchema.optional(),
@@ -58,6 +66,9 @@ function buildTaskWhere(query: TaskFilterQuery): Prisma.TaskWhereInput {
     ...(query.columnId ? { columnId: query.columnId } : {}),
     // P4-2: optional board partition (exact boardId when provided)
     ...(query.boardId ? { boardId: query.boardId } : {}),
+    ...(query.sprintId ? { sprintId: query.sprintId } : {}),
+    ...(query.type ? { type: query.type } : {}),
+    ...(query.parentTaskId ? { parentTaskId: query.parentTaskId } : {}),
     ...(query.status ? { status: query.status } : {}),
     ...(query.priority ? { priority: query.priority } : {}),
     ...(query.assigneeId ? { assigneeId: query.assigneeId } : {}),
@@ -143,14 +154,24 @@ export const taskService = {
   async exportTasks(query: ExportTasksQuery, userId: string) {
     await assertMembership(query.workspaceId, userId);
     const where = buildTaskWhere(query);
-    return prisma.task.findMany({
+    /** Hard cap so export cannot OOM large workspaces (async job is a future path). */
+    const MAX_EXPORT_ROWS = 10_000;
+    const rows = await prisma.task.findMany({
       where,
       include: {
         assignee: { select: { email: true } },
         assignments: { include: { label: { select: { name: true } } } },
       },
       orderBy: [{ position: 'asc' }, { id: 'asc' }],
+      take: MAX_EXPORT_ROWS + 1,
     });
+    if (rows.length > MAX_EXPORT_ROWS) {
+      throw new PayloadTooLargeError(
+        `Export exceeds ${MAX_EXPORT_ROWS} rows. Narrow filters or export in batches.`,
+        { code: 'EXPORT_TOO_LARGE', max: MAX_EXPORT_ROWS },
+      );
+    }
+    return rows;
   },
 
   async create(userId: string, body: CreateTaskInput) {

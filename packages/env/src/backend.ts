@@ -83,7 +83,7 @@ export const backendSchema = z.object({
   GOOGLE_CLIENT_SECRET: z.string().optional(),
   GOOGLE_REDIRECT_URI: z.string().url().optional(),
 
-  // GitHub OAuth (optional)
+  // GitHub OAuth (optional — reserved for future provider surface)
   FLOWDESK_GITHUB_CLIENT_ID: z.string().optional(),
   FLOWDESK_GITHUB_CLIENT_SECRET: z.string().optional(),
   FLOWDESK_GITHUB_REDIRECT_URI: z.string().url().optional(),
@@ -140,6 +140,15 @@ export const backendSchema = z.object({
    * Leave unset in local dev; set in production scrapes.
    */
   METRICS_TOKEN: z.string().min(16).optional(),
+
+  /**
+   * When true, outbound webhooks may target RFC1918 private IPs (self-hosted LAN).
+   * Link-local / cloud metadata (169.254.0.0/16) is always blocked.
+   */
+  ALLOW_PRIVATE_WEBHOOK_URLS: z
+    .string()
+    .optional()
+    .transform((v) => v === '1' || v === 'true'),
 });
 
 export type BackendEnv = z.infer<typeof backendSchema>;

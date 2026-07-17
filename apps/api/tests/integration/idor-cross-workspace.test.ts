@@ -142,6 +142,29 @@ describe('IDOR cross-workspace protection', () => {
     expect(memberNotifs.length).toBeGreaterThan(0);
   });
 
+  it('rejects non-member listing messages on a non-private foreign channel', async () => {
+    const channelB = await chatSvc.createChannel(prisma, ownerB.id, wsB.id, {
+      name: 'public-b',
+      isPrivate: false,
+    });
+    await expect(
+      messageSvc.listMessages(prisma, ownerA.id, wsB.id, channelB.id, { limit: 20 }),
+    ).rejects.toMatchObject({ status: 403 });
+  });
+
+  it('rejects non-member sending messages on a non-private foreign channel', async () => {
+    const channelB = await chatSvc.createChannel(prisma, ownerB.id, wsB.id, {
+      name: 'public-b-send',
+      isPrivate: false,
+    });
+    await expect(
+      messageSvc.sendMessage(prisma, ownerA.id, wsB.id, channelB.id, {
+        content: 'cross-tenant probe',
+        mentionedUserIds: [],
+      }),
+    ).rejects.toMatchObject({ status: 403 });
+  });
+
   it('allows column update within same workspace (sanity)', async () => {
     const res = await app.request(`/api/workspaces/${wsA.id}/columns/${colA.id}`, {
       method: 'PATCH',

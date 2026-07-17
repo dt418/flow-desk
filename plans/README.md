@@ -4,6 +4,8 @@ Generated: 2026-07-03 | Base commit: `732acb4` | Audit run: standard
 
 Updated: 2026-07-11 | New audit run: standard | Base commit: `870c8ed`
 
+Updated: 2026-07-15 | Residual audit (post 001–028 DONE) | Base commit: `081cbc6`
+
 ## Priority Order
 
 | Plan | Finding                                                                            | Category    | Effort | Dependencies    | Status |
@@ -28,41 +30,34 @@ Updated: 2026-07-11 | New audit run: standard | Base commit: `870c8ed`
 | 026  | Docs, DX, and `/api/v1` completeness (DX-01..04, DOCS-01..04, TASKS-01, DOCKER-01) | dx          | M      | —               | DONE   |
 | 027  | Test coverage on critical paths (TEST-01,02,05,07,08)                              | tests       | M      | —               | DONE   |
 | 028  | Production readiness (env unify, readiness, metrics token, headers)                | ops         | M      | —               | DONE   |
+| 029  | Chat IDOR + typing auth + integration OAuth `Secure` cookies                       | security    | S      | —               | DONE   |
+| 030  | Google OAuth 2FA + Slack signature + integration callback workspaceId              | security    | S–M    | —               | DONE   |
+| 031  | Sprint list fix + type/sprintId filters + list/calendar/epic pagination            | bug         | M      | —               | DONE   |
+| 032  | Webhook/automation SSRF + automation assign/column workspace checks                | security    | M      | —               | DONE   |
+| 033  | Export cap/stream + email scheduler batch + rate-limit unit tests                  | perf        | M      | —               | DONE   |
+| 034  | Sentry honesty + docker LLM default + docs + CSP report-only                       | dx          | S–M    | —               | DONE   |
 
 ## Dependency Graph
 
 ```
-009 (email bugs)         — no deps
-010 (security)           — no deps
-011 (vite prod)          — no deps
-012 (board fetch)        — no deps
-013 (dedup)              — no deps
-014 (as any)             — no deps
-015 (chat uniqueness)    — no deps
-016 (auth cache)         — no deps
-017 (code splitting)     — depends on 011
-018 (API validation)     — no deps
-019 (register txn)       — no deps
-020 (CI unit tests)      — no deps
-021 (E2E realtime)       — depends on 020
-022 (realtime tests)     — depends on 020
-023 (auth security)      — no deps
-024 (perf)               — no deps (but PERF-02 step 2 makes chat channel shape change; TEST-07 in 027 must read post-024 code)
-025 (tech-debt)          — no deps
-026 (docs/dx/api)        — no deps (Dockerfile fix in step 9 is the only env-touching piece)
-027 (tests)              — no deps, but if 024 lands first, TEST-07 in 027 reads the new chat shape
+009–028 — DONE (historical)
+
+029 (chat IDOR / typing / cookies)     — no deps
+030 (oauth 2fa / slack / callback)     — no deps; parallel with 029
+031 (sprint + pagination filters)      — no deps; parallel with 029/030
+032 (SSRF + automation targets)        — no deps; parallel with 029–031
+033 (export / scheduler / rate-limit)  — no hard deps; optional after 031 if touching task list
+034 (ops/dx/docs/csp)                  — no deps; parallel with all
 ```
 
-## Recommended Execution Order
+## Recommended Execution Order (2026-07-15 residual)
 
-**Batch 1** (parallel, S effort, no deps): 009, 010, 011, 012, 013, 014, 015
-**Batch 2** (parallel, M effort): 016, 017, 018, 019, 020
-**Batch 3** (after 020): 021, 022
+**Batch B — security first (parallel OK)**: 029, 030, 032  
+**Batch C — product correctness**: 031  
+**Batch D — scale + CI signal**: 033  
+**Batch E — ops/docs**: 034
 
-**Batch A — 2026-07-11 audit** (parallel, all S/M, no inter-deps): 023, 024, 025, 026, 027
-**Order suggestion within Batch A**: 024 first (so the test wiring in
-027 reflects the post-024 chat shape), then 023, 025, 026, 027 last.
-But any order is fine — all 5 are independent.
+Suggested serial order if one executor: **029 → 030 → 032 → 031 → 033 → 034**.
 
 ## Previously Completed Plans
 
@@ -74,64 +69,47 @@ But any order is fine — all 5 are independent.
 | 009-015           | DONE                      | Batch 1 — email bugs, security, vite, board, dedup, enum, chat               |
 | 016-020           | DONE                      | Batch 2 — auth cache, code splitting, API validation, register txn, CI tests |
 | 021-022           | DONE                      | Batch 3 — E2E realtime, gateway tests                                        |
+| 023-027           | DONE                      | 2026-07-11 audit batch                                                       |
+| 028               | DONE                      | Production readiness 2026-07-15                                              |
 
-## Findings considered and rejected (2026-07-11 audit)
+## Findings considered and rejected (2026-07-15 residual audit)
 
-- BUG-05 (refresh-token rotation no reuse-detection) — settled
-  design choice; current behavior is acceptable for the
-  portfolio-audience product.
-- SEC-03 full fix (partial unique indexes on `User.email`,
-  `Workspace.slug`, `ApiKey.hashedKey`, `Integration @@unique`) —
-  multi-table migration with concurrent index creation. The
-  register-handler fix in plan 023 is the smallest change that closes
-  the user-visible leak; full migration is out of scope.
-- PERF-01 (comment tree drops replies N+1) — actual UI uses lazy
-  per-comment fetch; existing behavior intentional.
-- PERF-04 full virtualized scroll rework — out of scope; the
-  `taskCount` field added in plan 024 is the data prerequisite for
-  a future FE rewrite.
-- PERF-10/11/12 (bundle split, dnd-kit leak, comment \_count
-  subqueries) — LOW-confidence perf findings; skipped pending real
-  measurement (run `pnpm build` with `--analyze` and re-audit).
-- TEST-03 (P4-3 with mocked automation) — env-dependent; defer until
-  real SLACK*\*/FLOWDESK_GITLAB*\* secrets are wired.
-- TEST-04 (notification unreadCount semantics) — premature; rename
-  or behavior change requires a UX decision first.
-- TEST-06 (verify baseline split) — process concern, not code.
-- TEST-09 (integration revoke O(N)) — premature; N=1 in practice.
-- ARCH-04 (lib/ junk-drawer drift) — larger than one plan; deferred
-  for a future audit tier. Plan 025's safeEmit and serialize
-  extractions are the first steps of that larger work.
-- DOCKER-01 Bug 3 (packages/db exports .ts without runtime build) —
-  plan 026 step 9 includes the build step, but verification of the
-  full docker build is env-dependent (slow npm registry). Fix is
-  land-able; build verification is the operator's job.
-- DOCS-02 (OpenAPI generation) — out of scope; plan 026 adds the
-  public API write endpoints and shared schemas, the OpenAPI tool
-  itself is a follow-up.
-- PRD-01 (Phase 4 broader than PRD audience) — strategic, not a fix.
-- DIR-01..08 (direction suggestions) — these are options, not
-  problems. The maintainer picks; the audit surfaces them with
-  evidence.
+- Markdown XSS via task description — DOMPurify + allowlist already in place (`apps/web/src/lib/sanitize.ts`).
+- Board `take:50` + `taskCount` — plans 012/024 DONE; virtualized board still deferred.
+- Refresh-token **family wipe** on reuse — product choice (see 2026-07-11 rejected BUG-05); atomic rotate still optional later.
+- Full virtualized list/scroll — out of scope; 031 uses cursor Load-more / infinite query.
+- OpenAPI generation — deferred (prior DOCS-02).
+- Partial unique indexes migration for User.email etc. — still multi-table; out of scope.
+- Enforcing CSP (non-report-only) without telemetry — deferred to post-034.
+- Known DIR-01..08 product options (CSV import, inbound webhooks, velocity, public API writes, more integrations) — not defects; maintainer picks.
 
-## Direction suggestions (carry-over, not addressed in plans)
+## Direction suggestions (carry-over, not plans)
 
-These are NOT plans. They are options the maintainer can pick up in a
-future brainstorm:
+- **DIR-01 / slash commands**: After plan 030 signature gate, implement real `/flowdesk` command → task service.
+- **DIR-02**: Inbound webhook receiver (model after outgoing `Webhook`).
+- **DIR-03**: CSV import (export ships; seed still titles import).
+- **DIR-04**: Operator OAuth secrets for live Slack/GitLab (connect works after plan 030 callback fix).
+- **DIR-05**: Velocity/throughput reports beyond burndown.
+- **DIR-06**: Public API write surface beyond read-only `/api/v1`.
+- **DIR-07**: Extra integrations (Linear/Notion) on existing `Integration` model.
 
-- **DIR-01 / DOCS-04**: Public API has read/list but zero write surface
-  (partially addressed in plan 026 step 4; full write scope is
-  product-decision).
-- **DIR-02**: Outgoing webhooks exist, no inbound webhook receiver
-  (model after `Webhook` + `webhook-sign.ts`).
-- **DIR-03**: CSV export ships; no CSV import (even seed.ts has a
-  task titled "Add CSV import for bulk task creation").
-- **DIR-04**: Slack/GitLab routes exist but ship 501 until env secrets
-  are set (operator task; see `claude-progress.md` P4-3 session).
-- **DIR-05**: Burndown chart ships with data; no velocity/throughput
-  reports.
-- **DIR-06**: `Integration` model is two providers; the schema is ready
-  for more (Linear/Notion/Jira). Adding a 3rd is ~1/3 the cost of P4-3.
-- **DIR-07**: Web realtime architecture is solid; no PWA/native entry.
-- **DIR-08**: Automation rules engine is the foundation for a no-code
-  builder (extend `condition` DSL with `all/any/none` nesting).
+## Plan files (open)
+
+| File                                                                                 | Title                                              |
+| ------------------------------------------------------------------------------------ | -------------------------------------------------- |
+| [029-chat-idor-typing-oauth-cookies.md](./029-chat-idor-typing-oauth-cookies.md)     | Chat membership IDOR, typing auth, Secure cookies  |
+| [030-oauth-2fa-slack-callback.md](./030-oauth-2fa-slack-callback.md)                 | Google 2FA, Slack HMAC, OAuth callback workspaceId |
+| [031-sprint-filters-list-pagination.md](./031-sprint-filters-list-pagination.md)     | Sprint fix + filters + pagination                  |
+| [032-ssrf-automation-targets.md](./032-ssrf-automation-targets.md)                   | SSRF guards + automation targets                   |
+| [033-export-scheduler-ratelimit-tests.md](./033-export-scheduler-ratelimit-tests.md) | Export cap, scheduler batch, rate-limit tests      |
+| [034-ops-dx-docs-csp.md](./034-ops-dx-docs-csp.md)                                   | Sentry, docker LLM, docs, CSP-RO                   |
+
+## Executor note
+
+Each plan is self-contained. Run:
+
+```bash
+git diff --stat 081cbc6..HEAD -- <in-scope paths from plan>
+```
+
+before starting. Prefer `pnpm verify` before commit. Do not use `--no-verify`.

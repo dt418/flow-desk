@@ -66,7 +66,7 @@ apps/api/src/shared/
     prisma.ts            # singleton PrismaClient with prisma-extension applied
     prisma-extension.ts  # soft-delete middleware + query logging
     redis.ts             # singleton ioredis client; used by cache + rate-limit + presence
-    jwt.ts               # sign / verify access & refresh tokens (RS256)
+    jwt.ts               # sign / verify access & refresh tokens (HS256 HMAC via JWT_SECRET)
     socket.ts            # Socket.IO server init + connection auth middleware
     llm-provider.ts      # OpenAI-compatible fetch wrapper; 30s timeout, 1 retry
     logger.ts            # pino logger; JSON in prod, pretty in dev
@@ -258,7 +258,7 @@ Healthcheck: `GET /api/health` → 200. Seed: `pnpm db:seed`. Demo login: `demo@
 ## Sharp Edges
 
 - **R-24 — LLM latency UX.** Local proxy provider is slow (~18–27s/call). Surface spinners; do not block the UI.
-- **Prisma custom output.** `apps/api/generated/prisma/` is gitignored. Always import from there. Never publish a `@prisma/client` import in `apps/api/src/`.
+- **Prisma custom output.** Generated client lives at `packages/db/generated/` (package `@flowdesk/db`). Soft-delete extension: `packages/db/src/prisma-extension.ts`. Never import bare `@prisma/client` from app code.
 - **Seed ESM/CJS.** Prisma 7 client uses `import.meta.url`. `scripts/prisma-exec.sh` builds the seed as ESM with a `require` shim banner.
 - **Node 22 only.** Earlier toolchains silently fail on `view transitions` and Prisma 7 ESM.
 - **pnpm 11 + monorepo Docker.** Hoist settings live in `pnpm-workspace.yaml`, not `.npmrc`. See `claude-progress.md` session 014.

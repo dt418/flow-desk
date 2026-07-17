@@ -31,7 +31,8 @@ export const twoFactorChallengeSchema = z.object({
 export type TwoFactorChallenge = z.infer<typeof twoFactorChallengeSchema>;
 
 export const login2faSchema = z.object({
-  challengeToken: z.string().min(10),
+  /** Optional when challenge is carried in httpOnly cookie (Google OAuth 2FA path). */
+  challengeToken: z.string().min(10).optional(),
   code: z.string().min(6).max(16),
 });
 export type Login2faInput = z.infer<typeof login2faSchema>;
