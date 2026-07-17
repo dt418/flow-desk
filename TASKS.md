@@ -1,7 +1,24 @@
 # Tasks (historical — frozen 2026-07-05, end of Sprint 20)
 
-> Active backlog lives in `feature_list.json` (last updated 2026-07-11).
-> This file is preserved for sprint history. New work is not added here.
+> Active backlog lives in `feature_list.json` (last updated **2026-07-15**).
+> This file is preserved for sprint history. **Appendix only** after freeze: security/ops audit rows below.
+
+## Appendix — Security/ops audit 029–034 (2026-07-15, post-freeze)
+
+Not a product ROADMAP sprint. Tracked in `feature_list.json` as `AUD-029`…`AUD-034` (all **passing**). Shipped commit `4099a0b`.
+
+| Story       | Scope                                                                      | Status  |
+| ----------- | -------------------------------------------------------------------------- | ------- |
+| **AUD-029** | Chat membership always; typing join-gate; Secure integration OAuth cookies | passing |
+| **AUD-030** | Google OAuth 2FA httpOnly cookie; Slack HMAC; callback cookie workspaceId  | passing |
+| **AUD-031** | Task `sprintId`/`type` filters; list/calendar/epic/sprint pagination       | passing |
+| **AUD-032** | Outbound SSRF + DNS-pinned fetch; automation target checks                 | passing |
+| **AUD-033** | Export 10k/413; email scheduler batch; rate-limit unit tests               | passing |
+| **AUD-034** | Sentry package, docker LLM required, CSP-RO, docs/handoff                  | passing |
+
+Review follow-ups (same ship): IPv6 mapped/IMDS/CGNAT blocklist, calendar next-page error gate, export blob+toast, epic/sprint Load more.
+
+---
 
 ## Sprint 1: Foundation (Days 1-5)
 

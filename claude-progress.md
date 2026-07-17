@@ -121,25 +121,17 @@
 ## Current Verified State
 
 - **Repository root**: `/home/thanh/flow-desk`
-- **Standard startup**: `./init.sh` then `docker compose up -d`
-- **Standard verification**: `pnpm typecheck` + unit + `pnpm --filter @flow-desk/api test:integration` + `pnpm build` (or stage files then `pnpm verify`)
-- **Highest priority unfinished**: none — all non-cut ROADMAP + feature_list entries passing
-- **Active branch**: `main`
-- **Post-F8 fixes**: (a) dev startup race — `turbo.json` dev `dependsOn: [^build, ^db:generate]` + `tsup.config.ts` `clean: false`; (b) seed cleanup — added `deleteMany` for ChatMessage/ChatChannel/UserNotificationPreference/WorkspaceNotificationSetting/EmailJob; (c) force-exit timer regression — moved 10s `setTimeout` inside `shutdown()` function
+- **Standard startup**: `./init.sh` then `docker compose up -d` / `pnpm stack:up`
+- **Standard verification**: stage files then `pnpm verify` (or typecheck + unit + integration + build + format:check)
+- **Highest priority unfinished**: none product — `feature_list.json` **74** entries `passing` (68 product + **AUD-029…AUD-034** security/ops)
+- **Active branch**: `main` @ `4099a0b` (audit 029–034 ship)
+- **Plans**: `plans/001`–`034` all **DONE** (`plans/README.md`)
+- **Test counts (ship gate)**: api unit **170**, integration **270**, web **37**, shared **31**
 - **Prisma**: 7.8.0 | **pnpm**: 11.8.0 | **Node**: 22-alpine
-- **R-39 resolved**: E2E suite 3/3 passing
 - **Current blocker**: none
-- **Key risks**: R-24 (ai-001 latency UX) — only material risk remaining
-- **Session 021 (kanban-sprint-1)**: 15 bugs, 6 root-cause clusters. RC1/RC2/RC4 fixed. RC3/RC5/RC6 deferred to Sprint 1.5
-- **Session 023 (improve audit)**: 39 findings → 14 plans executed. Key fixes: email worker bugs, security hardening, perf improvements, tech debt reduced
-- **Session 024 (test fixes)**: Fixed 7 broken unit tests + docker inspect error. 97/97 unit tests pass
-- **Session 022 (kanban-sprint-1.5)**: RC3/RC5/RC6 fixed
-- **Session 020 fixes**: R-09 mention cap, R-10 mobile drag, R-18 timezone
-- **Resolved in F2**: R-33 (split-brain selects)
-- **Resolved in F3-F6**: R-29, R-30, R-31, R-32, R-34
-- **Resolved risks**: R-36, R-37, R-38, R-35
-- **Resolved risks (session 014)**: docker build + Prisma 5→7 migration
-- **Security note**: `LLM_API_KEY` (sk-80c6f26e1...) was exposed in chat. Recommend rotating.
+- **Key risks**: R-24 **mitigated** (AI suggest timeout/cancel). Residual ops: set real deploy secrets. New mitigated: R-45 chat IDOR, R-46 OAuth 2FA/Slack sign, R-47 outbound SSRF (see RISKS.md)
+- **Session 023 (improve audit)**: 39 findings → plans 009–022; Session residual 029–034 + review rounds shipped 2026-07-15
+- **Security note**: historical `LLM_API_KEY` exposure in chat — rotate if still in use
 
 ### Session 029 — Chat "Message delivery timed out" fix
 
@@ -503,6 +495,12 @@
 
 - **type:**
 - **msg:**
+- **author:** thanhd
+
+### 2026-07-18 02:10 — `c5f6b1c` (main)
+
+- **type:** docs
+- **msg:** sync handoff, feature_list, TASKS, RISKS after 029–034 ship
 - **author:** thanhd
 
 ### Session — 2026-07-11 plan 023 + plan 024 execution

@@ -1,6 +1,6 @@
 {
   "project": "flow-desk",
-  "last_updated": "2026-07-08",
+  "last_updated": "2026-07-15",
   "f3_active": false,
   "f3_f6_shipped": ["F3", "F4", "F5", "F6"],
   "rules": {
@@ -105,10 +105,10 @@
         "Health checks on postgres, redis, api, web",
         "Volume mounts: postgres_data, redis_data, attachments_data",
         "Environment variables for all 4 services",
-        "docker/api.Dockerfile: multi-stage (deps → shared → build → runtime) with Prisma migrate deploy on startup",
-        "docker/web.Dockerfile: multi-stage (deps → shared → build → nginx runtime)",
+        "docker/api.Dockerfile: multi-stage (deps \u2192 shared \u2192 build \u2192 runtime) with Prisma migrate deploy on startup",
+        "docker/web.Dockerfile: multi-stage (deps \u2192 shared \u2192 build \u2192 nginx runtime)",
         "docker/web.nginx.conf with /api/ proxy to api:3000, /socket.io/ WebSocket upgrade, gzip, security headers",
-        "Stack brought up: /api/health → {\"status\":\"ok\",...}",
+        "Stack brought up: /api/health \u2192 {\"status\":\"ok\",...}",
         "api container rebuilt with tsup CJS bundle, libssl installed in runtime stage",
         "env validation handles empty GOOGLE_* strings (compose sets ${VAR:-} default)"
       ],
@@ -142,16 +142,16 @@
       "user_visible_behavior": "User can register, login, and access protected routes. JWT stored in httpOnly cookie.",
       "status": "passing",
       "verification": [
-        "POST /api/auth/register with valid data → 201 + cookie",
-        "POST /api/auth/login → 200 + cookie",
-        "GET /api/auth/me with cookie → 200 + user data",
-        "GET /api/auth/me without cookie → 401"
+        "POST /api/auth/register with valid data \u2192 201 + cookie",
+        "POST /api/auth/login \u2192 200 + cookie",
+        "GET /api/auth/me with cookie \u2192 200 + user data",
+        "GET /api/auth/me without cookie \u2192 401"
       ],
       "evidence": [
-        "POST /api/auth/register {email:newuser1@test.com, name:New User, password:Test1234} → 201, user JSON, access_token+refresh_token httpOnly cookies set",
-        "POST /api/auth/login {demo@flow-desk.app, demo1234} → 200, user JSON, cookies set",
-        "GET /api/auth/me with cookie → 200, returns {id, email, name, avatarUrl}",
-        "GET /api/auth/me without cookie → 401 Unauthorized",
+        "POST /api/auth/register {email:newuser1@test.com, name:New User, password:Test1234} \u2192 201, user JSON, access_token+refresh_token httpOnly cookies set",
+        "POST /api/auth/login {demo@flow-desk.app, demo1234} \u2192 200, user JSON, cookies set",
+        "GET /api/auth/me with cookie \u2192 200, returns {id, email, name, avatarUrl}",
+        "GET /api/auth/me without cookie \u2192 401 Unauthorized",
         "JWT in httpOnly cookie, bcryptjs hashing, Zod validation on register/login bodies"
       ],
       "notes": ""
@@ -182,16 +182,16 @@
       "user_visible_behavior": "User can create, list, update, and delete workspaces. Creator becomes Owner.",
       "status": "passing",
       "verification": [
-        "POST /api/workspaces → workspace created with default columns",
-        "GET /api/workspaces → list user's workspaces",
-        "PATCH /api/workspaces/:id → update name",
-        "DELETE /api/workspaces/:id → soft delete"
+        "POST /api/workspaces \u2192 workspace created with default columns",
+        "GET /api/workspaces \u2192 list user's workspaces",
+        "PATCH /api/workspaces/:id \u2192 update name",
+        "DELETE /api/workspaces/:id \u2192 soft delete"
       ],
       "evidence": [
-        "POST /api/workspaces {name:Test WS, slug:test-ws-XXX, visibility:PRIVATE} → 201, workspace + 5 default columns (Backlog/Todo/In Progress/In Review/Done), creator auto-OWNER",
-        "GET /api/workspaces → list of {id,name,slug,role,_count}",
-        "PATCH /api/workspaces/:id {name:Test WS Renamed} → 200, name updated",
-        "DELETE /api/workspaces/:id → 200, {ok:true} (soft delete via deletedAt)",
+        "POST /api/workspaces {name:Test WS, slug:test-ws-XXX, visibility:PRIVATE} \u2192 201, workspace + 5 default columns (Backlog/Todo/In Progress/In Review/Done), creator auto-OWNER",
+        "GET /api/workspaces \u2192 list of {id,name,slug,role,_count}",
+        "PATCH /api/workspaces/:id {name:Test WS Renamed} \u2192 200, name updated",
+        "DELETE /api/workspaces/:id \u2192 200, {ok:true} (soft delete via deletedAt)",
         "Member auto-created with role:OWNER on workspace create"
       ],
       "notes": ""
@@ -204,13 +204,13 @@
       "user_visible_behavior": "Owner/Admin can invite members. Roles: Owner, Admin, Member, Guest. Permissions enforced.",
       "status": "passing",
       "verification": [
-        "POST /api/workspaces/:id/members → invite sent",
+        "POST /api/workspaces/:id/members \u2192 invite sent",
         "Guest role cannot delete tasks",
         "Owner can promote/demote members"
       ],
       "evidence": [
-        "POST /api/workspaces/:id/members {email:alice@flow-desk.app, role:MEMBER} → 201, member added with role",
-        "GET /api/workspaces/:id/members → list of members with role+user",
+        "POST /api/workspaces/:id/members {email:alice@flow-desk.app, role:MEMBER} \u2192 201, member added with role",
+        "GET /api/workspaces/:id/members \u2192 list of members with role+user",
         "requireWorkspaceRole middleware enforces role-based access on routes",
         "Auth routes have OWNER/ADMIN/MEMBER/GUEST checks; PATCH /members/:userId only OWNER",
         "Cannot demote last OWNER (ForbiddenError)"
@@ -225,17 +225,17 @@
       "user_visible_behavior": "User can create, read, update, soft-delete tasks with title, description, due date, priority.",
       "status": "passing",
       "verification": [
-        "POST /api/tasks → task created",
-        "GET /api/tasks?workspaceId=X → list tasks",
-        "PATCH /api/tasks/:id → update",
-        "DELETE /api/tasks/:id → soft delete"
+        "POST /api/tasks \u2192 task created",
+        "GET /api/tasks?workspaceId=X \u2192 list tasks",
+        "PATCH /api/tasks/:id \u2192 update",
+        "DELETE /api/tasks/:id \u2192 soft delete"
       ],
       "evidence": [
-        "POST /api/tasks {workspaceId, columnId, title, priority} → 201, task JSON",
-        "GET /api/tasks/:id → 200, task JSON",
-        "GET /api/tasks?workspaceId=X → 200, array of tasks",
-        "PATCH /api/tasks/:id {title, status} → 200, updated task",
-        "DELETE /api/tasks/:id → 200, {ok:true} (soft delete via deletedAt)"
+        "POST /api/tasks {workspaceId, columnId, title, priority} \u2192 201, task JSON",
+        "GET /api/tasks/:id \u2192 200, task JSON",
+        "GET /api/tasks?workspaceId=X \u2192 200, array of tasks",
+        "PATCH /api/tasks/:id {title, status} \u2192 200, updated task",
+        "DELETE /api/tasks/:id \u2192 200, {ok:true} (soft delete via deletedAt)"
       ],
       "notes": ""
     },
@@ -291,12 +291,12 @@
       "verification": [
         "Add subtask to task X",
         "Set task A blocks task B",
-        "Try to create circular dependency → rejected"
+        "Try to create circular dependency \u2192 rejected"
       ],
       "evidence": [
-        "POST /api/tasks/:id/subtasks {workspaceId, columnId, title} → 201, task with parentTaskId set",
-        "POST /api/tasks/dependencies {blockingTaskId, blockedTaskId} → creates TaskDependency",
-        "Self-block attempt → 400 {message: 'A task cannot block itself', code: BAD_REQUEST}",
+        "POST /api/tasks/:id/subtasks {workspaceId, columnId, title} \u2192 201, task with parentTaskId set",
+        "POST /api/tasks/dependencies {blockingTaskId, blockedTaskId} \u2192 creates TaskDependency",
+        "Self-block attempt \u2192 400 {message: 'A task cannot block itself', code: BAD_REQUEST}",
         "Cycle detection in task.routes.ts prevents circular deps"
       ],
       "notes": ""
@@ -334,8 +334,8 @@
         "Verify mentioned user receives notification"
       ],
       "evidence": [
-        "POST /api/comments {taskId, content: 'Looks good @alice'} → 201, comment with mentionedUserIds: [<alice's id>]",
-        "GET /api/comments?taskId=X → 200, array of comments with author + mentions",
+        "POST /api/comments {taskId, content: 'Looks good @alice'} \u2192 201, comment with mentionedUserIds: [<alice's id>]",
+        "GET /api/comments?taskId=X \u2192 200, array of comments with author + mentions",
         "Mentions parsed server-side; stored in mentionedUserIds; notifications emitted to mentioned users"
       ],
       "notes": ""
@@ -350,10 +350,10 @@
       "verification": [
         "Receive notification",
         "Verify badge count increments",
-        "Mark as read → count decrements"
+        "Mark as read \u2192 count decrements"
       ],
       "evidence": [
-        "GET /api/notifications → 200, array of {id, type, title, body, data, readAt}",
+        "GET /api/notifications \u2192 200, array of {id, type, title, body, data, readAt}",
         "Seed data includes 5 notifications for demo user (TASK_ASSIGNED, COMMENT_REPLY)",
         "Notification model: id, userId, type, title, body, data (Json), readAt, createdAt",
         "Socket.IO emits notification:new on insert"
@@ -375,12 +375,12 @@
         "Rule-based fallback still works if LLM call throws (try/catch wraps llm.chatJSON)"
       ],
       "evidence": [
-        "GET http://103.157.204.253:3001/v1/models with auth → 200, models: [claude_sonet_4.5, minimax/MiniMax-M2.7]",
-        "Provider is OpenAI-compatible; default response is SSE streaming (caused initial res.json() SyntaxError → fallback)",
+        "GET http://103.157.204.253:3001/v1/models with auth \u2192 200, models: [claude_sonet_4.5, minimax/MiniMax-M2.7]",
+        "Provider is OpenAI-compatible; default response is SSE streaming (caused initial res.json() SyntaxError \u2192 fallback)",
         "Fix: apps/api/src/shared/lib/llm-provider.ts sends stream:false in body so res.json() parses cleanly",
-        "POST /api/ai/suggest-assignee {workspaceId:cmqo1orct..., title:'Add CSV export to reports page'} → 200, fallback:false, 3 suggestions with workload-aware reasons (alice 92, carol 78, bob 65), elapsed 26.8s",
-        "POST /api/ai/suggest-assignee {workspaceId:..., title:'Fix bug'} → 200, fallback:false, 3 suggestions (alice 95, carol 80, bob 65), elapsed 27.0s",
-        "Direct provider probe: 'say hi in 3 words' max_tokens=100 → 18.5s (baseline 2000 prompt_tokens/req from provider)",
+        "POST /api/ai/suggest-assignee {workspaceId:cmqo1orct..., title:'Add CSV export to reports page'} \u2192 200, fallback:false, 3 suggestions with workload-aware reasons (alice 92, carol 78, bob 65), elapsed 26.8s",
+        "POST /api/ai/suggest-assignee {workspaceId:..., title:'Fix bug'} \u2192 200, fallback:false, 3 suggestions (alice 95, carol 80, bob 65), elapsed 27.0s",
+        "Direct provider probe: 'say hi in 3 words' max_tokens=100 \u2192 18.5s (baseline 2000 prompt_tokens/req from provider)",
         "Latency caveat: provider is local proxy at 103.157.204.253:3001, returns ~2000 prompt_tokens overhead per call. Faster model or remote provider would lower latency to <2s target."
       ],
       "notes": "LLM works end-to-end. Acceptance threshold relaxed from '<2s' to 'responds within provider latency' because provider is the bottleneck. UX will feel slow for now; consider UI loading state, request cancellation, or moving to a faster model in a follow-up."
@@ -398,7 +398,7 @@
         "Verify deadlines met"
       ],
       "evidence": [
-        "POST /api/ai/auto-schedule {workspaceId} → 200, {schedule: [{taskId, startDate, endDate}, ...]}",
+        "POST /api/ai/auto-schedule {workspaceId} \u2192 200, {schedule: [{taskId, startDate, endDate}, ...]}",
         "Topological sort with cycle detection (returns 400 if cycle)",
         "Schedule respects blockingTask dueDates + capacity per user"
       ],
@@ -414,12 +414,12 @@
       "verification": [
         "Upload image to task",
         "Verify thumbnail shown",
-        "Download file → correct content"
+        "Download file \u2192 correct content"
       ],
       "evidence": [
-        "POST /api/attachments (multipart) {taskId, file} → 201, attachment JSON with storagePath",
-        "GET /api/attachments?taskId=X → 200, list of attachments",
-        "GET /api/attachments/:id/download → streams file from /data/attachments",
+        "POST /api/attachments (multipart) {taskId, file} \u2192 201, attachment JSON with storagePath",
+        "GET /api/attachments?taskId=X \u2192 200, list of attachments",
+        "GET /api/attachments/:id/download \u2192 streams file from /data/attachments",
         "UPLOAD_DIR=/data/attachments (volume-mounted), MAX_UPLOAD_SIZE=25MB"
       ],
       "notes": "Local filesystem storage in docker volume. CDN/S3 swap possible via UPLOAD_DIR env."
@@ -437,12 +437,12 @@
         "Verify 5+ users, 20+ tasks, 30+ comments"
       ],
       "evidence": [
-        "pnpm db:seed → 15 users, 6 workspaces, 51 tasks, 120 notifications seeded (updated in F7 session 016 + seed cleanup fix session 019)",
+        "pnpm db:seed \u2192 15 users, 6 workspaces, 51 tasks, 120 notifications seeded (updated in F7 session 016 + seed cleanup fix session 019)",
         "Demo creds: demo@flow-desk.app / demo1234 (also alice/bob/carol/dave/eve/frank/grace/henry/ivy/jack/kara/leo/mia/noah with password123)",
-        "Seed.ts compiled via esbuild → dist/seed.cjs (tsx 4.22.4 had ESM resolution bug on seed.ts)",
-        "packages/db/prisma/seed.ts:295-302 — deleteMany for ChatMessage, ChatChannel, UserNotificationPreference, WorkspaceNotificationSetting, EmailJob added in correct FK order before workspace deletion (fixes P2003 FK constraint violation on re-seed after F7 models added — commit ca6969d)"
+        "Seed.ts compiled via esbuild \u2192 dist/seed.cjs (tsx 4.22.4 had ESM resolution bug on seed.ts)",
+        "packages/db/prisma/seed.ts:295-302 \u2014 deleteMany for ChatMessage, ChatChannel, UserNotificationPreference, WorkspaceNotificationSetting, EmailJob added in correct FK order before workspace deletion (fixes P2003 FK constraint violation on re-seed after F7 models added \u2014 commit ca6969d)"
       ],
-      "notes": "Seed runs via esbuild bundling → CJS, sidesteps tsx ESM loader issue. Seed expanded in F7 (session 016) to include 15 users, 6 workspaces, chat channels, notification preferences, and 120 notifications. Seed cleanup fixed in session 019 (commit ca6969d) to delete F7 models before workspace deletion."
+      "notes": "Seed runs via esbuild bundling \u2192 CJS, sidesteps tsx ESM loader issue. Seed expanded in F7 (session 016) to include 15 users, 6 workspaces, chat channels, notification preferences, and 120 notifications. Seed cleanup fixed in session 019 (commit ca6969d) to delete F7 models before workspace deletion."
     },
     {
       "id": "workspace-003",
@@ -455,21 +455,21 @@
         "pnpm --filter @flow-desk/web typecheck succeeds",
         "pnpm --filter @flow-desk/web build produces dist/ without errors",
         "docker compose build web + up -d web succeeds",
-        "GET /api/workspaces/:id → 200 with columns included (smoke)",
-        "GET /api/workspaces/:id/members → 200 (smoke)",
-        "POST /api/workspaces/:id/columns → 201 (smoke, then DELETE)",
-        "PATCH /api/workspaces/:id → 200 with updated description (smoke)"
+        "GET /api/workspaces/:id \u2192 200 with columns included (smoke)",
+        "GET /api/workspaces/:id/members \u2192 200 (smoke)",
+        "POST /api/workspaces/:id/columns \u2192 201 (smoke, then DELETE)",
+        "PATCH /api/workspaces/:id \u2192 200 with updated description (smoke)"
       ],
       "evidence": [
-        "pnpm --filter @flow-desk/web typecheck → green (no TS errors)",
-        "pnpm --filter @flow-desk/web build → 562KB JS / 62KB CSS, gzipped 168KB / 11KB",
-        "docker compose up -d web → flow-desk-web-1 Recreated + Started; curl http://localhost:5173/ → 200 with FlowDesk HTML",
-        "GET /api/workspaces/cmqo1orct00062vlpojqzjobf (demo workspace) → 200, returns workspace + 4 columns",
-        "GET /api/workspaces/cmqo1orct00062vlpojqzjobf/members → 200, array with Demo User as OWNER",
-        "POST /api/workspaces/.../columns {name:'Smoke Column',isDoneColumn:false} → 201, column with position:5",
-        "PATCH /api/workspaces/.../columns/... {name:'Smoke Renamed'} → 200, name updated",
-        "DELETE /api/workspaces/.../columns/... → 200, {ok:true}",
-        "PATCH /api/workspaces/... {description:'Smoke-tested settings UI'} → 200, description persisted",
+        "pnpm --filter @flow-desk/web typecheck \u2192 green (no TS errors)",
+        "pnpm --filter @flow-desk/web build \u2192 562KB JS / 62KB CSS, gzipped 168KB / 11KB",
+        "docker compose up -d web \u2192 flow-desk-web-1 Recreated + Started; curl http://localhost:5173/ \u2192 200 with FlowDesk HTML",
+        "GET /api/workspaces/cmqo1orct00062vlpojqzjobf (demo workspace) \u2192 200, returns workspace + 4 columns",
+        "GET /api/workspaces/cmqo1orct00062vlpojqzjobf/members \u2192 200, array with Demo User as OWNER",
+        "POST /api/workspaces/.../columns {name:'Smoke Column',isDoneColumn:false} \u2192 201, column with position:5",
+        "PATCH /api/workspaces/.../columns/... {name:'Smoke Renamed'} \u2192 200, name updated",
+        "DELETE /api/workspaces/.../columns/... \u2192 200, {ok:true}",
+        "PATCH /api/workspaces/... {description:'Smoke-tested settings UI'} \u2192 200, description persisted",
         "ADR-005-workspace-settings-ui.md documents the architecture decision",
         "ACCEPTANCE.md workspace-003 section lists 19 testable criteria",
         "RISKS.md adds R-21/R-22/R-23 covering role-bypass, stale-role cache, and confirm-by-name"
@@ -486,8 +486,8 @@
       "verification": [
         "curl -X POST /api/tasks with auth cookie returns 201 and a task body with position appended at end of column",
         "curl -X POST /api/tasks/:id/move with {columnId, position, version} returns 200; sibling positions in source + target columns are re-sequenced 0..N-1 (no collisions)",
-        "Browser: open /board/:workspaceId, click 'New task', fill fields, submit → modal closes, new task appears in chosen column, persists across reload",
-        "Browser: drag a task across columns OR reorder within column → page reload shows the move persisted; bumping version server-side rejects stale move with 409",
+        "Browser: open /board/:workspaceId, click 'New task', fill fields, submit \u2192 modal closes, new task appears in chosen column, persists across reload",
+        "Browser: drag a task across columns OR reorder within column \u2192 page reload shows the move persisted; bumping version server-side rejects stale move with 409",
         "pnpm --filter @flow-desk/shared build green; pnpm --filter @flow-desk/web typecheck green"
       ],
       "evidence": [
@@ -631,21 +631,21 @@
       "user_visible_behavior": "scripts/prisma-exec.sh is safe to run from a fresh clone: invalid FLOW_DESK_DB_MODE values are rejected with exit 64, missing api container auto-starts the docker stack, and the default flow connects to the docker postgres without manual mode juggling.",
       "status": "passing",
       "verification": [
-        "FLOW_DESK_DB_MODE=foo → exit 64 with clear error to stderr",
-        "FLOW_DESK_DB_MODE unset + api container absent → auto-start stack, exec into container via `docker compose exec -T -w /app/apps/api api pnpm exec prisma`, connects to postgres:5432",
-        "FLOW_DESK_DB_MODE=local → host-side prisma, no docker interaction, .env sourced from root",
-        "bash -n scripts/prisma-exec.sh → syntax OK"
+        "FLOW_DESK_DB_MODE=foo \u2192 exit 64 with clear error to stderr",
+        "FLOW_DESK_DB_MODE unset + api container absent \u2192 auto-start stack, exec into container via `docker compose exec -T -w /app/apps/api api pnpm exec prisma`, connects to postgres:5432",
+        "FLOW_DESK_DB_MODE=local \u2192 host-side prisma, no docker interaction, .env sourced from root",
+        "bash -n scripts/prisma-exec.sh \u2192 syntax OK"
       ],
       "evidence": [
         "scripts/prisma-exec.sh: case-validates FLOW_DESK_DB_MODE up front (lines 38-44), rejects invalid values with exit 64 and stderr message",
         "scripts/prisma-exec.sh: default-mode is docker (line 54-58), so unset env + cold stack triggers auto-start at lines 63-66 (bash scripts/docker-up.sh up)",
-        "scripts/prisma-exec.sh: docker mode runs `docker compose exec -T -w /app/apps/api api pnpm exec prisma \"$@\"` (line 116) — no `sh -c`, no word-split",
+        "scripts/prisma-exec.sh: docker mode runs `docker compose exec -T -w /app/apps/api api pnpm exec prisma \"$@\"` (line 116) \u2014 no `sh -c`, no word-split",
         "scripts/prisma-exec.sh: hardcoded container name replaced with `docker compose ps -q api` lookup (line 93) for the seed-copy step",
         "scripts/prisma-exec.sh: local mode sources .env (lines 73-78) for host-side prisma + seed.cjs",
         "apps/api/package.json: db:reset consolidated to single wrapper call `db push --force-reset --accept-data-loss --skip-generate` (replaces two-call migrate reset + db push pattern that could switch modes mid-reset)",
         "turbo.json: dead `inputs` on db:push dropped (cache:false made them no-op)",
         "README.md: mode description now reflects default=docker + auto-start UX; invalid values section added",
-        "Live verification: FLOW_DESK_DB_MODE=foo → ERROR stderr + exit 64; unset env + cold stack → auto-start + exec -T -w /app/apps/api + connect to postgres:5432; FLOW_DESK_DB_MODE=local → host-side prisma reaches localhost:5432, schema in sync"
+        "Live verification: FLOW_DESK_DB_MODE=foo \u2192 ERROR stderr + exit 64; unset env + cold stack \u2192 auto-start + exec -T -w /app/apps/api + connect to postgres:5432; FLOW_DESK_DB_MODE=local \u2192 host-side prisma reaches localhost:5432, schema in sync"
       ],
       "notes": "Code-review follow-up for commit 0eabfcd. Eight findings closed (1 critical regression, 1 silent-fallback, 1 doc drift, 4 minor cleanup, 1 confirmed-correct no-op). All changes in main checkout (no worktree for this small bug-fix-class follow-up)."
     },
@@ -657,10 +657,10 @@
       "user_visible_behavior": "Running `pnpm test`, `pnpm typecheck`, and `pnpm lint` from the repo root all exit 0 with no failures. The full Turbo pipeline completes 4/4 (typecheck), 3/3 (lint), 4/4 (test) tasks as successful.",
       "status": "passing",
       "verification": [
-        "pnpm typecheck → exit 0, all 6 workspace projects green (db, env, shared, api, web)",
-        "pnpm lint → exit 0, eslint flat config (eslint.config.mjs) 0 errors 0 warnings across api/web/shared",
-        "pnpm test → exit 0, api unit (190 tests) + web vitest (10 tests) + shared vitest all pass",
-        "pnpm exec eslint . → 0 warnings (130 warnings cleaned up in commit 0310f21)"
+        "pnpm typecheck \u2192 exit 0, all 6 workspace projects green (db, env, shared, api, web)",
+        "pnpm lint \u2192 exit 0, eslint flat config (eslint.config.mjs) 0 errors 0 warnings across api/web/shared",
+        "pnpm test \u2192 exit 0, api unit (190 tests) + web vitest (10 tests) + shared vitest all pass",
+        "pnpm exec eslint . \u2192 0 warnings (130 warnings cleaned up in commit 0310f21)"
       ],
       "evidence": [
         "apps/api/package.json: lint = `eslint src/`, test:unit = `vitest run --config vitest.config.ts`, test:integration = `vitest run --config vitest.integration.config.ts`",
@@ -669,7 +669,7 @@
         "eslint.config.mjs: flat config with @eslint/js + typescript-eslint recommended, no-unused-vars warn, no-explicit-any warn, consistent-type-imports error, test file override for no-explicit-any off",
         "lefthook.yml: pre-commit runs secrets + prettier --check + eslint + per-package typecheck on staged files; pre-push runs full typecheck + unit tests + integration tests + build"
       ],
-      "notes": "Updated 2026-07-04: evidence refreshed — scripts are now real eslint+vitest (not placeholder echo). 130 eslint warnings cleaned in commit 0310f21. 2-layer guardrail (lefthook + CI) in commits 219ca6d + 7d5c840."
+      "notes": "Updated 2026-07-04: evidence refreshed \u2014 scripts are now real eslint+vitest (not placeholder echo). 130 eslint warnings cleaned in commit 0310f21. 2-layer guardrail (lefthook + CI) in commits 219ca6d + 7d5c840."
     },
     {
       "id": "F2",
@@ -679,23 +679,23 @@
       "user_visible_behavior": "Workspace labels (create/edit/delete/assign to tasks with dual-write + cache + socket broadcast); workspace service/repo extraction with invite+role endpoints; Radix Select primitives on Workspace settings; optimistic mutations with rollback; socket reconnection with backoff; presence indicators; Playwright E2E scaffold.",
       "status": "passing",
       "verification": [
-        "pnpm --filter @flow-desk/web typecheck → exit 0",
-        "pnpm --filter @flow-desk/api typecheck → exit 0",
-        "pnpm --filter @flow-desk/api test:integration → 6 files, 42/42 tests passed",
-        "pnpm --filter @flow-desk/web build → exit 0"
+        "pnpm --filter @flow-desk/web typecheck \u2192 exit 0",
+        "pnpm --filter @flow-desk/api typecheck \u2192 exit 0",
+        "pnpm --filter @flow-desk/api test:integration \u2192 6 files, 42/42 tests passed",
+        "pnpm --filter @flow-desk/web build \u2192 exit 0"
       ],
       "evidence": [
         "Subagent A (BE Epics 4-6): apps/api/src/modules/label/{label.cache,label.repository,label.service,label.routes,index}.ts; apps/api/src/modules/task/{task-label.repository,task-label.service,task-label.routes}.ts; apps/api/src/modules/workspace/{workspace.repository,workspace.service,member.service}.ts; apps/api/src/shared/{errors/codes,lib/rate-limit-policies}.ts; apps/api/src/app.ts buildApp factory; packages/shared/src/label.ts; prisma/schema.prisma TaskLabelAssignment + Task.labelsDeprecated + TaskLabel.version",
-        "Subagent A tests: apps/api/tests/{setup,integration}/ with 6 test files covering label repo, label service, label routes, task-label service, workspace service, member service — all 42 tests pass",
+        "Subagent A tests: apps/api/tests/{setup,integration}/ with 6 test files covering label repo, label service, label routes, task-label service, workspace service, member service \u2014 all 42 tests pass",
         "Subagent B (FE Epics 7-9): apps/web/src/lib/{api,queryClient}.ts + useAuth + RequireAuth; shadcn add dialog/dropdown-menu/popover/tooltip; apps/web/src/features/workspace/components/WorkspaceSwitcher.tsx; apps/web/src/features/label/{types,api,hooks,index}.ts + components/{LabelChip,LabelFormDialog}.tsx + pages/LabelManagerPage.tsx; apps/web/src/features/task/components/{TaskCard,TaskLabelSelect}.tsx; SettingsTabs labels tab wired",
-        "Subagent C (Epics 10-11): apps/web/src/features/onboarding/{hooks,components,index}.ts; apps/web/src/features/board/{components/{EmptyBoardState,PresenceBar},hooks/useMoveTask,index}.ts; apps/web/src/lib/socket.ts reconnection config (backoff 1s→30s, randomization 0.5, timeout 20s) + useSocketStatus",
-        "Subagent D (E2E — recovered inline): playwright.config.ts (chromium, webServer auto, baseURL 5173); e2e/{fixtures,critical-path,realtime}.spec.ts",
-        "Reconciliation inline: apps/web/src/pages/board.tsx — inline TaskCard replaced with @/features/task TaskCard (workspaceId prop); PresenceBar wired in header; EmptyBoardState wired when total tasks === 0",
-        "Backend label contract: LabelSchema uses named colors (8 RadioGroup) not hex; Task.labelsDeprecated is String[] not JSON — UI adapted to match",
+        "Subagent C (Epics 10-11): apps/web/src/features/onboarding/{hooks,components,index}.ts; apps/web/src/features/board/{components/{EmptyBoardState,PresenceBar},hooks/useMoveTask,index}.ts; apps/web/src/lib/socket.ts reconnection config (backoff 1s\u219230s, randomization 0.5, timeout 20s) + useSocketStatus",
+        "Subagent D (E2E \u2014 recovered inline): playwright.config.ts (chromium, webServer auto, baseURL 5173); e2e/{fixtures,critical-path,realtime}.spec.ts",
+        "Reconciliation inline: apps/web/src/pages/board.tsx \u2014 inline TaskCard replaced with @/features/task TaskCard (workspaceId prop); PresenceBar wired in header; EmptyBoardState wired when total tasks === 0",
+        "Backend label contract: LabelSchema uses named colors (8 RadioGroup) not hex; Task.labelsDeprecated is String[] not JSON \u2014 UI adapted to match",
         "R-33 closed (Radix primitives added; members tab uses shadcn dropdown-menu for invite role; label form uses RadioGroup)",
-        "R-34 partially closed (snapshot+rollback pattern from kanban-bugs-fix carries forward; Full DragOverlay with SortableContext deferred to F5/F6 — out of F2 scope)"
+        "R-34 partially closed (snapshot+rollback pattern from kanban-bugs-fix carries forward; Full DragOverlay with SortableContext deferred to F5/F6 \u2014 out of F2 scope)"
       ],
-      "notes": "F2 = session 011. Plan /tmp/f2-plan.md (1496 lines, Epics 4-12). Subagent-driven 4-way parallel execution. Subagent D returned empty on first pass — re-implemented inline. Subagent C added TODO(server) for presence gateway in apps/api/src/modules/realtime/realtime.gateway.ts (deferred to F6)."
+      "notes": "F2 = session 011. Plan /tmp/f2-plan.md (1496 lines, Epics 4-12). Subagent-driven 4-way parallel execution. Subagent D returned empty on first pass \u2014 re-implemented inline. Subagent C added TODO(server) for presence gateway in apps/api/src/modules/realtime/realtime.gateway.ts (deferred to F6)."
     },
     {
       "id": "F3",
@@ -705,20 +705,20 @@
       "user_visible_behavior": "All mutation paths filter `deletedAt: null`; Prisma `softDeleteExtension` auto-injects filter on findFirst/findMany/count/aggregate/groupBy for 6 soft-delete models (User, Workspace, Task, TaskLabel, TaskLabelAssignment, Comment); deleted entities return 404/403 on subsequent API access.",
       "status": "passing",
       "verification": [
-        "pnpm --filter @flow-desk/api test:integration → 13 files, 142/142 pass (57 including 15 new soft-delete tests)",
-        "pnpm --filter @flow-desk/api typecheck → exit 0"
+        "pnpm --filter @flow-desk/api test:integration \u2192 13 files, 142/142 pass (57 including 15 new soft-delete tests)",
+        "pnpm --filter @flow-desk/api typecheck \u2192 exit 0"
       ],
       "evidence": [
-        "apps/api/src/shared/lib/prisma-extension.ts — softDeleteExtension auto-filters findFirst/findMany/count/aggregate/groupBy",
-        "apps/api/src/shared/lib/prisma.ts — wires extension via basePrisma.$extends(softDeleteExtension)",
-        "apps/api/src/modules/task/task.service.ts — createDependency uses repo.findActiveById (was findUniqueRaw gap)",
-        "apps/api/src/modules/ai/ai.repository.ts — findTask adds deletedAt:null to findUnique",
-        "apps/api/src/modules/attachment/attachment.{service,repository}.ts — uploadAttachment/getDownloadAttachment filter deletedAt:null on task lookup",
-        "apps/api/src/modules/comment/comment.service.ts — findFirst deletedAt:null for task lookup on create/update/delete",
-        "apps/api/src/modules/workspace/workspace.routes.ts — PATCH /:id pre-check findFirst+NotFoundError",
-        "apps/api/tests/integration/soft-delete.test.ts — 15 integration tests, one per module + edge cases",
-        "apps/api/tests/setup/{db,factories}.ts — TRUNCATE→DELETE in tx with session_replication_role=replica (unblocks test infra deadlocks)",
-        "apps/api/vitest.integration.config.ts — alias regex handles @flow-desk/shared/<sub-path>"
+        "apps/api/src/shared/lib/prisma-extension.ts \u2014 softDeleteExtension auto-filters findFirst/findMany/count/aggregate/groupBy",
+        "apps/api/src/shared/lib/prisma.ts \u2014 wires extension via basePrisma.$extends(softDeleteExtension)",
+        "apps/api/src/modules/task/task.service.ts \u2014 createDependency uses repo.findActiveById (was findUniqueRaw gap)",
+        "apps/api/src/modules/ai/ai.repository.ts \u2014 findTask adds deletedAt:null to findUnique",
+        "apps/api/src/modules/attachment/attachment.{service,repository}.ts \u2014 uploadAttachment/getDownloadAttachment filter deletedAt:null on task lookup",
+        "apps/api/src/modules/comment/comment.service.ts \u2014 findFirst deletedAt:null for task lookup on create/update/delete",
+        "apps/api/src/modules/workspace/workspace.routes.ts \u2014 PATCH /:id pre-check findFirst+NotFoundError",
+        "apps/api/tests/integration/soft-delete.test.ts \u2014 15 integration tests, one per module + edge cases",
+        "apps/api/tests/setup/{db,factories}.ts \u2014 TRUNCATE\u2192DELETE in tx with session_replication_role=replica (unblocks test infra deadlocks)",
+        "apps/api/vitest.integration.config.ts \u2014 alias regex handles @flow-desk/shared/<sub-path>"
       ],
       "notes": "F3 = session 012. Subagent-driven. Notification module skipped (no deletedAt field on Notification model)."
     },
@@ -730,19 +730,19 @@
       "user_visible_behavior": "GET /api/workspaces, /members, /tasks, /comments, /attachments, /notifications, /board accept ?cursor=X&limit=N (1-100, default 20), return {data, nextCursor} envelope; cursor is opaque base64url(ISO cuid).",
       "status": "passing",
       "verification": [
-        "pnpm --filter @flow-desk/api test:integration → 12 pagination tests pass (roundtrip + 6 module cursors + 2 edge cases)",
-        "pnpm --filter @flow-desk/api typecheck → exit 0"
+        "pnpm --filter @flow-desk/api test:integration \u2192 12 pagination tests pass (roundtrip + 6 module cursors + 2 edge cases)",
+        "pnpm --filter @flow-desk/api typecheck \u2192 exit 0"
       ],
       "evidence": [
-        "packages/shared/src/pagination.ts — CursorPaginationQuery, CursorPaginationEnvelope, encodeCursor(Date,id), decodeCursor(value)",
-        "packages/shared/package.json + tsup.config.ts — add ./pagination export/entry",
-        "apps/api/src/modules/board/board.routes.ts — extracted from workspace; cursor pagination",
-        "apps/api/src/modules/workspace/{workspace.repository,member.service}.ts — listForUserCursor + list(workspaceId,userId,query)",
-        "apps/api/src/modules/{attachment,comment,notification,task}/*.service.ts — list-only service with cursor",
-        "apps/api/src/app.ts — wire boardRouter at /api/workspaces/:wid/board",
-        "apps/api/tests/integration/pagination.test.ts — 12 tests"
+        "packages/shared/src/pagination.ts \u2014 CursorPaginationQuery, CursorPaginationEnvelope, encodeCursor(Date,id), decodeCursor(value)",
+        "packages/shared/package.json + tsup.config.ts \u2014 add ./pagination export/entry",
+        "apps/api/src/modules/board/board.routes.ts \u2014 extracted from workspace; cursor pagination",
+        "apps/api/src/modules/workspace/{workspace.repository,member.service}.ts \u2014 listForUserCursor + list(workspaceId,userId,query)",
+        "apps/api/src/modules/{attachment,comment,notification,task}/*.service.ts \u2014 list-only service with cursor",
+        "apps/api/src/app.ts \u2014 wire boardRouter at /api/workspaces/:wid/board",
+        "apps/api/tests/integration/pagination.test.ts \u2014 12 tests"
       ],
-      "notes": "F4 = session 012. Breaking change: response envelopes changed ({workspaces}→{data,nextCursor}, etc.). F5 fixed the pre-existing F2 task.service bugs flagged by F4 testing."
+      "notes": "F4 = session 012. Breaking change: response envelopes changed ({workspaces}\u2192{data,nextCursor}, etc.). F5 fixed the pre-existing F2 task.service bugs flagged by F4 testing."
     },
     {
       "id": "F5",
@@ -752,41 +752,41 @@
       "user_visible_behavior": "task/comment/notification/attachment/ai modules now follow AGENTS.md service/repo/routes/schema split; integration tests for each (143 total across repo).",
       "status": "passing",
       "verification": [
-        "pnpm --filter @flow-desk/api test:integration → 142/142 pass (was 42 before F5)",
-        "pnpm --filter @flow-desk/api typecheck → exit 0"
+        "pnpm --filter @flow-desk/api test:integration \u2192 142/142 pass (was 42 before F5)",
+        "pnpm --filter @flow-desk/api typecheck \u2192 exit 0"
       ],
       "evidence": [
-        "task/{task.repository,task.service,task.routes}.ts — split (task.routes.ts: 367→89 lines); task.service.test.ts 29 tests",
+        "task/{task.repository,task.service,task.routes}.ts \u2014 split (task.routes.ts: 367\u219289 lines); task.service.test.ts 29 tests",
         "comment/{comment.service,comment.repository}.ts + comment.service.test.ts 14 tests",
         "notification/{notification.service,notification.repository}.ts + notification.service.test.ts 8 tests",
         "attachment/{attachment.service,attachment.repository}.ts + attachment.service.test.ts 14 tests",
-        "ai/{ai.service,ai.repository}.ts + ai.service.test.ts 8 tests — FIXED pre-existing bug: topologicalSort iterated t.dependencies instead of t.blockers (self-loops); repo.listOpenTasksForSchedule include fixed",
-        "packages/shared/package.json — added ./pagination + ./label exports",
-        "apps/api/vitest.integration.config.ts — UPLOAD_DIR env var"
+        "ai/{ai.service,ai.repository}.ts + ai.service.test.ts 8 tests \u2014 FIXED pre-existing bug: topologicalSort iterated t.dependencies instead of t.blockers (self-loops); repo.listOpenTasksForSchedule include fixed",
+        "packages/shared/package.json \u2014 added ./pagination + ./label exports",
+        "apps/api/vitest.integration.config.ts \u2014 UPLOAD_DIR env var"
       ],
-      "notes": "F5 = session 012. Subagent-driven. label/task-label/workspace already split in F2 — skipped."
+      "notes": "F5 = session 012. Subagent-driven. label/task-label/workspace already split in F2 \u2014 skipped."
     },
     {
       "id": "F6",
       "priority": 34,
       "area": "realtime",
       "title": "Close R-34 + presence gateway + DragOverlay real-card clone",
-      "user_visible_behavior": "Server-side presence gateway in apps/api/src/modules/realtime/realtime.gateway.ts handles presence:join/heartbeat/leave/disconnect on /tasks namespace; broadcasts presence:update to workspace room; stale users swept every 10s (30s TTL). Kanban DragOverlay now renders real TaskCard clone (not 'Moving…') via renderOverlay prop wired in pages/board.tsx.",
+      "user_visible_behavior": "Server-side presence gateway in apps/api/src/modules/realtime/realtime.gateway.ts handles presence:join/heartbeat/leave/disconnect on /tasks namespace; broadcasts presence:update to workspace room; stale users swept every 10s (30s TTL). Kanban DragOverlay now renders real TaskCard clone (not 'Moving\u2026') via renderOverlay prop wired in pages/board.tsx.",
       "status": "passing",
       "verification": [
-        "pnpm --filter @flow-desk/api typecheck → exit 0",
-        "pnpm --filter @flow-desk/web typecheck → exit 0",
-        "pnpm --filter @flow-desk/web build → exit 0",
-        "pnpm --filter @flow-desk/api test:integration → 142/142 pass"
+        "pnpm --filter @flow-desk/api typecheck \u2192 exit 0",
+        "pnpm --filter @flow-desk/web typecheck \u2192 exit 0",
+        "pnpm --filter @flow-desk/web build \u2192 exit 0",
+        "pnpm --filter @flow-desk/api test:integration \u2192 142/142 pass"
       ],
       "evidence": [
-        "apps/api/src/modules/realtime/realtime.gateway.ts — attachPresenceHandlers(io, redis, '/tasks'); upsertPresence/removePresence/broadcastPresence Redis-backed; 30s TTL + 10s sweeper",
-        "apps/api/src/shared/lib/socket.ts — attachPresenceHandlers called after namespace setup; io.use middleware now async (loads user name+avatar from prisma for presence payloads)",
-        "apps/web/src/components/ui/kanban.tsx — added renderOverlay?: (taskId) => ReactNode prop; DragOverlay wraps it when provided, falls back to 'Moving…' placeholder",
-        "apps/web/src/pages/board.tsx — Kanban renderOverlay looks up task by id across columns and renders TaskCard clone",
-        "apps/web/src/features/board/components/PresenceBar.tsx — removed TODO(server) comment; protocol now documented as implemented"
+        "apps/api/src/modules/realtime/realtime.gateway.ts \u2014 attachPresenceHandlers(io, redis, '/tasks'); upsertPresence/removePresence/broadcastPresence Redis-backed; 30s TTL + 10s sweeper",
+        "apps/api/src/shared/lib/socket.ts \u2014 attachPresenceHandlers called after namespace setup; io.use middleware now async (loads user name+avatar from prisma for presence payloads)",
+        "apps/web/src/components/ui/kanban.tsx \u2014 added renderOverlay?: (taskId) => ReactNode prop; DragOverlay wraps it when provided, falls back to 'Moving\u2026' placeholder",
+        "apps/web/src/pages/board.tsx \u2014 Kanban renderOverlay looks up task by id across columns and renders TaskCard clone",
+        "apps/web/src/features/board/components/PresenceBar.tsx \u2014 removed TODO(server) comment; protocol now documented as implemented"
       ],
-      "notes": "F6 = session 012. Subagent returned empty twice (similar to subagent D in F2) — implemented inline. namespace choice: /tasks (matches PresenceBar existing usage) instead of /collab to avoid FE wiring changes."
+      "notes": "F6 = session 012. Subagent returned empty twice (similar to subagent D in F2) \u2014 implemented inline. namespace choice: /tasks (matches PresenceBar existing usage) instead of /collab to avoid FE wiring changes."
     },
     {
       "id": "F7",
@@ -796,52 +796,52 @@
       "user_visible_behavior": "User can create/manage chat channels per workspace, send real-time messages with mentions, view task-level chat in task edit modal. Notifications created on task assignment with email (instant or delayed) via BullMQ queue with Nodemailer/Resend providers. Notification preferences per user per workspace (digest cadence, email toggle per event type, delay minutes).",
       "status": "passing",
       "verification": [
-        "pnpm --filter @flow-desk/api tsc --noEmit → exit 0",
-        "pnpm --filter @flow-desk/api vitest run → 80/80 unit tests pass",
-        "pnpm --filter @flow-desk/api vitest run --config vitest.integration.config.ts → 162/162 integration tests pass",
-        "pnpm --filter @flow-desk/web vite build → exit 0"
+        "pnpm --filter @flow-desk/api tsc --noEmit \u2192 exit 0",
+        "pnpm --filter @flow-desk/api vitest run \u2192 80/80 unit tests pass",
+        "pnpm --filter @flow-desk/api vitest run --config vitest.integration.config.ts \u2192 162/162 integration tests pass",
+        "pnpm --filter @flow-desk/web vite build \u2192 exit 0"
       ],
       "evidence": [
         "Prisma schema: ChatChannel, ChatMessage, EmailJob, WorkspaceNotificationSetting, UserNotificationPreference + Comment.isChat",
-        "packages/shared/src/chat.ts — Zod schemas for channel/message CRUD, scope enum, list queries (21 tests)",
-        "packages/shared/src/notification-preferences.ts — Zod schemas for prefs CRUD + EffectivePreferences (25 tests)",
-        "packages/shared/package.json — added ./chat export entry",
-        "apps/api/src/modules/chat/ — chat channel + message service/repo/routes with cursor pagination, Socket.IO emits on /collab namespace",
-        "apps/api/src/modules/notification/notification-email.service.ts — handleTaskAssignedEmail creates emailJob DB record + enqueues via BullMQ",
-        "apps/api/src/modules/notification-preferences/ — service + repo for workspace settings + user prefs + getEffectivePreferences merge",
-        "apps/api/src/modules/task/task.service.ts — handleAssigneeChange triggers notification + email on assign; create triggers when assignee != creator",
-        "apps/api/src/shared/lib/email-provider.ts — EmailProvider interface + NodemailerEmailProvider + ResendEmailProvider + factory (9 tests)",
-        "apps/api/src/shared/lib/email-templates/ — renderTaskAssignedEmail, renderTaskDueReminderEmail, renderDigestEmail (22 tests)",
-        "apps/api/src/workers/email/ — BullMQ queue + 4 processors (instant, delayed, send, digest) + scheduler + schedule-delayed (26 tests)",
-        "apps/api/tsup.config.ts — second entry for email-worker.ts",
-        "apps/web/src/features/chat/ — 11 files: types, api, hooks (useInfiniteMessages, useFlattenedMessages, useMessageSubscription), components (ChatSidebar, ChannelItem, ChannelView, MessageBubble, ChatInput, TaskChat)",
-        "apps/web/src/features/task/components/TaskEditModal.tsx — Details/Chat tabs with TaskChat",
-        "apps/web/src/pages/chat.tsx — chat route with sidebar + channel view + create dialog",
-        "apps/web/src/App.tsx — route /workspaces/:workspaceId/chat",
-        "apps/web/src/components/layout/app-shell.tsx — Chat nav link",
-        "docker/email-worker.Dockerfile — multi-stage build for email worker",
-        "docker-compose.yml — email-worker service added",
-        "e2e/chat.spec.ts — Playwright E2E tests (blocked by R-39 Prisma client CJS/ESM interop)"
+        "packages/shared/src/chat.ts \u2014 Zod schemas for channel/message CRUD, scope enum, list queries (21 tests)",
+        "packages/shared/src/notification-preferences.ts \u2014 Zod schemas for prefs CRUD + EffectivePreferences (25 tests)",
+        "packages/shared/package.json \u2014 added ./chat export entry",
+        "apps/api/src/modules/chat/ \u2014 chat channel + message service/repo/routes with cursor pagination, Socket.IO emits on /collab namespace",
+        "apps/api/src/modules/notification/notification-email.service.ts \u2014 handleTaskAssignedEmail creates emailJob DB record + enqueues via BullMQ",
+        "apps/api/src/modules/notification-preferences/ \u2014 service + repo for workspace settings + user prefs + getEffectivePreferences merge",
+        "apps/api/src/modules/task/task.service.ts \u2014 handleAssigneeChange triggers notification + email on assign; create triggers when assignee != creator",
+        "apps/api/src/shared/lib/email-provider.ts \u2014 EmailProvider interface + NodemailerEmailProvider + ResendEmailProvider + factory (9 tests)",
+        "apps/api/src/shared/lib/email-templates/ \u2014 renderTaskAssignedEmail, renderTaskDueReminderEmail, renderDigestEmail (22 tests)",
+        "apps/api/src/workers/email/ \u2014 BullMQ queue + 4 processors (instant, delayed, send, digest) + scheduler + schedule-delayed (26 tests)",
+        "apps/api/tsup.config.ts \u2014 second entry for email-worker.ts",
+        "apps/web/src/features/chat/ \u2014 11 files: types, api, hooks (useInfiniteMessages, useFlattenedMessages, useMessageSubscription), components (ChatSidebar, ChannelItem, ChannelView, MessageBubble, ChatInput, TaskChat)",
+        "apps/web/src/features/task/components/TaskEditModal.tsx \u2014 Details/Chat tabs with TaskChat",
+        "apps/web/src/pages/chat.tsx \u2014 chat route with sidebar + channel view + create dialog",
+        "apps/web/src/App.tsx \u2014 route /workspaces/:workspaceId/chat",
+        "apps/web/src/components/layout/app-shell.tsx \u2014 Chat nav link",
+        "docker/email-worker.Dockerfile \u2014 multi-stage build for email worker",
+        "docker-compose.yml \u2014 email-worker service added",
+        "e2e/chat.spec.ts \u2014 Playwright E2E tests (blocked by R-39 Prisma client CJS/ESM interop)"
       ],
-      "notes": "F7 = session 016 (worktree f7-chat-email). 80 unit + 162 integration tests all passing. F7 committed to main (code-review fixes AUD-001..008 applied post-merge). E2E now passing (R-39 resolved in session 017 — 3/3 E2E tests pass). Email worker Docker build fails on @flowdesk/db workspace resolution — pre-existing monorepo docker issue. Seed cleanup for F7 models fixed in session 019 (commit ca6969d)."
+      "notes": "F7 = session 016 (worktree f7-chat-email). 80 unit + 162 integration tests all passing. F7 committed to main (code-review fixes AUD-001..008 applied post-merge). E2E now passing (R-39 resolved in session 017 \u2014 3/3 E2E tests pass). Email worker Docker build fails on @flowdesk/db workspace resolution \u2014 pre-existing monorepo docker issue. Seed cleanup for F7 models fixed in session 019 (commit ca6969d)."
     },
     {
       "id": "AUD-001",
       "priority": 100,
       "area": "security",
       "title": "Fix stored XSS in task description rendering (S1)",
-      "user_visible_behavior": "Task descriptions rendered as sanitized HTML — script tags and onerror handlers stripped, safe markdown preserved.",
+      "user_visible_behavior": "Task descriptions rendered as sanitized HTML \u2014 script tags and onerror handlers stripped, safe markdown preserved.",
       "status": "passing",
       "verification": [
-        "pnpm --filter @flow-desk/web typecheck → exit 0",
-        "pnpm --filter @flow-desk/web build → exit 0",
-        "rg 'marked\\.parse.*dangerouslySetInnerHTML' apps/web/src/ → 0 matches",
-        "rg 'renderMarkdownToHtml' apps/web/src/ → ≥2 matches"
+        "pnpm --filter @flow-desk/web typecheck \u2192 exit 0",
+        "pnpm --filter @flow-desk/web build \u2192 exit 0",
+        "rg 'marked\\.parse.*dangerouslySetInnerHTML' apps/web/src/ \u2192 0 matches",
+        "rg 'renderMarkdownToHtml' apps/web/src/ \u2192 \u22652 matches"
       ],
       "evidence": [
-        "apps/web/src/lib/sanitize.ts (NEW) — renderMarkdownToHtml(): marked.parse + DOMPurify.sanitize with ALLOWED_TAGS + ALLOWED_ATTR",
-        "apps/web/src/features/task/components/TaskEditModal.tsx — swapped marked.parse for renderMarkdownToHtml in dangerouslySetInnerHTML",
-        "apps/web/package.json — added dompurify ^3.4.11",
+        "apps/web/src/lib/sanitize.ts (NEW) \u2014 renderMarkdownToHtml(): marked.parse + DOMPurify.sanitize with ALLOWED_TAGS + ALLOWED_ATTR",
+        "apps/web/src/features/task/components/TaskEditModal.tsx \u2014 swapped marked.parse for renderMarkdownToHtml in dangerouslySetInnerHTML",
+        "apps/web/package.json \u2014 added dompurify ^3.4.11",
         "Merged: commit 7f41414 (merge of 914dd33)"
       ],
       "notes": "Plan 001 from /improve audit. S1 finding. Commit 764615b baseline."
@@ -854,19 +854,19 @@
       "user_visible_behavior": "Workspace-scoped resources (columns, task dependencies, chat mentions, AI task lookup) verify ownership before mutation/read. Cross-workspace access rejected.",
       "status": "passing",
       "verification": [
-        "pnpm --filter @flow-desk/api typecheck → exit 0",
-        "pnpm --filter @flow-desk/api vitest run → 80/80 pass",
-        "pnpm --filter @flow-desk/api vitest run --config vitest.integration.config.ts → 174/174 pass (incl. 10 new IDOR tests)",
-        "rg 'existing.workspaceId !== workspaceId' apps/api/src/modules/workspace/workspace.routes.ts → 2 matches",
-        "rg 'findTask.*workspaceId' apps/api/src/modules/ai/ai.repository.ts → match"
+        "pnpm --filter @flow-desk/api typecheck \u2192 exit 0",
+        "pnpm --filter @flow-desk/api vitest run \u2192 80/80 pass",
+        "pnpm --filter @flow-desk/api vitest run --config vitest.integration.config.ts \u2192 174/174 pass (incl. 10 new IDOR tests)",
+        "rg 'existing.workspaceId !== workspaceId' apps/api/src/modules/workspace/workspace.routes.ts \u2192 2 matches",
+        "rg 'findTask.*workspaceId' apps/api/src/modules/ai/ai.repository.ts \u2192 match"
       ],
       "evidence": [
-        "apps/api/src/modules/workspace/workspace.routes.ts — column update/delete ownership check (S3)",
-        "apps/api/src/modules/task/task.routes.ts — dependency delete assertMembership + workspace check (S4)",
-        "apps/api/src/modules/task/task.service.ts — create/createSubtask verify column belongs to workspace (S18)",
-        "apps/api/src/modules/chat/chat.message.service.ts — mention filtering to workspace members (S8)",
-        "apps/api/src/modules/ai/ai.repository.ts + ai.service.ts — findTask workspace filter (S9)",
-        "apps/api/tests/integration/idor-cross-workspace.test.ts (NEW) — 10 IDOR tests",
+        "apps/api/src/modules/workspace/workspace.routes.ts \u2014 column update/delete ownership check (S3)",
+        "apps/api/src/modules/task/task.routes.ts \u2014 dependency delete assertMembership + workspace check (S4)",
+        "apps/api/src/modules/task/task.service.ts \u2014 create/createSubtask verify column belongs to workspace (S18)",
+        "apps/api/src/modules/chat/chat.message.service.ts \u2014 mention filtering to workspace members (S8)",
+        "apps/api/src/modules/ai/ai.repository.ts + ai.service.ts \u2014 findTask workspace filter (S9)",
+        "apps/api/tests/integration/idor-cross-workspace.test.ts (NEW) \u2014 10 IDOR tests",
         "Merged: commit 229f6bb (merge of 19c7a3d)"
       ],
       "notes": "Plan 002 from /improve audit. Commit 764615b baseline."
@@ -879,43 +879,43 @@
       "user_visible_behavior": "Refresh token flow works (users stay logged in beyond 15min). OAuth login rejects unverified Google emails.",
       "status": "passing",
       "verification": [
-        "pnpm --filter @flow-desk/api typecheck → exit 0",
-        "pnpm --filter @flow-desk/api vitest run → all pass",
-        "pnpm --filter @flow-desk/api vitest run --config vitest.integration.config.ts → all pass (18 files / 180 tests)",
-        "rg 'id: refresh' apps/api/src/modules/auth/auth.routes.ts → 0 matches",
-        "rg 'verified_email' apps/api/src/modules/auth/auth.routes.ts → 2 matches"
+        "pnpm --filter @flow-desk/api typecheck \u2192 exit 0",
+        "pnpm --filter @flow-desk/api vitest run \u2192 all pass",
+        "pnpm --filter @flow-desk/api vitest run --config vitest.integration.config.ts \u2192 all pass (18 files / 180 tests)",
+        "rg 'id: refresh' apps/api/src/modules/auth/auth.routes.ts \u2192 0 matches",
+        "rg 'verified_email' apps/api/src/modules/auth/auth.routes.ts \u2192 2 matches"
       ],
       "evidence": [
-        "apps/api/src/modules/auth/auth.routes.ts — 4 refresh token sites fixed (register:66, login:96, refresh-rotation:140, OAuth callback:267): id: tokenId (UUID) instead of id: refresh (JWT string)",
-        "apps/api/src/modules/auth/auth.routes.ts:237 — verified_email check added before account merge: throw BadRequestError if !profile.verified_email",
-        "apps/api/tests/integration/auth.service.test.ts — 6 integration tests: tokenId storage, successful refresh, revoked rejection, expired rejection, OAuth verified_email gate, unverified rejection"
+        "apps/api/src/modules/auth/auth.routes.ts \u2014 4 refresh token sites fixed (register:66, login:96, refresh-rotation:140, OAuth callback:267): id: tokenId (UUID) instead of id: refresh (JWT string)",
+        "apps/api/src/modules/auth/auth.routes.ts:237 \u2014 verified_email check added before account merge: throw BadRequestError if !profile.verified_email",
+        "apps/api/tests/integration/auth.service.test.ts \u2014 6 integration tests: tokenId storage, successful refresh, revoked rejection, expired rejection, OAuth verified_email gate, unverified rejection"
       ],
-      "notes": "Plan 003 from /improve audit. Merged commit 2519068 (worktree commit c970b44). Executor found 4th token-creation site (refresh-rotation endpoint) — plan said 'typically 3'. All gates pass."
+      "notes": "Plan 003 from /improve audit. Merged commit 2519068 (worktree commit c970b44). Executor found 4th token-creation site (refresh-rotation endpoint) \u2014 plan said 'typically 3'. All gates pass."
     },
     {
       "id": "AUD-004",
       "priority": 97,
       "area": "security",
       "title": "Fix WebSocket IDOR + socket event name mismatch (S7, C2)",
-      "user_visible_behavior": "Realtime updates only reach workspace members. Client socket event names match server → board/list realtime functional.",
+      "user_visible_behavior": "Realtime updates only reach workspace members. Client socket event names match server \u2192 board/list realtime functional.",
       "status": "passing",
       "verification": [
-        "pnpm --filter @flow-desk/api typecheck → exit 0",
-        "pnpm --filter @flow-desk/web typecheck → exit 0",
-        "pnpm --filter @flow-desk/web build → exit 0",
-        "rg \"emit.*'join'\" apps/web/src/features/realtime/useRealtime.ts → 0 matches",
-        "rg 'workspaceMember.findUnique' apps/api/src/shared/lib/socket.ts → ≥1 match"
+        "pnpm --filter @flow-desk/api typecheck \u2192 exit 0",
+        "pnpm --filter @flow-desk/web typecheck \u2192 exit 0",
+        "pnpm --filter @flow-desk/web build \u2192 exit 0",
+        "rg \"emit.*'join'\" apps/web/src/features/realtime/useRealtime.ts \u2192 0 matches",
+        "rg 'workspaceMember.findUnique' apps/api/src/shared/lib/socket.ts \u2192 \u22651 match"
       ],
       "evidence": [
-        "apps/web/src/features/realtime/useRealtime.ts:12-26 — replaced joinRoom/leaveRoom with joinWorkspace/leaveWorkspace + joinTask/leaveTask, emit 'join-workspace'/'join-task' with {workspaceId}/{taskId}",
-        "apps/api/src/shared/lib/socket.ts:56-104 — join-workspace/join-task handlers verify workspaceMember.findUnique(workspaceId_userId) before socket.join(room); join-task also checks task.workspaceId",
-        "apps/api/src/modules/realtime/realtime.gateway.ts:94-113 — presence:join handler verifies workspaceMember.findUnique(workspaceId_userId) before socket.join + upsertPresence",
-        "pnpm --filter @flow-desk/api test → 180/180 pass",
-        "rg \"emit.*'join'\" apps/web/src/features/realtime/useRealtime.ts → 0 matches",
-        "rg 'workspaceMember.findUnique' apps/api/src/shared/lib/socket.ts → 2 matches",
-        "rg 'workspaceMember.findUnique' apps/api/src/modules/realtime/realtime.gateway.ts → 1 match"
+        "apps/web/src/features/realtime/useRealtime.ts:12-26 \u2014 replaced joinRoom/leaveRoom with joinWorkspace/leaveWorkspace + joinTask/leaveTask, emit 'join-workspace'/'join-task' with {workspaceId}/{taskId}",
+        "apps/api/src/shared/lib/socket.ts:56-104 \u2014 join-workspace/join-task handlers verify workspaceMember.findUnique(workspaceId_userId) before socket.join(room); join-task also checks task.workspaceId",
+        "apps/api/src/modules/realtime/realtime.gateway.ts:94-113 \u2014 presence:join handler verifies workspaceMember.findUnique(workspaceId_userId) before socket.join + upsertPresence",
+        "pnpm --filter @flow-desk/api test \u2192 180/180 pass",
+        "rg \"emit.*'join'\" apps/web/src/features/realtime/useRealtime.ts \u2192 0 matches",
+        "rg 'workspaceMember.findUnique' apps/api/src/shared/lib/socket.ts \u2192 2 matches",
+        "rg 'workspaceMember.findUnique' apps/api/src/modules/realtime/realtime.gateway.ts \u2192 1 match"
       ],
-      "notes": "Plan 004. S7: join-workspace/join-task handlers no membership check. C2: client emits 'join' but server listens for 'join-workspace' → realtime rooms never joined. Depends on AUD-002 (assertMembership pattern)."
+      "notes": "Plan 004. S7: join-workspace/join-task handlers no membership check. C2: client emits 'join' but server listens for 'join-workspace' \u2192 realtime rooms never joined. Depends on AUD-002 (assertMembership pattern)."
     },
     {
       "id": "AUD-005",
@@ -925,19 +925,19 @@
       "user_visible_behavior": "Soft-deleted records not returned by any Prisma query method including findUnique. ChatChannel/ChatMessage covered by extension.",
       "status": "passing",
       "verification": [
-        "pnpm --filter @flow-desk/api typecheck → exit 0",
-        "pnpm --filter @flow-desk/api vitest run --config vitest.integration.config.ts soft-delete → all pass",
-        "rg 'ChatChannel' apps/api/src/shared/lib/prisma-extension.ts → ≥1 match",
-        "rg 'findUnique' apps/api/src/shared/lib/prisma-extension.ts → ≥1 match"
+        "pnpm --filter @flow-desk/api typecheck \u2192 exit 0",
+        "pnpm --filter @flow-desk/api vitest run --config vitest.integration.config.ts soft-delete \u2192 all pass",
+        "rg 'ChatChannel' apps/api/src/shared/lib/prisma-extension.ts \u2192 \u22651 match",
+        "rg 'findUnique' apps/api/src/shared/lib/prisma-extension.ts \u2192 \u22651 match"
       ],
       "evidence": [
-        "apps/api/src/shared/lib/prisma-extension.ts:10-11 — added ChatChannel, ChatMessage to SOFT_DELETE_MODELS",
-        "apps/api/src/shared/lib/prisma-extension.ts:41-59 — findUnique post-fetch filter (returns null on deletedAt≠null), findUniqueOrThrow throws P2025",
-        "apps/api/tests/setup/db.ts:5,28 — test client now applies softDeleteExtension via $extends",
-        "apps/api/tests/integration/soft-delete.test.ts:315-371 — 6 new tests: Task/Comment/ChatChannel/ChatMessage findUnique + findUniqueOrThrow + findUnique live record",
-        "pnpm --filter @flow-desk/api test → 186/186 pass"
+        "apps/api/src/shared/lib/prisma-extension.ts:10-11 \u2014 added ChatChannel, ChatMessage to SOFT_DELETE_MODELS",
+        "apps/api/src/shared/lib/prisma-extension.ts:41-59 \u2014 findUnique post-fetch filter (returns null on deletedAt\u2260null), findUniqueOrThrow throws P2025",
+        "apps/api/tests/setup/db.ts:5,28 \u2014 test client now applies softDeleteExtension via $extends",
+        "apps/api/tests/integration/soft-delete.test.ts:315-371 \u2014 6 new tests: Task/Comment/ChatChannel/ChatMessage findUnique + findUniqueOrThrow + findUnique live record",
+        "pnpm --filter @flow-desk/api test \u2192 186/186 pass"
       ],
-      "notes": "Plan 005. C1: extension covers findFirst/findMany/count/aggregate/groupBy but NOT findUnique. ChatChannel + ChatMessage have deletedAt but missing from SOFT_DELETE_MODELS. Test prisma client was missing extension — fixed in db.ts setup."
+      "notes": "Plan 005. C1: extension covers findFirst/findMany/count/aggregate/groupBy but NOT findUnique. ChatChannel + ChatMessage have deletedAt but missing from SOFT_DELETE_MODELS. Test prisma client was missing extension \u2014 fixed in db.ts setup."
     },
     {
       "id": "AUD-006",
@@ -947,22 +947,22 @@
       "user_visible_behavior": "Production refuses to start with default JWT_SECRET. Rate limits cannot be disabled in production. XFF spoofing blocked. Docker ports bound to localhost.",
       "status": "passing",
       "verification": [
-        "pnpm --filter @flow-desk/api typecheck → exit 0",
-        "pnpm --filter @flow-desk/api vitest run → all pass",
-        "rg 'change-me-to-a-32-char-random-string' docker-compose.yml → 0 matches",
-        "rg 'KNOWN_DEFAULTS' apps/api/src/shared/lib/env.ts → ≥1 match",
-        "rg 'TRUST_PROXY_HOPS' apps/api/src/shared/lib/env.ts → ≥1 match",
-        "rg 'WORKSPACE_INVITE' apps/api/src/modules/workspace/workspace.routes.ts → ≥1 match",
-        "rg '127.0.0.1' docker-compose.yml → ≥2 matches"
+        "pnpm --filter @flow-desk/api typecheck \u2192 exit 0",
+        "pnpm --filter @flow-desk/api vitest run \u2192 all pass",
+        "rg 'change-me-to-a-32-char-random-string' docker-compose.yml \u2192 0 matches",
+        "rg 'KNOWN_DEFAULTS' apps/api/src/shared/lib/env.ts \u2192 \u22651 match",
+        "rg 'TRUST_PROXY_HOPS' apps/api/src/shared/lib/env.ts \u2192 \u22651 match",
+        "rg 'WORKSPACE_INVITE' apps/api/src/modules/workspace/workspace.routes.ts \u2192 \u22651 match",
+        "rg '127.0.0.1' docker-compose.yml \u2192 \u22652 matches"
       ],
       "evidence": [
-        "docker-compose.yml:50,90 — JWT_SECRET uses ${JWT_SECRET:?...} not default",
-        "packages/env/src/backend.ts + apps/api/src/shared/lib/env.ts — JWT_SECRET refine rejects KNOWN_DEFAULTS in production",
-        "rate-limit.ts:25 — SKIP_RATE_LIMIT only honored when NODE_ENV !== 'production'",
-        "env.ts/backend.ts — added TRUST_PROXY_HOPS (default 0); rate-limit.ts getClientIp only trusts XFF when hops > 0",
-        "workspace.routes.ts:147 — added rateLimit({ ...RATE_LIMITS.WORKSPACE_INVITE, ... }) to POST /:workspaceId/members",
-        "docker-compose.yml:14,28 — postgres/redis ports bound to 127.0.0.1; POSTGRES_PASSWORD uses :? not default",
-        "pnpm --filter @flow-desk/api test → 186/186 pass"
+        "docker-compose.yml:50,90 \u2014 JWT_SECRET uses ${JWT_SECRET:?...} not default",
+        "packages/env/src/backend.ts + apps/api/src/shared/lib/env.ts \u2014 JWT_SECRET refine rejects KNOWN_DEFAULTS in production",
+        "rate-limit.ts:25 \u2014 SKIP_RATE_LIMIT only honored when NODE_ENV !== 'production'",
+        "env.ts/backend.ts \u2014 added TRUST_PROXY_HOPS (default 0); rate-limit.ts getClientIp only trusts XFF when hops > 0",
+        "workspace.routes.ts:147 \u2014 added rateLimit({ ...RATE_LIMITS.WORKSPACE_INVITE, ... }) to POST /:workspaceId/members",
+        "docker-compose.yml:14,28 \u2014 postgres/redis ports bound to 127.0.0.1; POSTGRES_PASSWORD uses :? not default",
+        "pnpm --filter @flow-desk/api test \u2192 186/186 pass"
       ],
       "notes": "Plan 006. S2: JWT_SECRET public default. S10: SKIP_RATE_LIMIT no production guard. S11: XFF spoofing. S16: WORKSPACE_INVITE rate limit never applied. S17: ports exposed + default password. Real env schema lives in packages/env/src/backend.ts (not apps/api/env.ts). Document TRUST_PROXY_HOPS in deployment docs."
     },
@@ -974,24 +974,24 @@
       "user_visible_behavior": "Digest emails tracked with EmailJob records (no duplicates, status updates correctly). Task list pagination works across all sort fields.",
       "status": "passing",
       "verification": [
-        "pnpm --filter @flow-desk/api typecheck → exit 0",
-        "pnpm --filter @flow-desk/api vitest run → all pass",
-        "pnpm --filter @flow-desk/api vitest run --config vitest.integration.config.ts → all pass",
-        "rg 'emailJobId' apps/api/src/workers/email/scheduler.ts → ≥1 match",
-        "rg 'emailJobId' apps/api/src/workers/email/processors/digest.ts → ≥1 match"
+        "pnpm --filter @flow-desk/api typecheck \u2192 exit 0",
+        "pnpm --filter @flow-desk/api vitest run \u2192 all pass",
+        "pnpm --filter @flow-desk/api vitest run --config vitest.integration.config.ts \u2192 all pass",
+        "rg 'emailJobId' apps/api/src/workers/email/scheduler.ts \u2192 \u22651 match",
+        "rg 'emailJobId' apps/api/src/workers/email/processors/digest.ts \u2192 \u22651 match"
       ],
       "evidence": [
-        "apps/api/src/workers/email/queue.ts:14 — added emailJobId?: string to EmailJobData",
-        "apps/api/src/workers/email/scheduler.ts:148,154 — DIGEST path creates EmailJob {userId,type:'DIGEST',payload,scheduledAt} PENDING before enqueue; passes emailJobId to BullMQ job data",
-        "apps/api/src/workers/email/scheduler.ts — removed buggy workspace-level recentDigests check (no userId filter), replaced with per-member cooldown query (userId + type=DIGEST + createdAt>=cooldownStart, covering SENT+PENDING+PROCESSING)",
-        "apps/api/src/workers/email/processors/digest.ts:15,82,97 — destructures emailJobId, guard returns if missing, updateMany where {id: emailJobId} (was {userId, id: job.id} which found nothing)",
-        "packages/shared/src/pagination.ts — cursor format rewritten to base64url JSON {v:sortValue, c:ISO, id}; decodeCursor JSON-parses with ISO regex date reconstitution; legacy 2-arg encodeCursor(createdAt, id) preserved for other call sites",
-        "apps/api/src/modules/task/task.service.ts list() — default sortBy 'position', sortOrder 'asc'; type-aware cursor predicate (priority enum uses in: rankedSubset, Date/Int uses {field:{dir:sv}}+tiebreaker, dueDate nullable asc adds NullsLast branch, sv null handled); orderBy [{field:order},{id:order}] drops createdAt:desc middle; encodeCursor({sortValue,createdAt,id})",
-        "tests/integration/task.service.test.ts — added 4 tests: sortBy=position asc, sortBy=priority desc (in enum), sortBy=dueDate asc nulls-last (3 dated + 2 null), sortBy=updatedAt asc",
-        "pnpm --filter @flow-desk/shared build ✓; pnpm --filter @flow-desk/api typecheck ✓; pnpm exec vitest run --config vitest.integration.config.ts → 190/190 pass (186 baseline + 4 new)",
-        "rg 'emailJobId' scheduler.ts → 2 matches; rg 'emailJobId' digest.ts → 5 matches"
+        "apps/api/src/workers/email/queue.ts:14 \u2014 added emailJobId?: string to EmailJobData",
+        "apps/api/src/workers/email/scheduler.ts:148,154 \u2014 DIGEST path creates EmailJob {userId,type:'DIGEST',payload,scheduledAt} PENDING before enqueue; passes emailJobId to BullMQ job data",
+        "apps/api/src/workers/email/scheduler.ts \u2014 removed buggy workspace-level recentDigests check (no userId filter), replaced with per-member cooldown query (userId + type=DIGEST + createdAt>=cooldownStart, covering SENT+PENDING+PROCESSING)",
+        "apps/api/src/workers/email/processors/digest.ts:15,82,97 \u2014 destructures emailJobId, guard returns if missing, updateMany where {id: emailJobId} (was {userId, id: job.id} which found nothing)",
+        "packages/shared/src/pagination.ts \u2014 cursor format rewritten to base64url JSON {v:sortValue, c:ISO, id}; decodeCursor JSON-parses with ISO regex date reconstitution; legacy 2-arg encodeCursor(createdAt, id) preserved for other call sites",
+        "apps/api/src/modules/task/task.service.ts list() \u2014 default sortBy 'position', sortOrder 'asc'; type-aware cursor predicate (priority enum uses in: rankedSubset, Date/Int uses {field:{dir:sv}}+tiebreaker, dueDate nullable asc adds NullsLast branch, sv null handled); orderBy [{field:order},{id:order}] drops createdAt:desc middle; encodeCursor({sortValue,createdAt,id})",
+        "tests/integration/task.service.test.ts \u2014 added 4 tests: sortBy=position asc, sortBy=priority desc (in enum), sortBy=dueDate asc nulls-last (3 dated + 2 null), sortBy=updatedAt asc",
+        "pnpm --filter @flow-desk/shared build \u2713; pnpm --filter @flow-desk/api typecheck \u2713; pnpm exec vitest run --config vitest.integration.config.ts \u2192 190/190 pass (186 baseline + 4 new)",
+        "rg 'emailJobId' scheduler.ts \u2192 2 matches; rg 'emailJobId' digest.ts \u2192 5 matches"
       ],
-      "notes": "Plan 007. C3: DIGEST path never creates EmailJob → cooldown broken + status stuck PENDING. C4: listTasks cursor always uses createdAt but orderBy uses primarySortField → skipped/duped rows. Task.position is Int not Float. priority enum order LOW<MEDIUM<HIGH<URGENT; Prisma enum comparisons reject lt/gt, use in: rankedSubset. rtk vitest swallows output via Passthrough tier — use pnpm exec vitest run --reporter=default instead."
+      "notes": "Plan 007. C3: DIGEST path never creates EmailJob \u2192 cooldown broken + status stuck PENDING. C4: listTasks cursor always uses createdAt but orderBy uses primarySortField \u2192 skipped/duped rows. Task.position is Int not Float. priority enum order LOW<MEDIUM<HIGH<URGENT; Prisma enum comparisons reject lt/gt, use in: rankedSubset. rtk vitest swallows output via Passthrough tier \u2014 use pnpm exec vitest run --reporter=default instead."
     },
     {
       "id": "AUD-008",
@@ -1001,26 +1001,26 @@
       "user_visible_behavior": "Presence sweeper uses non-blocking SCAN. API + email worker close cleanly on SIGTERM. Rate-limit INCR+EXPIRE atomic.",
       "status": "passing",
       "verification": [
-        "pnpm --filter @flow-desk/api typecheck → exit 0",
-        "pnpm --filter @flow-desk/api vitest run → all pass",
-        "rg 'redis.keys' apps/api/src/modules/realtime/realtime.gateway.ts → 0 matches",
-        "rg 'SIGTERM|SIGINT' apps/api/src/index.ts → ≥2 matches",
-        "rg 'eval|RATE_LIMIT_SCRIPT' apps/api/src/shared/middleware/rate-limit.ts → ≥1 match"
+        "pnpm --filter @flow-desk/api typecheck \u2192 exit 0",
+        "pnpm --filter @flow-desk/api vitest run \u2192 all pass",
+        "rg 'redis.keys' apps/api/src/modules/realtime/realtime.gateway.ts \u2192 0 matches",
+        "rg 'SIGTERM|SIGINT' apps/api/src/index.ts \u2192 \u22652 matches",
+        "rg 'eval|RATE_LIMIT_SCRIPT' apps/api/src/shared/middleware/rate-limit.ts \u2192 \u22651 match"
       ],
       "evidence": [
-        "apps/api/src/modules/realtime/realtime.gateway.ts:24-33 — module-level scanPresenceKeys(redis, pattern) cursor loop (ioredis SCAN MATCH COUNT 100)",
-        "apps/api/src/modules/realtime/realtime.gateway.ts:171 — sweeper uses scanPresenceKeys instead of redis.keys (non-blocking, O(1) amortized)",
-        "apps/api/src/shared/lib/socket.ts:115-117,120-122 — captures attachPresenceHandlers return {stop}, exports getSweeperStop()",
-        "apps/api/src/index.ts:30-55 — shutdown(signal) handler closes HTTP server → io.close() → sweeper stop → redis.quit() → prisma.$disconnect(); SIGTERM+SIGINT handlers + 10s force-exit unref",
-        "apps/api/src/workers/email/email-worker.ts:9-37 — shutdown calls stopScheduler → Promise.all([sendEmailWorker.close, digestEmailWorker.close]) → redis.quit → prisma.$disconnect",
-        "apps/api/src/shared/middleware/rate-limit.ts:13-20 — RATE_LIMIT_SCRIPT Lua atomic INCR+EXPIRE; replaces non-atomic INCR+EXPIRE pair; redis.eval(script, 1, key, windowSec)",
-        "pnpm --filter @flow-desk/api typecheck → exit 0",
-        "./node_modules/.bin/vitest run --config vitest.integration.config.ts → 190/190 pass",
-        "rg 'redis.keys' realtime.gateway.ts → 0 matches",
-        "rg 'SIGTERM|SIGINT' index.ts → 2 matches (1 file); email-worker.ts → 2 matches (1 file)",
-        "rg 'eval|RATE_LIMIT_SCRIPT' rate-limit.ts → 3 matches"
+        "apps/api/src/modules/realtime/realtime.gateway.ts:24-33 \u2014 module-level scanPresenceKeys(redis, pattern) cursor loop (ioredis SCAN MATCH COUNT 100)",
+        "apps/api/src/modules/realtime/realtime.gateway.ts:171 \u2014 sweeper uses scanPresenceKeys instead of redis.keys (non-blocking, O(1) amortized)",
+        "apps/api/src/shared/lib/socket.ts:115-117,120-122 \u2014 captures attachPresenceHandlers return {stop}, exports getSweeperStop()",
+        "apps/api/src/index.ts:30-55 \u2014 shutdown(signal) handler closes HTTP server \u2192 io.close() \u2192 sweeper stop \u2192 redis.quit() \u2192 prisma.$disconnect(); SIGTERM+SIGINT handlers + 10s force-exit unref",
+        "apps/api/src/workers/email/email-worker.ts:9-37 \u2014 shutdown calls stopScheduler \u2192 Promise.all([sendEmailWorker.close, digestEmailWorker.close]) \u2192 redis.quit \u2192 prisma.$disconnect",
+        "apps/api/src/shared/middleware/rate-limit.ts:13-20 \u2014 RATE_LIMIT_SCRIPT Lua atomic INCR+EXPIRE; replaces non-atomic INCR+EXPIRE pair; redis.eval(script, 1, key, windowSec)",
+        "pnpm --filter @flow-desk/api typecheck \u2192 exit 0",
+        "./node_modules/.bin/vitest run --config vitest.integration.config.ts \u2192 190/190 pass",
+        "rg 'redis.keys' realtime.gateway.ts \u2192 0 matches",
+        "rg 'SIGTERM|SIGINT' index.ts \u2192 2 matches (1 file); email-worker.ts \u2192 2 matches (1 file)",
+        "rg 'eval|RATE_LIMIT_SCRIPT' rate-limit.ts \u2192 3 matches"
       ],
-      "notes": "Plan 008. P1: redis.keys blocking O(n) every 10s. P3: no SIGTERM handler, resources not closed. P5: INCR+EXPIRE non-atomic → permanent block if process dies between. ioredis client used: SCAN returns [cursor, keys[]], eval(script, numKeys, key1, ...args). rtk vitest swallows output → use ./node_modules/.bin/vitest directly. Lua script cached by Redis SHA1 after first eval."
+      "notes": "Plan 008. P1: redis.keys blocking O(n) every 10s. P3: no SIGTERM handler, resources not closed. P5: INCR+EXPIRE non-atomic \u2192 permanent block if process dies between. ioredis client used: SCAN returns [cursor, keys[]], eval(script, numKeys, key1, ...args). rtk vitest swallows output \u2192 use ./node_modules/.bin/vitest directly. Lua script cached by Redis SHA1 after first eval."
     },
     {
       "id": "kanban-sprint-1",
@@ -1030,17 +1030,17 @@
       "user_visible_behavior": "Kanban cards no longer produce nested role=button axe violations. Clicking kebab menu or label select on a card works without drag interference. PointerSensor fires on 8px movement (no 80ms delay). TouchSensor uses 150ms delay. Drop animation is 120ms. Screen readers hear 'draggable' role and task name.",
       "status": "passing",
       "verification": [
-        "pnpm --filter @flow-desk/web typecheck → exit 0",
-        "pnpm --filter @flow-desk/web build → exit 0 (908KB JS / 93KB CSS, 272KB gzip)",
-        "pnpm check:secrets → exit 0"
+        "pnpm --filter @flow-desk/web typecheck \u2192 exit 0",
+        "pnpm --filter @flow-desk/web build \u2192 exit 0 (908KB JS / 93KB CSS, 272KB gzip)",
+        "pnpm check:secrets \u2192 exit 0"
       ],
       "evidence": [
-        "apps/web/src/components/ui/kanban.tsx — exported INTERACTIVE_SELECTOR constant + NoCardClick wrapper component",
+        "apps/web/src/components/ui/kanban.tsx \u2014 exported INTERACTIVE_SELECTOR constant + NoCardClick wrapper component",
         "kanban.tsx sensors: PointerSensor {distance:8} (no delay), TouchSensor {delay:150, tolerance:8}",
         "kanban.tsx DropAnimation {duration:120}",
         "kanban.tsx KanbanCard filter uses INTERACTIVE_SELECTOR instead of hardcoded button/input/textarea/a list",
-        "kanban.tsx useDraggable: attributes+listeners spread on inner div (not wrapper div) — eliminates nested role=button",
-        "apps/web/src/features/task/components/TaskCard.tsx — removed role='button' from article element",
+        "kanban.tsx useDraggable: attributes+listeners spread on inner div (not wrapper div) \u2014 eliminates nested role=button",
+        "apps/web/src/features/task/components/TaskCard.tsx \u2014 removed role='button' from article element",
         "TaskCard.tsx article: added aria-roledescription='draggable' + aria-label='Task: {title}'",
         "TaskCard.tsx: 3 separate interactive whitelists unified to single INTERACTIVE_SELECTOR check",
         "TaskCard.tsx kebab DropdownMenuTrigger wrapped in <NoCardClick> with aria-label='Actions for {title}'",
@@ -1057,9 +1057,9 @@
       "user_visible_behavior": "Dragging a card to its original position no longer fires a network request. After dropping a card, the board no longer flickers when the Socket.IO broadcast arrives. DragOverlay transition is smooth (opacity fade instead of invisible snap).",
       "status": "passing",
       "verification": [
-        "pnpm --filter @flow-desk/web typecheck → exit 0",
-        "pnpm --filter @flow-desk/web build → exit 0",
-        "pnpm check:secrets → exit 0"
+        "pnpm --filter @flow-desk/web typecheck \u2192 exit 0",
+        "pnpm --filter @flow-desk/web build \u2192 exit 0",
+        "pnpm check:secrets \u2192 exit 0"
       ],
       "evidence": [
         "board.tsx handleMove: early-return when fromColumnId === toColumnId && fromIndex === toIndex (RC5)",
@@ -1078,57 +1078,57 @@
       "user_visible_behavior": "Dashboard \"New workspace\" and \"Create your first\" buttons open a create-workspace dialog (name, auto-slug, description, visibility). On submit, workspace is created and user navigates to the new board. Board drag has no source-slot flicker. Keyboard drag announces to screen readers. Column header kebab menu offers \"Add task\" (opens NewTaskModal with that column pre-selected) and \"Rename column\" (inline edit).",
       "status": "passing",
       "verification": [
-        "pnpm --filter @flow-desk/web typecheck → exit 0",
-        "pnpm --filter @flow-desk/web build → exit 0 (7.07s)",
-        "rg 'data-no-drag' apps/web/src/features/task/components/TaskCard.tsx → ≥1 (prior kanban-click fix preserved)",
-        "Integration tests: 190/190 pass (3 pre-existing label.routes 401 failures resolved — all green as of session 019)",
-        "pnpm --filter @flow-desk/web test → 6/6 pass (2.35s) — vitest + @testing-library/react + jsdom"
+        "pnpm --filter @flow-desk/web typecheck \u2192 exit 0",
+        "pnpm --filter @flow-desk/web build \u2192 exit 0 (7.07s)",
+        "rg 'data-no-drag' apps/web/src/features/task/components/TaskCard.tsx \u2192 \u22651 (prior kanban-click fix preserved)",
+        "Integration tests: 190/190 pass (3 pre-existing label.routes 401 failures resolved \u2014 all green as of session 019)",
+        "pnpm --filter @flow-desk/web test \u2192 6/6 pass (2.35s) \u2014 vitest + @testing-library/react + jsdom"
       ],
       "evidence": [
-        "apps/web/src/features/workspace/api.ts:13-18 — create(body: CreateWorkspaceInput) → POST /api/workspaces",
-        "apps/web/src/features/workspace/hooks.ts:48-56 — useCreateWorkspace() mutation (invalidates ['workspaces'])",
-        "apps/web/src/features/workspace/index.ts:8 — exports useCreateWorkspace",
-        "apps/web/src/components/ui/workspace-create-dialog.tsx (NEW, ~165 LOC) — RHF + zodResolver(createWorkspaceSchema); auto-slug from name (editable); visibility Select (PRIVATE|PUBLIC); toast errors via sonner; onCreated(ws) callback",
-        "apps/web/src/pages/dashboard.tsx:187 — const [createOpen, setCreateOpen]; lines 305-312 + 403-410 — both buttons wired to setCreateOpen(true); lines 440-444 — <WorkspaceCreateDialog> rendered with onCreated navigate",
-        "apps/web/src/components/ui/kanban.tsx:52-76 — announcements + screenReaderInstructions constants for dnd-kit a11y",
-        "apps/web/src/components/ui/kanban.tsx:161 — accessibility={{ announcements, screenReaderInstructions }} on DndContext",
-        "apps/web/src/components/ui/kanban.tsx:277 — isDragging && 'invisible' (was 'opacity-30') — no source-slot flicker",
-        "apps/web/src/components/ui/kanban.tsx:196-198 — KanbanColumnProps.onAddTask + onRenameColumn optional callbacks",
-        "apps/web/src/components/ui/kanban.tsx:267-300 — DropdownMenu kebab in column header: Add task + Rename column (inline Input with Enter/Escape/blur)",
-        "apps/web/src/pages/board.tsx:111 — const [createColumnId, setCreateColumnId]; line 115 — const updateColumn = useUpdateColumn(workspaceId)",
-        "apps/web/src/pages/board.tsx:328-343 — KanbanColumn onAddTask (sets createColumnId + opens modal) + onRenameColumn (updateColumn.mutate with toast error)",
-        "apps/web/src/pages/board.tsx:369 — defaultColumnId={createColumnId ?? orderedColumns[0]?.meta.id ?? ''}; line 363-366 — resets createColumnId on close",
-        "apps/web/vite.config.ts — test block (jsdom env, globals, setupFiles, include src/**/*.test.{ts,tsx})",
-        "apps/web/src/test-setup.ts (NEW) — @testing-library/jest-dom/vitest matchers + cleanup afterEach",
-        "apps/web/src/components/ui/workspace-create-dialog.test.tsx (NEW) — 6 tests: renders fields, auto-slug from name, manual slug override, submit + POST /api/workspaces + onCreated, API error keeps dialog open, empty-name zod validation. 6/6 pass.",
-        "apps/web/package.json — test script replaced from placeholder echo to vitest run; added test:watch"
+        "apps/web/src/features/workspace/api.ts:13-18 \u2014 create(body: CreateWorkspaceInput) \u2192 POST /api/workspaces",
+        "apps/web/src/features/workspace/hooks.ts:48-56 \u2014 useCreateWorkspace() mutation (invalidates ['workspaces'])",
+        "apps/web/src/features/workspace/index.ts:8 \u2014 exports useCreateWorkspace",
+        "apps/web/src/components/ui/workspace-create-dialog.tsx (NEW, ~165 LOC) \u2014 RHF + zodResolver(createWorkspaceSchema); auto-slug from name (editable); visibility Select (PRIVATE|PUBLIC); toast errors via sonner; onCreated(ws) callback",
+        "apps/web/src/pages/dashboard.tsx:187 \u2014 const [createOpen, setCreateOpen]; lines 305-312 + 403-410 \u2014 both buttons wired to setCreateOpen(true); lines 440-444 \u2014 <WorkspaceCreateDialog> rendered with onCreated navigate",
+        "apps/web/src/components/ui/kanban.tsx:52-76 \u2014 announcements + screenReaderInstructions constants for dnd-kit a11y",
+        "apps/web/src/components/ui/kanban.tsx:161 \u2014 accessibility={{ announcements, screenReaderInstructions }} on DndContext",
+        "apps/web/src/components/ui/kanban.tsx:277 \u2014 isDragging && 'invisible' (was 'opacity-30') \u2014 no source-slot flicker",
+        "apps/web/src/components/ui/kanban.tsx:196-198 \u2014 KanbanColumnProps.onAddTask + onRenameColumn optional callbacks",
+        "apps/web/src/components/ui/kanban.tsx:267-300 \u2014 DropdownMenu kebab in column header: Add task + Rename column (inline Input with Enter/Escape/blur)",
+        "apps/web/src/pages/board.tsx:111 \u2014 const [createColumnId, setCreateColumnId]; line 115 \u2014 const updateColumn = useUpdateColumn(workspaceId)",
+        "apps/web/src/pages/board.tsx:328-343 \u2014 KanbanColumn onAddTask (sets createColumnId + opens modal) + onRenameColumn (updateColumn.mutate with toast error)",
+        "apps/web/src/pages/board.tsx:369 \u2014 defaultColumnId={createColumnId ?? orderedColumns[0]?.meta.id ?? ''}; line 363-366 \u2014 resets createColumnId on close",
+        "apps/web/vite.config.ts \u2014 test block (jsdom env, globals, setupFiles, include src/**/*.test.{ts,tsx})",
+        "apps/web/src/test-setup.ts (NEW) \u2014 @testing-library/jest-dom/vitest matchers + cleanup afterEach",
+        "apps/web/src/components/ui/workspace-create-dialog.test.tsx (NEW) \u2014 6 tests: renders fields, auto-slug from name, manual slug override, submit + POST /api/workspaces + onCreated, API error keeps dialog open, empty-name zod validation. 6/6 pass.",
+        "apps/web/package.json \u2014 test script replaced from placeholder echo to vitest run; added test:watch"
       ],
-      "notes": "Design spec: docs/superpowers/specs/2026-06-30-workspace-crud-kanban-polish-design.md (approved). No backend change. D10 (web test placeholder) resolved — vitest + @testing-library/react + jsdom set up, 6 component tests passing. ~200 LOC feature + ~120 LOC test infra."
+      "notes": "Design spec: docs/superpowers/specs/2026-06-30-workspace-crud-kanban-polish-design.md (approved). No backend change. D10 (web test placeholder) resolved \u2014 vitest + @testing-library/react + jsdom set up, 6 component tests passing. ~200 LOC feature + ~120 LOC test infra."
     },
     {
       "id": "audit-002",
-      "name": "Improve Audit — 14 Implementation Plans",
+      "name": "Improve Audit \u2014 14 Implementation Plans",
       "status": "passing",
       "priority": 95,
       "started": "2026-07-03",
       "completed": "2026-07-03",
       "description": "Full /improve audit across correctness, security, performance, tests, tech-debt. 39 findings vetted, 20 prioritized into 14 plans (009-022).",
       "evidence": [
-        "plans/README.md — index with execution order + dependency graph",
-        "plans/009-email-worker-bugs.md — CORRECT-01/02/03: reminder dedup per-task, cancelDelayed BullMQ cancel, instant emails PENDING",
-        "plans/010-security-hardening.md — ATTACH-01/HDR-01/RATE-01: file allowlist, security headers, rate-limit IP fallback",
-        "plans/011-vite-prod-config.md — PERF-06/07: devtools DEV flag, sourcemaps DEV-only",
-        "plans/012-board-over-fetch.md — PERF-02: board endpoint task select fields",
-        "plans/013-tech-debt-dedup.md — TECH-01/02: safeEmit extract, task display helpers extract",
-        "plans/014-enum-casts.md — TECH-07: replace as any with Prisma enum imports",
-        "plans/015-chat-uniqueness.md — CORRECT-08: chat channel unique constraint or transaction",
-        "plans/016-auth-caching.md — PERF-03/10: Redis cache for auth + membership (30s TTL)",
-        "plans/017-code-splitting.md — PERF-05: React.lazy routes + Vite manualChunks",
-        "plans/018-api-validation.md — TECH-09: Zod schema validation in frontend API client",
-        "plans/019-register-transactional.md — CORRECT-06: prisma.$transaction for register + OAuth",
-        "plans/020-test-pipeline-ci.md — TC-03: unit tests in lefthook pre-push + CI job",
-        "plans/021-e2e-realtime.md — TC-04: multi-client realtime E2E test",
-        "plans/022-realtime-gateway-tests.md — TC-01: Socket.IO gateway unit tests",
+        "plans/README.md \u2014 index with execution order + dependency graph",
+        "plans/009-email-worker-bugs.md \u2014 CORRECT-01/02/03: reminder dedup per-task, cancelDelayed BullMQ cancel, instant emails PENDING",
+        "plans/010-security-hardening.md \u2014 ATTACH-01/HDR-01/RATE-01: file allowlist, security headers, rate-limit IP fallback",
+        "plans/011-vite-prod-config.md \u2014 PERF-06/07: devtools DEV flag, sourcemaps DEV-only",
+        "plans/012-board-over-fetch.md \u2014 PERF-02: board endpoint task select fields",
+        "plans/013-tech-debt-dedup.md \u2014 TECH-01/02: safeEmit extract, task display helpers extract",
+        "plans/014-enum-casts.md \u2014 TECH-07: replace as any with Prisma enum imports",
+        "plans/015-chat-uniqueness.md \u2014 CORRECT-08: chat channel unique constraint or transaction",
+        "plans/016-auth-caching.md \u2014 PERF-03/10: Redis cache for auth + membership (30s TTL)",
+        "plans/017-code-splitting.md \u2014 PERF-05: React.lazy routes + Vite manualChunks",
+        "plans/018-api-validation.md \u2014 TECH-09: Zod schema validation in frontend API client",
+        "plans/019-register-transactional.md \u2014 CORRECT-06: prisma.$transaction for register + OAuth",
+        "plans/020-test-pipeline-ci.md \u2014 TC-03: unit tests in lefthook pre-push + CI job",
+        "plans/021-e2e-realtime.md \u2014 TC-04: multi-client realtime E2E test",
+        "plans/022-realtime-gateway-tests.md \u2014 TC-01: Socket.IO gateway unit tests",
         "Base commit: 732acb4"
       ],
       "notes": "Plans only, no code changes yet. Execution order: Batch 1 (009-015 parallel S-effort), Batch 2 (016-020 M-effort), Batch 3 (021-022 after 020)."
@@ -1141,38 +1141,38 @@
       "user_visible_behavior": "Clicking 'New workspace' in the workspace switcher (sidebar or header dropdown, empty state) opens the WorkspaceCreateDialog instead of navigating to '/'. On submit, user is navigated to the new workspace's board.",
       "status": "passing",
       "verification": [
-        "pnpm -r typecheck → exit 0 (all 6 workspace projects)",
-        "pnpm test -- --run in apps/web → 10/10 pass (4 new WorkspaceSwitcher tests + 6 existing dialog tests)"
+        "pnpm -r typecheck \u2192 exit 0 (all 6 workspace projects)",
+        "pnpm test -- --run in apps/web \u2192 10/10 pass (4 new WorkspaceSwitcher tests + 6 existing dialog tests)"
       ],
       "evidence": [
-        "apps/web/src/components/layout/app-shell.tsx — added WorkspaceCreateDialog import, createOpen state, onCreateWorkspace setCreateOpen(true), <WorkspaceCreateDialog onCreated navigate `/board/${ws.id}`>",
-        "apps/web/src/features/workspace/components/WorkspaceSwitcher.test.tsx (NEW, 4 tests) — empty-state button click, sidebar dropdown menuitem click, header dropdown menuitem click, omit-onCreateWorkspace case",
-        "e2e/workspace-switcher-create.spec.ts (NEW, 38 lines) — loginViaUI → board → switcher → 'new workspace' → dialog → fill → submit → waitForURL /board/"
+        "apps/web/src/components/layout/app-shell.tsx \u2014 added WorkspaceCreateDialog import, createOpen state, onCreateWorkspace setCreateOpen(true), <WorkspaceCreateDialog onCreated navigate `/board/${ws.id}`>",
+        "apps/web/src/features/workspace/components/WorkspaceSwitcher.test.tsx (NEW, 4 tests) \u2014 empty-state button click, sidebar dropdown menuitem click, header dropdown menuitem click, omit-onCreateWorkspace case",
+        "e2e/workspace-switcher-create.spec.ts (NEW, 38 lines) \u2014 loginViaUI \u2192 board \u2192 switcher \u2192 'new workspace' \u2192 dialog \u2192 fill \u2192 submit \u2192 waitForURL /board/"
       ],
-      "notes": "Bug fix — single-file change in app-shell.tsx. Root cause: dialog only lived in dashboard.tsx with local state; switcher's onCreateWorkspace navigated to '/' without opening dialog. Fix moves dialog to AppShell for global access from switcher."
+      "notes": "Bug fix \u2014 single-file change in app-shell.tsx. Root cause: dialog only lived in dashboard.tsx with local state; switcher's onCreateWorkspace navigated to '/' without opening dialog. Fix moves dialog to AppShell for global access from switcher."
     },
     {
       "id": "activity-log",
       "priority": 95,
       "area": "feature",
-      "title": "Task activity log — record + display per-task activity timeline",
-      "user_visible_behavior": "Every mutation on a task (create, update fields, move, restore, subtask, dependency, comment) records a TaskActivity row. TaskEditModal has a third 'Activity' tab showing a paginated timeline (avatar, user, action label, old→new diff, relative timestamp). Uses shadcn Avatar, Button, EmptyState, Skeleton with a11y roles (list, status, aria-labels).",
+      "title": "Task activity log \u2014 record + display per-task activity timeline",
+      "user_visible_behavior": "Every mutation on a task (create, update fields, move, restore, subtask, dependency, comment) records a TaskActivity row. TaskEditModal has a third 'Activity' tab showing a paginated timeline (avatar, user, action label, old\u2192new diff, relative timestamp). Uses shadcn Avatar, Button, EmptyState, Skeleton with a11y roles (list, status, aria-labels).",
       "status": "passing",
       "verification": [
-        "pnpm -r typecheck → exit 0 (all 6 workspace projects)",
-        "pnpm exec eslint . → 0 warnings, 0 errors",
-        "pnpm exec prettier --check . → pass",
-        "pnpm test → 190/190 api integration + 102/102 api unit + 14/14 web unit pass",
-        "pnpm build → all 4 packages built"
+        "pnpm -r typecheck \u2192 exit 0 (all 6 workspace projects)",
+        "pnpm exec eslint . \u2192 0 warnings, 0 errors",
+        "pnpm exec prettier --check . \u2192 pass",
+        "pnpm test \u2192 190/190 api integration + 102/102 api unit + 14/14 web unit pass",
+        "pnpm build \u2192 all 4 packages built"
       ],
       "evidence": [
-        "packages/db/prisma/schema.prisma — ActivityAction enum (16 values) + TaskActivity model (id, taskId, userId, action, field?, oldValue?, newValue?, metadata?, createdAt; relations Task+User; indexes @@index([taskId, createdAt(sort: Desc)]), @@index([userId]))",
-        "packages/shared/src/task.ts — activityActionSchema, taskActivitySchema, taskActivityWithUserSchema, listTaskActivityQuerySchema + types",
-        "apps/api/src/modules/activity/{activity.repository,activity.service,activity.routes,activity.test,index}.ts — NEW module: create/listByTask repo, record+list service (assertMembership), GET /api/tasks/:id/activity route, 5 unit tests",
-        "apps/api/src/modules/task/task.service.ts — activityService.record() calls in create/update(recordUpdateDiff helper)/restore/move/createSubtask/createDependency/deleteDependency; deleteDependency signature changed to (userId, id)",
-        "apps/api/src/modules/comment/comment.service.ts — records COMMENT_ADDED on non-chat createComment",
-        "apps/web/src/features/activity/{types,api,hooks,schemas,index,components/ActivityTimeline,components/ActivityTimeline.test}.ts(x) — NEW feature: useTaskActivity (useInfiniteQuery), ActivityTimeline (Avatar+EmptyState+Skeleton, role=list, aria-labels), 4 component tests",
-        "apps/web/src/features/task/components/TaskEditModal.tsx — third 'activity' tab button + ActivityTimeline content block",
+        "packages/db/prisma/schema.prisma \u2014 ActivityAction enum (16 values) + TaskActivity model (id, taskId, userId, action, field?, oldValue?, newValue?, metadata?, createdAt; relations Task+User; indexes @@index([taskId, createdAt(sort: Desc)]), @@index([userId]))",
+        "packages/shared/src/task.ts \u2014 activityActionSchema, taskActivitySchema, taskActivityWithUserSchema, listTaskActivityQuerySchema + types",
+        "apps/api/src/modules/activity/{activity.repository,activity.service,activity.routes,activity.test,index}.ts \u2014 NEW module: create/listByTask repo, record+list service (assertMembership), GET /api/tasks/:id/activity route, 5 unit tests",
+        "apps/api/src/modules/task/task.service.ts \u2014 activityService.record() calls in create/update(recordUpdateDiff helper)/restore/move/createSubtask/createDependency/deleteDependency; deleteDependency signature changed to (userId, id)",
+        "apps/api/src/modules/comment/comment.service.ts \u2014 records COMMENT_ADDED on non-chat createComment",
+        "apps/web/src/features/activity/{types,api,hooks,schemas,index,components/ActivityTimeline,components/ActivityTimeline.test}.ts(x) \u2014 NEW feature: useTaskActivity (useInfiniteQuery), ActivityTimeline (Avatar+EmptyState+Skeleton, role=list, aria-labels), 4 component tests",
+        "apps/web/src/features/task/components/TaskEditModal.tsx \u2014 third 'activity' tab button + ActivityTimeline content block",
         "Guardrail fixes: turbo.json lint dependsOn ^build, feature_list.json qa-001 stale evidence updated, .github/workflows/ci.yml e2e job added, playwright.config.ts DATABASE_URL from env"
       ],
       "notes": "Greenfield feature. Uses shadcn/ui components (Avatar, Button, EmptyState, Skeleton) with a11y: role=list/listitem, role=status aria-busy for loading, aria-label on Load more button, dateTime on timestamps, AvatarImage alt=''. Activity recording is fire-and-forget (record() catches errors, returns null) so activity failures never break task mutations."
@@ -1185,72 +1185,72 @@
       "user_visible_behavior": "User presses Cmd/Ctrl+K anywhere in the app and types a query; a palette shows matching tasks (by title/description), comments (by content), and attachments (by filename) across all workspaces they are a member of. Clicking a result navigates to its workspace board. GET /api/search?q=&limit=&workspaceId= returns ranked results; cross-workspace access is rejected for non-members; soft-deleted tasks/comments are excluded.",
       "status": "passing",
       "verification": [
-        "pnpm --filter @flow-desk/shared build → exit 0",
-        "pnpm --filter @flow-desk/api typecheck → exit 0",
-        "pnpm --filter @flow-desk/api test:integration -- search → 8/8 pass",
-        "pnpm --filter @flow-desk/api test:integration → 198/198 pass (no regression)",
-        "pnpm --filter @flow-desk/web typecheck → exit 0",
-        "pnpm --filter @flow-desk/web build → exit 0",
-        "pnpm --filter @flow-desk/web test -- --run → 18/18 pass (incl. 4 new SearchPalette tests)",
-        "pnpm -r lint → 0 errors 0 warnings",
-        "pnpm verify → green (typecheck-all + unit-tests + integration-tests + build)",
-        "curl 'http://localhost:3001/api/search?q=auth' with auth cookie → 200, { data: [3 task hits] } (host-side tsx smoke vs dev DB)",
-        "curl 'http://localhost:3001/api/search?q=documentation' with auth cookie → 200, { data: [2 task hits] }",
-        "curl 'http://localhost:3001/api/search?q=auth' without cookie → 401"
+        "pnpm --filter @flow-desk/shared build \u2192 exit 0",
+        "pnpm --filter @flow-desk/api typecheck \u2192 exit 0",
+        "pnpm --filter @flow-desk/api test:integration -- search \u2192 8/8 pass",
+        "pnpm --filter @flow-desk/api test:integration \u2192 198/198 pass (no regression)",
+        "pnpm --filter @flow-desk/web typecheck \u2192 exit 0",
+        "pnpm --filter @flow-desk/web build \u2192 exit 0",
+        "pnpm --filter @flow-desk/web test -- --run \u2192 18/18 pass (incl. 4 new SearchPalette tests)",
+        "pnpm -r lint \u2192 0 errors 0 warnings",
+        "pnpm verify \u2192 green (typecheck-all + unit-tests + integration-tests + build)",
+        "curl 'http://localhost:3001/api/search?q=auth' with auth cookie \u2192 200, { data: [3 task hits] } (host-side tsx smoke vs dev DB)",
+        "curl 'http://localhost:3001/api/search?q=documentation' with auth cookie \u2192 200, { data: [2 task hits] }",
+        "curl 'http://localhost:3001/api/search?q=auth' without cookie \u2192 401"
       ],
       "evidence": [
-        "packages/db/prisma/migrations/20260704182043_search_tsvector/migration.sql — GENERATED ALWAYS AS ... STORED tsvector on Task/Comment/Attachment + GIN indexes; regexp_replace normalizes non-alphanumerics to spaces so 'invoice-2026.xlsx' → 'invoice 2026 xlsx' (default tokenizer keeps hyphens/dots glued)",
-        "packages/db/prisma/schema.prisma — searchVector Unsupported(\"tsvector\")? on three models",
-        "packages/shared/src/search.ts — searchQuerySchema, searchResultSchema, searchResponseSchema + types; ./search export wired in package.json + tsup.config.ts + index.ts",
-        "apps/api/src/modules/search/{search.repository,search.service,search.routes,index}.ts — raw SQL with CROSS JOIN LATERAL plainto_tsquery + WorkspaceMember membership join + deletedAt IS NULL filter; workspaceId bound as nullable param ($ws::text IS NULL OR ...)",
-        "apps/api/src/app.ts — app.route('/api/search', searchRouter) with requireAuth + zValidator query guard",
-        "apps/api/tests/integration/search.test.ts — 8 integration tests (task/comment/attachment hits, cross-workspace miss, soft-delete exclusion, workspaceId scope, empty query 400, unauth 401)",
-        "apps/api/tests/setup/db.ts — migrateTestDb switched from 'prisma db push' to 'prisma migrate reset --force' (db push can't express GENERATED columns + conflicts with existing generated cols on re-push)",
-        "apps/api/tests/setup/factories.ts — createComment + createAttachment helpers",
-        "apps/web/src/features/search/{types,schemas,api,hooks,index}.ts — useSearch with 200ms debounce, searchKeys, searchApi.search(q, limit=20)",
-        "apps/web/src/features/search/components/SearchPalette.tsx — Dialog + Input + results list + keyboard nav (ArrowUp/Down/Enter) + role=listbox/option + aria-autocomplete=list + type icons (FileText/MessageSquare/Paperclip)",
-        "apps/web/src/features/search/components/SearchPalette.test.tsx — 4 component tests (renders input, Type-to-search prompt, debounce+results, no-matches message)",
-        "apps/web/src/components/layout/app-shell.tsx — SearchPalette mounted + Cmd/Ctrl+K keydown listener + Search button in sidebar (⌘K kbd)",
-        "Host-side smoke: tsx src/index.ts on :3001 vs dev DB; GET /api/search?q=auth → 200 with 3 ranked task hits; q=documentation → 200 with 2 hits; unauth → 401"
+        "packages/db/prisma/migrations/20260704182043_search_tsvector/migration.sql \u2014 GENERATED ALWAYS AS ... STORED tsvector on Task/Comment/Attachment + GIN indexes; regexp_replace normalizes non-alphanumerics to spaces so 'invoice-2026.xlsx' \u2192 'invoice 2026 xlsx' (default tokenizer keeps hyphens/dots glued)",
+        "packages/db/prisma/schema.prisma \u2014 searchVector Unsupported(\"tsvector\")? on three models",
+        "packages/shared/src/search.ts \u2014 searchQuerySchema, searchResultSchema, searchResponseSchema + types; ./search export wired in package.json + tsup.config.ts + index.ts",
+        "apps/api/src/modules/search/{search.repository,search.service,search.routes,index}.ts \u2014 raw SQL with CROSS JOIN LATERAL plainto_tsquery + WorkspaceMember membership join + deletedAt IS NULL filter; workspaceId bound as nullable param ($ws::text IS NULL OR ...)",
+        "apps/api/src/app.ts \u2014 app.route('/api/search', searchRouter) with requireAuth + zValidator query guard",
+        "apps/api/tests/integration/search.test.ts \u2014 8 integration tests (task/comment/attachment hits, cross-workspace miss, soft-delete exclusion, workspaceId scope, empty query 400, unauth 401)",
+        "apps/api/tests/setup/db.ts \u2014 migrateTestDb switched from 'prisma db push' to 'prisma migrate reset --force' (db push can't express GENERATED columns + conflicts with existing generated cols on re-push)",
+        "apps/api/tests/setup/factories.ts \u2014 createComment + createAttachment helpers",
+        "apps/web/src/features/search/{types,schemas,api,hooks,index}.ts \u2014 useSearch with 200ms debounce, searchKeys, searchApi.search(q, limit=20)",
+        "apps/web/src/features/search/components/SearchPalette.tsx \u2014 Dialog + Input + results list + keyboard nav (ArrowUp/Down/Enter) + role=listbox/option + aria-autocomplete=list + type icons (FileText/MessageSquare/Paperclip)",
+        "apps/web/src/features/search/components/SearchPalette.test.tsx \u2014 4 component tests (renders input, Type-to-search prompt, debounce+results, no-matches message)",
+        "apps/web/src/components/layout/app-shell.tsx \u2014 SearchPalette mounted + Cmd/Ctrl+K keydown listener + Search button in sidebar (\u2318K kbd)",
+        "Host-side smoke: tsx src/index.ts on :3001 vs dev DB; GET /api/search?q=auth \u2192 200 with 3 ranked task hits; q=documentation \u2192 200 with 2 hits; unauth \u2192 401"
       ],
-      "notes": "Phase 1 item P1-1 from ROADMAP.md. tsvector columns are GENERATED ALWAYS AS ... STORED (Postgres-maintained, no app triggers). Raw SQL bypasses softDeleteExtension — queries manually filter deletedAt IS NULL + join WorkspaceMember. Search is user-scoped (all member workspaces), optional workspaceId filter. No offset pagination (palettes show top-N; ponytail: offset deferred). Schema hygiene checklist respected: no board-in-names, no new structural fields on Task. Fixes during testing: (1) CROSS JOIN LATERAL instead of comma+JOIN mix (explicit JOIN binds to last comma FROM-item); (2) regexp_replace on all 3 tsvector expressions (default tokenizer kept 'invoice-2026.xlsx' as one lexeme); (3) test DB migrate reset instead of db push (db push can't express GENERATED columns). Docker API container smoke blocked by registry.npmjs.org network errors (EAI_AGAIN/CONNECT_TIMEOUT) during pnpm install attestations — environmental, not code; host-side tsx smoke used instead."
+      "notes": "Phase 1 item P1-1 from ROADMAP.md. tsvector columns are GENERATED ALWAYS AS ... STORED (Postgres-maintained, no app triggers). Raw SQL bypasses softDeleteExtension \u2014 queries manually filter deletedAt IS NULL + join WorkspaceMember. Search is user-scoped (all member workspaces), optional workspaceId filter. No offset pagination (palettes show top-N; ponytail: offset deferred). Schema hygiene checklist respected: no board-in-names, no new structural fields on Task. Fixes during testing: (1) CROSS JOIN LATERAL instead of comma+JOIN mix (explicit JOIN binds to last comma FROM-item); (2) regexp_replace on all 3 tsvector expressions (default tokenizer kept 'invoice-2026.xlsx' as one lexeme); (3) test DB migrate reset instead of db push (db push can't express GENERATED columns). Docker API container smoke blocked by registry.npmjs.org network errors (EAI_AGAIN/CONNECT_TIMEOUT) during pnpm install attestations \u2014 environmental, not code; host-side tsx smoke used instead."
     },
     {
       "id": "P1-2",
       "priority": 90,
       "area": "saved-filters",
-      "title": "Saved views and filters — save, load, and manage filter presets per workspace",
+      "title": "Saved views and filters \u2014 save, load, and manage filter presets per workspace",
       "user_visible_behavior": "User can save current filter settings (status, priority) as a named view. Saved views appear in a dropdown on the list page for quick loading. Non-members cannot see private views; shared views are visible to all workspace members. Users can rename, toggle shared/private, and delete saved views from the workspace settings 'Saved views' tab.",
       "status": "passing",
       "verification": [
-        "pnpm --filter @flow-desk/shared build → exit 0",
-        "pnpm --filter @flow-desk/api typecheck → exit 0",
-        "pnpm --filter @flow-desk/api lint → exit 0",
-        "pnpm --filter @flow-desk/api test:integration -- saved-filter → 9/9 pass",
-        "pnpm --filter @flow-desk/api test:integration → 207/207 pass (no regression)",
-        "pnpm --filter @flow-desk/web typecheck → exit 0",
-        "pnpm --filter @flow-desk/web lint → exit 0",
-        "pnpm --filter @flow-desk/web test -- --run → 23/23 pass (incl. 5 saved-filter tests)",
-        "pnpm --filter @flow-desk/web build → exit 0",
+        "pnpm --filter @flow-desk/shared build \u2192 exit 0",
+        "pnpm --filter @flow-desk/api typecheck \u2192 exit 0",
+        "pnpm --filter @flow-desk/api lint \u2192 exit 0",
+        "pnpm --filter @flow-desk/api test:integration -- saved-filter \u2192 9/9 pass",
+        "pnpm --filter @flow-desk/api test:integration \u2192 207/207 pass (no regression)",
+        "pnpm --filter @flow-desk/web typecheck \u2192 exit 0",
+        "pnpm --filter @flow-desk/web lint \u2192 exit 0",
+        "pnpm --filter @flow-desk/web test -- --run \u2192 23/23 pass (incl. 5 saved-filter tests)",
+        "pnpm --filter @flow-desk/web build \u2192 exit 0",
         "curl 'http://localhost:3001/api/workspaces/:wid/saved-filters' with auth cookie -> 200, {data: []} (host-side tsx smoke vs dev DB)",
         "curl POST create -> 201, full SavedFilter object with nested query",
         "curl re-list -> 200, {data: [created filter]}",
         "curl DELETE -> 200, {ok: true}"
       ],
       "evidence": [
-        "packages/db/prisma/migrations/20260705085351_saved_filter/migration.sql — SavedFilter model + partial unique index WHERE deletedAt IS NULL",
-        "packages/shared/src/saved-filter.ts — savedFilterQuerySchema, savedFilterSchema, createSavedFilterSchema, updateSavedFilterSchema, savedFilterListResponseSchema",
-        "apps/api/src/modules/saved-filter/{saved-filter.repository,saved-filter.service,saved-filter.routes,index}.ts — CRUD at /api/workspaces/:wid/saved-filters, assertMembership guard, duplicate-name 409, owner-only patch/delete",
-        "apps/api/src/shared/lib/prisma-extension.ts — SavedFilter in SOFT_DELETE_MODELS (softDeleteExtension auto-filters deletedAt)",
-        "packages/db/src/prisma-extension.ts — synced ChatChannel/ChatMessage/SavedFilter into SOFT_DELETE_MODELS (pre-existing drift from F7 chat work)",
-        "apps/api/tests/integration/saved-filter.test.ts — 9 integration tests (create+list, duplicate 409, isShared visible to members, private hidden from members, owner-only patch 404 for non-owner, owner patch+delete, soft-deleted name reuse, non-member 400, unauth 401)",
-        "apps/web/src/features/saved-filter/{api,hooks,types,schemas,index}.ts — web feature module with useSavedFilters, useCreate/Update/Delete hooks + cache invalidation",
-        "apps/web/src/features/saved-filter/components/SavedViewsBar.tsx — list page toolbar: view selector dropdown + save dialog + divider",
-        "apps/web/src/features/saved-filter/components/SavedViewsManager.tsx — settings page: inline rename, toggle shared/private, delete with AlertDialog",
-        "apps/web/src/pages/list.tsx — SavedViewsBar integrated into header bar between filter selects and Board/List toggle",
-        "apps/web/src/pages/workspace-settings.tsx + SettingsTabs.tsx — 'Saved views' tab added with Bookmark icon",
-        "apps/web/src/features/saved-filter/components/SavedViewsBar.test.tsx — 4 component tests",
-        "apps/web/src/features/saved-filter/components/SavedViewsManager.test.tsx — 1 component test"
+        "packages/db/prisma/migrations/20260705085351_saved_filter/migration.sql \u2014 SavedFilter model + partial unique index WHERE deletedAt IS NULL",
+        "packages/shared/src/saved-filter.ts \u2014 savedFilterQuerySchema, savedFilterSchema, createSavedFilterSchema, updateSavedFilterSchema, savedFilterListResponseSchema",
+        "apps/api/src/modules/saved-filter/{saved-filter.repository,saved-filter.service,saved-filter.routes,index}.ts \u2014 CRUD at /api/workspaces/:wid/saved-filters, assertMembership guard, duplicate-name 409, owner-only patch/delete",
+        "apps/api/src/shared/lib/prisma-extension.ts \u2014 SavedFilter in SOFT_DELETE_MODELS (softDeleteExtension auto-filters deletedAt)",
+        "packages/db/src/prisma-extension.ts \u2014 synced ChatChannel/ChatMessage/SavedFilter into SOFT_DELETE_MODELS (pre-existing drift from F7 chat work)",
+        "apps/api/tests/integration/saved-filter.test.ts \u2014 9 integration tests (create+list, duplicate 409, isShared visible to members, private hidden from members, owner-only patch 404 for non-owner, owner patch+delete, soft-deleted name reuse, non-member 400, unauth 401)",
+        "apps/web/src/features/saved-filter/{api,hooks,types,schemas,index}.ts \u2014 web feature module with useSavedFilters, useCreate/Update/Delete hooks + cache invalidation",
+        "apps/web/src/features/saved-filter/components/SavedViewsBar.tsx \u2014 list page toolbar: view selector dropdown + save dialog + divider",
+        "apps/web/src/features/saved-filter/components/SavedViewsManager.tsx \u2014 settings page: inline rename, toggle shared/private, delete with AlertDialog",
+        "apps/web/src/pages/list.tsx \u2014 SavedViewsBar integrated into header bar between filter selects and Board/List toggle",
+        "apps/web/src/pages/workspace-settings.tsx + SettingsTabs.tsx \u2014 'Saved views' tab added with Bookmark icon",
+        "apps/web/src/features/saved-filter/components/SavedViewsBar.test.tsx \u2014 4 component tests",
+        "apps/web/src/features/saved-filter/components/SavedViewsManager.test.tsx \u2014 1 component test"
       ]
     },
     {
@@ -1258,51 +1258,51 @@
       "priority": 88,
       "area": "export",
       "title": "CSV export of filtered task list",
-      "user_visible_behavior": "User clicks 'Export CSV' on the list page → browser downloads tasks-{slug}-{yyyyMMddHHmm}.csv with 6 columns (Status, Title, Assignee Email, Priority, Due Date, Labels) for the current filter set (manual or saved-view-loaded). Opens in Excel/Numbers. Enum values as-is (IN_PROGRESS, HIGH), ISO UTC due dates, labels semicolon-joined from the canonical TaskLabelAssignment join.",
+      "user_visible_behavior": "User clicks 'Export CSV' on the list page \u2192 browser downloads tasks-{slug}-{yyyyMMddHHmm}.csv with 6 columns (Status, Title, Assignee Email, Priority, Due Date, Labels) for the current filter set (manual or saved-view-loaded). Opens in Excel/Numbers. Enum values as-is (IN_PROGRESS, HIGH), ISO UTC due dates, labels semicolon-joined from the canonical TaskLabelAssignment join.",
       "status": "passing",
       "verification": [
-        "pnpm --filter @flow-desk/shared build → exit 0",
-        "pnpm --filter @flow-desk/api typecheck → exit 0",
-        "pnpm --filter @flow-desk/api lint → exit 0 (0 errors, 0 warnings on P1-3 files)",
-        "pnpm --filter @flow-desk/api test:unit → 102/102 pass",
-        "pnpm --filter @flow-desk/api test:integration → 220/220 pass (207 existing + 13 new task-export)",
-        "pnpm --filter @flow-desk/web typecheck → exit 0",
-        "pnpm --filter @flow-desk/web lint → 0 errors (1 pre-existing warning in dirty TaskEditModal.tsx, not P1-3)",
-        "pnpm --filter @flow-desk/web test -- --run → 26/26 pass (23 existing + 3 new export-tasks-csv)",
-        "pnpm --filter @flow-desk/web build → exit 0 (6.78s)",
-        "pnpm exec prettier --check on P1-3 files → pass (after --write on 3 files)",
-        "Host-side smoke: curl 'http://localhost:3000/api/tasks/export?workspaceId=<demo>' with auth cookie → 200, text/csv, 73 lines (header + 72 tasks), BOM present (ef bb bf), Content-Disposition: attachment; filename=\"tasks-demo-lhklhl-2026-07-05T1219.csv\"",
-        "Smoke filtered: status=IN_REVIEW → 2 rows; priority=HIGH → 7 rows; missing workspaceId → 400 INVALID_QUERY; unauth → 401 UNAUTHORIZED"
+        "pnpm --filter @flow-desk/shared build \u2192 exit 0",
+        "pnpm --filter @flow-desk/api typecheck \u2192 exit 0",
+        "pnpm --filter @flow-desk/api lint \u2192 exit 0 (0 errors, 0 warnings on P1-3 files)",
+        "pnpm --filter @flow-desk/api test:unit \u2192 102/102 pass",
+        "pnpm --filter @flow-desk/api test:integration \u2192 220/220 pass (207 existing + 13 new task-export)",
+        "pnpm --filter @flow-desk/web typecheck \u2192 exit 0",
+        "pnpm --filter @flow-desk/web lint \u2192 0 errors (1 pre-existing warning in dirty TaskEditModal.tsx, not P1-3)",
+        "pnpm --filter @flow-desk/web test -- --run \u2192 26/26 pass (23 existing + 3 new export-tasks-csv)",
+        "pnpm --filter @flow-desk/web build \u2192 exit 0 (6.78s)",
+        "pnpm exec prettier --check on P1-3 files \u2192 pass (after --write on 3 files)",
+        "Host-side smoke: curl 'http://localhost:3000/api/tasks/export?workspaceId=<demo>' with auth cookie \u2192 200, text/csv, 73 lines (header + 72 tasks), BOM present (ef bb bf), Content-Disposition: attachment; filename=\"tasks-demo-lhklhl-2026-07-05T1219.csv\"",
+        "Smoke filtered: status=IN_REVIEW \u2192 2 rows; priority=HIGH \u2192 7 rows; missing workspaceId \u2192 400 INVALID_QUERY; unauth \u2192 401 UNAUTHORIZED"
       ],
       "evidence": [
-        "packages/shared/src/task.ts: NO CHANGE — plan adjustment: exportTasksQuerySchema lives in apps/api/src/modules/task/task.service.ts (one source of truth with the route's active listTasksQuerySchema, which extends CursorPaginationQuery, not the shared package's paginationSchema-based copy)",
+        "packages/shared/src/task.ts: NO CHANGE \u2014 plan adjustment: exportTasksQuerySchema lives in apps/api/src/modules/task/task.service.ts (one source of truth with the route's active listTasksQuerySchema, which extends CursorPaginationQuery, not the shared package's paginationSchema-based copy)",
         "apps/api/src/modules/task/task.service.ts: exportTasksQuerySchema = listTasksQuerySchema.omit({cursor:true, limit:true}) + ExportTasksQuery type; buildTaskWhere(query) shared helper (one filter path for list + export); csvEscapeField (RFC 4180); serializeTaskCsvRow (labels from TaskLabelAssignment join, comment cites schema.prisma:238; dueDate explicit ternary null guard; enum as-is); exportTasks(query,userId) findMany with include {assignee:{select:{email}}, assignments:{include:{label:{select:{name}}}}} orderBy [{position:asc},{id:asc}]",
-        "apps/api/src/modules/task/task.routes.ts: GET /export registered AFTER GET / and BEFORE GET /:id (line 49 < line 90) — D3 route-order constraint; zValidator query guard; ReadableStream from async start() yields BOM + header + one row per task; Content-Type text/csv; charset=utf-8; Content-Disposition attachment; filename=tasks-{slug}-{stamp}.csv; c.body(stream)",
-        "apps/api/tests/integration/task-export.test.ts: 13 integration tests — all-tasks count, status filter, priority filter, assigneeId filter, empty result header-only, unassigned empty email, null dueDate empty, 2 labels semicolon-joined, comma-in-label quoted, RFC 4180 title escaping (comma + embedded quote), non-member 400, missing workspaceId 400, BOM first 3 bytes",
+        "apps/api/src/modules/task/task.routes.ts: GET /export registered AFTER GET / and BEFORE GET /:id (line 49 < line 90) \u2014 D3 route-order constraint; zValidator query guard; ReadableStream from async start() yields BOM + header + one row per task; Content-Type text/csv; charset=utf-8; Content-Disposition attachment; filename=tasks-{slug}-{stamp}.csv; c.body(stream)",
+        "apps/api/tests/integration/task-export.test.ts: 13 integration tests \u2014 all-tasks count, status filter, priority filter, assigneeId filter, empty result header-only, unassigned empty email, null dueDate empty, 2 labels semicolon-joined, comma-in-label quoted, RFC 4180 title escaping (comma + embedded quote), non-member 400, missing workspaceId 400, BOM first 3 bytes",
         "apps/web/src/features/task/api.ts: exportTasksCsv(params) builds URLSearchParams (workspaceId + status/priority when not ALL), window.location.href = URL (browser handles Content-Disposition download)",
         "apps/web/src/features/task/index.ts: re-exports exportTasksCsv",
         "apps/web/src/pages/list.tsx: 'Export CSV' Button with Download icon in toolbar after SavedViewsBar, onClick calls exportTasksCsv({workspaceId, status: statusFilter, priority: priorityFilter})",
-        "apps/web/src/features/task/export-tasks-csv.test.ts: 3 tests — workspaceId-only when ALL, includes status+priority when set, omits status when ALL but includes priority; mocks window.location via Object.defineProperty (jsdom location non-writable)",
+        "apps/web/src/features/task/export-tasks-csv.test.ts: 3 tests \u2014 workspaceId-only when ALL, includes status+priority when set, omits status when ALL but includes priority; mocks window.location via Object.defineProperty (jsdom location non-writable)",
         "docs/superpowers/specs/2026-07-05-csv-export-design.md: approved design spec (4 brainstorming locks D1-D4)",
         "docs/superpowers/plans/2026-07-05-csv-export.md: 7-task implementation plan",
         "Smoke CSV /tmp/p1-3-export.csv: 3774 bytes, 73 lines, BOM ef bb bf, header + 72 task rows, row 1 = IN_PROGRESS,Design landing page,,HIGH,2026-07-01T15:26:41.279Z,frontend;backend"
       ],
-      "notes": "Phase 1 item P1-3 from ROADMAP.md. Read-only feature — no migration, no new model, no Task field changes, no new deps. Schema-hygiene checklist all 5 boxes: no board-in-names, structural fields minimal, filter-by-parameter (query-param workspaceId, not path-scoped), migration stays additive (none needed), Epic/Sprint/Board deferred. Plan adjustment from spec: exportTasksQuerySchema placed in service (not packages/shared) because the route's active listTasksQuerySchema is the service-local one extending CursorPaginationQuery; the shared package's listTasksQuerySchema extends paginationSchema (page/pageSize) and is unused by the route — putting export schema in shared would have created a second filter shape, the exact drift D2 was designed to prevent. Web button is inline in list.tsx (not a separate ExportCsvButton component) — tested exportTasksCsv function directly, no component extraction just for testing. Dirty apps/web/src/features/task/components/TaskEditModal.tsx (pre-existing uncommitted Tabs refactor) deliberately NOT staged in P1-3 commits. ROADMAP route wording amended-by-decision: /api/tasks/export?workspaceId= (query-param) instead of /api/workspaces/:id/tasks/export (path-scoped) to honor the written schema-hygiene checklist rule."
+      "notes": "Phase 1 item P1-3 from ROADMAP.md. Read-only feature \u2014 no migration, no new model, no Task field changes, no new deps. Schema-hygiene checklist all 5 boxes: no board-in-names, structural fields minimal, filter-by-parameter (query-param workspaceId, not path-scoped), migration stays additive (none needed), Epic/Sprint/Board deferred. Plan adjustment from spec: exportTasksQuerySchema placed in service (not packages/shared) because the route's active listTasksQuerySchema is the service-local one extending CursorPaginationQuery; the shared package's listTasksQuerySchema extends paginationSchema (page/pageSize) and is unused by the route \u2014 putting export schema in shared would have created a second filter shape, the exact drift D2 was designed to prevent. Web button is inline in list.tsx (not a separate ExportCsvButton component) \u2014 tested exportTasksCsv function directly, no component extraction just for testing. Dirty apps/web/src/features/task/components/TaskEditModal.tsx (pre-existing uncommitted Tabs refactor) deliberately NOT staged in P1-3 commits. ROADMAP route wording amended-by-decision: /api/tasks/export?workspaceId= (query-param) instead of /api/workspaces/:id/tasks/export (path-scoped) to honor the written schema-hygiene checklist rule."
     },
     {
       "id": "P1-4",
       "priority": 87,
       "area": "webhook",
       "title": "Outgoing webhooks (HMAC-signed TaskActivity delivery)",
-      "user_visible_behavior": "Admin creates webhook on Settings → Webhooks (URL + event checkboxes). On matching TaskActivity, BullMQ worker POSTs signed payload (X-FlowDesk-Signature: sha256=…). Secret revealed once at create. Delivery log lists SUCCESS/FAILED attempts.",
+      "user_visible_behavior": "Admin creates webhook on Settings \u2192 Webhooks (URL + event checkboxes). On matching TaskActivity, BullMQ worker POSTs signed payload (X-FlowDesk-Signature: sha256=\u2026). Secret revealed once at create. Delivery log lists SUCCESS/FAILED attempts.",
       "status": "passing",
       "verification": [
-        "pnpm --filter @flow-desk/api test:unit → includes webhook-sign.test.ts 4/4 pass (112 total unit)",
-        "TEST_DB_PORT=5433 pnpm --filter @flow-desk/api exec vitest run --config vitest.integration.config.ts tests/integration/webhook.test.ts → 9/9 pass",
+        "pnpm --filter @flow-desk/api test:unit \u2192 includes webhook-sign.test.ts 4/4 pass (112 total unit)",
+        "TEST_DB_PORT=5433 pnpm --filter @flow-desk/api exec vitest run --config vitest.integration.config.ts tests/integration/webhook.test.ts \u2192 9/9 pass",
         "Date serialization fixed in webhook.service (ISO strings for Zod)",
         "WebhookDelivery removed from softDeleteExtension (no deletedAt column)",
         "HMAC sign extracted to webhook-sign.ts; worker uses shared signWebhookPayload",
-        "Web UI: Settings → Webhooks tab (WebhooksTab + form + delivery log)"
+        "Web UI: Settings \u2192 Webhooks tab (WebhooksTab + form + delivery log)"
       ],
       "evidence": [
         "apps/api/src/modules/webhook/*",
@@ -1316,18 +1316,18 @@
         "/tmp/grok-goal-827af4b6215c/implementer/roadmap/P1-4/integration.log",
         "/tmp/grok-goal-827af4b6215c/implementer/roadmap/P1-4/unit-sign.log"
       ],
-      "notes": "Verified+finished existing implementation. Fixed: date serialization, soft-delete on WebhookDelivery, pure HMAC helper. Fan-out from activity.service.record → webhookQueue."
+      "notes": "Verified+finished existing implementation. Fixed: date serialization, soft-delete on WebhookDelivery, pure HMAC helper. Fan-out from activity.service.record \u2192 webhookQueue."
     },
     {
       "id": "P1-5",
       "priority": 86,
       "area": "auth",
       "title": "2FA TOTP (setup, login challenge, backup codes)",
-      "user_visible_behavior": "User enables 2FA at /settings/security (QR + verify). Logout → login with password → TOTP step → session cookie. Backup codes work once. Disable requires current code.",
+      "user_visible_behavior": "User enables 2FA at /settings/security (QR + verify). Logout \u2192 login with password \u2192 TOTP step \u2192 session cookie. Backup codes work once. Disable requires current code.",
       "status": "passing",
       "verification": [
-        "pnpm --filter @flow-desk/api exec vitest run --config vitest.config.ts src/modules/auth/totp.test.ts → 6/6 pass",
-        "TEST_DB_PORT=5433 vitest integration auth-2fa.test.ts → 4/4 pass (setup/verify, login challenge, backup once, disable)",
+        "pnpm --filter @flow-desk/api exec vitest run --config vitest.config.ts src/modules/auth/totp.test.ts \u2192 6/6 pass",
+        "TEST_DB_PORT=5433 vitest integration auth-2fa.test.ts \u2192 4/4 pass (setup/verify, login challenge, backup once, disable)",
         "Schema migration 20260711140000_user_2fa applied"
       ],
       "evidence": [
@@ -1341,7 +1341,7 @@
         "packages/db/prisma/migrations/20260711140000_user_2fa/",
         "/tmp/grok-goal-827af4b6215c/implementer/roadmap/P1-5/integration.log"
       ],
-      "notes": "AES-256-GCM encrypt secret at rest (key derived from JWT_SECRET). otplib v13. Challenge JWT 5m purpose=2fa."
+      "notes": "AES-256-GCM encrypt secret at rest (key derived from JWT_SECRET). otplib v13. Challenge JWT 5m purpose=2fa. Google OAuth path now issues httpOnly two_factor_challenge cookie (no JWT in URL); login/2fa accepts body token or cookie (audit 030 + review)."
     },
     {
       "id": "realtime-chat-refactor",
@@ -1350,18 +1350,18 @@
       "status": "passing",
       "phases": {
         "0": "Scope lock + ADR-007 + REALTIME-AUDIT.md + plan (this task)",
-        "1": "Chat realtime reliability — dedupe by id/clientMessageId, fix StrictMode startedRef, transaction-wrap message+notification, drop PII, optimistic insert with ACK, channels list invalidation, idempotent send via unique index, Playwright 2-browser test (tasks 1.1-1.12)",
-        "2": "Event standardization + room model — SOCKET_EVENTS/SOCKET_ROOMS registry, Zod-validate socket payloads, switch to conversation:{id} room, switch rooms on activeChannelId change, setQueryData only (no invalidateQueries on realtime), delete duplicated chat.schema.ts, TaskChat unified via scope=TASK (tasks 2.1-2.10)",
-        "3": "Optimistic ACK + typing + chat presence + read receipts + conversation:updated — pure-socket message:send, message:read with ChatMessageRead table, typing:start/stop, per-channel presence, conversation:updated on channel CRUD, ACK timeout + resend UX (tasks 3.1-3.8)",
-        "4": "Hardening — assertMembership 403, private channel ACL, onDelete cascade migration, partial unique index for active channel names, soft-delete extension consolidated, socket connection rate limit, useMoveTask queryKey memoization, refetchOnWindowFocus, pub/sub client cleanup, JWT refresh hook, getSocket stuck-reconnect, member cache invalidation, LLM_API_KEY required, JWT TTL validation, cluster hash-tag (tasks 4.1-4.16)"
+        "1": "Chat realtime reliability \u2014 dedupe by id/clientMessageId, fix StrictMode startedRef, transaction-wrap message+notification, drop PII, optimistic insert with ACK, channels list invalidation, idempotent send via unique index, Playwright 2-browser test (tasks 1.1-1.12)",
+        "2": "Event standardization + room model \u2014 SOCKET_EVENTS/SOCKET_ROOMS registry, Zod-validate socket payloads, switch to conversation:{id} room, switch rooms on activeChannelId change, setQueryData only (no invalidateQueries on realtime), delete duplicated chat.schema.ts, TaskChat unified via scope=TASK (tasks 2.1-2.10)",
+        "3": "Optimistic ACK + typing + chat presence + read receipts + conversation:updated \u2014 pure-socket message:send, message:read with ChatMessageRead table, typing:start/stop, per-channel presence, conversation:updated on channel CRUD, ACK timeout + resend UX (tasks 3.1-3.8)",
+        "4": "Hardening \u2014 assertMembership 403, private channel ACL, onDelete cascade migration, partial unique index for active channel names, soft-delete extension consolidated, socket connection rate limit, useMoveTask queryKey memoization, refetchOnWindowFocus, pub/sub client cleanup, JWT refresh hook, getSocket stuck-reconnect, member cache invalidation, LLM_API_KEY required, JWT TTL validation, cluster hash-tag (tasks 4.1-4.16)"
       },
       "verification": {
-        "phase_1": "pnpm typecheck + pnpm lint + pnpm test:unit + pnpm test:integration + pnpm build + pnpm exec playwright test e2e/chat-realtime.spec.ts — 8 cases: no duplicate on send, optimistic appears instantly, ACK replaces status, non-active channel preview updates, channels list updates real-time, idempotent retry, author receives own message, no email in socket payload",
+        "phase_1": "pnpm typecheck + pnpm lint + pnpm test:unit + pnpm test:integration + pnpm build + pnpm exec playwright test e2e/chat-realtime.spec.ts \u2014 8 cases: no duplicate on send, optimistic appears instantly, ACK replaces status, non-active channel preview updates, channels list updates real-time, idempotent retry, author receives own message, no email in socket payload",
         "phase_2": "Same as phase_1 plus: switch conversation leaves old room, validation error events surface, no GET to channels list after socket event, TaskChat realtime works",
         "phase_3": "Same as phase_2 plus: pure-socket send, typing appears, read receipt flips, presence count, channel CRUD appears, ACK timeout marks failed",
-        "phase_4": "pnpm verify — full gate: typecheck + lint + unit + integration + build + playwright + lefthook secret scan + format:check + pnpm audit"
+        "phase_4": "pnpm verify \u2014 full gate: typecheck + lint + unit + integration + build + playwright + lefthook secret scan + format:check + pnpm audit"
       },
-      "notes": "Audit: REALTIME-AUDIT.md. Plan: docs/superpowers/plans/2026-07-07-realtime-chat-refactor.md. ADR: ADR-007-realtime-reliability.md. Phases 1-4 are independently shippable; phase gates run pnpm verify before advancing. 4 phases × ~12 tasks each.",
+      "notes": "Audit: REALTIME-AUDIT.md. Plan: docs/superpowers/plans/2026-07-07-realtime-chat-refactor.md. ADR: ADR-007-realtime-reliability.md. Phases 1-4 are independently shippable; phase gates run pnpm verify before advancing. 4 phases \u00d7 ~12 tasks each.",
       "evidence": [
         "pnpm verify passed (lefthook pre-commit + pre-push gates)",
         "All 4 phases implemented across 15+ commits",
@@ -1378,24 +1378,24 @@
       "user_visible_behavior": "User presses Cmd/Ctrl+K anywhere and a command palette opens with three groups: Navigation (Dashboard, workspace board/list/settings links), Quick Actions (Toggle Theme), and Search Results (debounced full-text search across tasks, comments, attachments). Clicking any item executes the action and closes the palette. Replaces the old search-only SearchPalette.",
       "status": "passing",
       "verification": [
-        "pnpm --filter @flow-desk/web typecheck → exit 0",
-        "pnpm --filter @flow-desk/web lint → exit 0",
-        "pnpm --filter @flow-desk/web test -- --run → 27/27 pass (incl. 5 new CommandPalette tests)",
-        "pnpm verify → green (typecheck + lint + unit + integration + build)"
+        "pnpm --filter @flow-desk/web typecheck \u2192 exit 0",
+        "pnpm --filter @flow-desk/web lint \u2192 exit 0",
+        "pnpm --filter @flow-desk/web test -- --run \u2192 27/27 pass (incl. 5 new CommandPalette tests)",
+        "pnpm verify \u2192 green (typecheck + lint + unit + integration + build)"
       ],
       "evidence": [
-        "apps/web/package.json — added cmdk@1.1.1 dependency",
-        "apps/web/src/components/ui/command.tsx (NEW) — shadcn Command component wrapping cmdk (Command, CommandDialog, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem, CommandSeparator)",
-        "apps/web/src/features/search/components/CommandPalette.tsx (NEW) — replaces SearchPalette; Navigation group (Dashboard + workspace board/list/settings), Quick Actions (Toggle Theme via useTheme), Search Results (useSearch hook, debounced, type icons)",
-        "apps/web/src/features/search/components/CommandPalette.test.tsx (NEW) — 5 tests: renders combobox input, Navigation→Dashboard, Quick Actions→Toggle Theme, debounced search results, 'No results found.' when empty",
-        "apps/web/src/features/search/components/SearchPalette.tsx — DELETED (replaced by CommandPalette)",
-        "apps/web/src/features/search/components/SearchPalette.test.tsx — DELETED (replaced by CommandPalette test)",
-        "apps/web/src/features/search/index.ts — exports CommandPalette instead of SearchPalette",
-        "apps/web/src/components/layout/app-shell.tsx — imports and renders CommandPalette instead of SearchPalette",
-        "apps/web/src/test-setup.ts — added ResizeObserver + scrollIntoView polyfills for cmdk/Radix Dialog",
+        "apps/web/package.json \u2014 added cmdk@1.1.1 dependency",
+        "apps/web/src/components/ui/command.tsx (NEW) \u2014 shadcn Command component wrapping cmdk (Command, CommandDialog, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem, CommandSeparator)",
+        "apps/web/src/features/search/components/CommandPalette.tsx (NEW) \u2014 replaces SearchPalette; Navigation group (Dashboard + workspace board/list/settings), Quick Actions (Toggle Theme via useTheme), Search Results (useSearch hook, debounced, type icons)",
+        "apps/web/src/features/search/components/CommandPalette.test.tsx (NEW) \u2014 5 tests: renders combobox input, Navigation\u2192Dashboard, Quick Actions\u2192Toggle Theme, debounced search results, 'No results found.' when empty",
+        "apps/web/src/features/search/components/SearchPalette.tsx \u2014 DELETED (replaced by CommandPalette)",
+        "apps/web/src/features/search/components/SearchPalette.test.tsx \u2014 DELETED (replaced by CommandPalette test)",
+        "apps/web/src/features/search/index.ts \u2014 exports CommandPalette instead of SearchPalette",
+        "apps/web/src/components/layout/app-shell.tsx \u2014 imports and renders CommandPalette instead of SearchPalette",
+        "apps/web/src/test-setup.ts \u2014 added ResizeObserver + scrollIntoView polyfills for cmdk/Radix Dialog",
         "Commits: 3514d23 (cmdk + shadcn Command), 246c645 (CommandPalette component), aabcb74 (exports + app-shell), 952ffc9 (tests + polyfills), 1ecb3c6 (cleanup + old files deleted)"
       ],
-      "notes": "Replaces hand-rolled SearchPalette (manual Dialog + keyboard nav) with shadcn Command component (cmdk). No backend changes. Uses existing useSearch hook and workspaceApi.list(). shadcn CLI failed on Node 22 — command.tsx created manually (identical output). Pre-existing 3 failing tests in packages/shared/src/chat.test.ts (schema drift from realtime-chat-refactor) are unrelated."
+      "notes": "Replaces hand-rolled SearchPalette (manual Dialog + keyboard nav) with shadcn Command component (cmdk). No backend changes. Uses existing useSearch hook and workspaceApi.list(). shadcn CLI failed on Node 22 \u2014 command.tsx created manually (identical output). Pre-existing 3 failing tests in packages/shared/src/chat.test.ts (schema drift from realtime-chat-refactor) are unrelated."
     },
     {
       "id": "P3-3",
@@ -1405,13 +1405,13 @@
       "user_visible_behavior": "/calendar/:workspaceId shows month grid; drag task to new day updates dueDate. CRUD via shadcn Dialog, DatePicker, Select.",
       "status": "passing",
       "verification": [
-        "pnpm --filter @flow-desk/web typecheck → exit 0",
-        "pnpm --filter @flow-desk/web lint → exit 0",
+        "pnpm --filter @flow-desk/web typecheck \u2192 exit 0",
+        "pnpm --filter @flow-desk/web lint \u2192 exit 0",
         "date-grid unit 4/4",
         "route + nav link wired"
       ],
       "evidence": [
-        "apps/web/src/features/calendar/* — month/week/day/agenda views with colored chips, DnD reschedule",
+        "apps/web/src/features/calendar/* \u2014 month/week/day/agenda views with colored chips, DnD reschedule",
         "CalendarPage.tsx: shadcn Dialog for TaskViewModal + TaskFormModal",
         "CalendarPage.tsx: shadcn DatePicker (Calendar component) for Start/End date inputs",
         "CalendarPage.tsx: shadcn Select (Radix) for Responsible dropdown with workspace members",
@@ -1426,7 +1426,7 @@
       "priority": 85,
       "area": "automation",
       "title": "Automation rules engine",
-      "user_visible_behavior": "Admin creates rule (trigger+condition+action). On matching TaskActivity, action runs (e.g. assign workspace owner when status→IN_REVIEW). Execution log shows SUCCESS/SKIPPED/FAILED.",
+      "user_visible_behavior": "Admin creates rule (trigger+condition+action). On matching TaskActivity, action runs (e.g. assign workspace owner when status\u2192IN_REVIEW). Execution log shows SUCCESS/SKIPPED/FAILED.",
       "status": "passing",
       "verification": [
         "rule-condition unit 6/6",
@@ -1490,13 +1490,13 @@
       "user_visible_behavior": "Create sprint, assign tasks with estimates, start sprint, burndown ideal vs remaining points. UI: Card layout, Progress bars, EmptyState, priority dots.",
       "status": "passing",
       "verification": [
-        "pnpm --filter @flow-desk/web typecheck → exit 0",
-        "pnpm --filter @flow-desk/web lint → exit 0",
+        "pnpm --filter @flow-desk/web typecheck \u2192 exit 0",
+        "pnpm --filter @flow-desk/web lint \u2192 exit 0",
         "sprint integration 1/1"
       ],
       "evidence": [
         "apps/api/src/modules/sprint/*",
-        "apps/web/src/features/sprint/components/SprintPage.tsx — Card grid, Progress bars, EmptyState, burndown chart with area fill + grid lines, priority dots (PRIORITY_DOT), date range display, hover-to-reveal Add button"
+        "apps/web/src/features/sprint/components/SprintPage.tsx \u2014 Card grid, Progress bars, EmptyState, burndown chart with area fill + grid lines, priority dots (PRIORITY_DOT), date range display, hover-to-reveal Add button"
       ],
       "notes": "UI/UX session 2026-07-12: full rewrite with shadcn components"
     },
@@ -1508,15 +1508,15 @@
       "user_visible_behavior": "Create TaskTemplate + RecurringRule; processDue creates tasks from cron. UI: Card grid, EmptyState, priority dots, apply dialog with preview.",
       "status": "passing",
       "verification": [
-        "pnpm --filter @flow-desk/web typecheck → exit 0",
-        "pnpm --filter @flow-desk/web lint → exit 0",
+        "pnpm --filter @flow-desk/web typecheck \u2192 exit 0",
+        "pnpm --filter @flow-desk/web lint \u2192 exit 0",
         "cron-next unit",
         "template integration"
       ],
       "evidence": [
         "apps/api/src/modules/template/*",
         "apps/api/src/workers/email/scheduler.ts (processDue tick)",
-        "apps/web/src/features/template/components/TemplatesPage.tsx — Card grid, EmptyState, priority dots, recurring rules with active/paused indicator, apply dialog with template preview"
+        "apps/web/src/features/template/components/TemplatesPage.tsx \u2014 Card grid, EmptyState, priority dots, recurring rules with active/paused indicator, apply dialog with template preview"
       ],
       "notes": "UI/UX session 2026-07-12: full rewrite with shadcn components"
     },
@@ -1524,16 +1524,16 @@
       "id": "P4-1",
       "priority": 79,
       "area": "epic",
-      "title": "Epic → Story hierarchy via Task.type",
+      "title": "Epic \u2192 Story hierarchy via Task.type",
       "user_visible_behavior": "Task.type EPIC/STORY/SUBTASK; nest via parentTaskId. UI: Card layout, Progress bars, expandable story list, inline add-story.",
       "status": "passing",
       "verification": [
-        "pnpm --filter @flow-desk/web typecheck → exit 0",
-        "pnpm --filter @flow-desk/web lint → exit 0",
+        "pnpm --filter @flow-desk/web typecheck \u2192 exit 0",
+        "pnpm --filter @flow-desk/web lint \u2192 exit 0",
         "epic-type integration 1/1"
       ],
       "evidence": [
-        "apps/web/src/features/task/components/EpicList.tsx — Card grid, Progress bars, EmptyState, expandable story list with priority dots + status badges, inline add-story form"
+        "apps/web/src/features/task/components/EpicList.tsx \u2014 Card grid, Progress bars, EmptyState, expandable story list with priority dots + status badges, inline add-story form"
       ],
       "notes": "UI/UX session 2026-07-12: full rewrite with shadcn components"
     },
@@ -1545,21 +1545,21 @@
       "user_visible_behavior": "Create Marketing+Engineering boards; switcher auto-selects first; kanban /board?boardId= partitions tasks; new task inherits active board; last board persists per workspace in sessionStorage.",
       "status": "passing",
       "verification": [
-        "pnpm --filter @flow-desk/api typecheck → exit 0",
-        "pnpm --filter @flow-desk/web typecheck → exit 0",
-        "pnpm --filter @flow-desk/api test:integration → 244/244 pass (board-mgmt 3/3 incl. new kanban boardId partition test)",
-        "pnpm --filter @flow-desk/web test → 37/37 pass",
-        "pnpm build → all 4 packages built"
+        "pnpm --filter @flow-desk/api typecheck \u2192 exit 0",
+        "pnpm --filter @flow-desk/web typecheck \u2192 exit 0",
+        "pnpm --filter @flow-desk/api test:integration \u2192 244/244 pass (board-mgmt 3/3 incl. new kanban boardId partition test)",
+        "pnpm --filter @flow-desk/web test \u2192 37/37 pass",
+        "pnpm build \u2192 all 4 packages built"
       ],
       "evidence": [
-        "apps/api/src/modules/board-mgmt/board-mgmt.{routes,service}.ts — create + list boards per workspace, default 'Main' on first workspace create",
-        "apps/api/src/modules/task/task.service.ts — list() boardId filter, create accepts boardId",
-        "apps/api/src/modules/board/board.routes.ts — GET /api/workspaces/:id/board?boardId= partitions kanban tasks; selects boardId on each task row",
-        "apps/api/tests/integration/board-mgmt.test.ts — 3 tests: list+create mkt+eng, tasks?boardId= partition, GET /board?boardId= kanban partition (mkt 1 task, eng 1 task, no-filter 3 tasks incl. boardless)",
-        "apps/web/src/features/board/components/BoardSwitcher.tsx — auto-selects first board via useEffect when value unset",
-        "apps/web/src/pages/board.tsx — sessionStorage['board:<wid>'] restores last board; queryKey ['board', workspaceId, boardId] per-board cache",
-        "apps/web/src/features/task/components/TaskEditModal.tsx — boardId prop forwarded to create payload so new tasks land on active board",
-        "commit 3baa8c0 — 'fix(p4-2): boardId filter on kanban GET /board + default-board + new-task inherits board'"
+        "apps/api/src/modules/board-mgmt/board-mgmt.{routes,service}.ts \u2014 create + list boards per workspace, default 'Main' on first workspace create",
+        "apps/api/src/modules/task/task.service.ts \u2014 list() boardId filter, create accepts boardId",
+        "apps/api/src/modules/board/board.routes.ts \u2014 GET /api/workspaces/:id/board?boardId= partitions kanban tasks; selects boardId on each task row",
+        "apps/api/tests/integration/board-mgmt.test.ts \u2014 3 tests: list+create mkt+eng, tasks?boardId= partition, GET /board?boardId= kanban partition (mkt 1 task, eng 1 task, no-filter 3 tasks incl. boardless)",
+        "apps/web/src/features/board/components/BoardSwitcher.tsx \u2014 auto-selects first board via useEffect when value unset",
+        "apps/web/src/pages/board.tsx \u2014 sessionStorage['board:<wid>'] restores last board; queryKey ['board', workspaceId, boardId] per-board cache",
+        "apps/web/src/features/task/components/TaskEditModal.tsx \u2014 boardId prop forwarded to create payload so new tasks land on active board",
+        "commit 3baa8c0 \u2014 'fix(p4-2): boardId filter on kanban GET /board + default-board + new-task inherits board'"
       ],
       "notes": "f9d26ec left 4 uncommitted files (board.routes.ts boardId filter, BoardSwitcher default, board.tsx sessionStorage + per-board queryKey, TaskEditModal boardId). Picked up + added 1 new integration test (board-mgmt: kanban partition) and committed in 3baa8c0. Full verify-equivalent: typecheck turbo 6/6, integration 244/244, build 4/4, unit 138+37+31, format+lint+secrets clean."
     },
@@ -1568,38 +1568,38 @@
       "priority": 77,
       "area": "integrations",
       "title": "Slack + GitLab OAuth integrations",
-      "user_visible_behavior": "Settings → Integrations tab lists Slack + GitLab. Connect (302 to provider) + callback (exchanges code, stores encrypted tokens) + list + revoke work end-to-end. End-to-end real OAuth requires operator to set SLACK_CLIENT_ID/SECRET/REDIRECT_URI and FLOWDESK_GITLAB_CLIENT_ID/SECRET/REDIRECT_URI env vars; until then status reports configured:false and connect returns 501 NOT_CONFIGURED.",
+      "user_visible_behavior": "Settings \u2192 Integrations tab lists Slack + GitLab. Connect (302 to provider) + callback (exchanges code, stores encrypted tokens) + list + revoke work end-to-end. End-to-end real OAuth requires operator to set SLACK_CLIENT_ID/SECRET/REDIRECT_URI and FLOWDESK_GITLAB_CLIENT_ID/SECRET/REDIRECT_URI env vars; until then status reports configured:false and connect returns 501 NOT_CONFIGURED.",
       "status": "passing",
       "verification": [
-        "pnpm --filter @flow-desk/api typecheck → exit 0",
-        "pnpm --filter @flow-desk/web typecheck → exit 0",
-        "pnpm --filter @flow-desk/api test:unit → 144/144 pass (incl. 6 integration-crypto unit tests)",
-        "pnpm --filter @flow-desk/api test:integration → 250/250 pass (incl. 6 integrations.test.ts: status, 501-on-missing-env, slack/connect 302, full slack callback with mocked oauth.v2.access+auth.test, full gitlab callback with mocked /oauth/token+/api/v4/user, mismatched state rejected)",
-        "pnpm --filter @flow-desk/web build → exit 0"
+        "pnpm --filter @flow-desk/api typecheck \u2192 exit 0",
+        "pnpm --filter @flow-desk/web typecheck \u2192 exit 0",
+        "pnpm --filter @flow-desk/api test:unit \u2192 144/144 pass (incl. 6 integration-crypto unit tests)",
+        "pnpm --filter @flow-desk/api test:integration \u2192 250/250 pass (incl. 6 integrations.test.ts: status, 501-on-missing-env, slack/connect 302, full slack callback with mocked oauth.v2.access+auth.test, full gitlab callback with mocked /oauth/token+/api/v4/user, mismatched state rejected)",
+        "pnpm --filter @flow-desk/web build \u2192 exit 0"
       ],
       "evidence": [
-        "packages/db/prisma/schema.prisma — Integration model + IntegrationProvider enum (SLACK, GITLAB), encrypted access/refresh token fields, soft-delete, partial unique index (provider, workspaceId, externalAccountId) WHERE deletedAt IS NULL",
-        "packages/db/prisma/migrations/20260711160000_integration_oauth/migration.sql — additive migration",
-        "packages/db/src/prisma-extension.ts — Integration added to SOFT_DELETE_MODELS",
-        "packages/db/prisma/seed.ts — integration.deleteMany() added to cleanup",
-        "apps/api/src/modules/integrations/integration-crypto.ts — AES-256-GCM with separate key derivation domain (flowdesk-integration: prefix) from TOTP",
-        "apps/api/src/modules/integrations/integration-crypto.test.ts — 6 unit tests (round-trip, random IV, malformed reject, key derivation, cross-secret diff, GCM tamper reject)",
-        "apps/api/src/modules/integrations/integration.repository.ts — CRUD with soft-delete semantics",
-        "apps/api/src/modules/integrations/integration.service.ts — completeOAuthCallback (provider-aware token exchange, account resolution via Slack auth.test / GitLab /api/v4/user), listForWorkspace (assertMembership), revoke (soft-delete), buildAuthorizeUrl helper",
-        "apps/api/src/modules/integrations/integrations.routes.ts — full set of endpoints: /slack/status, /slack/connect (302), /slack/callback, /slack/commands, /gitlab/status, /gitlab/connect, /gitlab/callback, GET /, DELETE /:id; 1-shot oauth_state/workspace/user/provider cookies for CSRF (same pattern as Google OAuth)",
-        "apps/api/tests/integration/integrations.test.ts — 6 integration tests covering status, env-missing 501, slack 302, full slack callback, full gitlab callback, state-mismatch rejection",
-        "apps/api/tests/integration/soft-delete.test.ts — 1 new test: findUnique returns null for soft-deleted Integration",
-        "apps/web/src/features/integration/components/IntegrationsTab.tsx — list + Connect/Disconnect + Configured badge + disabled when env missing",
-        "apps/web/src/features/workspace/components/SettingsTabs.tsx — new 'Integrations' tab, admin/owner only, between Automation and Danger zone"
+        "packages/db/prisma/schema.prisma \u2014 Integration model + IntegrationProvider enum (SLACK, GITLAB), encrypted access/refresh token fields, soft-delete, partial unique index (provider, workspaceId, externalAccountId) WHERE deletedAt IS NULL",
+        "packages/db/prisma/migrations/20260711160000_integration_oauth/migration.sql \u2014 additive migration",
+        "packages/db/src/prisma-extension.ts \u2014 Integration added to SOFT_DELETE_MODELS",
+        "packages/db/prisma/seed.ts \u2014 integration.deleteMany() added to cleanup",
+        "apps/api/src/modules/integrations/integration-crypto.ts \u2014 AES-256-GCM with separate key derivation domain (flowdesk-integration: prefix) from TOTP",
+        "apps/api/src/modules/integrations/integration-crypto.test.ts \u2014 6 unit tests (round-trip, random IV, malformed reject, key derivation, cross-secret diff, GCM tamper reject)",
+        "apps/api/src/modules/integrations/integration.repository.ts \u2014 CRUD with soft-delete semantics",
+        "apps/api/src/modules/integrations/integration.service.ts \u2014 completeOAuthCallback (provider-aware token exchange, account resolution via Slack auth.test / GitLab /api/v4/user), listForWorkspace (assertMembership), revoke (soft-delete), buildAuthorizeUrl helper",
+        "apps/api/src/modules/integrations/integrations.routes.ts \u2014 full set of endpoints: /slack/status, /slack/connect (302), /slack/callback, /slack/commands, /gitlab/status, /gitlab/connect, /gitlab/callback, GET /, DELETE /:id; 1-shot oauth_state/workspace/user/provider cookies for CSRF (same pattern as Google OAuth)",
+        "apps/api/tests/integration/integrations.test.ts \u2014 6 integration tests covering status, env-missing 501, slack 302, full slack callback, full gitlab callback, state-mismatch rejection",
+        "apps/api/tests/integration/soft-delete.test.ts \u2014 1 new test: findUnique returns null for soft-deleted Integration",
+        "apps/web/src/features/integration/components/IntegrationsTab.tsx \u2014 list + Connect/Disconnect + Configured badge + disabled when env missing",
+        "apps/web/src/features/workspace/components/SettingsTabs.tsx \u2014 new 'Integrations' tab, admin/owner only, between Automation and Danger zone"
       ],
-      "notes": "Previously marked blocked — reason 'code incomplete pending env'. Updated to passing: code is end-to-end complete and tested with mocked OAuth providers. Operator still needs real SLACK_*/FLOWDESK_GITLAB_* env to flip connect from 501 NOT_CONFIGURED to real 302. Status flag is honest: configured:false shown in UI when env is missing so reviewers see the truth. Used FAKE_SLACK_TOKEN_* strings in test fixtures to avoid tripping the pre-commit secret scan (xox* prefix). Commit 899f843."
+      "notes": "Previously marked blocked \u2014 reason 'code incomplete pending env'. Updated to passing: code is end-to-end complete and tested with mocked OAuth providers. Operator still needs real SLACK_*/FLOWDESK_GITLAB_* env to flip connect from 501 NOT_CONFIGURED to real 302. Status flag is honest: configured:false shown in UI when env is missing so reviewers see the truth. Used FAKE_SLACK_TOKEN_* strings in test fixtures to avoid tripping the pre-commit secret scan (xox* prefix). Commit 899f843. Connect callback uses oauth_workspace cookie only (no query workspaceId); Slack /commands verifies X-Slack-Signature when SLACK_SIGNING_SECRET set (audit 030)."
     },
     {
       "id": "P4-4",
       "priority": 76,
       "area": "api-key",
       "title": "Public API + API keys",
-      "user_visible_behavior": "Create fdkey_… once; Bearer auth on /api/v1 workspaces/tasks; 100/min rate tier.",
+      "user_visible_behavior": "Create fdkey_\u2026 once; Bearer auth on /api/v1 workspaces/tasks; 100/min rate tier.",
       "status": "passing",
       "verification": ["api-key-hash 2/2", "api-key integration 1/1"],
       "evidence": [
@@ -1621,7 +1621,7 @@
         "apps/api/src/modules/export/*",
         "/tmp/grok-goal-827af4b6215c/implementer/roadmap/P4-5/tests.log"
       ],
-      "notes": ""
+      "notes": " Export hard-capped at 10k rows \u2192 413 PayloadTooLargeError; FE blob download + toast (audit 033 + review)."
     },
     {
       "id": "P4-6",
@@ -1638,6 +1638,139 @@
         "/tmp/grok-goal-827af4b6215c/implementer/roadmap/P4-6/tests.log"
       ],
       "notes": "In-repo axe/keyboard foundations; not third-party cert."
+    },
+    {
+      "id": "AUD-029",
+      "priority": 200,
+      "area": "security",
+      "title": "Chat workspace membership + typing auth + Secure integration OAuth cookies",
+      "user_visible_behavior": "Non-members cannot read/post on any channel (including public ones). Typing indicators only after joining a conversation. Slack/GitLab OAuth state cookies use Secure in production.",
+      "status": "passing",
+      "verification": [
+        "pnpm --filter @flow-desk/api test:unit (chat membership mocks)",
+        "pnpm --filter @flow-desk/api test:integration \u2014 idor-cross-workspace chat non-member 403 cases",
+        "typecheck + lint green"
+      ],
+      "evidence": [
+        "apps/api/src/modules/chat/chat.repository.ts",
+        "apps/api/src/shared/lib/socket.ts",
+        "apps/api/src/modules/integrations/integrations.routes.ts",
+        "apps/api/tests/integration/idor-cross-workspace.test.ts",
+        "plans/029-chat-idor-typing-oauth-cookies.md",
+        "commit 4099a0b"
+      ],
+      "notes": "Plans 029 DONE."
+    },
+    {
+      "id": "AUD-030",
+      "priority": 201,
+      "area": "security",
+      "title": "Google OAuth 2FA cookie + Slack signature + integration callback workspaceId",
+      "user_visible_behavior": "Users with 2FA enabled who sign in via Google complete TOTP without challenge token in the URL. Slack slash commands reject unsigned requests when signing secret is configured. Slack/GitLab connect callback works without query workspaceId.",
+      "status": "passing",
+      "verification": [
+        "pnpm --filter @flow-desk/api test:unit \u2014 slack-sign.test.ts",
+        "pnpm --filter @flow-desk/api test:integration \u2014 integrations.test.ts (callback without workspaceId query)",
+        "web typecheck login twoFactor=1 path"
+      ],
+      "evidence": [
+        "apps/api/src/modules/auth/auth.routes.ts",
+        "apps/api/src/modules/integrations/slack-sign.ts",
+        "apps/web/src/features/auth/pages/login.tsx",
+        "packages/shared/src/auth.ts",
+        "plans/030-oauth-2fa-slack-callback.md",
+        "commit 4099a0b"
+      ],
+      "notes": "Plans 030 DONE. Challenge JWT in httpOnly cookie only."
+    },
+    {
+      "id": "AUD-031",
+      "priority": 202,
+      "area": "tasks",
+      "title": "Task list sprintId/type filters + list/calendar/epic/sprint pagination",
+      "user_visible_behavior": "Sprint pane lists tasks for the selected sprint via /api/tasks. Epics/stories/list/calendar can load beyond 100 items via cursor / Load more.",
+      "status": "passing",
+      "verification": [
+        "pnpm --filter @flow-desk/api test:integration \u2014 task.service filters type+sprintId",
+        "web typecheck EpicList/SprintPage/CalendarPage/list"
+      ],
+      "evidence": [
+        "packages/shared/src/task.ts",
+        "apps/api/src/modules/task/task.service.ts",
+        "apps/web/src/pages/list.tsx",
+        "apps/web/src/features/calendar/components/CalendarPage.tsx",
+        "apps/web/src/features/sprint/components/SprintPage.tsx",
+        "apps/web/src/features/task/components/EpicList.tsx",
+        "plans/031-sprint-filters-list-pagination.md",
+        "commit 4099a0b"
+      ],
+      "notes": "Plans 031 DONE + review pagination follow-ups."
+    },
+    {
+      "id": "AUD-032",
+      "priority": 203,
+      "area": "security",
+      "title": "Outbound SSRF guards + automation target workspace checks",
+      "user_visible_behavior": "Webhook/automation URLs cannot target loopback/metadata/private ranges (unless ALLOW_PRIVATE_WEBHOOK_URLS). Outbound fetch pins DNS. Automation assign/move-column stay in-workspace.",
+      "status": "passing",
+      "verification": [
+        "pnpm --filter @flow-desk/api test:unit \u2014 url-safety.test.ts",
+        "pnpm --filter @flow-desk/api test:integration \u2014 webhook rejects 127.0.0.1"
+      ],
+      "evidence": [
+        "apps/api/src/shared/lib/url-safety.ts",
+        "apps/api/src/workers/webhook/queue.ts",
+        "apps/api/src/modules/automation/automation.service.ts",
+        "apps/api/src/modules/webhook/webhook.service.ts",
+        "plans/032-ssrf-automation-targets.md",
+        "commit 4099a0b"
+      ],
+      "notes": "Plans 032 DONE + review IPv6/IMDS/CGNAT hardening."
+    },
+    {
+      "id": "AUD-033",
+      "priority": 204,
+      "area": "ops",
+      "title": "Export row cap, email scheduler batching, rate-limit unit tests",
+      "user_visible_behavior": "Large task exports fail with 413 and a clear message instead of OOM; FE shows toast. Due-reminder/digest scheduler does fewer per-row DB lookups.",
+      "status": "passing",
+      "verification": [
+        "pnpm --filter @flow-desk/api test:unit \u2014 rate-limit-core, scheduler",
+        "pnpm --filter @flow-desk/web test \u2014 export-tasks-csv 413 path"
+      ],
+      "evidence": [
+        "apps/api/src/modules/task/task.service.ts",
+        "apps/api/src/shared/errors/index.ts (PayloadTooLargeError)",
+        "apps/api/src/workers/email/scheduler.ts",
+        "apps/api/src/shared/middleware/rate-limit-core.ts",
+        "apps/web/src/features/task/api.ts",
+        "plans/033-export-scheduler-ratelimit-tests.md",
+        "commit 4099a0b"
+      ],
+      "notes": "Plans 033 DONE."
+    },
+    {
+      "id": "AUD-034",
+      "priority": 205,
+      "area": "ops",
+      "title": "Ops DX: Sentry package, docker LLM required, CSP-RO, docs accuracy",
+      "user_visible_behavior": "Compose fails fast without a real LLM_API_KEY. Nginx ships Content-Security-Policy-Report-Only. Sentry loads when DSN set and @sentry/node installed.",
+      "status": "passing",
+      "verification": [
+        "typecheck + build green",
+        "docker-compose.yml LLM_API_KEY required",
+        "docker/web.nginx.conf CSP-Report-Only present"
+      ],
+      "evidence": [
+        "apps/api/src/shared/lib/sentry.ts",
+        "docker-compose.yml",
+        "docker/web.nginx.conf",
+        "docs/ARCHITECTURE.md",
+        "docs/DEV.md",
+        "plans/034-ops-dx-docs-csp.md",
+        "commit 4099a0b"
+      ],
+      "notes": "Plans 034 DONE. FLOWDESK_GITHUB_* env reserved/kept in .env.example."
     }
   ]
 }
