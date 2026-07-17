@@ -39,7 +39,28 @@ When planning or shipping a **product feature** (new capability, ROADMAP item, o
 
 The skill **orchestrates** Superpowers (`brainstorming` → `writing-plans` → `subagent-driven-development` or `executing-plans` → `verification-before-completion` → `finishing-a-development-branch`) plus FlowDesk harness rules (single active feature, schema hygiene, `pnpm verify` evidence). Do not re-implement that pipeline ad hoc in chat.
 
-**Multi-agent (one pattern for all):** every host skill dir is a **directory symlink** to `.agents/skills/plan-feature/`; every slash command is a **file symlink** to `.pi/prompts/plan-feature.md`. Rebuild after clone: `pnpm sync:agents` (also run by `./init.sh`). Details: `.agents/skills/plan-feature/references/adapters.md`.
+**Multi-agent (one pattern for all):** every host skill dir is a **directory symlink** to canonical trees under `.agents/skills/`; every slash command is a **file symlink** to `.pi/prompts/*.md`. Rebuild after clone: `pnpm sync:agents` (also run by `./init.sh`). Details: `.agents/skills/plan-feature/references/adapters.md`.
+
+## Harness: FlowDesk agent team
+
+Based on [revfactory/harness](https://github.com/revfactory/harness) (L3 team-architecture factory). Domain agents + skills for multi-role ship/review — **complements** `plan-feature`, does not replace it.
+
+**Goal:** Coordinate explorer → implementer → security+QA fan-out → durable docs with `_workspace/` artifacts.
+
+**Trigger:** multi-role ship/review, "flowdesk team", "ship with harness", `/flowdesk-team` → use skill `flowdesk-team`. Product feature design/plan gates → still `plan-feature`. Reconfigure agents/skills → skill `harness`.
+
+| Kind          | Path                                                            |
+| ------------- | --------------------------------------------------------------- |
+| Agents        | `.claude/agents/fd-*.md`                                        |
+| Orchestrator  | `.agents/skills/flowdesk-team/`                                 |
+| Domain skills | `flowdesk-implement`, `flowdesk-security-review`, `flowdesk-qa` |
+| Meta-factory  | `.agents/skills/harness/` (upstream workflow + references)      |
+
+**Change log:**
+
+| Date       | Change                                                            | Target                                                     | Reason                        |
+| ---------- | ----------------------------------------------------------------- | ---------------------------------------------------------- | ----------------------------- |
+| 2026-07-18 | Initial FlowDesk team (5 agents + 4 domain skills + harness meta) | `.claude/agents/*`, `.agents/skills/flowdesk-*`, `harness` | Setup from revfactory/harness |
 
 ## Working Rules
 

@@ -2,11 +2,11 @@
 
 | Field        | Value                                                                                                    |
 | ------------ | -------------------------------------------------------------------------------------------------------- |
-| Last session | Security/ops audit 029–034 + review fixes — 2026-07-15                                                   |
-| Tip branch   | `main` @ origin (latest: security ship `4099a0b` + docs sync)                                            |
+| Last session | FlowDesk agent team harness (revfactory/harness) — 2026-07-18                                            |
+| Tip branch   | `main` @ origin (security ship `4099a0b` + prior docs; this session adds agents/skills)                  |
 | Code ship    | `4099a0b` fix(security): ship audit 029–034 and review hardening                                         |
-| Docs ship    | `da2418b` feature_list/TASKS/RISKS · handoff tables reformat                                             |
-| Status       | ROADMAP non-cut complete · **74** features `passing` (68 product + AUD-029…034) · plans **001–034 DONE** |
+| Docs ship    | harness agents/skills + AGENTS pointer + sync adapters                                                   |
+| Status       | ROADMAP non-cut complete · **74** features `passing` · plans **001–034 DONE** · agent team harness ready |
 
 ## Verified state
 
@@ -24,21 +24,20 @@
 
 ## Shipped this session
 
-Audit plans **029–034** plus review follow-ups.
+Agent/skill harness from [revfactory/harness](https://github.com/revfactory/harness) (no product feature change).
 
-| Plan    | Area     | What shipped                                                                                    |
-| ------- | -------- | ----------------------------------------------------------------------------------------------- |
-| AUD-029 | Security | Chat always requires workspace membership; typing only after join; Secure OAuth cookies         |
-| AUD-030 | Security | Google OAuth 2FA via httpOnly cookie; Slack request signature; cookie-only callback workspaceId |
-| AUD-031 | Product  | `sprintId` / `type` task filters; list, calendar, epic, sprint load-more / infinite scroll      |
-| AUD-032 | Security | Outbound SSRF guard + DNS-pinned fetch; automation assign/column stay in-workspace              |
-| AUD-033 | Ops      | Export hard-cap 10k → 413 + FE toast; email scheduler batching; rate-limit unit tests           |
-| AUD-034 | Ops      | Sentry package, required docker `LLM_API_KEY`, CSP report-only, docs accuracy                   |
+| Area     | What shipped                                                                                       |
+| -------- | -------------------------------------------------------------------------------------------------- |
+| Agents   | `.claude/agents/fd-{explorer,implementer,security,qa,docs}.md`                                     |
+| Skills   | `flowdesk-team`, `flowdesk-implement`, `flowdesk-security-review`, `flowdesk-qa`, `harness` (meta) |
+| Adapters | Multi-host symlinks via `pnpm sync:agents`; slash `/flowdesk-team`                                 |
+| Docs     | AGENTS.md harness pointer; adapters.md multi-skill; gitignore whitelist                            |
 
-| Follow-up        | Detail                                                                                                 |
-| ---------------- | ------------------------------------------------------------------------------------------------------ |
-| Review hardening | IPv6/IMDS/CGNAT blocklist; calendar next-page error gate; export blob; Load more                       |
-| Harness          | `feature_list` AUD-029…034 · `RISKS` R-45…R-47 · `TASKS` appendix · `plans/README` · `claude-progress` |
+| Follow-up | Detail                                                               |
+| --------- | -------------------------------------------------------------------- |
+| Use team  | `/flowdesk-team` or skill `flowdesk-team` for multi-role ship/review |
+| Product   | Still `/plan-feature` for ROADMAP / feature_list feature work        |
+| Evolve    | Skill `harness` to reconfigure agents/skills after feedback          |
 
 ## Open / operator
 

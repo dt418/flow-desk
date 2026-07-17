@@ -25,4 +25,14 @@ apps/api/generated/
 .agents/skills/*
 !.agents/skills/plan-feature/
 !.agents/skills/plan-feature/**
-test-results/
+!.agents/skills/flowdesk-team/
+!.agents/skills/flowdesk-team/**
+!.agents/skills/flowdesk-implement/
+!.agents/skills/flowdesk-implement/**
+!.agents/skills/flowdesk-security-review/
+!.agents/skills/flowdesk-security-review/**
+!.agents/skills/flowdesk-qa/
+!.agents/skills/flowdesk-qa/**
+!.agents/skills/harness/
+!.agents/skills/harness/**
+test-results/_workspace/

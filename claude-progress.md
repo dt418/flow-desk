@@ -1,5 +1,17 @@
 # Progress Log
 
+### Session — FlowDesk agent team harness setup (2026-07-18)
+
+- **Goal**: Setup agents + skills from [revfactory/harness](https://github.com/revfactory/harness) for this repo
+- **Completed**:
+  - Agents: `.claude/agents/fd-{explorer,implementer,security,qa,docs}.md`
+  - Skills: `flowdesk-team` (orchestrator), `flowdesk-implement`, `flowdesk-security-review`, `flowdesk-qa`, `harness` (meta + upstream references)
+  - Multi-host adapters via `pnpm sync:agents` (Claude/Codex/OpenCode/Cursor/Grok/Pi)
+  - Slash: `/flowdesk-team`; AGENTS.md harness pointer + change log
+  - `plan-feature` unchanged as product-feature pipeline; team harness complements it
+- **Verification**: `bash scripts/sync-agent-adapters.sh` OK (all skill symlinks + 5 agent defs)
+- **Next**: use `/flowdesk-team` or skill `flowdesk-team` for multi-role ship/review; `harness` skill to evolve team
+
 ### Session — Security/ops audit ship 029–034 + review fixes (2026-07-15)
 
 - **Goal**: Ship residual improve-audit plans 029–034 and address two review rounds of findings
@@ -534,6 +546,12 @@
 - **author:** thanhd
 
 ### 2026-07-18 02:15 — `723d91a` (main)
+
+- **type:**
+- **msg:**
+- **author:** thanhd
+
+### 2026-07-18 02:21 — `308229c` (main)
 
 - **type:**
 - **msg:**
