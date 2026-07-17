@@ -515,6 +515,12 @@
 - **msg:** reformat session-handoff with aligned tables
 - **author:** thanhd
 
+### 2026-07-18 02:13 — `1fa78f2` (main)
+
+- **type:** docs
+- **msg:** point session-handoff tip at latest commit
+- **author:** thanhd
+
 ### Session — 2026-07-11 plan 023 + plan 024 execution
 
 - **Goal**: Execute audit plans 023 (auth security) and 024 (hot-path perf)
