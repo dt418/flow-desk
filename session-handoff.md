@@ -3,9 +3,9 @@
 | Field        | Value                                                                                                    |
 | ------------ | -------------------------------------------------------------------------------------------------------- |
 | Last session | Security/ops audit 029–034 + review fixes — 2026-07-15                                                   |
-| Tip commit   | `617ba42` on `main` (pushed)                                                                             |
+| Tip branch   | `main` @ origin (latest: security ship `4099a0b` + docs sync)                                            |
 | Code ship    | `4099a0b` fix(security): ship audit 029–034 and review hardening                                         |
-| Docs ship    | `da2418b` harness · `951607a`/`617ba42` handoff format                                                   |
+| Docs ship    | `da2418b` feature_list/TASKS/RISKS · handoff tables reformat                                             |
 | Status       | ROADMAP non-cut complete · **74** features `passing` (68 product + AUD-029…034) · plans **001–034 DONE** |
 
 ## Verified state

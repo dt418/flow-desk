@@ -527,6 +527,12 @@
 - **msg:** sync handoff tip SHA
 - **author:** thanhd
 
+### 2026-07-18 02:14 — `6cafb42` (main)
+
+- **type:** docs
+- **msg:** avoid stale tip SHA in session-handoff
+- **author:** thanhd
+
 ### Session — 2026-07-11 plan 023 + plan 024 execution
 
 - **Goal**: Execute audit plans 023 (auth security) and 024 (hot-path perf)
