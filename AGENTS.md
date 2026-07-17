@@ -267,7 +267,99 @@ Phase 1–2 work must not bake in assumptions that block Epic/Sprint/Board model
 - `feature_list.json` — source of truth for feature state.
 - `claude-progress.md` — session log + current verified status.
 - `init.sh` — standard startup + verification path.
-- `session-handoff.md` — compact handoff for larger sessions.
+- `session-handoff.md` — compact handoff for larger sessions (see **Session handoff format** below).
+
+## Session handoff format (`session-handoff.md`)
+
+Agents **must** keep `session-handoff.md` in this layout. Prefer **GitHub-flavored markdown tables** (aligned columns) over free-form prose. Do **not** invent a new structure or drop durable sections.
+
+### Required sections (in order)
+
+1. **Title** — `# Session Handoff — FlowDesk`
+2. **Header table** — field/value rows:
+   - `Last session` — short goal + date
+   - `Tip branch` — e.g. `main` @ origin (avoid a tip SHA that goes stale after every amend)
+   - `Code ship` / `Docs ship` — notable commit hashes + one-line subjects when useful
+   - `Status` — feature_list counts, plans done, blockers
+3. **`## Verified state`** — table: Check | Detail (startup, gate, unit/integration counts, URLs, demo creds)
+4. **`## Shipped this session`** — short intro line, then:
+   - **Primary table**: `Plan | Area | What shipped` (one row per plan/feature id; full sentences or clear fragments)
+   - Optional second table: `Follow-up | Detail` (review polish, harness files)
+5. **`## Open / operator`** — table: `Kind | Item` (deploy secrets, product direction)
+6. **`## Commands`** — table: `Kind | Commands` with the **full durable ops set** (do not shrink this to 2–3 lines):
+   - Stack: `pnpm stack:up` / `stack:up-build` / `stack:down` / `stack:logs` / `stack:ps`
+   - Prisma: `pnpm db:push` / `db:migrate` / `db:seed` / `db:studio` / `db:reset`
+   - Build/check: `pnpm build` / `pnpm typecheck` / `pnpm test`
+   - Local dev: `pnpm dev` / `pnpm dev:reset` / `pnpm dev:turbo`
+   - Hooks/gate: `pnpm setup:lefthook` / `pnpm check:secrets` / `pnpm verify`
+   - Plans: `plans/README.md`
+
+### Rules
+
+- **Update on ship**, not only at session end, when handoff would otherwise lie about status or shipped work.
+- Keep **Commands** complete — it is an ops cheat sheet, not session-specific notes.
+- Run Prettier on the file so table pipes stay aligned (`pnpm exec prettier --write session-handoff.md`).
+- Mirror product/security ship state into `feature_list.json`, `claude-progress.md`, and `RISKS.md` as needed; handoff is the **compact index**, not the only record.
+
+### Skeleton (copy when rewriting)
+
+```markdown
+# Session Handoff — FlowDesk
+
+| Field        | Value             |
+| ------------ | ----------------- |
+| Last session | …                 |
+| Tip branch   | main @ origin (…) |
+| Code ship    | `abc1234` …       |
+| Docs ship    | `def5678` …       |
+| Status       | …                 |
+
+## Verified state
+
+| Check       | Detail                            |
+| ----------- | --------------------------------- |
+| Startup     | …                                 |
+| Gate        | …                                 |
+| API unit    | **N**                             |
+| Integration | **N**                             |
+| Web unit    | **N**                             |
+| Shared unit | **N**                             |
+| Web         | http://localhost:5173             |
+| API         | http://localhost:3000             |
+| Demo        | `demo@flow-desk.app` / `demo1234` |
+
+## Shipped this session
+
+Intro line (scope + optional primary commit).
+
+| Plan   | Area     | What shipped |
+| ------ | -------- | ------------ |
+| ID-001 | Security | …            |
+
+| Follow-up | Detail |
+| --------- | ------ |
+| …         | …      |
+
+## Open / operator
+
+| Kind      | Item |
+| --------- | ---- |
+| Deploy    | …    |
+| Direction | …    |
+
+## Commands
+
+| Kind          | Commands                                                                      |
+| ------------- | ----------------------------------------------------------------------------- |
+| Stack         | `pnpm stack:up` / `stack:up-build` / `stack:down` / `stack:logs` / `stack:ps` |
+| Prisma        | `pnpm db:push` / `db:migrate` / `db:seed` / `db:studio` / `db:reset`          |
+| Build / check | `pnpm build` / `pnpm typecheck` / `pnpm test`                                 |
+| Local dev     | `pnpm dev` / `pnpm dev:reset` / `pnpm dev:turbo`                              |
+| Hooks / gate  | `pnpm setup:lefthook` / `pnpm check:secrets` / `pnpm verify`                  |
+| Plans         | `plans/README.md`                                                             |
+```
+
+Live example: current `session-handoff.md` on `main`.
 
 ## Secrets Policy
 
@@ -296,9 +388,10 @@ Before ending:
 
 1. Update `claude-progress.md` with session record.
 2. Update `feature_list.json` (status, evidence).
-3. Record unresolved risk/blocker.
-4. Commit with descriptive message once work is in safe state.
-5. Leave repo clean enough for next session to run `./init.sh` immediately.
+3. Record unresolved risk/blocker (and `RISKS.md` when risks change).
+4. Rewrite/update `session-handoff.md` using the **Session handoff format** above (tables; full Commands).
+5. Commit with descriptive message once work is in safe state (`pnpm verify` / hooks pass).
+6. Leave repo clean enough for next session to run `./init.sh` immediately.
 
 ## Anti-Patterns (Never)
 
