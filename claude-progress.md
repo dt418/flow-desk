@@ -557,6 +557,12 @@
 - **msg:**
 - **author:** thanhd
 
+### 2026-07-18 11:13 — `5d0562d` (main)
+
+- **type:** fix
+- **msg:** migrate ECC agents from deprecated tools array to permission block
+- **author:** thanhd
+
 ### Session — 2026-07-11 plan 023 + plan 024 execution
 
 - **Goal**: Execute audit plans 023 (auth security) and 024 (hot-path perf)
