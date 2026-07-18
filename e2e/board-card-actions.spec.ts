@@ -8,6 +8,10 @@ test.describe('Board card actions (drag/drop conflict with Edit/Delete) @bugfix'
     await loginViaUI(page, seedUser.email, seedUser.password);
     await page.goto(`/board/${seedUser.workspaceId}`);
     await expect(page.getByRole('heading', { name: /board/i })).toBeVisible({ timeout: 15_000 });
+    // Wait for board data to load — either empty state or columns
+    await expect(
+      page.getByText('No tasks yet').or(page.locator('[data-column-id]')).first(),
+    ).toBeVisible({ timeout: 15_000 });
 
     // Seed a task so we can target the kebab directly.
     await page

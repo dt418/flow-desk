@@ -73,9 +73,15 @@ test.describe('Realtime sync @realtime', () => {
     // Both navigate to the board
     await page.goto(`/board/${seedUser.workspaceId}`);
     await expect(page.getByRole('heading', { name: /board/i })).toBeVisible({ timeout: 15_000 });
+    await expect(
+      page.getByText('No tasks yet').or(page.locator('[data-column-id]')).first(),
+    ).toBeVisible({ timeout: 15_000 });
 
     await page2.goto(`/board/${seedUser.workspaceId}`);
     await expect(page2.getByRole('heading', { name: /board/i })).toBeVisible({ timeout: 15_000 });
+    await expect(
+      page2.getByText('No tasks yet').or(page2.locator('[data-column-id]')).first(),
+    ).toBeVisible({ timeout: 15_000 });
 
     // Wait for socket connections to establish
     await page.waitForTimeout(2_000);
@@ -110,6 +116,9 @@ test.describe('Realtime sync @realtime', () => {
       await expect(page2.getByRole('heading', { name: /board/i })).toBeVisible({
         timeout: 15_000,
       });
+      await expect(
+        page2.getByText('No tasks yet').or(page2.locator('[data-column-id]')).first(),
+      ).toBeVisible({ timeout: 15_000 });
       await expect(page2.getByText('Realtime sync test task')).toBeVisible({ timeout: 10_000 });
     }
 
@@ -130,8 +139,14 @@ test.describe('Realtime sync @realtime', () => {
     // Both on the board
     await page.goto(`/board/${seedUser.workspaceId}`);
     await expect(page.getByRole('heading', { name: /board/i })).toBeVisible({ timeout: 15_000 });
+    await expect(
+      page.getByText('No tasks yet').or(page.locator('[data-column-id]')).first(),
+    ).toBeVisible({ timeout: 15_000 });
     await page2.goto(`/board/${seedUser.workspaceId}`);
     await expect(page2.getByRole('heading', { name: /board/i })).toBeVisible({ timeout: 15_000 });
+    await expect(
+      page2.getByText('No tasks yet').or(page2.locator('[data-column-id]')).first(),
+    ).toBeVisible({ timeout: 15_000 });
 
     // Wait for socket connections
     await page.waitForTimeout(2_000);
@@ -167,6 +182,9 @@ test.describe('Realtime sync @realtime', () => {
         await expect(p.getByRole('heading', { name: /board/i })).toBeVisible({
           timeout: 15_000,
         });
+        await expect(
+          p.getByText('No tasks yet').or(p.locator('[data-column-id]')).first(),
+        ).toBeVisible({ timeout: 15_000 });
         await expect(p.getByText(text)).toBeVisible({ timeout: 10_000 });
       }
     };
@@ -191,6 +209,9 @@ test.describe('Realtime sync @realtime', () => {
     await expect(page2.getByRole('heading', { name: /board/i })).toBeVisible({
       timeout: 15_000,
     });
+    await expect(
+      page2.getByText('No tasks yet').or(page2.locator('[data-column-id]')).first(),
+    ).toBeVisible({ timeout: 15_000 });
     const secondColumn = page2.locator('[data-column-id]').nth(1);
     await expect(secondColumn.getByText('Move me task')).toBeVisible({ timeout: 10_000 });
 

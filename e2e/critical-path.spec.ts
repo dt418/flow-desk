@@ -10,6 +10,9 @@ test.describe('Critical path @smoke', () => {
 
     await page.goto(`/board/${seedUser.workspaceId}`);
     await expect(page.getByRole('heading', { name: /board/i })).toBeVisible({ timeout: 15_000 });
+    await expect(
+      page.getByText('No tasks yet').or(page.locator('[data-column-id]')).first(),
+    ).toBeVisible({ timeout: 15_000 });
 
     await page.getByRole('button', { name: /new task/i }).click();
     await page.getByLabel('Title').fill('Ship F2');
@@ -35,6 +38,7 @@ test.describe('Critical path @smoke', () => {
 
     // Reload to pick up the moved task (page.request bypasses React Query cache invalidation)
     await page.reload();
+    await expect(page.locator('[data-column-id]').first()).toBeVisible({ timeout: 15_000 });
     await expect(page.locator('[data-column-id]').nth(1).getByText('Ship F2')).toBeVisible({
       timeout: 10_000,
     });
