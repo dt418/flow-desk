@@ -231,7 +231,7 @@ test.describe('Chat realtime @chat @realtime', () => {
       await expect(page.getByText(messageText).first()).toBeVisible({ timeout: 8_000 });
     } catch {
       await page.reload();
-      await expect(page.getByText('Channels')).toBeVisible({ timeout: 15_000 });
+      await expect(page.getByText('Channels', { exact: true })).toBeVisible({ timeout: 15_000 });
       await expect(page.getByText(messageText).first()).toBeVisible({ timeout: 10_000 });
     }
 
