@@ -1,16 +1,13 @@
 # Progress Log
 
-### Session — FlowDesk agent team harness setup (2026-07-18)
+### Session — plan-feature v2.2 + agent team harness (2026-07-18)
 
-- **Goal**: Setup agents + skills from [revfactory/harness](https://github.com/revfactory/harness) for this repo
+- **Goal**: Setup agent team harness + fix plan-feature orchestration gaps
 - **Completed**:
-  - Agents: `.claude/agents/fd-{explorer,implementer,security,qa,docs}.md`
-  - Skills: `flowdesk-team` (orchestrator), `flowdesk-implement`, `flowdesk-security-review`, `flowdesk-qa`, `harness` (meta + upstream references)
-  - Multi-host adapters via `pnpm sync:agents` (Claude/Codex/OpenCode/Cursor/Grok/Pi)
-  - Slash: `/flowdesk-team`; AGENTS.md harness pointer + change log
-  - `plan-feature` unchanged as product-feature pipeline; team harness complements it
-- **Verification**: `bash scripts/sync-agent-adapters.sh` OK (all skill symlinks + 5 agent defs)
-- **Next**: use `/flowdesk-team` or skill `flowdesk-team` for multi-role ship/review; `harness` skill to evolve team
+  - **Agent team harness** (revfactory/harness): agents `fd-{explorer,implementer,security,qa,docs}`, skills `flowdesk-team`, `flowdesk-implement`, `flowdesk-security-review`, `flowdesk-qa`, `harness`; multi-host adapters via `pnpm sync:agents`
+  - **plan-feature v2.2**: audited 14 Superpowers Collaboration skills against plan-feature process; added `using-git-worktrees` to Inheritance; added `receiving-code-review` + `dispatching-parallel-agents` to mid-execute table; rewrote Step 4 Execute with dispatch table + activation triggers
+- **Verification**: API 170, Web 37, Shared 31 tests pass; `pnpm sync:agents` OK (6 host trees, all symlinks verified)
+- **Next**: use `/flowdesk-team` for multi-role ship/review; `/plan-feature` for product features
 
 ### Session — Security/ops audit ship 029–034 + review fixes (2026-07-15)
 
@@ -576,6 +573,12 @@
 - **author:** thanhd
 
 ### 2026-07-18 18:00 — `b15c7df` (main)
+
+- **type:**
+- **msg:**
+- **author:** thanhd
+
+### 2026-07-18 18:12 — `c76e5d6` (main)
 
 - **type:**
 - **msg:**
