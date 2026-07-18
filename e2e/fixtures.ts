@@ -48,7 +48,7 @@ async function createWorkspace(
   p: PrismaClient,
   ownerId: string,
   name: string,
-): Promise<{ id: string; name: string; ownerId: string }> {
+): Promise<{ id: string; name: string; ownerId: string; boardId: string }> {
   const slug = `ws-${uniq('s')}`.toLowerCase();
   const ws = await p.workspace.create({
     data: {
@@ -64,9 +64,11 @@ async function createWorkspace(
           { name: 'Done', position: 3, isDoneColumn: true },
         ],
       },
+      boards: { create: [{ name: 'Main', position: 0 }] },
     },
+    include: { boards: { take: 1, orderBy: { position: 'asc' } } },
   });
-  return { id: ws.id, name: ws.name, ownerId: ws.ownerId };
+  return { id: ws.id, name: ws.name, ownerId: ws.ownerId, boardId: ws.boards[0]!.id };
 }
 
 export interface SeededUser {
@@ -75,6 +77,7 @@ export interface SeededUser {
   password: string;
   workspaceId: string;
   workspaceName: string;
+  boardId: string;
 }
 
 export const test = base.extend<{
@@ -127,6 +130,7 @@ export const test = base.extend<{
       password,
       workspaceId: ws.id,
       workspaceName: ws.name,
+      boardId: ws.boardId,
     });
   },
   apiContext: async ({}, use) => {

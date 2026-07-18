@@ -95,6 +95,7 @@ test.describe('Realtime sync @realtime', () => {
         workspaceId: seedUser.workspaceId,
         columnId: firstColumnId,
         title: 'Realtime sync test task',
+        boardId: seedUser.boardId,
       }),
     });
     expect(createRes.ok).toBeTruthy();
@@ -151,6 +152,7 @@ test.describe('Realtime sync @realtime', () => {
         workspaceId: seedUser.workspaceId,
         columnId: col1Id,
         title: 'Move me task',
+        boardId: seedUser.boardId,
       }),
     });
     expect(createRes.ok).toBeTruthy();

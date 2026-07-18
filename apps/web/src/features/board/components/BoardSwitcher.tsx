@@ -18,7 +18,7 @@ interface Props {
 export function BoardSwitcher({ workspaceId, value, onChange }: Props) {
   const boards = useQuery({
     queryKey: ['boards', workspaceId],
-    queryFn: () => api<{ data: Board[] }>(`/workspaces/${workspaceId}/boards`),
+    queryFn: () => api<{ data: Board[] }>(`/api/workspaces/${workspaceId}/boards`),
   });
 
   const items = boards.data?.data ?? [];
