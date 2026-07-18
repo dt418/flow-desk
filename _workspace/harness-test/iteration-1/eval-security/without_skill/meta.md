@@ -1,23 +1,23 @@
 # Meta — baseline security review (without skill)
 
-| Field | Value |
-| ----- | ----- |
-| Mode | Baseline: general security knowledge only |
-| Skill used | **None** (explicitly did not read `flowdesk-security-review` or `fd-security`) |
-| Scope | `apps/api/src/modules/chat/*` + necessary collab socket path for typing |
-| Product source modified | No |
-| Output | Free-form markdown review |
+| Field                   | Value                                                                          |
+| ----------------------- | ------------------------------------------------------------------------------ |
+| Mode                    | Baseline: general security knowledge only                                      |
+| Skill used              | **None** (explicitly did not read `flowdesk-security-review` or `fd-security`) |
+| Scope                   | `apps/api/src/modules/chat/*` + necessary collab socket path for typing        |
+| Product source modified | No                                                                             |
+| Output                  | Free-form markdown review                                                      |
 
 ## Finding count
 
-| Metric | Value |
-| ------ | ----- |
-| Total findings labeled F1–F10 | **10** |
-| High | **1** (F1 `isPrivate` not enforced) |
-| Medium / Medium–High | **4** (F2 role, F3 taskId bind, F4 getOrCreateTaskChannel authz, F6 typing/join lag) |
-| Low / Low–Medium | **4** (F5 soft-delete gap, F7 markRead, F9 email, F10 clientMessageId scope) |
-| Informational / positive | **1** (F8 cross-tenant IDOR largely mitigated) |
-| Actionable High+Medium | **6** |
+| Metric                        | Value                                                                                |
+| ----------------------------- | ------------------------------------------------------------------------------------ |
+| Total findings labeled F1–F10 | **10**                                                                               |
+| High                          | **1** (F1 `isPrivate` not enforced)                                                  |
+| Medium / Medium–High          | **4** (F2 role, F3 taskId bind, F4 getOrCreateTaskChannel authz, F6 typing/join lag) |
+| Low / Low–Medium              | **4** (F5 soft-delete gap, F7 markRead, F9 email, F10 clientMessageId scope)         |
+| Informational / positive      | **1** (F8 cross-tenant IDOR largely mitigated)                                       |
+| Actionable High+Medium        | **6**                                                                                |
 
 Primary count for harness scoring: **10 findings** (or **6** if only High/Medium counted).
 
@@ -42,8 +42,8 @@ Primary count for harness scoring: **10 findings** (or **6** if only High/Medium
 
 ## Coverage emphasis (requested)
 
-| Focus | Covered? |
-| ----- | -------- |
-| Workspace membership | Yes — `assertMembership` vs `findAndValidateChannel`, error codes |
-| IDOR | Yes — cross-workspace matrix, message/channel binding, mentions |
-| Typing | Yes — join gate, `chatPresenceChannels`, revocation lag, private ACL gap |
+| Focus                | Covered?                                                                 |
+| -------------------- | ------------------------------------------------------------------------ |
+| Workspace membership | Yes — `assertMembership` vs `findAndValidateChannel`, error codes        |
+| IDOR                 | Yes — cross-workspace matrix, message/channel binding, mentions          |
+| Typing               | Yes — join gate, `chatPresenceChannels`, revocation lag, private ACL gap |

@@ -30,16 +30,16 @@ apps/api/src/shared/lib/socket.ts:284: low: `typing:start` / `typing:stop` gate 
 
 ## Evidence (positive controls)
 
-| Path | Control |
-| ---- | ------- |
-| REST routes (`chat.routes.ts`, `chat.message.routes.ts`) | `requireAuth()` on `*`; `wid` / `channelId` from params |
-| `listChannels` / `createChannel` | `assertMembership(workspaceId, userId)` before repo |
-| `getChannel` / `updateChannel` / `deleteChannel` | `findAndValidateChannel` (channel + workspace match + soft-delete + membership → 404/403) |
-| `listMessages` / `sendMessage` / `updateMessage` / `deleteMessage` / `markRead` | `findAndValidateChannel` first |
-| Mentions (`sendMessage`) | `mentionedUserIds` filtered to `workspaceMember` rows; outsiders dropped |
-| Socket `conversation:join` | Load channel → `workspaceMember` for `channel.workspaceId` → join only if member |
-| Socket `typing:start` / `typing:stop` | No emit unless `chatPresenceChannels.has(channelId)` (set only after successful join) |
-| Socket `message:send` | Resolves `workspaceId` from DB channel row (not client); `sendMessage` re-validates membership |
-| Integration | `idor-cross-workspace.test.ts`: non-member list/send on foreign non-private channel → 403; mentions filtered |
+| Path                                                                            | Control                                                                                                      |
+| ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| REST routes (`chat.routes.ts`, `chat.message.routes.ts`)                        | `requireAuth()` on `*`; `wid` / `channelId` from params                                                      |
+| `listChannels` / `createChannel`                                                | `assertMembership(workspaceId, userId)` before repo                                                          |
+| `getChannel` / `updateChannel` / `deleteChannel`                                | `findAndValidateChannel` (channel + workspace match + soft-delete + membership → 404/403)                    |
+| `listMessages` / `sendMessage` / `updateMessage` / `deleteMessage` / `markRead` | `findAndValidateChannel` first                                                                               |
+| Mentions (`sendMessage`)                                                        | `mentionedUserIds` filtered to `workspaceMember` rows; outsiders dropped                                     |
+| Socket `conversation:join`                                                      | Load channel → `workspaceMember` for `channel.workspaceId` → join only if member                             |
+| Socket `typing:start` / `typing:stop`                                           | No emit unless `chatPresenceChannels.has(channelId)` (set only after successful join)                        |
+| Socket `message:send`                                                           | Resolves `workspaceId` from DB channel row (not client); `sendMessage` re-validates membership               |
+| Integration                                                                     | `idor-cross-workspace.test.ts`: non-member list/send on foreign non-private channel → 403; mentions filtered |
 
 Exploit path re-check: workspace A channel id + user B session (no membership) → expect 403/404 on list/get/send/join/typing. Current code matches.

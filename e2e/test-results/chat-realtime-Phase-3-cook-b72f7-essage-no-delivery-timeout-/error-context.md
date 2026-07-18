@@ -24,13 +24,13 @@ Call log:
   1   | import { test, expect } from './fixtures';
   2   | import { prisma } from './fixtures';
   3   | import { createHmac } from 'crypto';
-  4   | 
+  4   |
   5   | function getJwtSecret(): string {
   6   |   const secret = process.env.JWT_SECRET;
   7   |   if (!secret) throw new Error('JWT_SECRET env var is required');
   8   |   return secret;
   9   | }
-  10  | 
+  10  |
   11  | function signAccessToken(userId: string, email: string): string {
   12  |   const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
   13  |   const payload = Buffer.from(
@@ -46,7 +46,7 @@ Call log:
   23  |     .digest('base64url');
   24  |   return `${header}.${payload}.${sig}`;
   25  | }
-  26  | 
+  26  |
   27  | async function addCookieToContext(
   28  |   ctx: import('@playwright/test').BrowserContext,
   29  |   cookieStr: string,
@@ -55,7 +55,7 @@ Call log:
   32  |   const value = rest.join('=');
   33  |   await ctx.addCookies([{ name, value, domain: 'localhost', path: '/' }]);
   34  | }
-  35  | 
+  35  |
   36  | async function setupUserPage(browser: import('@playwright/test').Browser, token: string) {
   37  |   const ctx = await browser.newContext();
   38  |   await addCookieToContext(ctx, `access_token=${token}`);
@@ -67,7 +67,7 @@ Call log:
   44  |   });
   45  |   return { ctx, page: p };
   46  | }
-  47  | 
+  47  |
   48  | async function createSecondUser(workspaceId: string, label: string) {
   49  |   const email = `e2e-chat-rt-${label}-${Date.now()}@flow-desk.app`;
   50  |   const user = await prisma.user.create({
@@ -82,62 +82,62 @@ Call log:
   59  |   });
   60  |   return { user, token: signAccessToken(user.id, email) };
   61  | }
-  62  | 
+  62  |
   63  | async function createChannel(workspaceId: string, name: string) {
   64  |   return prisma.chatChannel.create({
   65  |     data: { workspaceId, name, isPrivate: false },
   66  |   });
   67  | }
-  68  | 
+  68  |
   69  | async function navigateToChat(page: import('@playwright/test').Page, workspaceId: string) {
 > 70  |   await page.goto(`/workspaces/${workspaceId}/chat`);
       |              ^ Error: page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
   71  |   await expect(page.getByText('Channels')).toBeVisible({ timeout: 15_000 });
   72  | }
-  73  | 
+  73  |
   74  | test.describe('Chat realtime @chat @realtime', () => {
   75  |   test('no duplicate on send', async ({ page, browser, seedUser }) => {
   76  |     const cookie = `access_token=${signAccessToken(seedUser.id, seedUser.email)}`;
   77  |     const { user: user2, token: token2 } = await createSecondUser(seedUser.workspaceId, 'dup');
   78  |     const { ctx: ctx2, page: page2 } = await setupUserPage(browser, token2);
-  79  | 
+  79  |
   80  |     await addCookieToContext(page.context(), cookie);
   81  |     const channel = await createChannel(seedUser.workspaceId, 'dup-test');
-  82  | 
+  82  |
   83  |     await navigateToChat(page, seedUser.workspaceId);
   84  |     await page.getByText(`# ${channel.name}`).click();
   85  |     await expect(page.getByText('No messages yet')).toBeVisible({ timeout: 10_000 });
-  86  | 
+  86  |
   87  |     await navigateToChat(page2, seedUser.workspaceId);
   88  |     await page2.getByText(`# ${channel.name}`).click();
   89  |     await expect(page2.getByText('No messages yet')).toBeVisible({ timeout: 10_000 });
   90  |     await page.waitForTimeout(1_000);
-  91  | 
+  91  |
   92  |     const messageText = `dup-test-${Date.now()}`;
   93  |     await page.getByLabel('Message').fill(messageText);
   94  |     await page.getByRole('button', { name: /send/i }).click();
-  95  | 
+  95  |
   96  |     await expect(page.getByText(messageText)).toBeVisible({ timeout: 5_000 });
   97  |     const count = await page.getByText(messageText).count();
   98  |     expect(count).toBe(1);
-  99  | 
+  99  |
   100 |     await prisma.user.delete({ where: { id: user2.id } });
   101 |     await ctx2.close();
   102 |   });
-  103 | 
+  103 |
   104 |   test('optimistic appears instantly', async ({ page, seedUser }) => {
   105 |     const cookie = `access_token=${signAccessToken(seedUser.id, seedUser.email)}`;
   106 |     await addCookieToContext(page.context(), cookie);
   107 |     const channel = await createChannel(seedUser.workspaceId, 'optimistic-test');
-  108 | 
+  108 |
   109 |     await navigateToChat(page, seedUser.workspaceId);
   110 |     await page.getByText(`# ${channel.name}`).click();
   111 |     await expect(page.getByText('No messages yet')).toBeVisible({ timeout: 10_000 });
-  112 | 
+  112 |
   113 |     const messageText = `optimistic-${Date.now()}`;
   114 |     await page.getByLabel('Message').fill(messageText);
   115 |     await page.getByRole('button', { name: /send/i }).click();
-  116 | 
+  116 |
   117 |     const foundWithin100ms = await page
   118 |       .getByText(messageText)
   119 |       .first()
@@ -146,38 +146,38 @@ Call log:
   122 |       .catch(() => false);
   123 |     expect(foundWithin100ms).toBe(true);
   124 |   });
-  125 | 
+  125 |
   126 |   test('ACK replaces sending status', async ({ page, seedUser }) => {
   127 |     const cookie = `access_token=${signAccessToken(seedUser.id, seedUser.email)}`;
   128 |     await addCookieToContext(page.context(), cookie);
   129 |     const channel = await createChannel(seedUser.workspaceId, 'ack-test');
-  130 | 
+  130 |
   131 |     await navigateToChat(page, seedUser.workspaceId);
   132 |     await page.getByText(`# ${channel.name}`).click();
   133 |     await expect(page.getByText('No messages yet')).toBeVisible({ timeout: 10_000 });
-  134 | 
+  134 |
   135 |     const messageText = `ack-${Date.now()}`;
   136 |     await page.getByLabel('Message').fill(messageText);
   137 |     await page.getByRole('button', { name: /send/i }).click();
-  138 | 
+  138 |
   139 |     await expect(page.getByText(messageText)).toBeVisible({ timeout: 5_000 });
   140 |     const tempId = page.locator('[id^="temp-"]');
   141 |     await expect(tempId).toHaveCount(0, { timeout: 5_000 });
   142 |   });
-  143 | 
+  143 |
   144 |   test('non-active channel preview updates', async ({ page, browser, seedUser }) => {
   145 |     const cookie = `access_token=${signAccessToken(seedUser.id, seedUser.email)}`;
   146 |     const { user: user2, token: token2 } = await createSecondUser(seedUser.workspaceId, 'preview');
   147 |     const { ctx: ctx2, page: page2 } = await setupUserPage(browser, token2);
-  148 | 
+  148 |
   149 |     const ch1 = await createChannel(seedUser.workspaceId, 'preview-ch1');
   150 |     const ch2 = await createChannel(seedUser.workspaceId, 'preview-ch2');
-  151 | 
+  151 |
   152 |     await addCookieToContext(page.context(), cookie);
   153 |     await navigateToChat(page, seedUser.workspaceId);
   154 |     await page.getByText(`# ${ch1.name}`).click();
   155 |     await expect(page.getByText(`# ${ch1.name}`)).toBeVisible({ timeout: 10_000 });
-  156 | 
+  156 |
   157 |     const apiBase = process.env.API_BASE_URL ?? 'http://localhost:3000';
   158 |     const messageText = `preview-msg-${Date.now()}`;
   159 |     const createRes = await fetch(

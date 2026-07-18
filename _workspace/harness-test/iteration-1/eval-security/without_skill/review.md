@@ -19,15 +19,15 @@ The main residual risks are **broken/incomplete private-channel authorization** 
 
 ## Trust model (as implemented)
 
-| Control | Where | Behavior |
-| ------- | ----- | -------- |
-| Authentication | `chat.routes.ts` / `chat.message.routes.ts` `requireAuth()` | JWT via cookie/Bearer; no unauthenticated REST chat |
-| Workspace membership | `assertMembership` (`list`/`create` channel) | Member row + workspace not soft-deleted; **400** if not member |
-| Channel + membership | `findAndValidateChannel` | Channel exists, not deleted, `channel.workspaceId === path workspaceId`, member row; **404** / **403** |
-| Author ownership | `updateMessage` / `deleteMessage` | `authorId === userId` or error |
-| Mentions | `sendMessage` | `mentionedUserIds` intersected with `workspaceMember` for channel’s workspace |
-| Socket conversation room | `conversation:join` in `socket.ts` | Load channel → require workspace member → `socket.join(conversation:id)` |
-| Typing | `typing:start` / `typing:stop` | Only if `chatPresenceChannels` has channel (set only after successful join) |
+| Control                  | Where                                                       | Behavior                                                                                               |
+| ------------------------ | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Authentication           | `chat.routes.ts` / `chat.message.routes.ts` `requireAuth()` | JWT via cookie/Bearer; no unauthenticated REST chat                                                    |
+| Workspace membership     | `assertMembership` (`list`/`create` channel)                | Member row + workspace not soft-deleted; **400** if not member                                         |
+| Channel + membership     | `findAndValidateChannel`                                    | Channel exists, not deleted, `channel.workspaceId === path workspaceId`, member row; **404** / **403** |
+| Author ownership         | `updateMessage` / `deleteMessage`                           | `authorId === userId` or error                                                                         |
+| Mentions                 | `sendMessage`                                               | `mentionedUserIds` intersected with `workspaceMember` for channel’s workspace                          |
+| Socket conversation room | `conversation:join` in `socket.ts`                          | Load channel → require workspace member → `socket.join(conversation:id)`                               |
+| Typing                   | `typing:start` / `typing:stop`                              | Only if `chatPresenceChannels` has channel (set only after successful join)                            |
 
 ---
 
@@ -38,6 +38,7 @@ The main residual risks are **broken/incomplete private-channel authorization** 
 **Severity:** High  
 **Category:** Authorization / IDOR within tenant  
 **Locations:**
+
 - `chat.repository.ts` — `findAndValidateChannel` (membership only; ignores `isPrivate`)
 - `chat.service.ts` — `listChannels` returns all workspace channels including `isPrivate: true`
 - `chat.message.service.ts` — all message ops use `findAndValidateChannel` only
@@ -48,6 +49,7 @@ The main residual risks are **broken/incomplete private-channel authorization** 
 **Impact:** Users who treat “private” as restricted membership get a false security guarantee; sensitive discussion in a “private” channel is visible to all workspace members (including GUEST if present).
 
 **Recommendation:**
+
 1. If private channels are in-scope product: introduce membership (e.g. `ChatChannelMember`) and enforce in `findAndValidateChannel`, `listChannels` filter, and `conversation:join`.
 2. If not in-scope: stop accepting/advertising `isPrivate` as access control (or document as UI-only and default false without upgrade path that implies secrecy).
 
@@ -58,10 +60,12 @@ The main residual risks are **broken/incomplete private-channel authorization** 
 **Severity:** Medium–High  
 **Category:** Privilege escalation / horizontal privilege within workspace  
 **Locations:**
+
 - `chat.service.ts` — `createChannel`, `updateChannel`, `deleteChannel`
 - Routes: any authenticated user who passes membership
 
 **Issue:** There is no `assertRole` (OWNER/ADMIN). Any `MEMBER` or `GUEST` can:
+
 - Create arbitrary channels
 - Rename / flip `isPrivate` / change description on **any** channel
 - Soft-delete **any** channel (including shared “general” or task-linked channels)
@@ -103,6 +107,7 @@ The main residual risks are **broken/incomplete private-channel authorization** 
 **Severity:** Low–Medium  
 **Category:** Inconsistent membership / lifecycle  
 **Locations:**
+
 - `assertMembership` — rejects soft-deleted workspace
 - `findAndValidateChannel` — only checks `workspaceMember` row, **not** workspace `deletedAt`
 
@@ -121,11 +126,13 @@ The main residual risks are **broken/incomplete private-channel authorization** 
 **Locations:** `apps/api/src/shared/lib/socket.ts` (`conversation:join`, `typing:start|stop`); presence set `chatPresenceChannels`
 
 **What works well:**
+
 - Typing does **not** trust client channelId alone: emit is gated on `chatPresenceChannels.has(channelId)`, populated only after a successful join that checks workspace membership against the channel’s real `workspaceId`.
 - Join does not accept a client-supplied workspaceId for the room (avoids classic “join foreign room by id” with wrong wid).
 - Non-members silently fail join (no room subscription).
 
 **Gaps:**
+
 1. **No re-check on typing events** — after join, membership is not revalidated. A removed member keeps the socket room until disconnect and can continue typing indicators (and receive `message:new` / presence for that conversation).
 2. **`isPrivate` not checked on join** — same as F1 for realtime.
 3. **`typing:*` schemas only take `channelId`** — OK if join is authoritative; document that join is mandatory for any conversation-scoped realtime.
@@ -140,10 +147,12 @@ The main residual risks are **broken/incomplete private-channel authorization** 
 **Severity:** Low  
 **Category:** Authz edge / information leakage  
 **Locations:**
+
 - `chat.message.service.ts` `markRead`
 - `socket.ts` `message:read` handler (calls `markRead` then emits again)
 
 **Issues:**
+
 1. `markRead` correctly calls `findAndValidateChannel` (membership + channel/workspace bind).
 2. If `messageId` is invalid, create may fail (FK) but code still broadcasts a read receipt “anyway” — can spam the room with fake read events for arbitrary message ids (integrity of “read by N”, not full data exfil).
 3. Socket handler emits `message:read` **after** `markRead`, which already `emitToRoom`s the same event → duplicate events (correctness/noise).
@@ -159,6 +168,7 @@ The main residual risks are **broken/incomplete private-channel authorization** 
 **Category:** IDOR
 
 **Positive controls:**
+
 - Path `wid` is the workspace authority; channel must match `channel.workspaceId`.
 - Wrong workspace id for a known channel id → `NotFoundError` (does not confirm existence in another tenant via 403 on the wrong wid… actually non-member on correct foreign wid → 403; wrong wid → 404). Enumeration nuance is acceptable.
 - Message ops require `existing.channelId === channelId`.
@@ -166,6 +176,7 @@ The main residual risks are **broken/incomplete private-channel authorization** 
 - Socket `message:send` loads channel workspace from DB, then `sendMessage` re-validates membership.
 
 **Residual:**
+
 - Non-member errors: `assertMembership` → **400** BadRequest vs `findAndValidateChannel` → **403** Forbidden — inconsistent and 400 is the wrong class for authz.
 - Edit/delete others’ messages → **400** BadRequest (`Cannot edit others messages`) instead of **403** Forbidden — minor.
 
@@ -197,16 +208,16 @@ The main residual risks are **broken/incomplete private-channel authorization** 
 
 ## Cross-workspace IDOR attack matrix (REST)
 
-| Attack | Expected result | Code path |
-| ------ | --------------- | --------- |
-| User A lists channels on WS-B | Denied (`assertMembership`) | `listChannels` |
-| User A gets channel of WS-B with path wid=B | 403 if known wid, membership fail | `findAndValidateChannel` |
-| User A gets channel of WS-B with path wid=A | 404 (`workspaceId` mismatch) | `findAndValidateChannel` |
-| User A lists/sends messages on B’s channel | 403 / fail membership | message service |
-| User A edits B’s message in shared channel | 400 author check | `updateMessage` |
-| User A deletes B’s channel | **Allowed if A is member of B** — see F2 | `deleteChannel` |
-| User A opens “private” channel in same WS | **Allowed** — see F1 | all paths |
-| Outsider in `mentionedUserIds` | Filtered out | `sendMessage` |
+| Attack                                      | Expected result                          | Code path                |
+| ------------------------------------------- | ---------------------------------------- | ------------------------ |
+| User A lists channels on WS-B               | Denied (`assertMembership`)              | `listChannels`           |
+| User A gets channel of WS-B with path wid=B | 403 if known wid, membership fail        | `findAndValidateChannel` |
+| User A gets channel of WS-B with path wid=A | 404 (`workspaceId` mismatch)             | `findAndValidateChannel` |
+| User A lists/sends messages on B’s channel  | 403 / fail membership                    | message service          |
+| User A edits B’s message in shared channel  | 400 author check                         | `updateMessage`          |
+| User A deletes B’s channel                  | **Allowed if A is member of B** — see F2 | `deleteChannel`          |
+| User A opens “private” channel in same WS   | **Allowed** — see F1                     | all paths                |
+| Outsider in `mentionedUserIds`              | Filtered out                             | `sendMessage`            |
 
 ---
 
@@ -232,39 +243,39 @@ The main residual risks are **broken/incomplete private-channel authorization** 
 
 ## Suggested priority order
 
-1. **F1** — Define and enforce private channel ACL or remove the promise of privacy.  
-2. **F2** — Role-gate channel update/delete (and possibly create).  
-3. **F3 / F4** — Bind task channels to real tasks + put authz inside `getOrCreateTaskChannel`.  
-4. **F6** — Membership revocation vs open conversation rooms / typing.  
+1. **F1** — Define and enforce private channel ACL or remove the promise of privacy.
+2. **F2** — Role-gate channel update/delete (and possibly create).
+3. **F3 / F4** — Bind task channels to real tasks + put authz inside `getOrCreateTaskChannel`.
+4. **F6** — Membership revocation vs open conversation rooms / typing.
 5. **F5 / F7 / F8 residual / F9 / F10** — Hardening and consistency.
 
 ---
 
 ## Files reviewed
 
-| File | Role |
-| ---- | ---- |
-| `apps/api/src/modules/chat/chat.routes.ts` | REST channels + `requireAuth` |
-| `apps/api/src/modules/chat/chat.service.ts` | Channel business logic, emit |
-| `apps/api/src/modules/chat/chat.repository.ts` | `findAndValidateChannel`, queries |
-| `apps/api/src/modules/chat/chat.message.routes.ts` | REST messages + broadcast |
-| `apps/api/src/modules/chat/chat.message.service.ts` | Messages, mentions, markRead |
-| `apps/api/src/modules/chat/chat.message.repository.ts` | Message persistence |
-| `apps/api/src/modules/chat/chat.test.ts` | Unit coverage (not authz matrix) |
-| `apps/api/src/modules/chat/chat.message.test.ts` | Unit coverage (author edit denial) |
+| File                                                                                                            | Role                               |
+| --------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| `apps/api/src/modules/chat/chat.routes.ts`                                                                      | REST channels + `requireAuth`      |
+| `apps/api/src/modules/chat/chat.service.ts`                                                                     | Channel business logic, emit       |
+| `apps/api/src/modules/chat/chat.repository.ts`                                                                  | `findAndValidateChannel`, queries  |
+| `apps/api/src/modules/chat/chat.message.routes.ts`                                                              | REST messages + broadcast          |
+| `apps/api/src/modules/chat/chat.message.service.ts`                                                             | Messages, mentions, markRead       |
+| `apps/api/src/modules/chat/chat.message.repository.ts`                                                          | Message persistence                |
+| `apps/api/src/modules/chat/chat.test.ts`                                                                        | Unit coverage (not authz matrix)   |
+| `apps/api/src/modules/chat/chat.message.test.ts`                                                                | Unit coverage (author edit denial) |
 | Related: `shared/lib/access.ts`, `shared/lib/socket.ts`, `modules/realtime/schemas.ts`, task route task-channel |
 
 ---
 
 ## Finding count
 
-| Severity | Count |
-| -------- | ----- |
-| High | 1 (F1); F2 treated Medium–High |
-| Medium | 4 (F2, F3, F4, F6) |
-| Low / Low–Medium | 4 (F5, F7, F9, F10) |
-| Informational | 1 (F8 positive + residual) |
-| **Total discrete findings** | **10** (F1–F10) |
+| Severity                    | Count                          |
+| --------------------------- | ------------------------------ |
+| High                        | 1 (F1); F2 treated Medium–High |
+| Medium                      | 4 (F2, F3, F4, F6)             |
+| Low / Low–Medium            | 4 (F5, F7, F9, F10)            |
+| Informational               | 1 (F8 positive + residual)     |
+| **Total discrete findings** | **10** (F1–F10)                |
 
 **Actionable security findings (High+Medium, counting F2 as medium-high):** **6**  
 **Including lows:** **10**
