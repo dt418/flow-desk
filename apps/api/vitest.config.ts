@@ -14,6 +14,7 @@ export default defineConfig({
       DATABASE_URL: 'postgresql://flowdesk:flowdesk@localhost:5432/flowdesk_test?schema=public',
       REDIS_URL: 'redis://localhost:6390',
       SKIP_RATE_LIMIT: '1',
+      LLM_API_KEY: 'sk-test-key-valid',
     },
     coverage: {
       provider: 'v8',

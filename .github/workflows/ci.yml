@@ -164,7 +164,7 @@ jobs:
           REDIS_URL: redis://localhost:6379
           NODE_ENV: test
           JWT_SECRET: ci-test-secret-32-chars-minimum-for-jwt!!
-          LLM_API_KEY: sk-placeholder
+          LLM_API_KEY: sk-test-key-valid
           SKIP_RATE_LIMIT: '1'
 
   e2e:
@@ -227,5 +227,5 @@ jobs:
           REDIS_URL: redis://localhost:6379
           NODE_ENV: test
           JWT_SECRET: ci-test-secret-32-chars-minimum-for-jwt!!
-          LLM_API_KEY: sk-placeholder
+          LLM_API_KEY: sk-test-key-valid
           SKIP_RATE_LIMIT: '1'
