@@ -34,24 +34,24 @@ If unsure whether it is a feature ship: prefer this skill when `feature_list.jso
 
 Resolve names with or without a `superpowers:` prefix — same skills, host-dependent.
 
-| #   | Skill                                                              | When                                                        |
-| --- | ------------------------------------------------------------------ | ----------------------------------------------------------- |
-| 1   | `brainstorming`                                                    | Design only; hard gate until **explicit** approval          |
-| 2   | `writing-plans`                                                    | After design approved                                       |
-| 3   | `subagent-driven-development` (preferred) **or** `executing-plans` | After explicit **"go"**                                     |
+| #   | Skill                                                              | When                                                                   |
+| --- | ------------------------------------------------------------------ | ---------------------------------------------------------------------- |
+| 1   | `brainstorming`                                                    | Design only; hard gate until **explicit** approval                     |
+| 2   | `writing-plans`                                                    | After design approved                                                  |
+| 3   | `subagent-driven-development` (preferred) **or** `executing-plans` | After explicit **"go"**                                                |
 | 3.5 | `using-git-worktrees`                                              | Before step 4 execution — isolate feature work if not already isolated |
-| 4   | `verification-before-completion`                                   | Before any "done" / `passing` claim                         |
-| 5   | `finishing-a-development-branch`                                   | After all tasks verified (feature branch)                   |
+| 4   | `verification-before-completion`                                   | Before any "done" / `passing` claim                                    |
+| 5   | `finishing-a-development-branch`                                   | After all tasks verified (feature branch)                              |
 
 Mid-execute (invoke when condition matches):
 
-| Skill                          | Invoke when                                                      |
-| ------------------------------ | ---------------------------------------------------------------- |
-| `test-driven-development`      | Any production code task — write failing test first              |
-| `using-git-worktrees`          | Feature needs isolation from main (skip if already in worktree) |
-| `requesting-code-review`       | Task complete or before merge — dispatch code-reviewer          |
-| `receiving-code-review`        | Review feedback received — verify before implementing suggestions |
-| `dispatching-parallel-agents`  | 2+ independent tasks with no shared state — parallel dispatch   |
+| Skill                         | Invoke when                                                       |
+| ----------------------------- | ----------------------------------------------------------------- |
+| `test-driven-development`     | Any production code task — write failing test first               |
+| `using-git-worktrees`         | Feature needs isolation from main (skip if already in worktree)   |
+| `requesting-code-review`      | Task complete or before merge — dispatch code-reviewer            |
+| `receiving-code-review`       | Review feedback received — verify before implementing suggestions |
+| `dispatching-parallel-agents` | 2+ independent tasks with no shared state — parallel dispatch     |
 
 FlowDesk paths, module layout, schema hygiene, `feature_list` shape: load [references/harness.md](references/harness.md) when needed — do not paste into every turn.
 
@@ -131,12 +131,12 @@ Before first code task: set target `status: in_progress` (only one). Follow modu
 
 During execution, invoke as needed:
 
-| Condition                          | Invoke                              |
-| ---------------------------------- | ----------------------------------- |
-| Any production code task           | `test-driven-development`           |
-| Feature needs branch isolation     | `using-git-worktrees`               |
-| Task complete / before merge       | `requesting-code-review`            |
-| Review feedback received           | `receiving-code-review`             |
+| Condition                      | Invoke                    |
+| ------------------------------ | ------------------------- |
+| Any production code task       | `test-driven-development` |
+| Feature needs branch isolation | `using-git-worktrees`     |
+| Task complete / before merge   | `requesting-code-review`  |
+| Review feedback received       | `receiving-code-review`   |
 
 Caveman: **on** for plan/execute narration. **Off** for commits, PR text, `claude-progress.md`, `feature_list.json` notes.
 

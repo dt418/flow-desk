@@ -1,12 +1,12 @@
 # Session Handoff — FlowDesk
 
-| Field        | Value                                                                                                    |
-| ------------ | -------------------------------------------------------------------------------------------------------- |
-| Last session | plan-feature v2.2 + agent team harness — 2026-07-18                                                      |
-| Tip branch   | `main` @ origin (pending commit: plan-feature v2.2 + changelogs)                                         |
-| Code ship    | plan-feature v2.2: Superpowers skill orchestration gaps closed                                            |
-| Docs ship    | AGENTS.md change log + claude-progress.md + session-handoff.md updated                                   |
-| Status       | ROADMAP non-cut complete · **74** features `passing` · plans **001–034 DONE** · plan-feature v2.2 ready  |
+| Field        | Value                                                                                                   |
+| ------------ | ------------------------------------------------------------------------------------------------------- |
+| Last session | plan-feature v2.2 + agent team harness — 2026-07-18                                                     |
+| Tip branch   | `main` @ origin (pending commit: plan-feature v2.2 + changelogs)                                        |
+| Code ship    | plan-feature v2.2: Superpowers skill orchestration gaps closed                                          |
+| Docs ship    | AGENTS.md change log + claude-progress.md + session-handoff.md updated                                  |
+| Status       | ROADMAP non-cut complete · **74** features `passing` · plans **001–034 DONE** · plan-feature v2.2 ready |
 
 ## Verified state
 

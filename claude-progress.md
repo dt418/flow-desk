@@ -590,6 +590,12 @@
 - **msg:**
 - **author:** thanhd
 
+### 2026-07-18 19:31 — `ed254ce` (main)
+
+- **type:** style
+- **msg:** run prettier to fix formatting in 3 markdown files
+- **author:** thanhd
+
 ### Session — 2026-07-11 plan 023 + plan 024 execution
 
 - **Goal**: Execute audit plans 023 (auth security) and 024 (hot-path perf)
