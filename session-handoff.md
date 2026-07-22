@@ -1,12 +1,12 @@
 # Session Handoff — FlowDesk
 
-| Field        | Value                                                                                                   |
-| ------------ | ------------------------------------------------------------------------------------------------------- |
-| Last session | plan-feature v2.2 + agent team harness — 2026-07-18                                                     |
-| Tip branch   | `main` @ origin (pending commit: plan-feature v2.2 + changelogs)                                        |
-| Code ship    | plan-feature v2.2: Superpowers skill orchestration gaps closed                                          |
-| Docs ship    | AGENTS.md change log + claude-progress.md + session-handoff.md updated                                  |
-| Status       | ROADMAP non-cut complete · **74** features `passing` · plans **001–034 DONE** · plan-feature v2.2 ready |
+| Field        | Value                                                                                                                 |
+| ------------ | --------------------------------------------------------------------------------------------------------------------- |
+| Last session | Harness hygiene: untrack smoke artifacts, tip sync, push — 2026-07-18                                                 |
+| Tip branch   | `main` @ origin (after push of this commit)                                                                           |
+| Code ship    | Agents/skills harness + plan-feature v2.2 + Phase 6 test script (no product feature change)                           |
+| Docs ship    | handoff tip; untrack `_workspace`/test-results; gitignore; structure test script                                      |
+| Status       | ROADMAP non-cut complete · **74** features `passing` · plans **001–034 DONE** · harness ready · plan-feature **v2.2** |
 
 ## Verified state
 
@@ -14,6 +14,7 @@
 | ----------- | ----------------------------------------------------------------------------------------- |
 | Startup     | `./init.sh` then `docker compose up -d` / `pnpm stack:up`                                 |
 | Gate        | Stage files then `pnpm verify` (or typecheck + unit + integration + build + format:check) |
+| Agents      | `pnpm sync:agents` + `bash scripts/test-harness-structure.sh`                             |
 | API unit    | **170**                                                                                   |
 | Integration | **270**                                                                                   |
 | Web unit    | **37**                                                                                    |
@@ -24,20 +25,19 @@
 
 ## Shipped this session
 
-Agent/skill harness from [revfactory/harness](https://github.com/revfactory/harness) (no product feature change).
+| Area         | What shipped                                                                                         |
+| ------------ | ---------------------------------------------------------------------------------------------------- |
+| Harness      | `.claude/agents/fd-*`, skills `flowdesk-team` / implement / security / qa / `harness` meta           |
+| plan-feature | **v2.2** Superpowers dispatch (worktrees, parallel agents, receiving-code-review)                    |
+| Validation   | Phase 6 structure/dry-run/skill-smoke on chat; findings still match current chat code                |
+| Hygiene      | Stop tracking `_workspace/**` + e2e/test-results artifacts; gitignore; durable structure test script |
 
-| Area     | What shipped                                                                                       |
-| -------- | -------------------------------------------------------------------------------------------------- |
-| Agents   | `.claude/agents/fd-{explorer,implementer,security,qa,docs}.md`                                     |
-| Skills   | `flowdesk-team`, `flowdesk-implement`, `flowdesk-security-review`, `flowdesk-qa`, `harness` (meta) |
-| Adapters | Multi-host symlinks via `pnpm sync:agents`; slash `/flowdesk-team`                                 |
-| Docs     | AGENTS.md harness pointer; adapters.md multi-skill; gitignore whitelist                            |
-
-| Follow-up | Detail                                                               |
-| --------- | -------------------------------------------------------------------- |
-| Use team  | `/flowdesk-team` or skill `flowdesk-team` for multi-role ship/review |
-| Product   | Still `/plan-feature` for ROADMAP / feature_list feature work        |
-| Evolve    | Skill `harness` to reconfigure agents/skills after feedback          |
+| Follow-up | Detail                                                                                                                    |
+| --------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Use team  | `/flowdesk-team` or skill `flowdesk-team` for multi-role ship/review                                                      |
+| Product   | Still `/plan-feature` for ROADMAP / feature_list feature work                                                             |
+| Residual  | Chat: `isPrivate` cosmetic ACL; `getOrCreateTaskChannel` no userId; markRead message bind (low/medium, not blocking ship) |
+| Deploy    | Real `LLM_API_KEY`, `JWT_SECRET`; optional metrics/Sentry/OAuth                                                           |
 
 ## Open / operator
 
@@ -55,4 +55,5 @@ Agent/skill harness from [revfactory/harness](https://github.com/revfactory/harn
 | Build / check | `pnpm build` / `pnpm typecheck` / `pnpm test`                                          |
 | Local dev     | `pnpm dev` (infra + migrate + seed + hot reload) / `pnpm dev:reset` / `pnpm dev:turbo` |
 | Hooks / gate  | `pnpm setup:lefthook` / `pnpm check:secrets` / `pnpm verify`                           |
+| Agents        | `pnpm sync:agents` / `bash scripts/test-harness-structure.sh`                          |
 | Plans         | `plans/README.md`                                                                      |

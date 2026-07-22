@@ -1,5 +1,17 @@
 # Progress Log
 
+### Session — Harness hygiene vs latest source (2026-07-18)
+
+- **Goal**: Apply cross-check recommendations after comparing harness task to tip source
+- **Completed**:
+  - Confirmed chat product paths **unchanged** since smoke; security/QA findings still valid
+  - Untracked `_workspace/harness-test/**`, `e2e/test-results/**`, `test-results/**` from git index
+  - `.gitignore`: `_workspace/`, `test-results/`, `e2e/test-results/`
+  - Updated `session-handoff.md` tip + Commands (`sync:agents`, structure test)
+  - Re-ran `bash scripts/test-harness-structure.sh` → PASS
+- **Verification**: structure script green; no product code change this commit
+- **Next**: `/flowdesk-team` or `/plan-feature` as needed; optional chat residual ACL when product prioritizes
+
 ### Session — plan-feature v2.2 + agent team harness (2026-07-18)
 
 - **Goal**: Setup agent team harness + fix plan-feature orchestration gaps
@@ -603,6 +615,12 @@
 - **author:** thanhd
 
 ### 2026-07-22 20:53 — `f525029` (main)
+
+- **type:**
+- **msg:**
+- **author:** thanhd
+
+### 2026-07-22 20:56 — `7bc8dff` (main)
 
 - **type:**
 - **msg:**

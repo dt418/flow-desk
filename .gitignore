@@ -35,4 +35,8 @@ apps/api/generated/
 !.agents/skills/flowdesk-qa/**
 !.agents/skills/harness/
 !.agents/skills/harness/**
-test-results/_workspace/
+# Local agent/harness scratch (never commit)
+_workspace/
+# Playwright / e2e artifacts
+test-results/
+e2e/test-results/
