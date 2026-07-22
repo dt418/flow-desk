@@ -62,6 +62,7 @@ Based on [revfactory/harness](https://github.com/revfactory/harness) (L3 team-ar
 | ---------- | ------------------------------------------------------------------------------------- | ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 2026-07-18 | Initial FlowDesk team (5 agents + 4 domain skills + harness meta)                     | `.claude/agents/*`, `.agents/skills/flowdesk-*`, `harness` | Setup from revfactory/harness                                                                                                                       |
 | 2026-07-18 | plan-feature v2.2: add missing Superpowers skills to inheritance + execution dispatch | `.claude/skills/plan-feature/SKILL.md`                     | Close orchestration gaps: `dispatching-parallel-agents`, `receiving-code-review`, `using-git-worktrees` now properly wired with activation triggers |
+| 2026-07-18 | Phase 6 harness test PASS; harness description exclusions for product bugs/IDOR       | `harness` skill description; `_workspace/harness-test/`    | Iteration-1 validation (structure/dry-run/skill smoke/triggers)                                                                                     |
 
 ## Working Rules
 

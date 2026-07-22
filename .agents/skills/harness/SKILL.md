@@ -1,6 +1,13 @@
 ---
 name: harness
-description: "하네스를 구성합니다. 전문 에이전트를 정의하며, 해당 에이전트가 사용할 스킬을 생성하는 메타 스킬. (1) '하네스 구성해줘', '하네스 구축해줘' 요청 시, (2) '하네스 설계', '하네스 엔지니어링' 요청 시, (3) 새로운 도메인/프로젝트에 대한 하네스 기반 자동화 체계를 구축할 때, (4) 하네스 구성을 재구성하거나 확장할 때, (5) '하네스 점검', '하네스 감사', '하네스 현황', '에이전트/스킬 동기화' 등 기존 하네스 운영/유지보수 요청 시 사용."
+description: >
+  Meta-skill to design/build/reconfigure agent teams and their skills (하네스 구성,
+  하네스 구축, harness design, agent/skill sync, harness audit). Use when adding
+  agents under .claude/agents, writing skill SKILL.md trees, or evolving the team
+  architecture. Do NOT use for product bug fixes, IDOR/security reviews of app
+  code, feature shipping, or QA of product modules — use flowdesk-security-review,
+  flowdesk-qa, plan-feature, or flowdesk-team instead. Also triggers on: 하네스
+  점검, 하네스 현황, rebuild harness, expand agent roster.
 ---
 
 # Harness — Agent Team & Skill Architect
