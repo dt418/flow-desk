@@ -27,3 +27,10 @@ export async function assertRole(
   }
   return member;
 }
+
+/** Roles that may mutate workspace data (GUEST is read-only). */
+export const WORKSPACE_WRITER_ROLES = ['OWNER', 'ADMIN', 'MEMBER'] as const;
+
+export async function assertCanWriteWorkspace(workspaceId: string, userId: string) {
+  return assertRole(workspaceId, userId, [...WORKSPACE_WRITER_ROLES]);
+}

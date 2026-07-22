@@ -89,6 +89,22 @@ describe('attachment.service', () => {
       expect(att.size).toBe(5);
     });
 
+    it('rejects svg extension', async () => {
+      const file = new File(['<svg></svg>'], 'x.svg', { type: 'image/svg+xml' });
+      await expect(svc.uploadAttachment(db, ownerId, taskId, file)).rejects.toThrow(
+        /not allowed|extension/i,
+      );
+    });
+
+    it('rejects guest upload', async () => {
+      const guest = await createUser(prisma, 'guest@test.com');
+      await addMember(prisma, wid, guest.id, 'GUEST');
+      const file = new File(['x'], 'a.txt', { type: 'text/plain' });
+      await expect(svc.uploadAttachment(db, guest.id, taskId, file)).rejects.toThrow(
+        /role|Forbidden/i,
+      );
+    });
+
     it('non-member rejected', async () => {
       const file = new File(['x'], 'a.txt', { type: 'text/plain' });
       await expect(svc.uploadAttachment(db, outsiderId, taskId, file)).rejects.toThrow(
@@ -101,6 +117,16 @@ describe('attachment.service', () => {
       await expect(svc.uploadAttachment(db, ownerId, 'missing', file)).rejects.toThrow(
         NotFoundError,
       );
+    });
+  });
+
+  describe('downloadContentType', () => {
+    it('keeps raster image mimes', () => {
+      expect(svc.downloadContentType('image/png')).toBe('image/png');
+    });
+    it('forces octet-stream for non-image', () => {
+      expect(svc.downloadContentType('text/html')).toBe('application/octet-stream');
+      expect(svc.downloadContentType('image/svg+xml')).toBe('application/octet-stream');
     });
   });
 

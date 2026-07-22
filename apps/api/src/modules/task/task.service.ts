@@ -1,7 +1,7 @@
 import { prisma } from '../../shared/lib/prisma';
 import { decodeCursor, encodeCursor, CursorPaginationQuery } from '@flow-desk/shared/pagination';
 import { cuidSchema } from '@flow-desk/shared/common';
-import { assertMembership } from '../../shared/lib/access';
+import { assertCanWriteWorkspace, assertMembership } from '../../shared/lib/access';
 import type { Prisma, TaskStatus } from '@flowdesk/db';
 import { z } from 'zod';
 import {
@@ -175,7 +175,7 @@ export const taskService = {
   },
 
   async create(userId: string, body: CreateTaskInput) {
-    await assertMembership(body.workspaceId, userId);
+    await assertCanWriteWorkspace(body.workspaceId, userId);
     if (body.columnId) {
       const column = await prisma.column.findUnique({
         where: { id: body.columnId },
@@ -227,7 +227,7 @@ export const taskService = {
   async update(userId: string, id: string, body: UpdateTaskInput) {
     const existing = await repo.findActiveById(prisma, id);
     if (!existing) throw new NotFoundError('Task not found');
-    await assertMembership(existing.workspaceId, userId);
+    await assertCanWriteWorkspace(existing.workspaceId, userId);
 
     if (body.version !== undefined && body.version !== existing.version) {
       throw new ConflictError('Task was updated by another user', { current: existing });
@@ -262,7 +262,7 @@ export const taskService = {
   async delete(userId: string, id: string) {
     const existing = await repo.findActiveById(prisma, id);
     if (!existing) throw new NotFoundError('Task not found');
-    await assertMembership(existing.workspaceId, userId);
+    await assertCanWriteWorkspace(existing.workspaceId, userId);
     await repo.softDelete(prisma, id);
     emitToWorkspace(existing.workspaceId, 'task:deleted', { taskId: id });
     emitToTask(id, 'task:deleted', { taskId: id });
@@ -271,7 +271,7 @@ export const taskService = {
   async restore(userId: string, id: string) {
     const existing = await repo.findActiveById(prisma, id);
     if (!existing) throw new NotFoundError('Task not found');
-    await assertMembership(existing.workspaceId, userId);
+    await assertCanWriteWorkspace(existing.workspaceId, userId);
     const task = await prisma.task.update({
       where: { id },
       data: { deletedAt: null },
@@ -285,7 +285,7 @@ export const taskService = {
   async move(userId: string, id: string, body: MoveTaskInput) {
     const existing = await repo.findActiveById(prisma, id);
     if (!existing) throw new NotFoundError('Task not found');
-    await assertMembership(existing.workspaceId, userId);
+    await assertCanWriteWorkspace(existing.workspaceId, userId);
 
     if (body.version !== existing.version) {
       throw new ConflictError('Task was updated by another user', { current: existing });
@@ -406,7 +406,7 @@ export const taskService = {
   async createSubtask(userId: string, parentId: string, body: CreateSubtaskInput) {
     const parent = await repo.findActiveById(prisma, parentId);
     if (!parent) throw new NotFoundError('Parent task not found');
-    await assertMembership(parent.workspaceId, userId);
+    await assertCanWriteWorkspace(parent.workspaceId, userId);
     if (body.columnId) {
       const column = await prisma.column.findUnique({
         where: { id: body.columnId },
@@ -455,7 +455,7 @@ export const taskService = {
     if (blocking.workspaceId !== blocked.workspaceId) {
       throw new BadRequestError('Tasks must be in same workspace');
     }
-    await assertMembership(blocking.workspaceId, userId);
+    await assertCanWriteWorkspace(blocking.workspaceId, userId);
 
     const existing = await repo.findDependency(prisma, body.blockingTaskId, body.blockedTaskId);
     if (existing) throw new ConflictError('Dependency already exists');

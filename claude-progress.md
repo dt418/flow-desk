@@ -1,5 +1,15 @@
 # Progress Log
 
+### Session — Review #4 attachments + GUEST write policy (2026-07-22)
+
+- **Goal**: Finish remaining polish from project review (attachments + guest role)
+- **Completed**:
+  - Attachments: stream upload to disk, drop `.svg`, 1 GiB/24h per-user quota, safer download Content-Type
+  - `assertCanWriteWorkspace` (OWNER/ADMIN/MEMBER); task create/update/delete/restore/move/subtask/dependency + attachment upload
+  - GUEST remains read-only for those mutations
+- **Verification**: integration 274 (attachment +4); api typecheck
+- **Next**: optional full private-channel membership ACL; PgBouncer service if multi-replica
+
 ### Session — Review #2 deploy + #3 R-14 lite (2026-07-22)
 
 - **Goal**: Deploy runbook/secrets + light scale hygiene from completion review
@@ -665,6 +675,12 @@
 
 - **type:** docs
 - **msg:** sync session-handoff after ops deploy ship
+- **author:** thanhd
+
+### 2026-07-22 21:20 — `0dd0728` (main)
+
+- **type:**
+- **msg:**
 - **author:** thanhd
 
 ### Session — 2026-07-11 plan 023 + plan 024 execution

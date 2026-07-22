@@ -47,8 +47,9 @@ attachmentRouter.get('/:id/download', async (c) => {
     auth.user.id,
     id,
   );
-  c.header('Content-Type', attachment.mimeType);
+  c.header('Content-Type', svc.downloadContentType(attachment.mimeType));
   c.header('Content-Length', String(fileStat.size));
+  c.header('X-Content-Type-Options', 'nosniff');
   c.header(
     'Content-Disposition',
     `attachment; filename="${encodeURIComponent(attachment.filename)}"`,
