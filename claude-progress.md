@@ -661,6 +661,12 @@
 - **msg:**
 - **author:** thanhd
 
+### 2026-07-22 21:10 — `b7acdd8` (main)
+
+- **type:** docs
+- **msg:** sync session-handoff after ops deploy ship
+- **author:** thanhd
+
 ### Session — 2026-07-11 plan 023 + plan 024 execution
 
 - **Goal**: Execute audit plans 023 (auth security) and 024 (hot-path perf)
