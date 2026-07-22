@@ -76,13 +76,16 @@ export async function createChannel(
   // could only be created via getOrCreateTaskChannel. Pass through the
   // values from the schema so REST POST can create either workspace or
   // task channels.
+  //
+  // Private-channel ACL is not implemented (no channel membership table).
+  // Always persist isPrivate=false so the flag cannot imply secrecy.
   let channel;
   try {
     channel = await repo.create(prisma, {
       workspaceId,
       name: body.name,
       description: body.description ?? null,
-      isPrivate: body.isPrivate,
+      isPrivate: false,
       scope: body.scope,
       taskId: body.taskId ?? null,
     });
@@ -131,10 +134,11 @@ export async function updateChannel(
 
   let channel;
   try {
+    // Ignore client isPrivate until channel-member ACL ships (always keep false).
     channel = await repo.update(prisma, channelId, {
       name: body.name,
       description: body.description,
-      isPrivate: body.isPrivate,
+      ...(body.isPrivate !== undefined ? { isPrivate: false } : {}),
     });
   } catch (err: unknown) {
     if (err instanceof Error && 'code' in err && (err as { code: string }).code === 'P2002') {
@@ -177,9 +181,21 @@ export async function deleteChannel(
 
 export async function getOrCreateTaskChannel(
   prisma: PrismaClient,
+  userId: string,
   workspaceId: string,
   taskId: string,
 ) {
+  await assertMembership(workspaceId, userId);
+
+  // Bind task to workspace so callers cannot attach arbitrary task ids.
+  const task = await prisma.task.findFirst({
+    where: { id: taskId, workspaceId, deletedAt: null },
+    select: { id: true },
+  });
+  if (!task) {
+    throw new NotFoundError('Task not found');
+  }
+
   const existing = await repo.findByScopeAndTask(prisma, workspaceId, taskId);
   if (existing) return existing;
   try {

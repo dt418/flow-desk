@@ -1,12 +1,12 @@
 # Session Handoff — FlowDesk
 
-| Field        | Value                                                                                                                 |
-| ------------ | --------------------------------------------------------------------------------------------------------------------- |
-| Last session | Harness hygiene: untrack smoke artifacts, tip sync, push — 2026-07-18                                                 |
-| Tip branch   | `main` @ origin (after push of this commit)                                                                           |
-| Code ship    | Agents/skills harness + plan-feature v2.2 + Phase 6 test script (no product feature change)                           |
-| Docs ship    | handoff tip; untrack `_workspace`/test-results; gitignore; structure test script                                      |
-| Status       | ROADMAP non-cut complete · **74** features `passing` · plans **001–034 DONE** · harness ready · plan-feature **v2.2** |
+| Field        | Value                                                                                                                           |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| Last session | Review item 1: chat markRead bind + isPrivate honesty + task-channel authz — 2026-07-22                                         |
+| Tip branch   | `main` @ origin (after push of this commit)                                                                                     |
+| Code ship    | Chat integrity: markRead channel bind; single message:read emit; isPrivate forced false; getOrCreateTaskChannel membership+task |
+| Docs ship    | handoff residual updated                                                                                                        |
+| Status       | ROADMAP non-cut complete · **74** features `passing` · plans **001–034 DONE** · chat review#1 closed                            |
 
 ## Verified state
 
@@ -32,12 +32,12 @@
 | Validation   | Phase 6 structure/dry-run/skill-smoke on chat; findings still match current chat code                |
 | Hygiene      | Stop tracking `_workspace/**` + e2e/test-results artifacts; gitignore; durable structure test script |
 
-| Follow-up | Detail                                                                                                                    |
-| --------- | ------------------------------------------------------------------------------------------------------------------------- |
-| Use team  | `/flowdesk-team` or skill `flowdesk-team` for multi-role ship/review                                                      |
-| Product   | Still `/plan-feature` for ROADMAP / feature_list feature work                                                             |
-| Residual  | Chat: `isPrivate` cosmetic ACL; `getOrCreateTaskChannel` no userId; markRead message bind (low/medium, not blocking ship) |
-| Deploy    | Real `LLM_API_KEY`, `JWT_SECRET`; optional metrics/Sentry/OAuth                                                           |
+| Follow-up | Detail                                                                                                       |
+| --------- | ------------------------------------------------------------------------------------------------------------ |
+| Use team  | `/flowdesk-team` or skill `flowdesk-team` for multi-role ship/review                                         |
+| Product   | Still `/plan-feature` for ROADMAP / feature_list feature work                                                |
+| Residual  | Full private-channel membership ACL still deferred (flag forced false); GUEST policy; ops R-14 / attachments |
+| Deploy    | Real `LLM_API_KEY`, `JWT_SECRET`; optional metrics/Sentry/OAuth                                              |
 
 ## Open / operator
 

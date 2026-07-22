@@ -311,14 +311,12 @@ export function createSocketServer(httpServer: HttpServer) {
           if (!rl.allowed) return;
           const { markRead } = await import('../../modules/chat/chat.message.service');
           const { prisma } = await import('./prisma');
-          await markRead(prisma, userId, data.workspaceId, data.channelId, data.messageId);
-          // Broadcast the receipt to the room so the author sees "Read by N".
-          socket.to(`conversation:${data.channelId}`).emit('message:read', {
-            userId,
-            channelId: data.channelId,
-            messageId: data.messageId,
-            readAt: new Date().toISOString(),
-          });
+          // markRead emits message:read once — do not re-emit here (avoids double receipts).
+          try {
+            await markRead(prisma, userId, data.workspaceId, data.channelId, data.messageId);
+          } catch {
+            // Membership / message-not-found: silent drop (same as conversation:join deny).
+          }
         })(socket),
       );
 

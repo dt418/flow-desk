@@ -7,6 +7,8 @@ const mockCreateMessage = vi.fn();
 const mockUpdateMessage = vi.fn();
 const mockDeleteMessage = vi.fn();
 void mockDeleteMessage;
+const mockReadFindUnique = vi.fn();
+const mockReadCreate = vi.fn();
 
 const mockMemberFindUnique = vi.fn();
 
@@ -23,6 +25,10 @@ const mockPrisma = {
     create: mockCreateMessage,
     update: mockUpdateMessage,
     findFirst: vi.fn().mockResolvedValue(null),
+  },
+  chatMessageRead: {
+    findUnique: mockReadFindUnique,
+    create: mockReadCreate,
   },
   notification: {
     findMany: vi.fn().mockResolvedValue([]),
@@ -178,6 +184,53 @@ describe('chat message service', () => {
       await expect(
         deleteMessage(mockPrisma as any, 'user-1', 'ws-1', 'ch-1', 'msg-1'),
       ).resolves.toBeUndefined();
+    });
+  });
+
+  describe('markRead', () => {
+    it('records read when message belongs to channel', async () => {
+      mockFindMessage.mockResolvedValue(mockMessage);
+      mockReadFindUnique.mockResolvedValue(null);
+      mockReadCreate.mockResolvedValue({ id: 'read-1' });
+      const { markRead } = await import('./chat.message.service');
+      const { emitToRoom } = await import('../../shared/lib/socket-events');
+      await markRead(mockPrisma as any, 'user-1', 'ws-1', 'ch-1', 'msg-1');
+      expect(mockReadCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            userId: 'user-1',
+            channelId: 'ch-1',
+            messageId: 'msg-1',
+          }),
+        }),
+      );
+      expect(emitToRoom).toHaveBeenCalledWith(
+        '/collab',
+        'conversation:ch-1',
+        'message:read',
+        expect.objectContaining({ messageId: 'msg-1', channelId: 'ch-1' }),
+      );
+    });
+
+    it('rejects message from another channel', async () => {
+      mockFindMessage.mockResolvedValue({ ...mockMessage, channelId: 'ch-other' });
+      const { markRead } = await import('./chat.message.service');
+      await expect(markRead(mockPrisma as any, 'user-1', 'ws-1', 'ch-1', 'msg-1')).rejects.toThrow(
+        'not found',
+      );
+      expect(mockReadCreate).not.toHaveBeenCalled();
+    });
+
+    it('rejects missing message without creating or broadcasting', async () => {
+      mockFindMessage.mockResolvedValue(null);
+      const { markRead } = await import('./chat.message.service');
+      const { emitToRoom } = await import('../../shared/lib/socket-events');
+      vi.mocked(emitToRoom).mockClear();
+      await expect(
+        markRead(mockPrisma as any, 'user-1', 'ws-1', 'ch-1', 'msg-missing'),
+      ).rejects.toThrow('not found');
+      expect(mockReadCreate).not.toHaveBeenCalled();
+      expect(emitToRoom).not.toHaveBeenCalled();
     });
   });
 });

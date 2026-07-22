@@ -235,6 +235,13 @@ export async function markRead(
 ) {
   await channelRepo.findAndValidateChannel(prisma, userId, workspaceId, channelId);
 
+  // Bind message to channel — do not accept foreign message ids (integrity /
+  // avoids writing ChatMessageRead rows for messages in other channels).
+  const message = await prisma.chatMessage.findUnique({ where: { id: upToMessageId } });
+  if (!message || message.deletedAt || message.channelId !== channelId) {
+    throw new NotFoundError('Message not found');
+  }
+
   const existing = await prisma.chatMessageRead.findUnique({
     where: { userId_messageId: { userId, messageId: upToMessageId } },
   });
@@ -242,22 +249,12 @@ export async function markRead(
   const readAt = new Date();
 
   if (!existing) {
-    try {
-      await prisma.chatMessageRead.create({
-        data: { userId, channelId, messageId: upToMessageId, readAt },
-      });
-    } catch (err) {
-      // FK violation: the messageId doesn't exist (e.g. a stale optimistic
-      // id leaked from the client, or a hard-deleted message). The receipt
-      // is best-effort — skip the DB row and still broadcast so the UI can
-      // update if it has the message locally.
-      logger.warn(
-        { err, userId, channelId, messageId: upToMessageId },
-        'markRead: create failed, broadcasting receipt anyway',
-      );
-    }
+    await prisma.chatMessageRead.create({
+      data: { userId, channelId, messageId: upToMessageId, readAt },
+    });
   }
 
+  // Single owner of message:read broadcast (REST + socket call this service).
   try {
     emitToRoom('/collab', `conversation:${channelId}`, 'message:read', {
       userId,

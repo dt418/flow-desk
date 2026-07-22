@@ -160,7 +160,7 @@ taskRouter.post('/:id/task-channel', async (c) => {
   const auth = c.get('auth');
   const id = c.req.param('id');
   const task = await taskService.get(auth.user.id, id);
-  const channel = await chatSvc.getOrCreateTaskChannel(prisma, task.workspaceId, id);
+  const channel = await chatSvc.getOrCreateTaskChannel(prisma, auth.user.id, task.workspaceId, id);
   return c.json({ data: channel });
 });
 

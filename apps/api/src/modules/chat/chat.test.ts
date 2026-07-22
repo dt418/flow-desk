@@ -10,6 +10,8 @@ const mockUserFindMany = vi.fn();
 
 const mockMemberFindUnique = vi.fn();
 
+const mockTaskFindFirst = vi.fn();
+
 const mockPrisma = {
   chatChannel: {
     findMany: mockFindMany,
@@ -20,6 +22,9 @@ const mockPrisma = {
   },
   workspaceMember: {
     findUnique: mockMemberFindUnique,
+  },
+  task: {
+    findFirst: mockTaskFindFirst,
   },
   user: {
     findMany: mockUserFindMany,
@@ -167,6 +172,49 @@ describe('chat service', () => {
           scope: 'WORKSPACE',
         }),
       ).rejects.toThrow('already exists');
+    });
+
+    it('forces isPrivate=false even when client requests true', async () => {
+      mockCreate.mockResolvedValue(mockChannel);
+      const { createChannel } = await import('./chat.service');
+      await createChannel(mockPrisma as any, 'user-1', 'ws-1', {
+        workspaceId: 'ws-1',
+        name: 'secret',
+        isPrivate: true,
+        scope: 'WORKSPACE',
+      });
+      expect(mockCreate).toHaveBeenCalledWith({
+        data: expect.objectContaining({ isPrivate: false, name: 'secret' }),
+      });
+    });
+  });
+
+  describe('getOrCreateTaskChannel', () => {
+    it('requires membership and task in workspace', async () => {
+      mockTaskFindFirst.mockResolvedValue({ id: 'task-1' });
+      mockFindFirst.mockResolvedValue(null);
+      mockCreate.mockResolvedValue({
+        ...mockChannel,
+        name: 'task-task-1',
+        scope: 'TASK',
+        taskId: 'task-1',
+      });
+      const { getOrCreateTaskChannel } = await import('./chat.service');
+      const { assertMembership } = await import('../../shared/lib/access');
+      await getOrCreateTaskChannel(mockPrisma as any, 'user-1', 'ws-1', 'task-1');
+      expect(assertMembership).toHaveBeenCalledWith('ws-1', 'user-1');
+      expect(mockTaskFindFirst).toHaveBeenCalledWith({
+        where: { id: 'task-1', workspaceId: 'ws-1', deletedAt: null },
+        select: { id: true },
+      });
+    });
+
+    it('throws when task not in workspace', async () => {
+      mockTaskFindFirst.mockResolvedValue(null);
+      const { getOrCreateTaskChannel } = await import('./chat.service');
+      await expect(
+        getOrCreateTaskChannel(mockPrisma as any, 'user-1', 'ws-1', 'task-x'),
+      ).rejects.toThrow('not found');
     });
   });
 

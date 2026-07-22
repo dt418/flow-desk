@@ -1,5 +1,16 @@
 # Progress Log
 
+### Session — Review item 1 chat ACL / markRead (2026-07-22)
+
+- **Goal**: Implement completion review #1 — chat markRead bind, double-emit fix, isPrivate honesty, task-channel authz
+- **Completed**:
+  - `markRead`: require message exists, not deleted, `channelId` match; no broadcast on miss
+  - Socket `message:read`: service-only emit (no second gateway broadcast)
+  - Channel create/update: always persist `isPrivate: false` until channel-member ACL ships
+  - `getOrCreateTaskChannel(userId, workspaceId, taskId)`: `assertMembership` + task workspace bind
+- **Verification**: api unit 176 (chat +3 markRead +2 channel); integration 270; api typecheck green
+- **Next**: review completion order #2 deploy secrets runbook / #3 R-14 scale if continuing polish
+
 ### Session — Harness hygiene vs latest source (2026-07-18)
 
 - **Goal**: Apply cross-check recommendations after comparing harness task to tip source
@@ -621,6 +632,12 @@
 - **author:** thanhd
 
 ### 2026-07-22 20:56 — `7bc8dff` (main)
+
+- **type:**
+- **msg:**
+- **author:** thanhd
+
+### 2026-07-22 21:05 — `4122146` (main)
 
 - **type:**
 - **msg:**

@@ -16,6 +16,7 @@ export const createChannelSchema = z
       .max(80)
       .regex(/^[\w-]+$/), // allow letters, digits, _, -
     description: z.string().max(500).optional(),
+    // Accepted for API compat; server forces false until channel-member ACL ships.
     isPrivate: z.boolean().default(false),
     scope: channelScopeSchema.default('WORKSPACE'),
     taskId: cuidSchema.optional(), // required when scope=TASK
