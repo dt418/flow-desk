@@ -1,14 +1,14 @@
 import type { prisma } from '../../shared/lib/prisma';
 type PrismaClient = typeof prisma;
 import type { CreateChannelInput, UpdateChannelInput } from '@flow-desk/shared/chat';
-import { NotFoundError, ConflictError } from '../../shared/errors';
+import { NotFoundError, ConflictError, BadRequestError } from '../../shared/errors';
 import { assertMembership } from '../../shared/lib/access';
 import { emitToRoom } from '../../shared/lib/socket-events';
 import * as repo from './chat.repository';
 
 export async function listChannels(prisma: PrismaClient, userId: string, workspaceId: string) {
   await assertMembership(workspaceId, userId);
-  const channels = await repo.findByWorkspace(prisma, workspaceId);
+  const channels = await repo.findByWorkspace(prisma, workspaceId, userId);
   return channels.map((ch) => ({
     id: ch.id,
     workspaceId: ch.workspaceId,
@@ -77,15 +77,16 @@ export async function createChannel(
   // values from the schema so REST POST can create either workspace or
   // task channels.
   //
-  // Private-channel ACL is not implemented (no channel membership table).
-  // Always persist isPrivate=false so the flag cannot imply secrecy.
+  // Private channels: creator is added as ChatChannelMember; only members
+  // can list/join/send after create.
+  const isPrivate = body.isPrivate === true;
   let channel;
   try {
     channel = await repo.create(prisma, {
       workspaceId,
       name: body.name,
       description: body.description ?? null,
-      isPrivate: false,
+      isPrivate,
       scope: body.scope,
       taskId: body.taskId ?? null,
     });
@@ -96,6 +97,9 @@ export async function createChannel(
       throw new ConflictError('A channel with this name already exists');
     }
     throw err;
+  }
+  if (isPrivate) {
+    await repo.addChannelMember(prisma, channel.id, userId);
   }
   const result = {
     id: channel.id,
@@ -134,17 +138,20 @@ export async function updateChannel(
 
   let channel;
   try {
-    // Ignore client isPrivate until channel-member ACL ships (always keep false).
     channel = await repo.update(prisma, channelId, {
       name: body.name,
       description: body.description,
-      ...(body.isPrivate !== undefined ? { isPrivate: false } : {}),
+      ...(body.isPrivate !== undefined ? { isPrivate: body.isPrivate } : {}),
     });
   } catch (err: unknown) {
     if (err instanceof Error && 'code' in err && (err as { code: string }).code === 'P2002') {
       throw new ConflictError('A channel with this name already exists');
     }
     throw err;
+  }
+  // Public → private: ensure updater is a channel member so they are not locked out.
+  if (body.isPrivate === true) {
+    await repo.addChannelMember(prisma, channelId, userId);
   }
   const result = {
     id: channel.id,
@@ -163,6 +170,66 @@ export async function updateChannel(
     channel: result,
   });
   return result;
+}
+
+export async function listChannelMembers(
+  prisma: PrismaClient,
+  userId: string,
+  workspaceId: string,
+  channelId: string,
+) {
+  const channel = await repo.findAndValidateChannel(prisma, userId, workspaceId, channelId);
+  if (!channel.isPrivate) {
+    return [];
+  }
+  const rows = await repo.listChannelMembers(prisma, channelId);
+  return rows.map((r) => ({
+    userId: r.userId,
+    name: r.user.name,
+    email: r.user.email,
+    avatarUrl: r.user.avatarUrl,
+    joinedAt: r.createdAt.toISOString(),
+  }));
+}
+
+export async function addChannelMember(
+  prisma: PrismaClient,
+  userId: string,
+  workspaceId: string,
+  channelId: string,
+  targetUserId: string,
+) {
+  const channel = await repo.findAndValidateChannel(prisma, userId, workspaceId, channelId);
+  if (!channel.isPrivate) {
+    throw new BadRequestError('Channel is not private');
+  }
+  // Target must be a workspace member.
+  await assertMembership(workspaceId, targetUserId);
+  await repo.addChannelMember(prisma, channelId, targetUserId);
+  return { ok: true as const, channelId, userId: targetUserId };
+}
+
+export async function removeChannelMember(
+  prisma: PrismaClient,
+  userId: string,
+  workspaceId: string,
+  channelId: string,
+  targetUserId: string,
+) {
+  const channel = await repo.findAndValidateChannel(prisma, userId, workspaceId, channelId);
+  if (!channel.isPrivate) {
+    throw new BadRequestError('Channel is not private');
+  }
+  const count = await repo.countChannelMembers(prisma, channelId);
+  if (count <= 1 && targetUserId === userId) {
+    throw new BadRequestError('Cannot remove the last channel member');
+  }
+  if (count <= 1) {
+    throw new BadRequestError('Cannot remove the last channel member');
+  }
+  // Only existing members may remove others (already validated via findAndValidateChannel).
+  await repo.removeChannelMember(prisma, channelId, targetUserId);
+  return { ok: true as const };
 }
 
 export async function deleteChannel(

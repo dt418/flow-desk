@@ -4,7 +4,7 @@ import { cleanDatabase, createUser, createWorkspace, addMember } from '../setup/
 import * as channelSvc from '../../src/modules/chat/chat.service';
 import * as messageSvc from '../../src/modules/chat/chat.message.service';
 import { prisma as db } from '../../src/shared/lib/prisma';
-import { NotFoundError, BadRequestError } from '../../src/shared/errors';
+import { NotFoundError, BadRequestError, ForbiddenError } from '../../src/shared/errors';
 
 describe('chat integration', () => {
   let prisma: ReturnType<typeof getTestPrisma>;
@@ -135,6 +135,40 @@ describe('chat integration', () => {
       });
       await channelSvc.deleteChannel(db, ownerId, wid, ch.id);
       await expect(channelSvc.getChannel(db, ownerId, wid, ch.id)).rejects.toThrow(NotFoundError);
+    });
+
+    it('private channel: creator sees it; non-member workspace mate does not', async () => {
+      const secret = await channelSvc.createChannel(db, ownerId, wid, {
+        workspaceId: wid,
+        name: 'secret-room',
+        isPrivate: true,
+        scope: 'WORKSPACE',
+      });
+      expect(secret.isPrivate).toBe(true);
+
+      const ownerList = await channelSvc.listChannels(db, ownerId, wid);
+      expect(ownerList.some((c) => c.id === secret.id)).toBe(true);
+
+      const memberList = await channelSvc.listChannels(db, memberId, wid);
+      expect(memberList.some((c) => c.id === secret.id)).toBe(false);
+
+      await expect(channelSvc.getChannel(db, memberId, wid, secret.id)).rejects.toThrow(
+        ForbiddenError,
+      );
+      await expect(
+        messageSvc.sendMessage(db, memberId, wid, secret.id, {
+          content: 'nope',
+          mentionedUserIds: [],
+        }),
+      ).rejects.toThrow(ForbiddenError);
+
+      await channelSvc.addChannelMember(db, ownerId, wid, secret.id, memberId);
+      const after = await channelSvc.listChannels(db, memberId, wid);
+      expect(after.some((c) => c.id === secret.id)).toBe(true);
+      await messageSvc.sendMessage(db, memberId, wid, secret.id, {
+        content: 'hello private',
+        mentionedUserIds: [],
+      });
     });
   });
 

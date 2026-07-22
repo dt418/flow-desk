@@ -8,6 +8,7 @@ import {
   channelParamSchema,
   listChannelsQuerySchema,
 } from '@flow-desk/shared/chat';
+import { cuidSchema } from '@flow-desk/shared/common';
 import * as svc from './chat.service';
 
 export const chatRouter = new Hono();
@@ -74,6 +75,35 @@ chatRouter.delete('/:id', zValidator('param', channelParamSchema), async (c) => 
   await svc.deleteChannel(prisma, auth.user.id, wid, id);
   return c.json({ ok: true });
 });
+
+chatRouter.get('/:id/members', zValidator('param', channelParamSchema), async (c) => {
+  const auth = c.get('auth');
+  const { wid, id } = c.req.valid('param');
+  const members = await svc.listChannelMembers(prisma, auth.user.id, wid, id);
+  return c.json({ data: members });
+});
+
+chatRouter.post('/:id/members', zValidator('param', channelParamSchema), async (c) => {
+  const auth = c.get('auth');
+  const { wid, id } = c.req.valid('param');
+  const body = (await c.req.json().catch(() => null)) as { userId?: string } | null;
+  if (!body?.userId || typeof body.userId !== 'string') {
+    return c.json({ code: 'INVALID_BODY', message: 'userId required' }, 400);
+  }
+  const result = await svc.addChannelMember(prisma, auth.user.id, wid, id, body.userId);
+  return c.json(result, 201);
+});
+
+chatRouter.delete(
+  '/:id/members/:userId',
+  zValidator('param', channelParamSchema.extend({ userId: cuidSchema })),
+  async (c) => {
+    const auth = c.get('auth');
+    const { wid, id, userId: targetUserId } = c.req.valid('param');
+    await svc.removeChannelMember(prisma, auth.user.id, wid, id, targetUserId);
+    return c.json({ ok: true });
+  },
+);
 
 chatRouter.onError((err, _c) => {
   throw err;

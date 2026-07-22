@@ -45,15 +45,29 @@ export async function findAndValidateChannel(
   if (!member) {
     throw new ForbiddenError('Not a workspace member');
   }
+  // Private channels: require explicit channel membership.
+  if (channel.isPrivate) {
+    const channelMember = await prisma.chatChannelMember.findUnique({
+      where: { channelId_userId: { channelId, userId } },
+    });
+    if (!channelMember) {
+      throw new ForbiddenError('Not a channel member');
+    }
+  }
   return channel;
 }
 
 export async function findByWorkspace(
   prisma: PrismaClient,
   workspaceId: string,
+  userId: string,
 ): Promise<ChannelWithLatest[]> {
   const channels = await prisma.chatChannel.findMany({
-    where: { workspaceId, deletedAt: null },
+    where: {
+      workspaceId,
+      deletedAt: null,
+      OR: [{ isPrivate: false }, { members: { some: { userId } } }],
+    },
     orderBy: { createdAt: 'asc' },
   });
   if (channels.length === 0) {
@@ -137,6 +151,32 @@ export function create(
   },
 ) {
   return prisma.chatChannel.create({ data });
+}
+
+export function addChannelMember(prisma: PrismaClient, channelId: string, userId: string) {
+  return prisma.chatChannelMember.upsert({
+    where: { channelId_userId: { channelId, userId } },
+    create: { channelId, userId },
+    update: {},
+  });
+}
+
+export function removeChannelMember(prisma: PrismaClient, channelId: string, userId: string) {
+  return prisma.chatChannelMember.deleteMany({ where: { channelId, userId } });
+}
+
+export function listChannelMembers(prisma: PrismaClient, channelId: string) {
+  return prisma.chatChannelMember.findMany({
+    where: { channelId },
+    include: {
+      user: { select: { id: true, name: true, email: true, avatarUrl: true } },
+    },
+    orderBy: { createdAt: 'asc' },
+  });
+}
+
+export function countChannelMembers(prisma: PrismaClient, channelId: string) {
+  return prisma.chatChannelMember.count({ where: { channelId } });
 }
 
 export function findByScopeAndTask(prisma: PrismaClient, workspaceId: string, taskId: string) {

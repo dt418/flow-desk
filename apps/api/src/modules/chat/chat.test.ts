@@ -11,6 +11,8 @@ const mockUserFindMany = vi.fn();
 const mockMemberFindUnique = vi.fn();
 
 const mockTaskFindFirst = vi.fn();
+const mockChannelMemberUpsert = vi.fn();
+const mockChannelMemberFindUnique = vi.fn();
 
 const mockPrisma = {
   chatChannel: {
@@ -19,6 +21,13 @@ const mockPrisma = {
     findFirst: mockFindFirst,
     create: mockCreate,
     update: mockUpdate,
+  },
+  chatChannelMember: {
+    upsert: mockChannelMemberUpsert,
+    findUnique: mockChannelMemberFindUnique,
+    findMany: vi.fn().mockResolvedValue([]),
+    count: vi.fn().mockResolvedValue(0),
+    deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
   },
   workspaceMember: {
     findUnique: mockMemberFindUnique,
@@ -174,18 +183,21 @@ describe('chat service', () => {
       ).rejects.toThrow('already exists');
     });
 
-    it('forces isPrivate=false even when client requests true', async () => {
-      mockCreate.mockResolvedValue(mockChannel);
+    it('creates private channel and adds creator as member', async () => {
+      mockCreate.mockResolvedValue({ ...mockChannel, isPrivate: true, name: 'secret' });
+      mockChannelMemberUpsert.mockResolvedValue({ channelId: 'ch-1', userId: 'user-1' });
       const { createChannel } = await import('./chat.service');
-      await createChannel(mockPrisma as any, 'user-1', 'ws-1', {
+      const result = await createChannel(mockPrisma as any, 'user-1', 'ws-1', {
         workspaceId: 'ws-1',
         name: 'secret',
         isPrivate: true,
         scope: 'WORKSPACE',
       });
       expect(mockCreate).toHaveBeenCalledWith({
-        data: expect.objectContaining({ isPrivate: false, name: 'secret' }),
+        data: expect.objectContaining({ isPrivate: true, name: 'secret' }),
       });
+      expect(mockChannelMemberUpsert).toHaveBeenCalled();
+      expect(result.isPrivate).toBe(true);
     });
   });
 

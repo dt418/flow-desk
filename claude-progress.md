@@ -1,5 +1,16 @@
 # Progress Log
 
+### Session — Private channel ACL + CSP enforce (2026-07-22)
+
+- **Goal**: Ship remaining review polish — private chat membership + CSP
+- **Completed**:
+  - Prisma `ChatChannelMember` + migration `20260722190000_chat_channel_member`
+  - Private channels: creator auto-member; list/get/send gated; socket `conversation:join` gated
+  - REST: `GET/POST /channels/:id/members`, `DELETE .../members/:userId`
+  - nginx CSP flipped from Report-Only to enforcing
+- **Verification**: api unit 176; integration 275 (private channel case); typecheck green
+- **Next**: optional private-channel UI; PgBouncer if multi-replica
+
 ### Session — Review #4 attachments + GUEST write policy (2026-07-22)
 
 - **Goal**: Finish remaining polish from project review (attachments + guest role)
@@ -678,6 +689,12 @@
 - **author:** thanhd
 
 ### 2026-07-22 21:20 — `0dd0728` (main)
+
+- **type:**
+- **msg:**
+- **author:** thanhd
+
+### 2026-07-22 21:29 — `9bbf66f` (main)
 
 - **type:**
 - **msg:**

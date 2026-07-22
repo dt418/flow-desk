@@ -104,6 +104,7 @@ model User {
   activities        TaskActivity[]      @relation("UserActivities")
   savedFilters      SavedFilter[]        @relation("SavedFilterOwner")
   chatMessageReads ChatMessageRead[]
+  chatChannelMembers ChatChannelMember[]
   apiKeys          ApiKey[]
   integrations     Integration[] @relation("UserIntegrations")
 
@@ -421,11 +422,27 @@ model ChatChannel {
   updatedAt   DateTime @updatedAt
   deletedAt   DateTime?
   messages    ChatMessage[]      @relation("ChannelMessages")
+  members     ChatChannelMember[]
   // @@unique([workspaceId, name]) is a partial unique index in the
   // migration (WHERE "deletedAt" IS NULL) — Prisma can't express partial
   // unique indexes, so it's enforced via raw SQL in the migration only.
   @@index([workspaceId])
   @@index([taskId])
+}
+
+/// Membership for private channels only. Public channels ignore this table.
+model ChatChannelMember {
+  id        String   @id @default(cuid())
+  channelId String
+  userId    String
+  createdAt DateTime @default(now())
+
+  channel ChatChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  user    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([channelId, userId])
+  @@index([userId])
+  @@index([channelId])
 }
 
 model ChatMessage {

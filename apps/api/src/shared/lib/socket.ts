@@ -244,7 +244,7 @@ export function createSocketServer(httpServer: HttpServer) {
           const { prisma } = await import('./prisma');
           const channel = await prisma.chatChannel.findUnique({
             where: { id: data.channelId, deletedAt: null },
-            select: { workspaceId: true },
+            select: { workspaceId: true, isPrivate: true },
           });
           if (!channel) return;
           const member = await prisma.workspaceMember.findUnique({
@@ -256,12 +256,20 @@ export function createSocketServer(httpServer: HttpServer) {
             },
             select: { userId: true },
           });
-          if (member) {
-            socket.join(`conversation:${data.channelId}`);
-            chatPresenceChannels.add(data.channelId);
-            await redis.sadd(CHAT_PRESENCE_KEY(data.channelId), userId);
-            await broadcastChatPresence(io, data.channelId);
+          if (!member) return;
+          if (channel.isPrivate) {
+            const channelMember = await prisma.chatChannelMember.findUnique({
+              where: {
+                channelId_userId: { channelId: data.channelId, userId },
+              },
+              select: { userId: true },
+            });
+            if (!channelMember) return;
           }
+          socket.join(`conversation:${data.channelId}`);
+          chatPresenceChannels.add(data.channelId);
+          await redis.sadd(CHAT_PRESENCE_KEY(data.channelId), userId);
+          await broadcastChatPresence(io, data.channelId);
         })(socket),
       );
 
