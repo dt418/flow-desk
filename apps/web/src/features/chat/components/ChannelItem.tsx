@@ -33,7 +33,8 @@ export function ChannelItem({ channel, active, onClick }: ChannelItemProps) {
     >
       <div className="flex items-center justify-between">
         <span className={cn('text-sm font-medium', active ? 'text-primary' : 'text-foreground')}>
-          # {channel.name}
+          {channel.isPrivate ? '🔒 ' : '# '}
+          {channel.name}
         </span>
         {channel.latestMessage && (
           <span className="text-xs text-muted-foreground">

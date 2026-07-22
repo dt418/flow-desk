@@ -7,6 +7,7 @@ import type {
   UpdateChannelInput,
   CreateChatMessageInput,
   UpdateChatMessageInput,
+  ChannelMember,
 } from './types';
 
 export const chatApi = {
@@ -33,6 +34,26 @@ export const chatApi = {
   deleteChannel(wid: string, id: string) {
     return api<{ ok: boolean }>(
       `/api/workspaces/${encodeURIComponent(wid)}/channels/${encodeURIComponent(id)}`,
+      { method: 'DELETE' },
+    );
+  },
+
+  listChannelMembers(wid: string, channelId: string) {
+    return api<{ data: ChannelMember[] }>(
+      `/api/workspaces/${encodeURIComponent(wid)}/channels/${encodeURIComponent(channelId)}/members`,
+    );
+  },
+
+  addChannelMember(wid: string, channelId: string, userId: string) {
+    return api<{ ok: boolean; channelId: string; userId: string }>(
+      `/api/workspaces/${encodeURIComponent(wid)}/channels/${encodeURIComponent(channelId)}/members`,
+      { method: 'POST', json: { userId } },
+    );
+  },
+
+  removeChannelMember(wid: string, channelId: string, userId: string) {
+    return api<{ ok: boolean }>(
+      `/api/workspaces/${encodeURIComponent(wid)}/channels/${encodeURIComponent(channelId)}/members/${encodeURIComponent(userId)}`,
       { method: 'DELETE' },
     );
   },

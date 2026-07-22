@@ -5,6 +5,9 @@ export {
   useCreateChannel,
   useUpdateChannel,
   useDeleteChannel,
+  useChannelMembers,
+  useAddChannelMember,
+  useRemoveChannelMember,
   useMessages,
   useSendMessage,
   useUpdateMessage,
@@ -17,6 +20,7 @@ export {
 } from './hooks';
 export { ChatSidebar, ChannelItem } from './components/ChatSidebar';
 export { ChannelView } from './components/ChannelView';
+export { ChannelMembersDialog } from './components/ChannelMembersDialog';
 export { MessageBubble } from './components/MessageBubble';
 export { ChatInput } from './components/ChatInput';
 export { TaskChat } from './components/TaskChat';

@@ -2,7 +2,7 @@
 
 | Field        | Value                                                                               |
 | ------------ | ----------------------------------------------------------------------------------- |
-| Last session | Private chat channel ACL + CSP enforce — 2026-07-22                                 |
+| Last session | Private channel UI (create + members dialog) — 2026-07-22 |
 | Tip branch   | `main` @ origin (after push)                                                        |
 | Code ship    | `ChatChannelMember` private ACL; member APIs; socket join; nginx CSP enforcing      |
 | Docs ship    | handoff + progress                                                                  |

@@ -6,6 +6,8 @@ import type {
   UpdateChannelInput,
   CreateChatMessageInput,
   UpdateChatMessageInput,
+  ChannelMember,
+  AddChannelMemberInput,
 } from '@flow-desk/shared/chat';
 
 export type {
@@ -16,4 +18,6 @@ export type {
   UpdateChannelInput,
   CreateChatMessageInput,
   UpdateChatMessageInput,
+  ChannelMember,
+  AddChannelMemberInput,
 };

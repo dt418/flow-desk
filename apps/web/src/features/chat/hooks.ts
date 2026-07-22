@@ -43,7 +43,36 @@ function addReadReceipt(channelId: string, receipt: ReadReceipt) {
 export const chatKeys = {
   channels: (wid: string) => ['channels', wid] as const,
   messages: (wid: string, channelId: string) => ['channels', wid, 'messages', channelId] as const,
+  members: (wid: string, channelId: string) => ['channels', wid, 'members', channelId] as const,
 };
+
+export function useChannelMembers(wid: string, channelId: string, enabled = true) {
+  return useQuery({
+    queryKey: chatKeys.members(wid, channelId),
+    queryFn: () => chatApi.listChannelMembers(wid, channelId).then((r) => r.data),
+    enabled: Boolean(wid && channelId && enabled),
+  });
+}
+
+export function useAddChannelMember(wid: string, channelId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (userId: string) => chatApi.addChannelMember(wid, channelId, userId),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: chatKeys.members(wid, channelId) });
+    },
+  });
+}
+
+export function useRemoveChannelMember(wid: string, channelId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (userId: string) => chatApi.removeChannelMember(wid, channelId, userId),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: chatKeys.members(wid, channelId) });
+    },
+  });
+}
 
 export function useChannels(wid: string) {
   return useQuery({

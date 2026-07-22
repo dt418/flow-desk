@@ -18,6 +18,7 @@ interface ChannelViewProps {
   sending?: boolean;
   viewerCount?: number;
   readReceipts?: ReadReceipt[];
+  onManageMembers?: () => void;
 }
 
 export function ChannelView({
@@ -32,6 +33,7 @@ export function ChannelView({
   sending,
   viewerCount,
   readReceipts = [],
+  onManageMembers,
 }: ChannelViewProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const topRef = useRef<HTMLDivElement>(null);
@@ -55,13 +57,27 @@ export function ChannelView({
   return (
     <div className="flex h-full flex-col">
       <header className="shrink-0 border-b border-border px-4 py-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold"># {channel.name}</h2>
-          {viewerCount != null && viewerCount > 0 && (
-            <span className="text-xs text-muted-foreground">
-              {viewerCount} {viewerCount === 1 ? 'viewer' : 'viewers'}
-            </span>
-          )}
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-sm font-semibold">
+            {channel.isPrivate ? '🔒 ' : '# '}
+            {channel.name}
+          </h2>
+          <div className="flex items-center gap-2">
+            {channel.isPrivate && onManageMembers && (
+              <button
+                type="button"
+                onClick={onManageMembers}
+                className="text-xs text-muted-foreground hover:text-foreground"
+              >
+                Members
+              </button>
+            )}
+            {viewerCount != null && viewerCount > 0 && (
+              <span className="text-xs text-muted-foreground">
+                {viewerCount} {viewerCount === 1 ? 'viewer' : 'viewers'}
+              </span>
+            )}
+          </div>
         </div>
         {channel.description && (
           <p className="mt-0.5 text-xs text-muted-foreground">{channel.description}</p>

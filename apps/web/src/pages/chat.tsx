@@ -14,9 +14,12 @@ import {
 } from '@/features/chat';
 import { ChatSidebar } from '@/features/chat/components/ChatSidebar';
 import { ChannelView } from '@/features/chat/components/ChannelView';
+import { ChannelMembersDialog } from '@/features/chat/components/ChannelMembersDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 
 export default function ChatPage() {
@@ -24,8 +27,10 @@ export default function ChatPage() {
   const { user } = useAuth();
   const [activeChannelId, setActiveChannelId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
+  const [membersOpen, setMembersOpen] = useState(false);
   const [channelName, setChannelName] = useState('');
   const [channelDesc, setChannelDesc] = useState('');
+  const [isPrivate, setIsPrivate] = useState(false);
 
   const channelsQuery = useChannels(workspaceId);
   const messagesQuery = useMessages(workspaceId, activeChannelId ?? '');
@@ -63,16 +68,18 @@ export default function ChatPage() {
       {
         workspaceId,
         name,
-        isPrivate: false,
+        isPrivate,
         scope: 'WORKSPACE',
         description: channelDesc.trim() || undefined,
       },
       {
-        onSuccess: () => {
+        onSuccess: (res) => {
           setCreateOpen(false);
           setChannelName('');
           setChannelDesc('');
-          toast.success('Channel created');
+          setIsPrivate(false);
+          setActiveChannelId(res.data.id);
+          toast.success(isPrivate ? 'Private channel created' : 'Channel created');
         },
         onError: () => toast.error('Failed to create channel'),
       },
@@ -107,6 +114,7 @@ export default function ChatPage() {
           sending={sendMessage.isPending}
           viewerCount={viewers.length}
           readReceipts={readReceipts}
+          onManageMembers={activeChannel?.isPrivate ? () => setMembersOpen(true) : undefined}
         />
       </div>
 
@@ -135,6 +143,17 @@ export default function ChatPage() {
                 placeholder="What's this channel about?"
               />
             </div>
+            <div className="flex items-center justify-between gap-3 rounded-md border border-border px-3 py-2">
+              <div>
+                <Label htmlFor="channel-private" className="text-sm font-medium">
+                  Private channel
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Only invited workspace members can see and join
+                </p>
+              </div>
+              <Switch id="channel-private" checked={isPrivate} onCheckedChange={setIsPrivate} />
+            </div>
             <Button
               type="button"
               onClick={handleCreate}
@@ -146,6 +165,17 @@ export default function ChatPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {activeChannel?.isPrivate && activeChannelId && (
+        <ChannelMembersDialog
+          open={membersOpen}
+          onOpenChange={setMembersOpen}
+          workspaceId={workspaceId}
+          channelId={activeChannelId}
+          channelName={activeChannel.name}
+          currentUserId={user?.id ?? ''}
+        />
+      )}
     </div>
   );
 }

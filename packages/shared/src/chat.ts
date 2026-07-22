@@ -123,6 +123,21 @@ export type ListChannelsQuery = z.infer<typeof listChannelsQuerySchema>;
 export const listChatMessagesQuerySchema = CursorPaginationQuery;
 export type ListChatMessagesQuery = z.infer<typeof listChatMessagesQuerySchema>;
 
+/** Private-channel member row (API GET /channels/:id/members). */
+export const channelMemberSchema = z.object({
+  userId: cuidSchema,
+  name: z.string(),
+  email: z.string().email(),
+  avatarUrl: z.string().nullable(),
+  joinedAt: z.string(),
+});
+export type ChannelMember = z.infer<typeof channelMemberSchema>;
+
+export const addChannelMemberSchema = z.object({
+  userId: cuidSchema,
+});
+export type AddChannelMemberInput = z.infer<typeof addChannelMemberSchema>;
+
 // Route param schemas
 export const channelParamSchema = z.object({
   wid: cuidSchema,

@@ -1,5 +1,16 @@
 # Progress Log
 
+### Session — Private channel UI (2026-07-22)
+
+- **Goal**: UI for private channel ACL (create + invite members)
+- **Completed**:
+  - Create dialog: Private switch
+  - ChannelMembersDialog: list/add/remove workspace members
+  - ChannelItem/ChannelView lock badge; Members button on private channels
+  - Shared `ChannelMember` type; chatApi + hooks
+- **Verification**: web typecheck; web tests 39 (ChannelItem +2)
+- **Next**: optional PgBouncer; more web tests as needed
+
 ### Session — Private channel ACL + CSP enforce (2026-07-22)
 
 - **Goal**: Ship remaining review polish — private chat membership + CSP
@@ -695,6 +706,12 @@
 - **author:** thanhd
 
 ### 2026-07-22 21:29 — `9bbf66f` (main)
+
+- **type:**
+- **msg:**
+- **author:** thanhd
+
+### 2026-07-22 21:33 — `f0a441c` (main)
 
 - **type:**
 - **msg:**
