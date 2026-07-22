@@ -1,5 +1,17 @@
 # Progress Log
 
+### Session — Review #2 deploy + #3 R-14 lite (2026-07-22)
+
+- **Goal**: Deploy runbook/secrets + light scale hygiene from completion review
+- **Completed**:
+  - Production `GET /metrics` → 503 when `METRICS_TOKEN` unset (no longer world-readable)
+  - JWT_SECRET production: reject low-entropy secrets (`Set` size &lt; 10)
+  - `docs/DEPLOY.md`: secrets, metrics, Redis AUTH, backups, PgBouncer/pool notes, checklist
+  - Compose: optional `REDIS_PASSWORD` + `REDIS_URL`; email-worker Redis TCP healthcheck
+  - README / `.env.example` pointers
+- **Verification**: api unit 176; integration 270 (health); api + env typecheck green
+- **Next**: review #4 attachment harden; full PgBouncer service still operator-led
+
 ### Session — Review item 1 chat ACL / markRead (2026-07-22)
 
 - **Goal**: Implement completion review #1 — chat markRead bind, double-emit fix, isPrivate honesty, task-channel authz
@@ -638,6 +650,12 @@
 - **author:** thanhd
 
 ### 2026-07-22 21:05 — `4122146` (main)
+
+- **type:**
+- **msg:**
+- **author:** thanhd
+
+### 2026-07-22 21:10 — `815c0b4` (main)
 
 - **type:**
 - **msg:**

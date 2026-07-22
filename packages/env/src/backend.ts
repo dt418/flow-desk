@@ -50,10 +50,12 @@ export const backendSchema = z.object({
     .refine((secret) => {
       if (process.env.NODE_ENV === 'production') {
         const KNOWN_DEFAULTS = ['change-me-to-a-32-char-random-string-please'];
-        return !KNOWN_DEFAULTS.includes(secret);
+        if (KNOWN_DEFAULTS.includes(secret)) return false;
+        // Reject low-entropy secrets (e.g. "aaaaaaaa..." or short alphabet).
+        if (new Set(secret).size < 10) return false;
       }
       return true;
-    }, 'JWT_SECRET must not be the default placeholder in production'),
+    }, 'JWT_SECRET must not be a default/low-entropy secret in production (use openssl rand -hex 32)'),
   JWT_ACCESS_TTL: z
     .string()
     .default('15m')

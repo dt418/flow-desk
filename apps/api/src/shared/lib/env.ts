@@ -23,10 +23,12 @@ if (env.NODE_ENV === 'production') {
   }
   if (!env.METRICS_TOKEN) {
     console.warn(
-      '[env] METRICS_TOKEN is unset — GET /metrics is publicly readable. Set METRICS_TOKEN in production.',
+      '[env] METRICS_TOKEN is unset — GET /metrics returns 503 in production. Set METRICS_TOKEN (min 16 chars) for Prometheus scrapes.',
     );
   }
   if (!env.SENTRY_DSN) {
-    console.warn('[env] SENTRY_DSN is unset — unhandled errors will not be reported to Sentry.');
+    console.warn(
+      '[env] SENTRY_DSN is unset — unhandled errors will not be reported to Sentry. Recommended for production.',
+    );
   }
 }

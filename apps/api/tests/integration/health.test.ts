@@ -35,8 +35,9 @@ describe('health + readiness + metrics', () => {
     expect(res.headers.get('Cross-Origin-Opener-Policy')).toBe('same-origin');
   });
 
-  it('GET /metrics is open when METRICS_TOKEN unset (test env default)', async () => {
-    // Test vitest env does not set METRICS_TOKEN.
+  it('GET /metrics is open when METRICS_TOKEN unset in non-production (test default)', async () => {
+    // Test vitest env is not production and does not set METRICS_TOKEN.
+    expect(env.NODE_ENV).not.toBe('production');
     expect(env.METRICS_TOKEN).toBeUndefined();
     const app = buildApp();
     const res = await app.request('/metrics');

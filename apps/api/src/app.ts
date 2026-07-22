@@ -80,8 +80,20 @@ export function buildApp(): Hono {
     return c.json(result, result.status === 'ready' ? 200 : 503);
   });
 
-  // Prometheus scrape endpoint (P2-3). Optional bearer when METRICS_TOKEN set.
+  // Prometheus scrape endpoint (P2-3).
+  // - production without METRICS_TOKEN: closed (503) so metrics are never world-readable
+  // - non-production without token: open (local scrape / tests)
+  // - any env with METRICS_TOKEN: require Authorization: Bearer <token>
   app.get('/metrics', async (c) => {
+    if (env.NODE_ENV === 'production' && !env.METRICS_TOKEN) {
+      return c.json(
+        {
+          message: 'Metrics disabled until METRICS_TOKEN is set',
+          code: 'METRICS_DISABLED',
+        },
+        503,
+      );
+    }
     if (env.METRICS_TOKEN) {
       const auth = c.req.header('authorization');
       if (auth !== `Bearer ${env.METRICS_TOKEN}`) {

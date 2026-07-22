@@ -56,4 +56,5 @@
 | Local dev     | `pnpm dev` (infra + migrate + seed + hot reload) / `pnpm dev:reset` / `pnpm dev:turbo` |
 | Hooks / gate  | `pnpm setup:lefthook` / `pnpm check:secrets` / `pnpm verify`                           |
 | Agents        | `pnpm sync:agents` / `bash scripts/test-harness-structure.sh`                          |
+| Deploy        | `docs/DEPLOY.md`                                                                       |
 | Plans         | `plans/README.md`                                                                      |

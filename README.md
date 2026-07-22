@@ -17,11 +17,14 @@ Self-hosted, AI-augmented task management. Kanban + list view, real-time collabo
 
 ```bash
 cp .env.example .env
-# Edit .env — at minimum set JWT_SECRET, LLM_API_KEY
+# Edit .env — at minimum: JWT_SECRET (openssl rand -hex 32), LLM_API_KEY, POSTGRES_PASSWORD
+# Production: also set METRICS_TOKEN, APP_URL, CORS_ORIGINS; see docs/DEPLOY.md
 pnpm stack:up            # docker compose up -d (auto-detects port conflicts)
 # Web: http://localhost:5173
 # API: http://localhost:3000
 ```
+
+**Production / self-host runbook:** [docs/DEPLOY.md](docs/DEPLOY.md) (secrets, metrics, Redis AUTH, backups, scale notes).
 
 Stack management:
 

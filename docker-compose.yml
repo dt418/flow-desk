@@ -1,9 +1,13 @@
 name: flow-desk
 
+# DATABASE_URL: for multi-replica API, put PgBouncer in front and set
+# connection_limit on the URL (see docs/DEPLOY.md). Example:
+#   .../flowdesk?schema=public&connection_limit=5
 x-common-env: &common-env
   NODE_ENV: production
   DATABASE_URL: postgresql://${POSTGRES_USER:-flowdesk}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}@postgres:5432/${POSTGRES_DB:-flowdesk}?schema=public
-  REDIS_URL: redis://redis:6379
+  # Optional Redis AUTH: set REDIS_PASSWORD in .env and use redis://:${REDIS_PASSWORD}@redis:6379
+  REDIS_URL: ${REDIS_URL:-redis://redis:6379}
   JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set in .env}
   JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-15m}
   JWT_REFRESH_TTL: ${JWT_REFRESH_TTL:-7d}
@@ -35,13 +39,28 @@ services:
   redis:
     image: redis:7-alpine
     restart: unless-stopped
-    command: ['redis-server', '--appendonly', 'yes']
+    # When REDIS_PASSWORD is set, require AUTH (match REDIS_URL in .env).
+    command:
+      - sh
+      - -c
+      - |
+        if [ -n "$$REDIS_PASSWORD" ]; then
+          exec redis-server --appendonly yes --requirepass "$$REDIS_PASSWORD"
+        else
+          exec redis-server --appendonly yes
+        fi
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
     volumes:
       - redis_data:/data
     ports:
       - '127.0.0.1:${REDIS_PORT:-6379}:6379'
     healthcheck:
-      test: ['CMD', 'redis-cli', 'ping']
+      test:
+        [
+          'CMD-SHELL',
+          'if [ -n "$$REDIS_PASSWORD" ]; then redis-cli -a "$$REDIS_PASSWORD" ping | grep -q PONG; else redis-cli ping | grep -q PONG; fi',
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -101,6 +120,17 @@ services:
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       RESEND_API_KEY: ${RESEND_API_KEY:-}
+    # Process + Redis TCP reachability (queue backend). Not a full BullMQ depth probe.
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'node -e "const n=require(\"net\");const h=process.env.REDIS_URL&&process.env.REDIS_URL.includes(\"@\")?process.env.REDIS_URL.split(\"@\").pop().split(\":\")[0]:\"redis\";const s=n.connect(6379,h||\"redis\");s.on(\"connect\",()=>{s.end();process.exit(0)});s.on(\"error\",()=>process.exit(1));setTimeout(()=>process.exit(1),4000)"',
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
 
   web:
     build:
