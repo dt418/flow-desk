@@ -1,5 +1,16 @@
 # Progress Log
 
+### Session — Optional PgBouncer + PG_POOL_MAX (2026-07-22)
+
+- **Goal**: Close remaining R-14 polish — optional pooler in compose + real per-process pool cap
+- **Completed**:
+  - `docker-compose.yml`: profile `pgbouncer` (`edoburu/pgbouncer:v1.23.1-p2`, transaction mode, host port 6432)
+  - `DB_HOST` / `DB_PORT` parameterize api + email-worker `DATABASE_URL` (default still `postgres:5432`)
+  - `PG_POOL_MAX` (default 10) → `packages/db` `createPrismaClient` sets `pg` Pool `max`
+  - `docs/DEPLOY.md` §5 rewrite; RISKS R-14; `.env.example`; handoff
+- **Verification**: `docker compose config` (with/without profile); image pull OK; `@flowdesk/db` typecheck green
+- **Next**: optional web unit growth or product DIR via `/plan-feature`
+
 ### Session — Private channel UI (2026-07-22)
 
 - **Goal**: UI for private channel ACL (create + invite members)
@@ -712,6 +723,12 @@
 - **author:** thanhd
 
 ### 2026-07-22 21:33 — `f0a441c` (main)
+
+- **type:**
+- **msg:**
+- **author:** thanhd
+
+### 2026-07-23 19:58 — `e310e59` (main)
 
 - **type:**
 - **msg:**

@@ -79,16 +79,43 @@ Without a password, Redis is bound to `127.0.0.1` on the host — acceptable onl
 
 ## 5. Postgres pool & scale (R-14)
 
-**Single replica API:** default Prisma/pg adapter is fine.
+**Single replica API:** default is fine (`DB_HOST=postgres`, `PG_POOL_MAX=10`).
 
-**Multiple API replicas:**
+**Multiple API replicas** — enable the optional PgBouncer profile:
 
-1. Put **PgBouncer** (transaction mode) in front of Postgres — not bundled by default.
-2. Point `DATABASE_URL` at PgBouncer.
-3. Cap pool per process, e.g.  
-   `?schema=public&connection_limit=5`  
-   so `replicas × connection_limit` stays under Postgres `max_connections`.
-4. Keep **one** email-worker replica unless you have partitioned queues.
+```bash
+# 1. Bring stack up with the pooler
+docker compose --profile pgbouncer up -d
+
+# 2. In .env (then recreate api + email-worker so they pick up env):
+DB_HOST=pgbouncer
+DB_PORT=5432
+PG_POOL_MAX=5
+# Host-side tools can use:
+# DATABASE_URL=postgresql://flowdesk:…@127.0.0.1:6432/flowdesk?schema=public
+```
+
+What this does:
+
+| Piece         | Role                                                                                      |
+| ------------- | ----------------------------------------------------------------------------------------- |
+| `pgbouncer`   | Transaction-mode pooler in front of Postgres (`edoburu/pgbouncer`, host port **6432**)    |
+| `DB_HOST`     | Compose `DATABASE_URL` host for api + email-worker (`postgres` default, or `pgbouncer`)   |
+| `PG_POOL_MAX` | Cap **per process** on the Prisma `pg` Pool (not the old query-engine `connection_limit`) |
+
+Rules of thumb:
+
+1. Keep `replicas × PG_POOL_MAX` well under Postgres `max_connections` (and under PgBouncer `DEFAULT_POOL_SIZE` / server pool).
+2. **Migrations** (`prisma migrate deploy` / `pnpm db:migrate-deploy`) must hit **Postgres directly**, not PgBouncer:
+
+   ```bash
+   # Override for one shot while stack uses pgbouncer for the app
+   docker compose exec -e DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public" \
+     -w /app api pnpm exec prisma migrate deploy
+   ```
+
+3. Keep **one** email-worker replica unless you have partitioned queues.
+4. Tune pooler via env: `PGBOUNCER_MAX_CLIENT_CONN`, `PGBOUNCER_DEFAULT_POOL_SIZE`, `PGBOUNCER_MIN_POOL_SIZE`, `PGBOUNCER_PORT`.
 
 Socket.IO already uses the Redis adapter for multi-instance fan-out.
 
@@ -123,6 +150,7 @@ Test restore on a staging stack before relying on backups.
 - [ ] `SENTRY_DSN` set for shared deploys
 - [ ] `APP_URL` + `CORS_ORIGINS` match public web origin
 - [ ] `GET /api/ready` → 200 after start
+- [ ] Multi-replica: `--profile pgbouncer`, `DB_HOST=pgbouncer`, `PG_POOL_MAX` set; migrate uses direct Postgres
 - [ ] Backup cron documented and tested once
 - [ ] OAuth secrets only if using Google/GitHub/Slack/GitLab
 
